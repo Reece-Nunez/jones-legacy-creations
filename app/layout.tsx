@@ -1,0 +1,53 @@
+import type { Metadata } from "next";
+import { Inter, Playfair_Display } from "next/font/google";
+import "./globals.css";
+import { Toaster } from "@/components/Toaster";
+
+const inter = Inter({
+  variable: "--font-inter",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+const playfair = Playfair_Display({
+  variable: "--font-playfair",
+  subsets: ["latin"],
+  display: "swap",
+});
+
+export const metadata: Metadata = {
+  title: "Jones Legacy Creations | Construction, Real Estate & Interior Design",
+  description: "Jones Legacy Creations offers comprehensive construction services, real estate solutions, and professional interior design and home staging. Building legacies one project at a time.",
+  keywords: ["construction", "real estate", "interior design", "home staging", "residential construction", "commercial construction", "property services"],
+  authors: [{ name: "Jones Legacy Creations" }],
+  openGraph: {
+    title: "Jones Legacy Creations",
+    description: "Construction, Real Estate & Interior Design Services",
+    type: "website",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  viewport: {
+    width: "device-width",
+    initialScale: 1,
+  },
+};
+
+export default function RootLayout({
+  children,
+}: Readonly<{
+  children: React.ReactNode;
+}>) {
+  return (
+    <html lang="en" className="scroll-smooth">
+      <body
+        className={`${inter.variable} ${playfair.variable} font-sans antialiased bg-white text-black`}
+      >
+        {children}
+        <Toaster />
+      </body>
+    </html>
+  );
+}
