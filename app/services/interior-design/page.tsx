@@ -307,9 +307,29 @@ export default function InteriorDesignPage() {
             viewport={{ once: true }}
             className="text-center mt-12"
           >
-            <p className="text-gray-600 mb-6">
-              Ready to see your space transformed? Get in touch to discuss your project.
+            <h3 className="text-3xl font-serif font-bold mb-6">Contact Hilari Jones</h3>
+            <p className="text-gray-600 mb-8">
+              Ready to see your space transformed? Get in touch with our interior designer.
             </p>
+            <div className="bg-gray-50 p-12 rounded-xl text-center max-w-2xl mx-auto mb-8">
+              <div className="mb-6">
+                <a
+                  href="tel:+18017357089"
+                  className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4"
+                >
+                  (801) 735-7089
+                </a>
+                <a
+                  href="mailto:interiors@joneslegacycreations.com"
+                  className="text-xl text-black hover:text-gray-700 transition-colors"
+                >
+                  interiors@joneslegacycreations.com
+                </a>
+              </div>
+              <p className="text-gray-600">
+                Schedule a consultation to discuss your interior design and staging needs.
+              </p>
+            </div>
             <Link href="/contact">
               <Button size="lg">
                 Start Your Design Journey

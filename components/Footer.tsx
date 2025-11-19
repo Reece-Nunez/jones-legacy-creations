@@ -24,13 +24,13 @@ export function Footer() {
               Building legacies through exceptional construction, real estate, and interior design services.
             </p>
             <div className="flex flex-col space-y-3 text-sm text-gray-400">
-              <a href="tel:+19077419073" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="tel:+14352889807" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Phone className="w-4 h-4" />
-                <span>(907) 741-9073</span>
+                <span>(435) 288-9807</span>
               </a>
-              <a href="mailto:jonescustomhomesutah@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="mailto:office@joneslegacycreations.com" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Mail className="w-4 h-4" />
-                <span>jonescustomhomesutah@gmail.com</span>
+                <span>office@joneslegacycreations.com</span>
               </a>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 flex-shrink-0" />

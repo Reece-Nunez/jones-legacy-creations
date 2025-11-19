@@ -233,12 +233,18 @@ export default function ConstructionPage() {
               >
                 <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
                   <Phone className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold mb-4">Call Us Directly</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-4">Contact Us Directly</h3>
                   <a
-                    href="tel:+19077419073"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors"
+                    href="tel:+14354148701"
+                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4"
                   >
-                    (907) 741-9073
+                    (435) 414-8701
+                  </a>
+                  <a
+                    href="mailto:jch@joneslegacycreations.com"
+                    className="text-xl text-black hover:text-gray-700 transition-colors"
+                  >
+                    jch@joneslegacycreations.com
                   </a>
                   <p className="text-gray-600 mt-4">
                     We&apos;re available to discuss your project and answer any questions.

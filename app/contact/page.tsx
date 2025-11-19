@@ -52,14 +52,14 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: "Phone",
-      content: "(907) 741-9073",
-      link: "tel:+19077419073",
+      content: "(435) 288-9807",
+      link: "tel:+14352889807",
     },
     {
       icon: Mail,
       title: "Email",
-      content: "jonescustomhomesutah@gmail.com",
-      link: "mailto:jonescustomhomesutah@gmail.com",
+      content: "office@joneslegacycreations.com",
+      link: "mailto:office@joneslegacycreations.com",
     },
     {
       icon: MapPin,
