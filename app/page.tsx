@@ -98,14 +98,19 @@ export default function HomePage() {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ duration: 1, delay: 1 }}
-          className="absolute bottom-8 left-1/2 transform -translate-x-1/2"
+          className="absolute bottom-8 left-1/2 transform -translate-x-1/2 flex flex-col items-center gap-3"
         >
           <motion.div
             animate={{ y: [0, 10, 0] }}
             transition={{ duration: 2, repeat: Infinity }}
-            className="w-6 h-10 border-2 border-black rounded-full flex justify-center pt-2"
+            className="flex flex-col items-center gap-2"
           >
-            <div className="w-1 h-2 bg-black rounded-full" />
+            <div className="w-6 h-10 border-2 border-black rounded-full flex justify-center pt-2">
+              <div className="w-1 h-2 bg-black rounded-full" />
+            </div>
+            <span className="text-sm font-medium text-black whitespace-nowrap">
+              Scroll to See More
+            </span>
           </motion.div>
         </motion.div>
       </section>
