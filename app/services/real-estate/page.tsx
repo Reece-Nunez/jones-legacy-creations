@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Home, MapPin, DollarSign, Bed, Bath, Car, CheckCircle } from "lucide-react";
+import { Home, MapPin, DollarSign, Bed, Bath, Car, CheckCircle, Phone, ChevronDown } from "lucide-react";
 
 const realEstateSchema = z.object({
   // Personal Information
@@ -80,21 +80,35 @@ const realEstateSchema = z.object({
   // Additional Information
   additionalNotes: z.string().optional(),
   howDidYouHear: z.string().optional(),
+  howDidYouHearOther: z.string().optional(),
 });
 
 type RealEstateFormData = z.infer<typeof realEstateSchema>;
 
 export default function RealEstatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev =>
+      prev.includes(section)
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<RealEstateFormData>({
     resolver: zodResolver(realEstateSchema),
   });
+
+  const howDidYouHearValue = watch("howDidYouHear");
 
   const onSubmit = async (data: RealEstateFormData) => {
     setIsSubmitting(true);
@@ -169,19 +183,68 @@ export default function RealEstatePage() {
             <h2 className="text-4xl font-serif font-bold mb-4">
               Tell Us About Your Dream Home
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 mb-8">
               Fill out this form to help us understand exactly what you're looking for. The more details you provide, the better we can serve you.
             </p>
+
+            {/* Contact Method Toggle */}
+            <div className="flex items-center justify-center gap-4">
+              <Button
+                type="button"
+                size="lg"
+                variant={contactMethod === "form" ? "primary" : "outline"}
+                onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
+              >
+                Fill Out Our Form
+              </Button>
+              <span className="text-gray-500 font-medium">or</span>
+              <Button
+                type="button"
+                size="lg"
+                variant={contactMethod === "call" ? "primary" : "outline"}
+                onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
+              >
+                Give Us A Call
+              </Button>
+            </div>
           </motion.div>
 
-          <motion.form
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-8"
-          >
+          <AnimatePresence mode="wait">
+            {contactMethod === "call" && (
+              <motion.div
+                key="call"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
+                  <Phone className="w-16 h-16 mx-auto mb-6 text-gray-700" />
+                  <h3 className="text-2xl font-serif font-bold mb-4">Call Us Directly</h3>
+                  <a
+                    href="tel:+19077419073"
+                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors"
+                  >
+                    (907) 741-9073
+                  </a>
+                  <p className="text-gray-600 mt-4">
+                    We&apos;re available to discuss your real estate needs and answer any questions.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {contactMethod === "form" && (
+              <motion.form
+                key="form"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-8 overflow-hidden"
+              >
             {/* Personal Information */}
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-2xl font-serif font-bold mb-6">Personal Information</h3>
@@ -366,79 +429,135 @@ export default function RealEstatePage() {
             </div>
 
             {/* Garage & Parking */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6 flex items-center gap-2">
-                <Car className="w-6 h-6" />
-                Garage & Parking
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Select
-                  label="Garage Spaces"
-                  {...register("garageSpaces")}
-                  error={errors.garageSpaces?.message}
-                  options={[
-                    { value: "0", label: "No Garage Needed" },
-                    { value: "1", label: "1-Car Garage" },
-                    { value: "2", label: "2-Car Garage" },
-                    { value: "3", label: "3-Car Garage" },
-                    { value: "3+", label: "3+ Car Garage" },
-                  ]}
-                />
-                <Select
-                  label="Parking Type"
-                  {...register("parkingType")}
-                  error={errors.parkingType?.message}
-                  options={[
-                    { value: "attached", label: "Attached Garage" },
-                    { value: "detached", label: "Detached Garage" },
-                    { value: "carport", label: "Carport" },
-                    { value: "driveway", label: "Driveway Only" },
-                    { value: "street", label: "Street Parking" },
-                    { value: "any", label: "No Preference" },
-                  ]}
-                />
-              </div>
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("garage")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold flex items-center gap-2">
+                  <Car className="w-6 h-6" />
+                  Garage & Parking
+                </h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("garage") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("garage") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Select
+                        label="Garage Spaces"
+                        {...register("garageSpaces")}
+                        error={errors.garageSpaces?.message}
+                        options={[
+                          { value: "0", label: "No Garage Needed" },
+                          { value: "1", label: "1-Car Garage" },
+                          { value: "2", label: "2-Car Garage" },
+                          { value: "3", label: "3-Car Garage" },
+                          { value: "3+", label: "3+ Car Garage" },
+                        ]}
+                      />
+                      <Select
+                        label="Parking Type"
+                        {...register("parkingType")}
+                        error={errors.parkingType?.message}
+                        options={[
+                          { value: "attached", label: "Attached Garage" },
+                          { value: "detached", label: "Detached Garage" },
+                          { value: "carport", label: "Carport" },
+                          { value: "driveway", label: "Driveway Only" },
+                          { value: "street", label: "Street Parking" },
+                          { value: "any", label: "No Preference" },
+                        ]}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Architectural Style */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Architectural Style</h3>
-              <Select
-                label="Preferred Style"
-                {...register("architecturalStyle")}
-                error={errors.architecturalStyle?.message}
-                options={[
-                  { value: "modern", label: "Modern" },
-                  { value: "contemporary", label: "Contemporary" },
-                  { value: "traditional", label: "Traditional" },
-                  { value: "colonial", label: "Colonial" },
-                  { value: "ranch", label: "Ranch" },
-                  { value: "craftsman", label: "Craftsman" },
-                  { value: "victorian", label: "Victorian" },
-                  { value: "farmhouse", label: "Farmhouse" },
-                  { value: "mediterranean", label: "Mediterranean" },
-                  { value: "tudor", label: "Tudor" },
-                  { value: "any", label: "No Preference" },
-                ]}
-              />
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("style")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Architectural Style</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("style") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("style") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6">
+                      <Select
+                        label="Preferred Style"
+                        {...register("architecturalStyle")}
+                        error={errors.architecturalStyle?.message}
+                        options={[
+                          { value: "modern", label: "Modern" },
+                          { value: "contemporary", label: "Contemporary" },
+                          { value: "traditional", label: "Traditional" },
+                          { value: "colonial", label: "Colonial" },
+                          { value: "ranch", label: "Ranch" },
+                          { value: "craftsman", label: "Craftsman" },
+                          { value: "victorian", label: "Victorian" },
+                          { value: "farmhouse", label: "Farmhouse" },
+                          { value: "mediterranean", label: "Mediterranean" },
+                          { value: "tudor", label: "Tudor" },
+                          { value: "any", label: "No Preference" },
+                        ]}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Interior Features */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Interior Features</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Select
-                  label="Kitchen Style"
-                  {...register("kitchenStyle")}
-                  error={errors.kitchenStyle?.message}
-                  options={[
-                    { value: "modern", label: "Modern/Updated" },
-                    { value: "gourmet", label: "Gourmet/Chef's Kitchen" },
-                    { value: "open", label: "Open Concept" },
-                    { value: "traditional", label: "Traditional" },
-                    { value: "any", label: "No Preference" },
-                  ]}
-                />
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("interior")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Interior Features</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("interior") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("interior") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Select
+                        label="Kitchen Style"
+                        {...register("kitchenStyle")}
+                        error={errors.kitchenStyle?.message}
+                        options={[
+                          { value: "modern", label: "Modern/Updated" },
+                          { value: "gourmet", label: "Gourmet/Chef's Kitchen" },
+                          { value: "open", label: "Open Concept" },
+                          { value: "traditional", label: "Traditional" },
+                          { value: "any", label: "No Preference" },
+                        ]}
+                      />
                 <Select
                   label="Flooring Preference"
                   {...register("flooringType")}
@@ -487,13 +606,32 @@ export default function RealEstatePage() {
                     { value: "any", label: "No Preference" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Exterior Features */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Exterior Features</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("exterior")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Exterior Features</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("exterior") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("exterior") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Exterior Material"
                   {...register("exteriorMaterial")}
@@ -551,13 +689,32 @@ export default function RealEstatePage() {
                     { value: "any", label: "No Preference" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Systems & Utilities */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Systems & Utilities</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("systems")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Systems & Utilities</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("systems") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("systems") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Heating System"
                   {...register("heatingType")}
@@ -602,13 +759,32 @@ export default function RealEstatePage() {
                     { value: "any", label: "No Preference" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Must-Have Features */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Additional Requirements</h3>
-              <div className="space-y-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("requirements")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Additional Requirements</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("requirements") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("requirements") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 space-y-6">
                 <Textarea
                   label="Must-Have Features"
                   placeholder="List any features that are absolutely required (e.g., fenced yard, home office, walk-in closets)"
@@ -630,7 +806,10 @@ export default function RealEstatePage() {
                   error={errors.dealBreakers?.message}
                   rows={3}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Timeline */}
@@ -676,6 +855,23 @@ export default function RealEstatePage() {
                     { value: "other", label: "Other" },
                   ]}
                 />
+                {howDidYouHearValue === "other" && (
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Input
+                        label="Please specify"
+                        placeholder="Tell us how you heard about us"
+                        {...register("howDidYouHearOther")}
+                        error={errors.howDidYouHearOther?.message}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                )}
               </div>
             </div>
 
@@ -685,7 +881,9 @@ export default function RealEstatePage() {
                 Submit Property Request
               </Button>
             </div>
-          </motion.form>
+              </motion.form>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 

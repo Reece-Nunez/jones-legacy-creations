@@ -1,5 +1,6 @@
 import Link from "next/link";
-import { Building2, Home, Palette, Mail, Phone, MapPin } from "lucide-react";
+import Image from "next/image";
+import { Building2, Home, Palette, Mail, Phone, MapPin, Instagram, Facebook } from "lucide-react";
 
 export function Footer() {
   const currentYear = new Date().getFullYear();
@@ -10,24 +11,63 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
           <div>
-            <h3 className="text-2xl font-serif font-bold mb-4">
-              Jones Legacy Creations
-            </h3>
+            <Link href="/" className="inline-block mb-4">
+              <Image
+                src="/jones-legacy-creations-logo-black.svg"
+                alt="Jones Legacy Creations"
+                width={504}
+                height={360}
+                className="h-32 w-auto"
+              />
+            </Link>
             <p className="text-gray-400 mb-6">
               Building legacies through exceptional construction, real estate, and interior design services.
             </p>
             <div className="flex flex-col space-y-3 text-sm text-gray-400">
-              <a href="tel:+1234567890" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="tel:+19077419073" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Phone className="w-4 h-4" />
-                <span>(123) 456-7890</span>
+                <span>(907) 741-9073</span>
               </a>
-              <a href="mailto:info@joneslegacy.com" className="flex items-center gap-2 hover:text-white transition-colors">
+              <a href="mailto:jonescustomhomesutah@gmail.com" className="flex items-center gap-2 hover:text-white transition-colors">
                 <Mail className="w-4 h-4" />
-                <span>info@joneslegacy.com</span>
+                <span>jonescustomhomesutah@gmail.com</span>
               </a>
               <div className="flex items-center gap-2">
                 <MapPin className="w-4 h-4 flex-shrink-0" />
-                <span>Your City, State</span>
+                <span>Hurricane, Utah</span>
+              </div>
+              <p className="text-xs text-gray-500 mt-1 ml-6">Serving all of Southern Utah</p>
+            </div>
+            <div className="mt-6">
+              <h4 className="text-sm font-semibold mb-3">Follow Us</h4>
+              <div className="flex flex-col space-y-2 text-sm">
+                <a
+                  href="https://www.instagram.com/jonescustomhomes/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Instagram className="w-4 h-4" />
+                  <span>Custom Homes</span>
+                </a>
+                <a
+                  href="https://www.instagram.com/interiors.by.jch/"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Instagram className="w-4 h-4" />
+                  <span>Interior Design</span>
+                </a>
+                <a
+                  href="https://www.facebook.com/profile.php?id=61575767564467"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                >
+                  <Facebook className="w-4 h-4" />
+                  <span>Interior Design</span>
+                </a>
               </div>
             </div>
           </div>

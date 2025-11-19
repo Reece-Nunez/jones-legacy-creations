@@ -52,25 +52,25 @@ export default function ContactPage() {
     {
       icon: Phone,
       title: "Phone",
-      content: "(123) 456-7890",
-      link: "tel:+1234567890",
+      content: "(907) 741-9073",
+      link: "tel:+19077419073",
     },
     {
       icon: Mail,
       title: "Email",
-      content: "info@joneslegacy.com",
-      link: "mailto:info@joneslegacy.com",
+      content: "jonescustomhomesutah@gmail.com",
+      link: "mailto:jonescustomhomesutah@gmail.com",
     },
     {
       icon: MapPin,
       title: "Location",
-      content: "Your City, State",
+      content: "Hurricane, Utah\nServing all of Southern Utah",
       link: null,
     },
     {
       icon: Clock,
       title: "Business Hours",
-      content: "Mon-Fri: 8AM-6PM",
+      content: "Available anytime - give us a call!",
       link: null,
     },
   ];
@@ -118,12 +118,12 @@ export default function ContactPage() {
                 {info.link ? (
                   <a
                     href={info.link}
-                    className="text-gray-600 hover:text-black transition-colors"
+                    className="text-gray-600 hover:text-black transition-colors text-xs"
                   >
                     {info.content}
                   </a>
                 ) : (
-                  <p className="text-gray-600">{info.content}</p>
+                  <p className="text-gray-600 text-sm whitespace-pre-line">{info.content}</p>
                 )}
               </motion.div>
             ))}

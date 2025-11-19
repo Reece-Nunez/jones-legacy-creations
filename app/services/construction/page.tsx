@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Building2, Hammer, ClipboardCheck, Award, Shield, Clock } from "lucide-react";
+import { Building2, Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown } from "lucide-react";
 
 const constructionSchema = z.object({
   // Personal Information
@@ -90,6 +90,7 @@ const constructionSchema = z.object({
   // Additional Information
   additionalNotes: z.string().optional(),
   howDidYouHear: z.string().optional(),
+  howDidYouHearOther: z.string().optional(),
   attachments: z.string().optional(),
 });
 
@@ -97,15 +98,28 @@ type ConstructionFormData = z.infer<typeof constructionSchema>;
 
 export default function ConstructionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
+  const [expandedSections, setExpandedSections] = useState<string[]>([]);
+
+  const toggleSection = (section: string) => {
+    setExpandedSections(prev =>
+      prev.includes(section)
+        ? prev.filter(s => s !== section)
+        : [...prev, section]
+    );
+  };
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
+    watch,
   } = useForm<ConstructionFormData>({
     resolver: zodResolver(constructionSchema),
   });
+
+  const howDidYouHearValue = watch("howDidYouHear");
 
   const onSubmit = async (data: ConstructionFormData) => {
     setIsSubmitting(true);
@@ -181,19 +195,68 @@ export default function ConstructionPage() {
             <h2 className="text-4xl font-serif font-bold mb-4">
               Tell Us About Your Construction Project
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 mb-8">
               Provide detailed information about your project so we can give you an accurate quote and timeline.
             </p>
+
+            {/* Contact Method Toggle */}
+            <div className="flex items-center justify-center gap-4">
+              <Button
+                type="button"
+                size="lg"
+                variant={contactMethod === "form" ? "primary" : "outline"}
+                onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
+              >
+                Fill Out Our Form
+              </Button>
+              <span className="text-gray-500 font-medium">or</span>
+              <Button
+                type="button"
+                size="lg"
+                variant={contactMethod === "call" ? "primary" : "outline"}
+                onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
+              >
+                Give Us A Call
+              </Button>
+            </div>
           </motion.div>
 
-          <motion.form
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            onSubmit={handleSubmit(onSubmit)}
-            className="space-y-8"
-          >
+          <AnimatePresence mode="wait">
+            {contactMethod === "call" && (
+              <motion.div
+                key="call"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                className="overflow-hidden"
+              >
+                <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
+                  <Phone className="w-16 h-16 mx-auto mb-6 text-gray-700" />
+                  <h3 className="text-2xl font-serif font-bold mb-4">Call Us Directly</h3>
+                  <a
+                    href="tel:+19077419073"
+                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors"
+                  >
+                    (907) 741-9073
+                  </a>
+                  <p className="text-gray-600 mt-4">
+                    We&apos;re available to discuss your project and answer any questions.
+                  </p>
+                </div>
+              </motion.div>
+            )}
+
+            {contactMethod === "form" && (
+              <motion.form
+                key="form"
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                transition={{ duration: 0.5, ease: "easeInOut" }}
+                onSubmit={handleSubmit(onSubmit)}
+                className="space-y-8 overflow-hidden"
+              >
             {/* Personal Information */}
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>
@@ -392,93 +455,149 @@ export default function ConstructionPage() {
             </div>
 
             {/* Permits & Compliance */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Permits & Compliance</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Select
-                  label="Building Permits"
-                  {...register("buildingPermits")}
-                  error={errors.buildingPermits?.message}
-                  options={[
-                    { value: "obtained", label: "Already Obtained" },
-                    { value: "need-help", label: "Need Help Obtaining" },
-                    { value: "not-sure", label: "Not Sure if Required" },
-                    { value: "not-required", label: "Not Required" },
-                  ]}
-                />
-                <Select
-                  label="Architectural Plans"
-                  {...register("architecturalPlans")}
-                  error={errors.architecturalPlans?.message}
-                  options={[
-                    { value: "have-plans", label: "Already Have Plans" },
-                    { value: "need-plans", label: "Need Plans Created" },
-                    { value: "partial-plans", label: "Have Partial Plans" },
-                    { value: "not-sure", label: "Not Sure" },
-                  ]}
-                />
-                <Select
-                  label="Zoning Compliance"
-                  {...register("zoningCompliance")}
-                  error={errors.zoningCompliance?.message}
-                  options={[
-                    { value: "compliant", label: "Confirmed Compliant" },
-                    { value: "need-check", label: "Need Verification" },
-                    { value: "variance-needed", label: "Variance Needed" },
-                    { value: "not-sure", label: "Not Sure" },
-                  ]}
-                />
-              </div>
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("permits")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Permits & Compliance</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("permits") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("permits") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Select
+                        label="Building Permits"
+                        {...register("buildingPermits")}
+                        error={errors.buildingPermits?.message}
+                        options={[
+                          { value: "obtained", label: "Already Obtained" },
+                          { value: "need-help", label: "Need Help Obtaining" },
+                          { value: "not-sure", label: "Not Sure if Required" },
+                          { value: "not-required", label: "Not Required" },
+                        ]}
+                      />
+                      <Select
+                        label="Architectural Plans"
+                        {...register("architecturalPlans")}
+                        error={errors.architecturalPlans?.message}
+                        options={[
+                          { value: "have-plans", label: "Already Have Plans" },
+                          { value: "need-plans", label: "Need Plans Created" },
+                          { value: "partial-plans", label: "Have Partial Plans" },
+                          { value: "not-sure", label: "Not Sure" },
+                        ]}
+                      />
+                      <Select
+                        label="Zoning Compliance"
+                        {...register("zoningCompliance")}
+                        error={errors.zoningCompliance?.message}
+                        options={[
+                          { value: "compliant", label: "Confirmed Compliant" },
+                          { value: "need-check", label: "Need Verification" },
+                          { value: "variance-needed", label: "Variance Needed" },
+                          { value: "not-sure", label: "Not Sure" },
+                        ]}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Materials & Quality */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Materials & Quality Preferences</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                <Select
-                  label="Materials Preference"
-                  {...register("materialsPreference")}
-                  error={errors.materialsPreference?.message}
-                  options={[
-                    { value: "standard", label: "Standard Quality" },
-                    { value: "premium", label: "Premium Quality" },
-                    { value: "luxury", label: "Luxury/High-End" },
-                    { value: "budget", label: "Budget-Friendly" },
-                    { value: "mixed", label: "Mixed (Some Premium)" },
-                    { value: "unsure", label: "Need Recommendations" },
-                  ]}
-                />
-                <Select
-                  label="Overall Quality Level"
-                  {...register("qualityLevel")}
-                  error={errors.qualityLevel?.message}
-                  options={[
-                    { value: "economy", label: "Economy" },
-                    { value: "standard", label: "Standard" },
-                    { value: "premium", label: "Premium" },
-                    { value: "luxury", label: "Luxury" },
-                    { value: "custom", label: "Custom/Bespoke" },
-                  ]}
-                />
-                <Select
-                  label="Sustainability Priority"
-                  {...register("sustainabilityPreference")}
-                  error={errors.sustainabilityPreference?.message}
-                  options={[
-                    { value: "high-priority", label: "High Priority" },
-                    { value: "moderate", label: "Moderate Interest" },
-                    { value: "low-priority", label: "Low Priority" },
-                    { value: "standard", label: "Standard Practices" },
-                  ]}
-                />
-              </div>
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("materials")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Materials & Quality Preferences</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("materials") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("materials") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
+                      <Select
+                        label="Materials Preference"
+                        {...register("materialsPreference")}
+                        error={errors.materialsPreference?.message}
+                        options={[
+                          { value: "standard", label: "Standard Quality" },
+                          { value: "premium", label: "Premium Quality" },
+                          { value: "luxury", label: "Luxury/High-End" },
+                          { value: "budget", label: "Budget-Friendly" },
+                          { value: "mixed", label: "Mixed (Some Premium)" },
+                          { value: "unsure", label: "Need Recommendations" },
+                        ]}
+                      />
+                      <Select
+                        label="Overall Quality Level"
+                        {...register("qualityLevel")}
+                        error={errors.qualityLevel?.message}
+                        options={[
+                          { value: "economy", label: "Economy" },
+                          { value: "standard", label: "Standard" },
+                          { value: "premium", label: "Premium" },
+                          { value: "luxury", label: "Luxury" },
+                          { value: "custom", label: "Custom/Bespoke" },
+                        ]}
+                      />
+                      <Select
+                        label="Sustainability Priority"
+                        {...register("sustainabilityPreference")}
+                        error={errors.sustainabilityPreference?.message}
+                        options={[
+                          { value: "high-priority", label: "High Priority" },
+                          { value: "moderate", label: "Moderate Interest" },
+                          { value: "low-priority", label: "Low Priority" },
+                          { value: "standard", label: "Standard Practices" },
+                        ]}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Specific Work Areas */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Specific Work Required</h3>
-              <p className="text-sm text-gray-600 mb-4">Select which areas of work are needed for your project</p>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("work")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <div>
+                  <h3 className="text-2xl font-serif font-bold">Specific Work Required</h3>
+                  <p className="text-sm text-gray-600 mt-1">Select which areas of work are needed for your project</p>
+                </div>
+                <ChevronDown className={`w-6 h-6 transition-transform flex-shrink-0 ${expandedSections.includes("work") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("work") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Foundation Work"
                   {...register("foundationWork")}
@@ -565,15 +684,34 @@ export default function ConstructionPage() {
                     { value: "no", label: "Not Required" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Demolition */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Demolition Requirements</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Select
-                  label="Is Demolition Required?"
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("demolition")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Demolition Requirements</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("demolition") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("demolition") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Select
+                        label="Is Demolition Required?"
                   {...register("demolitionRequired")}
                   error={errors.demolitionRequired?.message}
                   options={[
@@ -583,20 +721,39 @@ export default function ConstructionPage() {
                     { value: "no", label: "No Demolition Needed" },
                   ]}
                 />
-                <Textarea
-                  label="Demolition Scope (If Applicable)"
-                  placeholder="Describe what needs to be demolished"
-                  {...register("demolitionScope")}
-                  error={errors.demolitionScope?.message}
-                  rows={3}
-                />
-              </div>
+                      <Textarea
+                        label="Demolition Scope (If Applicable)"
+                        placeholder="Describe what needs to be demolished"
+                        {...register("demolitionScope")}
+                        error={errors.demolitionScope?.message}
+                        rows={3}
+                      />
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Special Features */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Special Features & Requirements</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("features")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Special Features & Requirements</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("features") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("features") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Select
                   label="Accessibility Features"
                   {...register("accessibilityFeatures")}
@@ -630,13 +787,32 @@ export default function ConstructionPage() {
                     { value: "no", label: "Not Interested" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Site Conditions */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Site Conditions</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("site")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Site Conditions</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("site") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("site") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Select
                   label="Site Accessibility"
                   {...register("siteAccessibility")}
@@ -670,13 +846,32 @@ export default function ConstructionPage() {
                     { value: "need-test", label: "Need Soil Testing" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Additional Services */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Additional Services Needed</h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("services")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Additional Services Needed</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("services") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("services") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-3 gap-6">
                 <Select
                   label="Design Services"
                   {...register("designServices")}
@@ -710,15 +905,34 @@ export default function ConstructionPage() {
                     { value: "not-sure", label: "Not Sure" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Insurance & Financing */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Insurance & Financing</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Select
-                  label="Do you have insurance coverage for this project?"
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("insurance")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Insurance & Financing</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("insurance") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("insurance") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 grid grid-cols-1 md:grid-cols-2 gap-6">
+                      <Select
+                        label="Do you have insurance coverage for this project?"
                   {...register("hasInsurance")}
                   error={errors.hasInsurance?.message}
                   options={[
@@ -738,13 +952,32 @@ export default function ConstructionPage() {
                     { value: "not-sure", label: "Not Sure Yet" },
                   ]}
                 />
-              </div>
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Additional Information */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Additional Information</h3>
-              <div className="space-y-6">
+            <div className="bg-gray-50 rounded-xl overflow-hidden">
+              <button
+                type="button"
+                onClick={() => toggleSection("additional")}
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+              >
+                <h3 className="text-2xl font-serif font-bold">Additional Information</h3>
+                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("additional") ? "rotate-180" : ""}`} />
+              </button>
+              <AnimatePresence>
+                {expandedSections.includes("additional") && (
+                  <motion.div
+                    initial={{ height: 0, opacity: 0 }}
+                    animate={{ height: "auto", opacity: 1 }}
+                    exit={{ height: 0, opacity: 0 }}
+                    transition={{ duration: 0.3 }}
+                    className="overflow-hidden"
+                  >
+                    <div className="px-6 pb-6 space-y-6">
                 <Textarea
                   label="Additional Notes, Requirements, or Questions"
                   placeholder="Any other details we should know about your project?"
@@ -772,7 +1005,27 @@ export default function ConstructionPage() {
                     { value: "other", label: "Other" },
                   ]}
                 />
-              </div>
+                {howDidYouHearValue === "other" && (
+                  <AnimatePresence>
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      transition={{ duration: 0.3 }}
+                    >
+                      <Input
+                        label="Please specify"
+                        placeholder="Tell us how you heard about us"
+                        {...register("howDidYouHearOther")}
+                        error={errors.howDidYouHearOther?.message}
+                      />
+                    </motion.div>
+                  </AnimatePresence>
+                )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
 
             {/* Submit Button */}
@@ -781,7 +1034,32 @@ export default function ConstructionPage() {
                 Submit Project Request
               </Button>
             </div>
-          </motion.form>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </div>
+      </section>
+
+      {/* Social Media Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-2xl font-serif font-bold mb-6">Follow Us On Social Media</h2>
+            <a
+              href="https://www.instagram.com/jonescustomhomes/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center justify-center text-gray-700 hover:text-black transition-colors"
+              title="Follow us on Instagram"
+            >
+              <Instagram className="w-8 h-8" />
+            </a>
+          </motion.div>
         </div>
       </section>
 

@@ -33,8 +33,8 @@ export default function HomePage() {
   ];
 
   const stats = [
-    { value: "500+", label: "Projects Completed" },
-    { value: "15+", label: "Years Experience" },
+    { value: "100+", label: "Projects Completed" },
+    { value: "10+", label: "Years Experience" },
     { value: "98%", label: "Client Satisfaction" },
     { value: "50+", label: "Industry Partners" },
   ];
@@ -79,13 +79,13 @@ export default function HomePage() {
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <Link href="/contact">
-                <Button size="lg" className="w-full sm:w-auto">
+                <Button size="lg" className="w-full sm:w-auto min-w-[200px] h-[56px]">
                   Start Your Project
                   <ArrowRight className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
               <Link href="/about">
-                <Button size="lg" variant="secondary" className="w-full sm:w-auto">
+                <Button size="lg" variant="secondary" className="w-full sm:w-auto min-w-[200px] h-[56px]">
                   Learn More
                 </Button>
               </Link>

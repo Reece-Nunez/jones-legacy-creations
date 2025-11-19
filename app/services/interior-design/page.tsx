@@ -5,7 +5,7 @@ import Link from "next/link";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
-import { Palette, Home, Sparkles, Eye, Ruler, PaintBucket, ArrowRight } from "lucide-react";
+import { Palette, Home, Sparkles, Eye, Ruler, PaintBucket, ArrowRight, Instagram, Facebook } from "lucide-react";
 
 export default function InteriorDesignPage() {
   const services = [
@@ -341,6 +341,40 @@ export default function InteriorDesignPage() {
                 <ArrowRight className="w-5 h-5 ml-2" />
               </Button>
             </Link>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Social Media Section */}
+      <section className="py-16 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-2xl font-serif font-bold mb-6">Follow Us On Social Media</h2>
+            <div className="flex items-center justify-center gap-6">
+              <a
+                href="https://www.instagram.com/interiors.by.jch/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-gray-700 hover:text-black transition-colors"
+                title="Follow us on Instagram"
+              >
+                <Instagram className="w-8 h-8" />
+              </a>
+              <a
+                href="https://www.facebook.com/profile.php?id=61575767564467"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center text-gray-700 hover:text-black transition-colors"
+                title="Follow us on Facebook"
+              >
+                <Facebook className="w-8 h-8" />
+              </a>
+            </div>
           </motion.div>
         </div>
       </section>

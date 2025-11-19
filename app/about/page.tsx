@@ -30,10 +30,10 @@ export default function AboutPage() {
   ];
 
   const timeline = [
-    { year: "2008", event: "Jones Legacy Creations Founded", description: "Started with a vision to provide comprehensive property services." },
-    { year: "2012", event: "Expanded to Interior Design", description: "Added professional interior design and home staging services." },
-    { year: "2015", event: "500th Project Completed", description: "Reached a major milestone with over 500 successful projects." },
-    { year: "2020", event: "Partner Network Established", description: "Built a network of trusted industry partners and suppliers." },
+    { year: "2014", event: "Jones Legacy Creations Founded", description: "Started with a vision to provide comprehensive property services." },
+    { year: "2017", event: "Expanded to Interior Design", description: "Added professional interior design and home staging services." },
+    { year: "2020", event: "100th Project Completed", description: "Reached a major milestone with over 100 successful projects." },
+    { year: "2022", event: "Partner Network Established", description: "Built a network of trusted industry partners and suppliers." },
     { year: "2024", event: "Industry Leader", description: "Recognized as a leading provider in construction, real estate, and design." },
   ];
 
@@ -54,7 +54,7 @@ export default function AboutPage() {
               About Jones Legacy Creations
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              For over 15 years, we've been dedicated to creating exceptional spaces and experiences through construction, real estate, and interior design.
+              For over 10 years, we&apos;ve been dedicated to creating exceptional spaces and experiences through construction, real estate, and interior design.
             </p>
           </motion.div>
         </div>
@@ -79,7 +79,7 @@ export default function AboutPage() {
                   What started as a small construction company has evolved into a comprehensive service provider, offering everything from residential construction and commercial projects to real estate guidance and professional interior design.
                 </p>
                 <p>
-                  Today, we're proud to have completed over 500 projects, working with homeowners, businesses, and investors who trust us to bring their dreams to life. Our commitment to quality, integrity, and client satisfaction drives everything we do.
+                  Today, we're proud to have completed over 100 projects, working with homeowners, businesses, and investors who trust us to bring their dreams to life. Our commitment to quality, integrity, and client satisfaction drives everything we do.
                 </p>
                 <p>
                   Led by experienced professionals and supported by a network of skilled partners, Jones Legacy Creations continues to set the standard for excellence in the industry.
@@ -107,7 +107,7 @@ export default function AboutPage() {
                   <div className="w-2 h-2 bg-black rounded-full mt-2 flex-shrink-0" />
                   <div>
                     <strong className="font-semibold">Experienced Team:</strong>
-                    <span className="text-gray-700"> 15+ years of industry expertise.</span>
+                    <span className="text-gray-700"> 10+ years of industry expertise.</span>
                   </div>
                 </li>
                 <li className="flex items-start gap-3">

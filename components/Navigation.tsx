@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 
@@ -31,12 +32,17 @@ export function Navigation() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-20">
+        <div className="flex justify-between items-center h-28">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <span className="text-2xl font-serif font-bold tracking-tight">
-              Jones Legacy Creations
-            </span>
+            <Image
+              src="/jones-legacy-creations-logo.svg"
+              alt="Jones Legacy Creations"
+              width={240}
+              height={72}
+              className="h-28 w-auto"
+              priority
+            />
           </Link>
 
           {/* Desktop Navigation */}
