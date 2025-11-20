@@ -14,6 +14,22 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Home, MapPin, DollarSign, Bed, Bath, Car, CheckCircle, Phone, ChevronDown } from "lucide-react";
 
+// Southern Utah cities with zip codes
+const SOUTHERN_UTAH_CITIES = [
+  { name: "Hurricane", state: "UT", zipCode: "84737" },
+  { name: "St. George", state: "UT", zipCode: "84770" },
+  { name: "Washington", state: "UT", zipCode: "84780" },
+  { name: "Ivins", state: "UT", zipCode: "84738" },
+  { name: "Santa Clara", state: "UT", zipCode: "84765" },
+  { name: "Leeds", state: "UT", zipCode: "84746" },
+  { name: "LaVerkin", state: "UT", zipCode: "84745" },
+  { name: "Toquerville", state: "UT", zipCode: "84774" },
+  { name: "Virgin", state: "UT", zipCode: "84779" },
+  { name: "Hildale", state: "UT", zipCode: "84784" },
+  { name: "Enterprise", state: "UT", zipCode: "84725" },
+  { name: "Cedar City", state: "UT", zipCode: "84720" },
+];
+
 const realEstateSchema = z.object({
   // Personal Information
   fullName: z.string().min(2, "Name must be at least 2 characters"),
@@ -25,14 +41,13 @@ const realEstateSchema = z.object({
   serviceType: z.string().min(1, "Please select a service type"),
 
   // Location Preferences
-  preferredCity: z.string().min(1, "Please enter a city"),
+  preferredCity: z.string().min(1, "Please select a city"),
   preferredNeighborhood: z.string().optional(),
-  preferredState: z.string().min(2, "Please enter a state"),
+  preferredState: z.string().min(2, "State is required"),
   preferredZipCode: z.string().optional(),
 
   // Budget
-  minBudget: z.string().min(1, "Please enter minimum budget"),
-  maxBudget: z.string().min(1, "Please enter maximum budget"),
+  budgetRange: z.string().min(1, "Please select a budget range"),
 
   // Property Features
   bedrooms: z.string().min(1, "Please select number of bedrooms"),
@@ -79,7 +94,7 @@ const realEstateSchema = z.object({
 
   // Additional Information
   additionalNotes: z.string().optional(),
-  howDidYouHear: z.string().optional(),
+  howDidYouHear: z.string().min(1, "Please select how you heard about us"),
   howDidYouHearOther: z.string().optional(),
 });
 
@@ -104,22 +119,46 @@ export default function RealEstatePage() {
     formState: { errors },
     reset,
     watch,
+    setValue,
   } = useForm<RealEstateFormData>({
     resolver: zodResolver(realEstateSchema),
   });
+
+  const handleCityChange = (cityName: string) => {
+    const city = SOUTHERN_UTAH_CITIES.find(c => c.name === cityName);
+    if (city) {
+      setValue("preferredCity", city.name);
+      setValue("preferredState", city.state);
+      setValue("preferredZipCode", city.zipCode);
+    }
+  };
 
   const howDidYouHearValue = watch("howDidYouHear");
 
   const onSubmit = async (data: RealEstateFormData) => {
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await fetch('/api/real-estate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    console.log("Form Data:", data);
-    toast.success("Thank you! We'll be in touch within 24 hours to discuss your dream home.");
-    reset();
-    setIsSubmitting(false);
+      if (!response.ok) {
+        throw new Error('Failed to send form');
+      }
+
+      toast.success("Thank you! We'll be in touch within 24 hours to discuss your dream home.");
+      reset();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error("There was an error submitting your form. Please try again or call us directly at (435) 288-9807.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const features = [
@@ -149,7 +188,7 @@ export default function RealEstatePage() {
               Real Estate Services
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Whether you're buying your dream home or selling your property, we provide expert guidance every step of the way.
+              Whether you&apos;re buying your dream home or selling your property, we provide expert guidance every step of the way.
             </p>
           </motion.div>
 
@@ -170,8 +209,291 @@ export default function RealEstatePage() {
         </div>
       </section>
 
-      {/* Form Section */}
+      {/* Custom Home Sales Section */}
       <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Custom Built Homes
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Own a brand new custom home designed and built to your specifications
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+            >
+              <h3 className="text-3xl font-serif font-bold mb-6">
+                Build Your Dream Home with Jones Legacy Creations
+              </h3>
+              <p className="text-gray-600 mb-6">
+                We specialize in building and selling custom homes throughout Southern Utah. Unlike traditional home buying,
+                you'll work directly with our construction team to create a home perfectly tailored to your lifestyle, preferences, and budget.
+              </p>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold mb-1">Fully Customizable</h4>
+                    <p className="text-gray-600 text-sm">Choose layouts, finishes, materials, and features that match your vision</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold mb-1">Quality Construction</h4>
+                    <p className="text-gray-600 text-sm">Built by experienced craftsmen using premium materials and techniques</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold mb-1">Direct Communication</h4>
+                    <p className="text-gray-600 text-sm">Work directly with the builder throughout the entire process</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
+                  <div>
+                    <h4 className="font-bold mb-1">Southern Utah Locations</h4>
+                    <p className="text-gray-600 text-sm">Prime locations in Hurricane, St. George, Washington, and surrounding areas</p>
+                  </div>
+                </div>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              whileInView={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl aspect-[4/3] flex items-center justify-center"
+            >
+              <Home className="w-24 h-24 text-gray-400" />
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Financing Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <div className="inline-flex items-center justify-center w-20 h-20 bg-black text-white rounded-full mb-6">
+              <DollarSign className="w-10 h-10" />
+            </div>
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Flexible Financing Options
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Make your dream home more affordable with our specialized financing
+            </p>
+          </motion.div>
+
+          <div className="max-w-4xl mx-auto">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5 }}
+                viewport={{ once: true }}
+                className="bg-white p-8 rounded-xl text-center"
+              >
+                <div className="text-5xl font-bold text-gray-300 mb-2">20%</div>
+                <h3 className="text-xl font-bold mb-2">Traditional Down Payment</h3>
+                <p className="text-gray-600">Most builders require a substantial down payment upfront</p>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.1 }}
+                viewport={{ once: true }}
+                className="bg-black text-white p-8 rounded-xl text-center relative overflow-hidden"
+              >
+                <div className="absolute top-4 right-4">
+                  <div className="bg-white text-black text-xs font-bold px-3 py-1 rounded-full">
+                    Our Advantage
+                  </div>
+                </div>
+                <div className="text-5xl font-bold mb-2">3-6%</div>
+                <h3 className="text-xl font-bold mb-2">Low Down Payment Option</h3>
+                <p className="text-gray-300">We work with specialized lenders to offer significantly lower down payments</p>
+              </motion.div>
+            </div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl"
+            >
+              <h3 className="text-2xl font-serif font-bold mb-4 text-center">
+                How Our Financing Works
+              </h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                    1
+                  </div>
+                  <div>
+                    <h4 className="font-bold mb-1">Consultation & Pre-Approval</h4>
+                    <p className="text-gray-600 text-sm">
+                      Meet with our team and get pre-approved through our financing partners
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                    2
+                  </div>
+                  <div>
+                    <h4 className="font-bold mb-1">Lower Down Payment</h4>
+                    <p className="text-gray-600 text-sm">
+                      Put down just 3-6% instead of the typical 20% required by most builders
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                    3
+                  </div>
+                  <div>
+                    <h4 className="font-bold mb-1">Build Your Custom Home</h4>
+                    <p className="text-gray-600 text-sm">
+                      Work with us to design and build your perfect home
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-4">
+                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
+                    4
+                  </div>
+                  <div>
+                    <h4 className="font-bold mb-1">Move Into Your Dream Home</h4>
+                    <p className="text-gray-600 text-sm">
+                      Close on your home and start enjoying your custom-built space
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center">
+                <p className="text-sm text-gray-600">
+                  <strong>Save thousands</strong> in upfront costs while still getting the custom home of your dreams
+                </p>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* How It Works Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Your Journey to Home Ownership
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              From first consultation to moving day, we guide you through every step
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {[
+              {
+                number: "01",
+                title: "Initial Consultation",
+                description: "Discuss your vision, budget, and timeline. Get pre-approved for financing.",
+              },
+              {
+                number: "02",
+                title: "Design Your Home",
+                description: "Work with our team to plan layouts, select finishes, and customize every detail.",
+              },
+              {
+                number: "03",
+                title: "Construction",
+                description: "Watch your home come to life with regular updates and walkthroughs.",
+              },
+              {
+                number: "04",
+                title: "Move In",
+                description: "Final walkthrough, close on your home, and move into your custom-built space.",
+              },
+            ].map((step, index) => (
+              <motion.div
+                key={step.number}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="text-6xl font-serif font-bold text-gray-200 mb-4">
+                  {step.number}
+                </div>
+                <h3 className="text-xl font-bold mb-3">{step.title}</h3>
+                <p className="text-gray-600">{step.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* CTA Section */}
+      <section className="py-20 bg-black text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
+              Ready to Build Your Custom Home?
+            </h2>
+            <p className="text-xl text-gray-300 mb-8">
+              Take advantage of our low down payment financing and start building today
+            </p>
+            <div className="flex flex-col sm:flex-row gap-4 justify-center">
+              <a href="#contact-form">
+                <Button size="lg" variant="secondary">
+                  Get Pre-Approved
+                  <DollarSign className="w-5 h-5 ml-2" />
+                </Button>
+              </a>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Form Section */}
+      <section id="contact-form" className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -184,7 +506,7 @@ export default function RealEstatePage() {
               Tell Us About Your Dream Home
             </h2>
             <p className="text-lg text-gray-600 mb-8">
-              Fill out this form to help us understand exactly what you're looking for. The more details you provide, the better we can serve you.
+              Fill out this form to help us understand exactly what you&apos;re looking for. The more details you provide, the better we can serve you.
             </p>
 
             {/* Contact Method Toggle */}
@@ -229,10 +551,10 @@ export default function RealEstatePage() {
                     (435) 288-9807
                   </a>
                   <a
-                    href="mailto:office@joneslegacycreations.com"
+                    href="mailto:blakerealty@joneslegacycreations.com"
                     className="text-xl text-black hover:text-gray-700 transition-colors"
                   >
-                    office@joneslegacycreations.com
+                    blakerealty@joneslegacycreations.com
                   </a>
                   <p className="text-gray-600 mt-4">
                     We&apos;re available to discuss your real estate needs and answer any questions.
@@ -316,10 +638,15 @@ export default function RealEstatePage() {
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-2xl font-serif font-bold mb-6">Location Preferences</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
+                <Select
                   label="Preferred City"
                   {...register("preferredCity")}
                   error={errors.preferredCity?.message}
+                  options={SOUTHERN_UTAH_CITIES.map(city => ({
+                    value: city.name,
+                    label: city.name
+                  }))}
+                  onChange={(e) => handleCityChange(e.target.value)}
                   required
                 />
                 <Input
@@ -331,12 +658,18 @@ export default function RealEstatePage() {
                   label="State"
                   {...register("preferredState")}
                   error={errors.preferredState?.message}
+                  readOnly
+                  disabled
+                  className="bg-gray-100"
                   required
                 />
                 <Input
-                  label="Zip Code (Optional)"
+                  label="Zip Code"
                   {...register("preferredZipCode")}
                   error={errors.preferredZipCode?.message}
+                  readOnly
+                  disabled
+                  className="bg-gray-100"
                 />
               </div>
             </div>
@@ -344,24 +677,22 @@ export default function RealEstatePage() {
             {/* Budget */}
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-2xl font-serif font-bold mb-6">Budget Range</h3>
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                <Input
-                  label="Minimum Budget"
-                  type="number"
-                  placeholder="$0"
-                  {...register("minBudget")}
-                  error={errors.minBudget?.message}
-                  required
-                />
-                <Input
-                  label="Maximum Budget"
-                  type="number"
-                  placeholder="$0"
-                  {...register("maxBudget")}
-                  error={errors.maxBudget?.message}
-                  required
-                />
-              </div>
+              <Select
+                label="What is your budget range?"
+                {...register("budgetRange")}
+                error={errors.budgetRange?.message}
+                options={[
+                  { value: "under-200k", label: "Under $200,000" },
+                  { value: "200k-300k", label: "$200,000 - $300,000" },
+                  { value: "300k-400k", label: "$300,000 - $400,000" },
+                  { value: "400k-500k", label: "$400,000 - $500,000" },
+                  { value: "500k-750k", label: "$500,000 - $750,000" },
+                  { value: "750k-1m", label: "$750,000 - $1,000,000" },
+                  { value: "over-1m", label: "Over $1,000,000" },
+                  { value: "flexible", label: "Flexible/Open to Discussion" },
+                ]}
+                required
+              />
             </div>
 
             {/* Property Size & Layout */}
@@ -860,6 +1191,7 @@ export default function RealEstatePage() {
                     { value: "advertisement", label: "Advertisement" },
                     { value: "other", label: "Other" },
                   ]}
+                  required
                 />
                 {howDidYouHearValue === "other" && (
                   <AnimatePresence>

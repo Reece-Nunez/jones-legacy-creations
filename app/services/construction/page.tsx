@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Building2, Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown } from "lucide-react";
+import { Building2, Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle } from "lucide-react";
 
 const constructionSchema = z.object({
   // Personal Information
@@ -124,13 +124,27 @@ export default function ConstructionPage() {
   const onSubmit = async (data: ConstructionFormData) => {
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await fetch('/api/construction', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    console.log("Form Data:", data);
-    toast.success("Thank you! We'll review your project details and contact you within 24-48 hours.");
-    reset();
-    setIsSubmitting(false);
+      if (!response.ok) {
+        throw new Error('Failed to send form');
+      }
+
+      toast.success("Thank you! We'll review your project details and contact you within 24-48 hours.");
+      reset();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error("There was an error submitting your form. Please try again or call us directly at (435) 414-8701.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const features = [
@@ -182,8 +196,295 @@ export default function ConstructionPage() {
         </div>
       </section>
 
-      {/* Form Section */}
+      {/* Current Projects Section */}
       <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Current Projects
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              See what we're building right now
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Custom Residential Build",
+                location: "Hurricane, UT",
+                description: "3,500 sq ft custom home with modern finishes",
+                status: "Foundation & Framing Complete",
+              },
+              {
+                title: "Kitchen & Bath Remodel",
+                location: "St. George, UT",
+                description: "Complete renovation of master suite and kitchen",
+                status: "In Progress - 60% Complete",
+              },
+              {
+                title: "Commercial Renovation",
+                location: "Washington, UT",
+                description: "Office space build-out and modernization",
+                status: "Starting Soon",
+              },
+            ].map((project, index) => (
+              <motion.div
+                key={project.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-gray-50 rounded-xl overflow-hidden"
+              >
+                <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Building2 className="w-16 h-16 text-gray-400" />
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="text-sm text-gray-500 mb-2">{project.location}</div>
+                  <h3 className="text-xl font-bold mb-2">{project.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4">{project.description}</p>
+                  <div className="inline-block px-3 py-1 bg-black text-white text-xs font-medium rounded-full">
+                    {project.status}
+                  </div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Past Projects Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Completed Projects
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Quality craftsmanship delivered on time and on budget
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                title: "Modern Family Home",
+                location: "Hurricane, UT",
+                description: "New construction - 4 bed, 3 bath, 2,800 sq ft",
+                completed: "2024",
+              },
+              {
+                title: "Historic Home Restoration",
+                location: "St. George, UT",
+                description: "Complete restoration preserving original character",
+                completed: "2024",
+              },
+              {
+                title: "Luxury Custom Build",
+                location: "Ivins, UT",
+                description: "5,000 sq ft custom home with premium finishes",
+                completed: "2023",
+              },
+              {
+                title: "ADU Addition",
+                location: "Washington, UT",
+                description: "800 sq ft accessory dwelling unit addition",
+                completed: "2023",
+              },
+              {
+                title: "Commercial Office Build-Out",
+                location: "St. George, UT",
+                description: "3,000 sq ft office renovation and modernization",
+                completed: "2023",
+              },
+              {
+                title: "Whole Home Renovation",
+                location: "Hurricane, UT",
+                description: "Complete interior and exterior renovation",
+                completed: "2023",
+              },
+            ].map((project, index) => (
+              <motion.div
+                key={project.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+              >
+                <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative">
+                  <div className="absolute inset-0 flex items-center justify-center">
+                    <Building2 className="w-16 h-16 text-gray-400" />
+                  </div>
+                </div>
+                <div className="p-6">
+                  <div className="text-sm text-gray-500 mb-2">{project.location}</div>
+                  <h3 className="text-xl font-bold mb-2">{project.title}</h3>
+                  <p className="text-gray-600 text-sm mb-4">{project.description}</p>
+                  <div className="text-xs text-gray-500">Completed {project.completed}</div>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Why Choose Us Section */}
+      <section className="py-20 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Why Choose Jones Legacy Creations
+            </h2>
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+              Building excellence through experience, quality, and dedication
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {[
+              {
+                icon: Shield,
+                title: "Licensed & Insured",
+                description: "Fully licensed, bonded, and insured for your protection and peace of mind.",
+              },
+              {
+                icon: Award,
+                title: "Quality Craftsmanship",
+                description: "Meticulous attention to detail and commitment to excellence in every project.",
+              },
+              {
+                icon: Clock,
+                title: "On-Time Delivery",
+                description: "We respect your time and consistently complete projects on schedule.",
+              },
+              {
+                icon: ClipboardCheck,
+                title: "Project Management",
+                description: "Full coordination of all trades and suppliers for seamless execution.",
+              },
+              {
+                icon: Hammer,
+                title: "Experienced Team",
+                description: "Skilled craftsmen with years of experience in residential and commercial construction.",
+              },
+              {
+                icon: CheckCircle,
+                title: "Customer Satisfaction",
+                description: "Your vision is our priority. We work closely with you every step of the way.",
+              },
+            ].map((item, index) => (
+              <motion.div
+                key={item.title}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-black text-white rounded-full mb-4">
+                  <item.icon className="w-8 h-8" />
+                </div>
+                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
+                <p className="text-gray-600">{item.description}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* FAQ Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-16"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+              Frequently Asked Questions
+            </h2>
+            <p className="text-xl text-gray-600">
+              Common questions about our construction services
+            </p>
+          </motion.div>
+
+          <div className="space-y-6">
+            {[
+              {
+                question: "Do you handle permits and inspections?",
+                answer: "Yes, we manage all necessary permits and coordinate inspections throughout the construction process. We ensure full compliance with local building codes and regulations.",
+              },
+              {
+                question: "How long does a typical construction project take?",
+                answer: "Timeline varies based on project scope. A complete home build typically takes 6-12 months, while renovations can range from a few weeks to several months. We provide detailed timelines during the planning phase.",
+              },
+              {
+                question: "What areas do you serve?",
+                answer: "We primarily serve Hurricane, St. George, Washington, Ivins, and the surrounding Southern Utah area. Contact us to confirm service availability for your location.",
+              },
+              {
+                question: "Do you provide warranties on your work?",
+                answer: "Yes, we stand behind our craftsmanship with comprehensive warranties. Specific warranty terms vary by project type and materials used, and are detailed in your contract.",
+              },
+              {
+                question: "Can you work with my architect or designer?",
+                answer: "Absolutely! We're happy to collaborate with your architect, designer, or engineer to bring your vision to life. We can also provide design services if needed.",
+              },
+              {
+                question: "What payment structure do you use?",
+                answer: "We typically work on a progress payment schedule, with payments tied to project milestones. We'll discuss payment terms in detail during our initial consultation.",
+              },
+              {
+                question: "How do you handle changes during construction?",
+                answer: "Change orders are a normal part of construction. We document all changes in writing with updated costs and timelines before proceeding to ensure transparency.",
+              },
+              {
+                question: "Are you insured?",
+                answer: "Yes, we maintain full liability insurance and workers' compensation coverage to protect both our team and your property throughout the construction process.",
+              },
+            ].map((faq, index) => (
+              <motion.div
+                key={index}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.05 }}
+                viewport={{ once: true }}
+                className="bg-white p-6 rounded-xl"
+              >
+                <h3 className="text-lg font-bold mb-3">{faq.question}</h3>
+                <p className="text-gray-600">{faq.answer}</p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* Form Section */}
+      <section id="contact-form" className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}

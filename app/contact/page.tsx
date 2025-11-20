@@ -39,13 +39,27 @@ export default function ContactPage() {
   const onSubmit = async (data: ContactFormData) => {
     setIsSubmitting(true);
 
-    // Simulate API call
-    await new Promise((resolve) => setTimeout(resolve, 2000));
+    try {
+      const response = await fetch('/api/contact', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(data),
+      });
 
-    console.log("Form Data:", data);
-    toast.success("Thank you for your message! We'll get back to you within 24 hours.");
-    reset();
-    setIsSubmitting(false);
+      if (!response.ok) {
+        throw new Error('Failed to send form');
+      }
+
+      toast.success("Thank you for your message! We'll get back to you within 24 hours.");
+      reset();
+    } catch (error) {
+      console.error('Error submitting form:', error);
+      toast.error("There was an error sending your message. Please try again or call us directly at (435) 288-9807.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const contactInfo = [
@@ -235,7 +249,7 @@ export default function ContactPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
             <motion.a
-              href="/services/real-estate"
+              href="/services/real-estate#contact-form"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
@@ -254,7 +268,7 @@ export default function ContactPage() {
             </motion.a>
 
             <motion.a
-              href="/services/construction"
+              href="/services/construction#contact-form"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
@@ -273,7 +287,7 @@ export default function ContactPage() {
             </motion.a>
 
             <motion.a
-              href="/services/interior-design"
+              href="/services/interior-design#contact-form"
               initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
@@ -287,7 +301,7 @@ export default function ContactPage() {
                 Explore interior design and home staging services
               </p>
               <span className="text-sm font-medium group-hover:underline">
-                Learn More →
+                Start Form →
               </span>
             </motion.a>
           </div>
