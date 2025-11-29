@@ -45,7 +45,7 @@ export default function HomePage() {
 
       {/* Hero Section */}
       <section className="relative min-h-screen flex items-center justify-center bg-gradient-to-br from-gray-50 to-white pt-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 pb-32">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -56,26 +56,66 @@ export default function HomePage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.8, delay: 0.2 }}
-              className="text-5xl md:text-7xl font-serif font-bold tracking-tight mb-6"
+              className="text-5xl md:text-7xl font-serif font-bold tracking-tight mb-12"
             >
               Building Legacies,
               <br />
               <span className="text-gray-600">One Project at a Time</span>
             </motion.h1>
 
-            <motion.p
+            {/* Brand Family Section */}
+            <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.4 }}
-              className="text-xl md:text-2xl text-gray-600 mb-12 max-w-3xl mx-auto"
+              transition={{ duration: 0.8, delay: 0.5 }}
+              className="mb-12 max-w-5xl mx-auto"
             >
-              Comprehensive construction, real estate, and interior design services tailored to bring your vision to life.
-            </motion.p>
+              <div className="bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl p-8 shadow-lg">
+                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-6 text-center">
+                  Your One-Stop Shop for Custom Homes, Real Estate & Interior Design
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
+                  {/* Jones Custom Homes */}
+                  <div className="flex flex-col items-center text-center group">
+                    <div className="w-20 h-20 mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border-2 border-gray-300 group-hover:border-black transition-colors">
+                      <Building2 className="w-10 h-10 text-gray-700" />
+                    </div>
+                    <h3 className="font-serif font-bold text-lg mb-1">Jones Custom Homes</h3>
+                    <p className="text-sm text-gray-600">Custom Construction</p>
+                  </div>
+
+                  {/* Blake Jones Realty */}
+                  <div className="flex flex-col items-center text-center group">
+                    <div className="w-20 h-20 mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border-2 border-gray-300 group-hover:border-black transition-colors">
+                      <Home className="w-10 h-10 text-gray-700" />
+                    </div>
+                    <h3 className="font-serif font-bold text-lg mb-1">Blake Jones Realty</h3>
+                    <p className="text-sm text-gray-600">Real Estate Services</p>
+                  </div>
+
+                  {/* Interiors By Jones Custom Homes */}
+                  <div className="flex flex-col items-center text-center group">
+                    <div className="w-20 h-20 mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border-2 border-gray-300 group-hover:border-black transition-colors">
+                      <Palette className="w-10 h-10 text-gray-700" />
+                    </div>
+                    <h3 className="font-serif font-bold text-lg mb-1">Interiors By Jones Custom Homes</h3>
+                    <p className="text-sm text-gray-600">Design & Staging</p>
+                  </div>
+                </div>
+
+                <div className="mt-6 pt-6 border-t border-gray-200">
+                  <p className="text-center text-sm text-gray-600">
+                    <span className="font-semibold text-gray-900">Jones Legacy Creations</span> brings together all three brands under one roof, providing seamless service from initial design to final sale.
+                  </p>
+                </div>
+              </div>
+            </motion.div>
 
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8, delay: 0.6 }}
+              transition={{ duration: 0.8, delay: 0.7 }}
               className="flex flex-col sm:flex-row gap-4 justify-center"
             >
               <Link href="/contact">
