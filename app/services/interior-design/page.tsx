@@ -64,14 +64,11 @@ interface PortfolioImage {
 
 const portfolioImages: PortfolioImage[] = [
   // Bedrooms
-  { id: 1, category: "Bedrooms", description: "Elegant bedroom with custom design elements" },
   { id: 11, category: "Bedrooms", description: "Serene bedroom retreat", rotate: 90 },
   { id: 15, category: "Bedrooms", description: "Modern bedroom styling" },
   { id: 17, category: "Bedrooms", description: "Cozy bedroom design" },
-  { id: 20, category: "Bedrooms", description: "Luxury master suite" },
   { id: 24, category: "Bedrooms", description: "Contemporary bedroom" },
   { id: 37, category: "Bedrooms", description: "Sophisticated bedroom space" },
-  { id: 39, category: "Bedrooms", description: "Tranquil bedroom design" },
   { id: 41, category: "Bedrooms", description: "Stylish bedroom interior" },
   { id: 44, category: "Bedrooms", description: "Comfortable bedroom retreat" },
   { id: 45, category: "Bedrooms", description: "Refined bedroom styling" },
@@ -85,15 +82,12 @@ const portfolioImages: PortfolioImage[] = [
   { id: 10, category: "Kitchens", description: "Custom kitchen cabinetry" },
   { id: 13, category: "Kitchens", description: "Elegant kitchen styling" },
   { id: 19, category: "Kitchens", description: "Functional kitchen design" },
-  { id: 21, category: "Kitchens", description: "Beautiful kitchen remodel" },
   { id: 22, category: "Kitchens", description: "Sophisticated kitchen" },
-  { id: 26, category: "Kitchens", description: "Premium kitchen finishes" },
   { id: 32, category: "Kitchens", description: "Stylish kitchen interior" },
   { id: 33, category: "Kitchens", description: "Contemporary kitchen space" },
   { id: 38, category: "Kitchens", description: "Designer kitchen" },
   { id: 51, category: "Kitchens", description: "Modern kitchen styling" },
   { id: 53, category: "Kitchens", description: "Luxury kitchen design" },
-  { id: 59, category: "Kitchens", description: "Custom kitchen transformation" },
 
   // Living Rooms
   { id: 4, category: "Living Rooms", description: "Inviting living room space" },
@@ -102,8 +96,6 @@ const portfolioImages: PortfolioImage[] = [
   { id: 14, category: "Living Rooms", description: "Comfortable living space" },
   { id: 16, category: "Living Rooms", description: "Sophisticated living room" },
   { id: 23, category: "Living Rooms", description: "Contemporary living area" },
-  { id: 25, category: "Living Rooms", description: "Stylish living room" },
-  { id: 27, category: "Living Rooms", description: "Cozy living space" },
   { id: 28, category: "Living Rooms", description: "Designer living room" },
   { id: 29, category: "Living Rooms", description: "Beautiful living area" },
   { id: 30, category: "Living Rooms", description: "Modern living space" },
@@ -111,10 +103,8 @@ const portfolioImages: PortfolioImage[] = [
   { id: 35, category: "Living Rooms", description: "Elegant living design" },
   { id: 36, category: "Living Rooms", description: "Luxury living room" },
   { id: 40, category: "Living Rooms", description: "Comfortable living area" },
-  { id: 48, category: "Living Rooms", description: "Sophisticated living space" },
   { id: 49, category: "Living Rooms", description: "Stylish living room design" },
   { id: 50, category: "Living Rooms", description: "Contemporary living room" },
-  { id: 57, category: "Living Rooms", description: "Modern living area" },
   { id: 58, category: "Living Rooms", description: "Designer living space" },
   { id: 60, category: "Living Rooms", description: "Beautiful living room" },
   { id: 61, category: "Living Rooms", description: "Elegant living interior" },
@@ -122,11 +112,9 @@ const portfolioImages: PortfolioImage[] = [
 
   // Bathrooms
   { id: 6, category: "Bathrooms", description: "Spa-like bathroom retreat" },
-  { id: 7, category: "Bathrooms", description: "Modern bathroom design" },
   { id: 18, category: "Bathrooms", description: "Luxury bathroom styling" },
   { id: 46, category: "Bathrooms", description: "Elegant bathroom space" },
   { id: 47, category: "Bathrooms", description: "Contemporary bathroom" },
-  { id: 54, category: "Bathrooms", description: "Beautiful bathroom transformation" },
 
   // Other
   { id: 42, category: "Other", description: "Charming nursery design" },
