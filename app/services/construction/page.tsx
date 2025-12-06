@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle } from "lucide-react";
+import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle, Building2 } from "lucide-react";
 import Image from "next/image";
 
 const constructionSchema = z.object({
