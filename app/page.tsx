@@ -1,37 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { motion } from "framer-motion";
-import { Building2, Home, Palette, ArrowRight, CheckCircle } from "lucide-react";
+import { ArrowRight, CheckCircle } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
 
 export default function HomePage() {
-  const services = [
-    {
-      icon: Home,
-      title: "Real Estate",
-      description: "Find your dream property or let us help you sell. Expert guidance through every step of the real estate process.",
-      href: "/services/real-estate",
-      features: ["Property Search", "Market Analysis", "Buyer/Seller Representation", "Investment Consulting"],
-    },
-    {
-      icon: Building2,
-      title: "Construction",
-      description: "From concept to completion, we deliver exceptional construction projects on time and within budget.",
-      href: "/services/construction",
-      features: ["Residential Construction", "Commercial Projects", "Renovations", "Project Management"],
-    },
-    {
-      icon: Palette,
-      title: "Interior Design & Staging",
-      description: "Transform spaces with professional interior design and home staging services that captivate and inspire.",
-      href: "/services/interior-design",
-      features: ["Interior Design", "Home Staging", "Space Planning", "Color Consultation"],
-    },
-  ];
-
   const stats = [
     { value: "100+", label: "Projects Completed" },
     { value: "10+", label: "Years Experience" },
@@ -70,44 +47,143 @@ export default function HomePage() {
               transition={{ duration: 0.8, delay: 0.5 }}
               className="mb-12 max-w-5xl mx-auto"
             >
-              <div className="bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl p-8 shadow-lg">
-                <p className="text-sm font-medium text-gray-500 uppercase tracking-wide mb-6 text-center">
-                  Your One-Stop Shop for Custom Homes, Real Estate & Interior Design
+              <div className="bg-white/80 backdrop-blur-sm border-2 border-gray-200 rounded-2xl p-4 sm:p-8 shadow-lg">
+                <p className="text-sm text-gray-600 mb-6 text-center max-w-2xl mx-auto">
+                  <span className="font-semibold text-gray-900">Jones Legacy Creations</span> brings all three brands together under one roof, delivering a seamless experience from initial design to final sale — your one-stop shop for interior design, custom homes, and real estate.
                 </p>
 
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-6 md:gap-8">
                   {/* Jones Custom Homes */}
                   <div className="flex flex-col items-center text-center group">
-                    <div className="w-20 h-20 mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border-2 border-gray-300 group-hover:border-black transition-colors">
-                      <Building2 className="w-10 h-10 text-gray-700" />
+                    <div className="w-24 h-24 mb-4 flex items-center justify-center">
+                      <Image
+                        src="/JONES CUSTOM HOMES ICON (2).svg"
+                        alt="Jones Custom Homes"
+                        width={96}
+                        height={96}
+                        className="object-contain"
+                      />
                     </div>
                     <h3 className="font-serif font-bold text-lg mb-1">Jones Custom Homes</h3>
                     <p className="text-sm text-gray-600">Custom Construction</p>
+
+                    {/* Service Card */}
+                    <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 text-left w-full">
+                      <h4 className="font-bold text-xs sm:text-sm uppercase tracking-wide mb-2">Custom Built Homes</h4>
+                      <p className="text-xs text-gray-600 mb-3">
+                        From concept to completion, we deliver exceptional construction projects on time and within budget.
+                      </p>
+                      <ul className="space-y-1 mb-3">
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Residential Construction
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Commercial Projects
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Renovations
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Project Management
+                        </li>
+                      </ul>
+                      <Link href="/services/construction" className="flex items-center gap-1 text-xs font-medium hover:gap-2 transition-all">
+                        Learn More <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </div>
 
                   {/* Blake Jones Realty */}
                   <div className="flex flex-col items-center text-center group">
-                    <div className="w-20 h-20 mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border-2 border-gray-300 group-hover:border-black transition-colors">
-                      <Home className="w-10 h-10 text-gray-700" />
+                    <div className="w-24 h-24 mb-4 flex items-center justify-center">
+                      <Image
+                        src="/JONES REALTY ICON (2).svg"
+                        alt="Blake Jones Realty"
+                        width={110}
+                        height={110}
+                        className="object-contain scale-110"
+                      />
                     </div>
                     <h3 className="font-serif font-bold text-lg mb-1">Blake Jones Realty</h3>
                     <p className="text-sm text-gray-600">Real Estate Services</p>
+
+                    {/* Service Card */}
+                    <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 text-left w-full">
+                      <h4 className="font-bold text-xs sm:text-sm uppercase tracking-wide mb-2">Real Estate Services</h4>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Find your dream property or let us help you sell. Expert guidance through every step of the way.
+                      </p>
+                      <ul className="space-y-1 mb-3">
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Property Search
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Market Analysis
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Buyer/Seller Representation
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Investment Consulting
+                        </li>
+                      </ul>
+                      <Link href="/services/real-estate" className="flex items-center gap-1 text-xs font-medium hover:gap-2 transition-all">
+                        Learn More <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
                   </div>
 
                   {/* Interiors By Jones Custom Homes */}
                   <div className="flex flex-col items-center text-center group">
-                    <div className="w-20 h-20 mb-4 bg-gradient-to-br from-gray-100 to-gray-200 rounded-xl flex items-center justify-center border-2 border-gray-300 group-hover:border-black transition-colors">
-                      <Palette className="w-10 h-10 text-gray-700" />
+                    <div className="w-24 h-24 mb-4 flex items-center justify-center">
+                      <Image
+                        src="/JONES Interior Design & Staging ICON (2).svg"
+                        alt="Interiors By Jones Custom Homes"
+                        width={96}
+                        height={96}
+                        className="object-contain"
+                      />
                     </div>
                     <h3 className="font-serif font-bold text-lg mb-1">Interiors By Jones Custom Homes</h3>
                     <p className="text-sm text-gray-600">Design & Staging</p>
-                  </div>
-                </div>
 
-                <div className="mt-6 pt-6 border-t border-gray-200">
-                  <p className="text-center text-sm text-gray-600">
-                    <span className="font-semibold text-gray-900">Jones Legacy Creations</span> brings together all three brands under one roof, providing seamless service from initial design to final sale.
-                  </p>
+                    {/* Service Card */}
+                    <div className="mt-4 p-3 sm:p-4 bg-gray-50 rounded-xl border border-gray-200 text-left w-full">
+                      <h4 className="font-bold text-xs sm:text-sm uppercase tracking-wide mb-2">Designing & Staging</h4>
+                      <p className="text-xs text-gray-600 mb-3">
+                        Transform spaces with professional interior design and home staging services that captivate and inspire.
+                      </p>
+                      <ul className="space-y-1 mb-3">
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Interior Design
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Home Staging
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Space Planning
+                        </li>
+                        <li className="flex items-center gap-2 text-xs text-gray-700">
+                          <CheckCircle className="w-3 h-3 flex-shrink-0" />
+                          Color Consultation
+                        </li>
+                      </ul>
+                      <Link href="/services/interior-design" className="flex items-center gap-1 text-xs font-medium hover:gap-2 transition-all">
+                        Learn More <ArrowRight className="w-3 h-3" />
+                      </Link>
+                    </div>
+                  </div>
                 </div>
               </div>
             </motion.div>
@@ -174,62 +250,6 @@ export default function HomePage() {
                 <div className="text-gray-400 text-sm md:text-base">
                   {stat.label}
                 </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Services Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Our Services
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Comprehensive solutions for all your construction, real estate, and design needs.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {services.map((service, index) => (
-              <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-              >
-                <Link href={service.href}>
-                  <div className="group h-full p-8 border-2 border-gray-200 rounded-2xl hover:border-black transition-all duration-300 hover:shadow-xl">
-                    <service.icon className="w-12 h-12 mb-6 group-hover:scale-110 transition-transform" />
-                    <h3 className="text-2xl font-serif font-bold mb-3">
-                      {service.title}
-                    </h3>
-                    <p className="text-gray-600 mb-6">
-                      {service.description}
-                    </p>
-                    <ul className="space-y-2 mb-6">
-                      {service.features.map((feature) => (
-                        <li key={feature} className="flex items-center gap-2 text-sm text-gray-700">
-                          <CheckCircle className="w-4 h-4 flex-shrink-0" />
-                          {feature}
-                        </li>
-                      ))}
-                    </ul>
-                    <div className="flex items-center gap-2 text-sm font-medium group-hover:gap-4 transition-all">
-                      Learn More
-                      <ArrowRight className="w-4 h-4" />
-                    </div>
-                  </div>
-                </Link>
               </motion.div>
             ))}
           </div>

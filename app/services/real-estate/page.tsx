@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Home, MapPin, DollarSign, Bed, Bath, Car, CheckCircle, Phone, ChevronDown } from "lucide-react";
+import { Home, MapPin, Bed, Car, CheckCircle, Phone, ChevronDown, DollarSign } from "lucide-react";
+import Image from "next/image";
 
 // Southern Utah cities with zip codes
 const SOUTHERN_UTAH_CITIES = [
@@ -164,8 +165,8 @@ export default function RealEstatePage() {
   const features = [
     { icon: Home, text: "Expert Property Guidance" },
     { icon: MapPin, text: "Local Market Knowledge" },
-    { icon: DollarSign, text: "Competitive Pricing" },
     { icon: CheckCircle, text: "Full-Service Support" },
+    { icon: DollarSign, text: "Competitive Commission Rates" },
   ];
 
   return (
@@ -181,8 +182,14 @@ export default function RealEstatePage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-black text-white rounded-full mb-6">
-              <Home className="w-10 h-10" />
+            <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
+              <Image
+                src="/JONES REALTY ICON (2).svg"
+                alt="Blake Jones Realty"
+                width={120}
+                height={120}
+                className="object-contain"
+              />
             </div>
             <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
               Real Estate Services
@@ -192,7 +199,7 @@ export default function RealEstatePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.text}
@@ -205,202 +212,6 @@ export default function RealEstatePage() {
                 <p className="text-sm font-medium">{feature.text}</p>
               </motion.div>
             ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Custom Home Sales Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Custom Built Homes
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Own a brand new custom home designed and built to your specifications
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center mb-16">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-            >
-              <h3 className="text-3xl font-serif font-bold mb-6">
-                Build Your Dream Home with Jones Legacy Creations
-              </h3>
-              <p className="text-gray-600 mb-6">
-                We specialize in building and selling custom homes throughout Southern Utah. Unlike traditional home buying,
-                you'll work directly with our construction team to create a home perfectly tailored to your lifestyle, preferences, and budget.
-              </p>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-bold mb-1">Fully Customizable</h4>
-                    <p className="text-gray-600 text-sm">Choose layouts, finishes, materials, and features that match your vision</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-bold mb-1">Quality Construction</h4>
-                    <p className="text-gray-600 text-sm">Built by experienced craftsmen using premium materials and techniques</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-bold mb-1">Direct Communication</h4>
-                    <p className="text-gray-600 text-sm">Work directly with the builder throughout the entire process</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-6 h-6 text-black flex-shrink-0 mt-1" />
-                  <div>
-                    <h4 className="font-bold mb-1">Southern Utah Locations</h4>
-                    <p className="text-gray-600 text-sm">Prime locations in Hurricane, St. George, Washington, and surrounding areas</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, x: 20 }}
-              whileInView={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="bg-gradient-to-br from-gray-200 to-gray-300 rounded-2xl aspect-[4/3] flex items-center justify-center"
-            >
-              <Home className="w-24 h-24 text-gray-400" />
-            </motion.div>
-          </div>
-        </div>
-      </section>
-
-      {/* Financing Section */}
-      <section className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-black text-white rounded-full mb-6">
-              <DollarSign className="w-10 h-10" />
-            </div>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Flexible Financing Options
-            </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Make your dream home more affordable with our specialized financing
-            </p>
-          </motion.div>
-
-          <div className="max-w-4xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-12">
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                viewport={{ once: true }}
-                className="bg-white p-8 rounded-xl text-center"
-              >
-                <div className="text-5xl font-bold text-gray-300 mb-2">20%</div>
-                <h3 className="text-xl font-bold mb-2">Traditional Down Payment</h3>
-                <p className="text-gray-600">Most builders require a substantial down payment upfront</p>
-              </motion.div>
-
-              <motion.div
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: 0.1 }}
-                viewport={{ once: true }}
-                className="bg-black text-white p-8 rounded-xl text-center relative overflow-hidden"
-              >
-                <div className="absolute top-4 right-4">
-                  <div className="bg-white text-black text-xs font-bold px-3 py-1 rounded-full">
-                    Our Advantage
-                  </div>
-                </div>
-                <div className="text-5xl font-bold mb-2">3-6%</div>
-                <h3 className="text-xl font-bold mb-2">Low Down Payment Option</h3>
-                <p className="text-gray-300">We work with specialized lenders to offer significantly lower down payments</p>
-              </motion.div>
-            </div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="bg-white p-8 rounded-xl"
-            >
-              <h3 className="text-2xl font-serif font-bold mb-4 text-center">
-                How Our Financing Works
-              </h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
-                    1
-                  </div>
-                  <div>
-                    <h4 className="font-bold mb-1">Consultation & Pre-Approval</h4>
-                    <p className="text-gray-600 text-sm">
-                      Meet with our team and get pre-approved through our financing partners
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
-                    2
-                  </div>
-                  <div>
-                    <h4 className="font-bold mb-1">Lower Down Payment</h4>
-                    <p className="text-gray-600 text-sm">
-                      Put down just 3-6% instead of the typical 20% required by most builders
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
-                    3
-                  </div>
-                  <div>
-                    <h4 className="font-bold mb-1">Build Your Custom Home</h4>
-                    <p className="text-gray-600 text-sm">
-                      Work with us to design and build your perfect home
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-4">
-                  <div className="w-8 h-8 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0 font-bold">
-                    4
-                  </div>
-                  <div>
-                    <h4 className="font-bold mb-1">Move Into Your Dream Home</h4>
-                    <p className="text-gray-600 text-sm">
-                      Close on your home and start enjoying your custom-built space
-                    </p>
-                  </div>
-                </div>
-              </div>
-              <div className="mt-8 p-4 bg-gray-50 rounded-lg text-center">
-                <p className="text-sm text-gray-600">
-                  <strong>Save thousands</strong> in upfront costs while still getting the custom home of your dreams
-                </p>
-              </div>
-            </motion.div>
           </div>
         </div>
       </section>

@@ -272,8 +272,14 @@ export default function InteriorDesignPage() {
             transition={{ duration: 0.8 }}
             className="text-center"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-black text-white rounded-full mb-6">
-              <Palette className="w-10 h-10" />
+            <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
+              <Image
+                src="/JONES Interior Design & Staging ICON (2).svg"
+                alt="Interiors By Jones Custom Homes"
+                width={120}
+                height={120}
+                className="object-contain"
+              />
             </div>
             <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
               Interior Design & Home Staging
@@ -384,7 +390,7 @@ export default function InteriorDesignPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8">
             {process.map((step, index) => (
               <motion.div
                 key={step.number}

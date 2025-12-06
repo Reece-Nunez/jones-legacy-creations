@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Building2, Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle } from "lucide-react";
+import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle } from "lucide-react";
+import Image from "next/image";
 
 const constructionSchema = z.object({
   // Personal Information
@@ -168,8 +169,14 @@ export default function ConstructionPage() {
             transition={{ duration: 0.8 }}
             className="text-center mb-12"
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 bg-black text-white rounded-full mb-6">
-              <Building2 className="w-10 h-10" />
+            <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
+              <Image
+                src="/JONES CUSTOM HOMES ICON (2).svg"
+                alt="Jones Custom Homes"
+                width={120}
+                height={120}
+                className="object-contain"
+              />
             </div>
             <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
               Construction Services
@@ -179,7 +186,7 @@ export default function ConstructionPage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-6 max-w-4xl mx-auto">
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6 max-w-4xl mx-auto">
             {features.map((feature, index) => (
               <motion.div
                 key={feature.text}
