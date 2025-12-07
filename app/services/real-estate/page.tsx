@@ -12,7 +12,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Home, MapPin, Bed, Car, CheckCircle, Phone, ChevronDown, DollarSign } from "lucide-react";
+import { Home, Bed, Car, CheckCircle, Phone, ChevronDown, DollarSign } from "lucide-react";
 import Image from "next/image";
 
 // Southern Utah cities with zip codes
@@ -162,13 +162,6 @@ export default function RealEstatePage() {
     }
   };
 
-  const features = [
-    { icon: Home, text: "Expert Property Guidance" },
-    { icon: MapPin, text: "Local Market Knowledge" },
-    { icon: CheckCircle, text: "Full-Service Support" },
-    { icon: DollarSign, text: "Competitive Commission Rates" },
-  ];
-
   return (
     <>
       <Navigation />
@@ -199,25 +192,49 @@ export default function RealEstatePage() {
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 max-w-4xl mx-auto">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.text}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex flex-col items-center text-center p-4"
-              >
-                <feature.icon className="w-8 h-8 mb-2" />
-                <p className="text-sm font-medium">{feature.text}</p>
-              </motion.div>
-            ))}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-12">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                <DollarSign className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Creative Financing</h3>
+              <p className="text-gray-600">Access to financing options that open doors to homes you thought were out of reach.</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                <Home className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Builder Experience</h3>
+              <p className="text-gray-600">Deep construction knowledge helps us evaluate properties and see their true potential.</p>
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              className="text-center"
+            >
+              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
+                <CheckCircle className="w-8 h-8 text-white" />
+              </div>
+              <h3 className="text-lg font-bold mb-2">Industry Connections</h3>
+              <p className="text-gray-600">Reliable network of lenders, contractors, and service providers to support your journey.</p>
+            </motion.div>
           </div>
         </div>
       </section>
 
-      {/* How It Works Section */}
-      <section className="py-20 bg-white">
+      {/* Our Process Section */}
+      <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -227,34 +244,44 @@ export default function RealEstatePage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Your Journey to Home Ownership
+              Our Realtor Process
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              From first consultation to moving day, we guide you through every step
+              From first consultation to closing day and beyond, we guide you through every step
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
             {[
               {
                 number: "01",
                 title: "Initial Consultation",
-                description: "Discuss your vision, budget, and timeline. Get pre-approved for financing.",
+                description: "We discuss your goals, budget, timeline, and must-haves to understand exactly what you're looking for.",
               },
               {
                 number: "02",
-                title: "Design Your Home",
-                description: "Work with our team to plan layouts, select finishes, and customize every detail.",
+                title: "Pre-Approval",
+                description: "We connect buyers with trusted lenders and ensure your pre-approval letter is ready. Creative financing options available.",
               },
               {
                 number: "03",
-                title: "Construction",
-                description: "Watch your home come to life with regular updates and walkthroughs.",
+                title: "Home Search",
+                description: "We set up personalized MLS alerts, schedule tours, and provide neighborhood and market insights. Can't find the right fit? Ask us about custom home build options.",
               },
               {
                 number: "04",
-                title: "Move In",
-                description: "Final walkthrough, close on your home, and move into your custom-built space.",
+                title: "Make an Offer",
+                description: "We prepare and submit a competitive offer on your behalf, negotiating terms and conditions to get you the best deal.",
+              },
+              {
+                number: "05",
+                title: "Closing",
+                description: "We complete the final walkthrough, coordinate with title, and guide you through signing all closing documents.",
+              },
+              {
+                number: "06",
+                title: "After Closing",
+                description: "Our relationship doesn't end at closing. We provide contractor and service referrals as needed and keep you updated for future planning.",
               },
             ].map((step, index) => (
               <motion.div
@@ -276,29 +303,22 @@ export default function RealEstatePage() {
         </div>
       </section>
 
-      {/* CTA Section */}
+      {/* Why Choose Us Section */}
       <section className="py-20 bg-black text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
+            className="text-center"
           >
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-              Ready to Build Your Custom Home?
+              Why Choose Blake Jones Realty?
             </h2>
-            <p className="text-xl text-gray-300 mb-8">
-              Take advantage of our low down payment financing and start building today
+            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+              We make it easier to discover home options that may not have seemed within reach, combining creative financing solutions with solid builder experience. With reliable industry connections and a keen eye for a property&apos;s potential, let our team help turn your dream into a reality.
             </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <a href="#contact-form">
-                <Button size="lg" variant="secondary">
-                  Get Pre-Approved
-                  <DollarSign className="w-5 h-5 ml-2" />
-                </Button>
-              </a>
-            </div>
           </motion.div>
         </div>
       </section>
