@@ -3,7 +3,26 @@ import { NextResponse } from 'next/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const getClientEmail = (data: any) => `
+interface DesignFormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  serviceType?: string;
+  propertyAddress?: string;
+  propertyCity: string;
+  propertyState: string;
+  propertyZipCode?: string;
+  squareFootage?: string;
+  numberOfRooms?: string;
+  projectDescription?: string;
+  estimatedBudget?: string;
+  projectTimeline?: string;
+  stylePreference?: string;
+  colorPreferences?: string;
+  additionalNotes?: string;
+}
+
+const getClientEmail = (data: DesignFormData) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -63,11 +82,10 @@ const getClientEmail = (data: any) => `
 
     <div style="background-color: #000; padding: 20px; border-radius: 6px; margin: 30px 0; text-align: center;">
       <p style="color: #fff; margin: 0 0 15px 0; font-weight: 600;">Contact Hilari Jones</p>
-      <p style="color: #ccc; margin: 5px 0; font-size: 14px;">📞 (801) 735-7089</p>
-      <p style="color: #ccc; margin: 5px 0; font-size: 14px;">✉️ interiors@joneslegacycreations.com</p>
-      <p style="color: #ccc; margin: 15px 0 5px 0; font-size: 12px;">Follow us on Instagram:</p>
-      <a href="https://www.instagram.com/interiors.by.jch/" style="color: #fff; text-decoration: none; font-size: 14px;">@interiors.by.jch</a>
-    </div>
+  <p style="color: #ccc; margin: 5px 0; font-size: 14px;">📞 (801) 735-7089</p>
+  <p style="color: #ccc; margin: 5px 0; font-size: 14px;">✉️ interiors@joneslegacycreations.com</p>
+  <a href="https://www.instagram.com/interiors.by.jch/" style="color: #fff; text-decoration: none; font-size: 14px;">@interiors.by.jch</a>
+</div>
 
     <p style="font-size: 16px; color: #4b5563; margin-top: 30px;">
       Best regards,<br>
@@ -75,6 +93,7 @@ const getClientEmail = (data: any) => `
     </p>
   </div>
 
+  <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 14px;">
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 14px;">
     <p style="margin: 5px 0;">Jones Legacy Creations</p>
     <p style="margin: 5px 0;">Hurricane, Utah • Serving Southern Utah</p>
@@ -84,8 +103,7 @@ const getClientEmail = (data: any) => `
 </html>
 `;
 
-const getBusinessEmail = (data: any) => `
-<!DOCTYPE html>
+const getBusinessEmail = (data: DesignFormData) => `
 <html>
 <head>
   <meta charset="utf-8">

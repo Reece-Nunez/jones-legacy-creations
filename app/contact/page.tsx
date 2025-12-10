@@ -106,7 +106,7 @@ export default function ContactPage() {
               Get In Touch
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Ready to start your next project? Have questions? We'd love to hear from you.
+              Ready to start your next project? Have questions? We&apos;d love to hear from you.
             </p>
           </motion.div>
         </div>
@@ -159,7 +159,7 @@ export default function ContactPage() {
               Send Us a Message
             </h2>
             <p className="text-lg text-gray-600">
-              Fill out the form below and we'll get back to you as soon as possible.
+              Fill out the form below and we&apos;ll get back to you as soon as possible.
             </p>
           </motion.div>
 

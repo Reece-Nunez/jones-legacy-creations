@@ -3,7 +3,24 @@ import { NextResponse } from 'next/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const getClientEmail = (data: any) => `
+interface RealEstateFormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  serviceType?: string;
+  propertyType?: string;
+  preferredCity: string;
+  preferredState: string;
+  preferredZipCode?: string;
+  budgetRange?: string;
+  bedrooms?: string;
+  bathrooms?: string;
+  moveInTimeline?: string;
+  mustHaveFeatures?: string;
+  additionalNotes?: string;
+}
+
+const getClientEmail = (data: RealEstateFormData) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -74,8 +91,6 @@ const getClientEmail = (data: any) => `
 
     <div style="background-color: #000; padding: 20px; border-radius: 6px; margin: 30px 0; text-align: center;">
       <p style="color: #fff; margin: 0 0 15px 0; font-weight: 600;">Contact Blake Jones</p>
-      <p style="color: #ccc; margin: 5px 0; font-size: 14px;">📞 (435) 288-9807</p>
-      <p style="color: #ccc; margin: 5px 0; font-size: 14px;">✉️ blakerealty@joneslegacycreations.com</p>
     </div>
 
     <p style="font-size: 16px; color: #4b5563; margin-top: 30px;">
@@ -93,7 +108,7 @@ const getClientEmail = (data: any) => `
 </html>
 `;
 
-const getBusinessEmail = (data: any) => `
+const getBusinessEmail = (data: RealEstateFormData) => `
 <!DOCTYPE html>
 <html>
 <head>

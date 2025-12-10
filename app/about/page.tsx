@@ -73,13 +73,13 @@ export default function AboutPage() {
               <h2 className="text-4xl font-serif font-bold mb-6">Our Story</h2>
               <div className="space-y-4 text-gray-700 leading-relaxed">
                 <p>
-                  Jones Legacy Creations began with a simple belief: that exceptional construction, real estate, and design services should be accessible, transparent, and tailored to each client's unique vision.
+                  Jones Legacy Creations began with a simple belief: that exceptional construction, real estate, and design services should be accessible, transparent, and tailored to each client&apos;s unique vision.
                 </p>
                 <p>
                   What started as a small construction company has evolved into a comprehensive service provider, offering everything from residential construction and commercial projects to real estate guidance and professional interior design.
                 </p>
                 <p>
-                  Today, we're proud to have completed over 100 projects, working with homeowners, businesses, and investors who trust us to bring their dreams to life. Our commitment to quality, integrity, and client satisfaction drives everything we do.
+                  Today, we&apos;re proud to have completed over 100 projects, working with homeowners, businesses, and investors who trust us to bring their dreams to life. Our commitment to quality, integrity, and client satisfaction drives everything we do.
                 </p>
                 <p>
                   Led by experienced professionals and supported by a network of skilled partners, Jones Legacy Creations continues to set the standard for excellence in the industry.
@@ -231,7 +231,7 @@ export default function AboutPage() {
             viewport={{ once: true }}
           >
             <h2 className="text-4xl font-serif font-bold mb-6">
-              Let's Build Something Amazing Together
+              Let&apos;s Build Something Amazing Together
             </h2>
             <p className="text-xl text-gray-300 mb-8">
               Experience the Jones Legacy Creations difference. Contact us today to discuss your project.

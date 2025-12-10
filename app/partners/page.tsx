@@ -141,7 +141,7 @@ export default function PartnersPage() {
               Our Trusted Partners
             </h1>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              We've built a network of exceptional professionals who share our commitment to quality, integrity, and client satisfaction.
+              We&apos;ve built a network of exceptional professionals who share our commitment to quality, integrity, and client satisfaction.
             </p>
           </motion.div>
         </div>
@@ -281,7 +281,7 @@ export default function PartnersPage() {
               Interested in Becoming a Partner?
             </h2>
             <p className="text-xl text-gray-300 mb-8">
-              We're always looking to expand our network with qualified, professional service providers who share our values.
+              We&apos;re always looking to expand our network with qualified, professional service providers who share our values.
             </p>
             <Link href="/contact">
               <Button size="lg" variant="secondary">

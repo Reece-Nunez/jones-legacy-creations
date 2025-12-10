@@ -455,7 +455,7 @@ export default function ConstructionPage() {
                 )}
 
                 {/* Image Gallery */}
-                {selectedProject.images.length > 0 && (
+                {selectedProject.images && selectedProject.images.length > 0 && (
                   <div className="mb-8">
                     <h3 className="text-lg font-bold mb-4">Gallery</h3>
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -498,7 +498,7 @@ export default function ConstructionPage() {
 
       {/* Image Lightbox */}
       <AnimatePresence>
-        {selectedProject && lightboxImageIndex !== null && (
+        {selectedProject && lightboxImageIndex !== null && selectedProject.images && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -528,7 +528,7 @@ export default function ConstructionPage() {
               </button>
             )}
 
-            {lightboxImageIndex < selectedProject.images.length - 1 && (
+            {lightboxImageIndex < (selectedProject.images?.length ?? 0) - 1 && (
               <button
                 onClick={(e) => {
                   e.stopPropagation();
@@ -546,13 +546,15 @@ export default function ConstructionPage() {
               onClick={(e) => e.stopPropagation()}
             >
               <div className="relative w-full h-full">
-                <Image
-                  src={selectedProject.images[lightboxImageIndex].src}
-                  alt={selectedProject.images[lightboxImageIndex].alt}
-                  fill
-                  className="object-contain"
-                  priority
-                />
+                {selectedProject.images && (
+                  <Image
+                    src={selectedProject.images[lightboxImageIndex].src}
+                    alt={selectedProject.images[lightboxImageIndex].alt}
+                    fill
+                    className="object-contain"
+                    priority
+                  />
+                )}
               </div>
               <div className="absolute bottom-4 left-0 right-0 text-center">
                 <p className="text-white text-sm">

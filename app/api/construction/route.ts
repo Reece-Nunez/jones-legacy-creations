@@ -3,8 +3,28 @@ import { NextResponse } from 'next/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
+interface ConstructionFormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  company?: string;
+  projectCategory?: string;
+  projectType?: string;
+  propertyAddress?: string;
+  propertyCity: string;
+  propertyState: string;
+  propertyZipCode?: string;
+  propertyOwnership?: string;
+  projectScope?: string;
+  estimatedBudget?: string;
+  projectTimeline?: string;
+  startDate?: string;
+  completionDate?: string;
+  additionalNotes?: string;
+}
+
 // Email template for client confirmation
-const getClientEmail = (data: any) => `
+const getClientEmail = (data: ConstructionFormData) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -61,11 +81,10 @@ const getClientEmail = (data: any) => `
       In the meantime, if you have any questions or need to provide additional information, please don't hesitate to reach out.
     </p>
 
-    <div style="background-color: #000; padding: 20px; border-radius: 6px; margin: 30px 0; text-align: center;">
-      <p style="color: #fff; margin: 0 0 15px 0; font-weight: 600;">Contact Us</p>
-      <p style="color: #ccc; margin: 5px 0; font-size: 14px;">📞 (435) 414-8701</p>
-      <p style="color: #ccc; margin: 5px 0; font-size: 14px;">✉️ jch@joneslegacycreations.com</p>
-    </div>
+<div style="background-color: #000; padding: 20px; border-radius: 6px; margin: 30px 0; text-align: center;">
+  <p style="color: #fff; margin: 5px 0; font-size: 16px;"><strong>📞 (123) 456-7890</strong></p>
+  <p style="color: #ccc; margin: 5px 0; font-size: 14px;">✉️ jch@joneslegacycreations.com</p>
+</div>
 
     <p style="font-size: 16px; color: #4b5563; margin-top: 30px;">
       Best regards,<br>
@@ -83,7 +102,7 @@ const getClientEmail = (data: any) => `
 `;
 
 // Email template for business notification
-const getBusinessEmail = (data: any) => `
+const getBusinessEmail = (data: ConstructionFormData) => `
 <!DOCTYPE html>
 <html>
 <head>

@@ -3,7 +3,15 @@ import { NextResponse } from 'next/server';
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const getClientEmail = (data: any) => `
+interface ContactFormData {
+  fullName: string;
+  email: string;
+  phone: string;
+  subject: string;
+  message: string;
+}
+
+const getClientEmail = (data: ContactFormData) => `
 <!DOCTYPE html>
 <html>
 <head>
@@ -48,7 +56,6 @@ const getClientEmail = (data: any) => `
   </div>
 
   <div style="text-align: center; padding: 20px; color: #9ca3af; font-size: 14px;">
-    <p style="margin: 5px 0;">Jones Legacy Creations</p>
     <p style="margin: 5px 0;">Hurricane, Utah • Serving Southern Utah</p>
     <p style="margin: 5px 0;">www.joneslegacycreations.com</p>
   </div>
@@ -56,7 +63,7 @@ const getClientEmail = (data: any) => `
 </html>
 `;
 
-const getBusinessEmail = (data: any) => `
+const getBusinessEmail = (data: ContactFormData) => `
 <!DOCTYPE html>
 <html>
 <head>
