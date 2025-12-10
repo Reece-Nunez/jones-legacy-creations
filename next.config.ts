@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
         hostname: "jones-legacy-creations.s3.us-east-1.amazonaws.com",
         pathname: "/interior/**",
       },
+      {
+        protocol: "https",
+        hostname: "jones-legacy-creations.s3.us-east-1.amazonaws.com",
+        pathname: "/construction/**",
+      },
     ],
   },
   async headers() {

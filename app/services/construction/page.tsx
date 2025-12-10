@@ -12,7 +12,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle, Building2 } from "lucide-react";
+import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle, Building2, X, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import Link from "next/link";
 import Image from "next/image";
 
 const constructionSchema = z.object({
@@ -97,10 +98,83 @@ const constructionSchema = z.object({
 
 type ConstructionFormData = z.infer<typeof constructionSchema>;
 
+// S3 base URL for construction images
+const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/construction";
+
+// Helper function to generate image URLs automatically
+// Images must be named: image1.webp, image2.webp, image3.webp, etc.
+function generateImages(folder: string, imageCount: number, title: string) {
+  return Array.from({ length: imageCount }, (_, i) => ({
+    src: `${S3_BASE_URL}/${folder}/image${i + 1}.webp`,
+    alt: `${title} - Image ${i + 1}`,
+  }));
+}
+
+interface CompletedProject {
+  id: string;
+  title: string;
+  location: string;
+  description: string;
+  folder: string;
+  imageCount: number;
+  coverImageNum?: number;
+  features?: string[];
+  // Generated fields
+  coverImage?: string;
+  images?: { src: string; alt: string }[];
+}
+
+// ============================================================
+// TO ADD MORE IMAGES: Just update imageCount below
+// Images must be named image1.webp, image2.webp, etc in the S3 folder
+// ============================================================
+const completedBuildsData: CompletedProject[] = [
+  {
+    id: "haven-hideaway",
+    title: "Haven Hideaway",
+    location: "Hatch, UT",
+    description: "The Haven Hideaway is a warm, custom-built retreat tucked into the quiet mountain town of Hatch. Designed to take in stunning views in every direction, this cabin features exposed wood, big windows, and a cozy, modern–rustic feel. Built with quality craftsmanship, the layout is simple, inviting, and perfect for relaxing weekends or year-round escape.",
+    folder: "haven-hideaway",
+    imageCount: 0, // Update when images are uploaded
+    features: ["Exposed Wood", "Large Windows", "Mountain Views", "Modern-Rustic Design"],
+  },
+  {
+    id: "peach-grove",
+    title: "Peach Grove Home",
+    location: "Hurricane, UT",
+    description: "This family-friendly home feels warm and welcoming from the moment you walk in. Enjoy a large yard with room to play and relax under the peach trees, then head inside to cozy up by the fire. The layout is comfortable and practical, with an oversized master vanity and inviting spaces designed for everyday living. It's a home made for real families and real moments.",
+    folder: "peach-grove",
+    imageCount: 24, // <-- Just change this number when you add more images
+    coverImageNum: 21, // Which image number to use as the cover
+    features: ["Large Yard", "Oversized Master Vanity", "Family-Friendly Layout"],
+  },
+];
+
+// Auto-generate image URLs from the data above
+const completedBuilds = completedBuildsData.map(project => ({
+  ...project,
+  coverImage: project.imageCount > 0
+    ? `${S3_BASE_URL}/${project.folder}/image${project.coverImageNum || 1}.webp`
+    : "",
+  images: generateImages(project.folder, project.imageCount, project.title),
+}));
+
+// Current projects
+const currentProjects = [
+  {
+    id: "hurricane-current",
+    title: "New Custom Build",
+    location: "Hurricane, UT",
+    status: "Coming Soon",
+  },
+];
+
 export default function ConstructionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const [selectedProject, setSelectedProject] = useState<CompletedProject | null>(null);
+  const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev =>
@@ -214,36 +288,17 @@ export default function ConstructionPage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Current Projects
+              Current Project
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              See what we're building right now
+              See what we&apos;re building right now
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Custom Residential Build",
-                location: "Hurricane, UT",
-                description: "3,500 sq ft custom home with modern finishes",
-                status: "Foundation & Framing Complete",
-              },
-              {
-                title: "Kitchen & Bath Remodel",
-                location: "St. George, UT",
-                description: "Complete renovation of master suite and kitchen",
-                status: "In Progress - 60% Complete",
-              },
-              {
-                title: "Commercial Renovation",
-                location: "Washington, UT",
-                description: "Office space build-out and modernization",
-                status: "Starting Soon",
-              },
-            ].map((project, index) => (
+          <div className="max-w-md mx-auto">
+            {currentProjects.map((project, index) => (
               <motion.div
-                key={project.title}
+                key={project.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
@@ -251,15 +306,15 @@ export default function ConstructionPage() {
                 className="bg-gray-50 rounded-xl overflow-hidden"
               >
                 <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Building2 className="w-16 h-16 text-gray-400" />
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <Building2 className="w-16 h-16 text-gray-400 mb-4" />
+                    <span className="text-2xl font-serif font-bold text-gray-500">Photos Coming Soon</span>
                   </div>
                 </div>
-                <div className="p-6">
+                <div className="p-6 text-center">
                   <div className="text-sm text-gray-500 mb-2">{project.location}</div>
-                  <h3 className="text-xl font-bold mb-2">{project.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                  <div className="inline-block px-3 py-1 bg-black text-white text-xs font-medium rounded-full">
+                  <h3 className="text-xl font-bold mb-3">{project.title}</h3>
+                  <div className="inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded-full">
                     {project.status}
                   </div>
                 </div>
@@ -269,7 +324,7 @@ export default function ConstructionPage() {
         </div>
       </section>
 
-      {/* Past Projects Section */}
+      {/* Most Recent Builds Section */}
       <section className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
@@ -280,76 +335,233 @@ export default function ConstructionPage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Completed Projects
+              Most Recent Builds
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Quality craftsmanship delivered on time and on budget
+              Quality craftsmanship delivered with care and attention to detail
             </p>
           </motion.div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                title: "Modern Family Home",
-                location: "Hurricane, UT",
-                description: "New construction - 4 bed, 3 bath, 2,800 sq ft",
-                completed: "2024",
-              },
-              {
-                title: "Historic Home Restoration",
-                location: "St. George, UT",
-                description: "Complete restoration preserving original character",
-                completed: "2024",
-              },
-              {
-                title: "Luxury Custom Build",
-                location: "Ivins, UT",
-                description: "5,000 sq ft custom home with premium finishes",
-                completed: "2023",
-              },
-              {
-                title: "ADU Addition",
-                location: "Washington, UT",
-                description: "800 sq ft accessory dwelling unit addition",
-                completed: "2023",
-              },
-              {
-                title: "Commercial Office Build-Out",
-                location: "St. George, UT",
-                description: "3,000 sq ft office renovation and modernization",
-                completed: "2023",
-              },
-              {
-                title: "Whole Home Renovation",
-                location: "Hurricane, UT",
-                description: "Complete interior and exterior renovation",
-                completed: "2023",
-              },
-            ].map((project, index) => (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {completedBuilds.map((project, index) => (
               <motion.div
-                key={project.title}
+                key={project.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300"
+                className="group cursor-pointer"
+                onClick={() => setSelectedProject(project)}
               >
-                <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative">
-                  <div className="absolute inset-0 flex items-center justify-center">
-                    <Building2 className="w-16 h-16 text-gray-400" />
+                <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
+                  <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
+                    {project.coverImage ? (
+                      <Image
+                        src={project.coverImage}
+                        alt={project.title}
+                        fill
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                    ) : (
+                      <div className="absolute inset-0 flex flex-col items-center justify-center">
+                        <Building2 className="w-16 h-16 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-500">Photos Coming Soon</span>
+                      </div>
+                    )}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                      View Details
+                    </div>
                   </div>
-                </div>
-                <div className="p-6">
-                  <div className="text-sm text-gray-500 mb-2">{project.location}</div>
-                  <h3 className="text-xl font-bold mb-2">{project.title}</h3>
-                  <p className="text-gray-600 text-sm mb-4">{project.description}</p>
-                  <div className="text-xs text-gray-500">Completed {project.completed}</div>
+                  <div className="p-6">
+                    <div className="text-sm text-gray-500 mb-2">{project.location}</div>
+                    <h3 className="text-2xl font-serif font-bold mb-2">{project.title}</h3>
+                    <p className="text-gray-600 text-sm line-clamp-2">{project.description}</p>
+                  </div>
                 </div>
               </motion.div>
             ))}
           </div>
         </div>
       </section>
+
+      {/* Project Detail Modal */}
+      <AnimatePresence>
+        {selectedProject && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
+            onClick={() => setSelectedProject(null)}
+          >
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95, y: 20 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 20 }}
+              transition={{ duration: 0.3 }}
+              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {/* Close Button */}
+              <button
+                onClick={() => setSelectedProject(null)}
+                className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
+                aria-label="Close"
+              >
+                <X className="w-5 h-5" />
+              </button>
+
+              {/* Cover Image */}
+              <div className="aspect-[16/9] bg-gradient-to-br from-gray-200 to-gray-300 relative">
+                {selectedProject.coverImage ? (
+                  <Image
+                    src={selectedProject.coverImage}
+                    alt={selectedProject.title}
+                    fill
+                    className="object-cover"
+                  />
+                ) : (
+                  <div className="absolute inset-0 flex flex-col items-center justify-center">
+                    <Building2 className="w-20 h-20 text-gray-400 mb-4" />
+                    <span className="text-xl text-gray-500">Photos Coming Soon</span>
+                  </div>
+                )}
+              </div>
+
+              {/* Content */}
+              <div className="p-8">
+                <div className="text-sm text-gray-500 mb-2">{selectedProject.location}</div>
+                <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">{selectedProject.title}</h2>
+                <p className="text-lg text-gray-600 mb-6 leading-relaxed">{selectedProject.description}</p>
+
+                {/* Features */}
+                {selectedProject.features && selectedProject.features.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-bold mb-3">Features</h3>
+                    <div className="flex flex-wrap gap-2">
+                      {selectedProject.features.map((feature) => (
+                        <span
+                          key={feature}
+                          className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full"
+                        >
+                          {feature}
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Image Gallery */}
+                {selectedProject.images.length > 0 && (
+                  <div className="mb-8">
+                    <h3 className="text-lg font-bold mb-4">Gallery</h3>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
+                      {selectedProject.images.map((image, index) => (
+                        <div
+                          key={index}
+                          className="aspect-[4/3] relative rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          onClick={() => setLightboxImageIndex(index)}
+                        >
+                          <Image
+                            src={image.src}
+                            alt={image.alt}
+                            fill
+                            className="object-cover"
+                          />
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Interest CTA */}
+                <div className="bg-gray-50 rounded-xl p-6 text-center">
+                  <h3 className="text-xl font-serif font-bold mb-2">Interested in a Similar Build?</h3>
+                  <p className="text-gray-600 mb-4">
+                    Love this layout? Let us know and we can discuss how to customize it for your needs.
+                  </p>
+                  <Link href="#contact-form" onClick={() => setSelectedProject(null)}>
+                    <Button size="lg">
+                      Request This Layout
+                      <ArrowRight className="w-5 h-5 ml-2" />
+                    </Button>
+                  </Link>
+                </div>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Image Lightbox */}
+      <AnimatePresence>
+        {selectedProject && lightboxImageIndex !== null && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.3 }}
+            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-4"
+            onClick={() => setLightboxImageIndex(null)}
+          >
+            <button
+              onClick={() => setLightboxImageIndex(null)}
+              className="absolute top-4 right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+              aria-label="Close lightbox"
+            >
+              <X className="w-6 h-6 text-white" />
+            </button>
+
+            {lightboxImageIndex > 0 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxImageIndex(lightboxImageIndex - 1);
+                }}
+                className="absolute left-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                aria-label="Previous image"
+              >
+                <ChevronLeft className="w-6 h-6 text-white" />
+              </button>
+            )}
+
+            {lightboxImageIndex < selectedProject.images.length - 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setLightboxImageIndex(lightboxImageIndex + 1);
+                }}
+                className="absolute right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                aria-label="Next image"
+              >
+                <ChevronRight className="w-6 h-6 text-white" />
+              </button>
+            )}
+
+            <div
+              className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="relative w-full h-full">
+                <Image
+                  src={selectedProject.images[lightboxImageIndex].src}
+                  alt={selectedProject.images[lightboxImageIndex].alt}
+                  fill
+                  className="object-contain"
+                  priority
+                />
+              </div>
+              <div className="absolute bottom-4 left-0 right-0 text-center">
+                <p className="text-white text-sm">
+                  {lightboxImageIndex + 1} / {selectedProject.images.length}
+                </p>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Why Choose Us Section */}
       <section className="py-20 bg-white">
