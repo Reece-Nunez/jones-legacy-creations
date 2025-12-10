@@ -135,7 +135,8 @@ const completedBuildsData: CompletedProject[] = [
     location: "Hatch, UT",
     description: "The Haven Hideaway is a warm, custom-built retreat tucked into the quiet mountain town of Hatch. Designed to take in stunning views in every direction, this cabin features exposed wood, big windows, and a cozy, modern–rustic feel. Built with quality craftsmanship, the layout is simple, inviting, and perfect for relaxing weekends or year-round escape.",
     folder: "haven-hideaway",
-    imageCount: 0, // Update when images are uploaded
+    imageCount: 42, // Update when images are uploaded
+    coverImageNum: 42, // Which image number to use as the cover
     features: ["Exposed Wood", "Large Windows", "Mountain Views", "Modern-Rustic Design"],
   },
   {
