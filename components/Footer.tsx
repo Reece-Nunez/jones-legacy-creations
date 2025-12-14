@@ -120,14 +120,6 @@ export function Footer() {
               </li>
               <li>
                 <Link
-                  href="/partners"
-                  className="text-gray-400 hover:text-white transition-colors"
-                >
-                  Our Partners
-                </Link>
-              </li>
-              <li>
-                <Link
                   href="/contact"
                   className="text-gray-400 hover:text-white transition-colors"
                 >
