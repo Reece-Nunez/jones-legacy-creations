@@ -163,9 +163,15 @@ const completedBuilds = completedBuildsData.map(project => ({
 // Current projects
 const currentProjects = [
   {
-    id: "hurricane-current",
+    id: "dixie-springs-current",
     title: "New Custom Build",
-    location: "Hurricane, UT",
+    location: "Dixie Springs, UT",
+    status: "Coming Soon",
+  },
+  {
+    id: "gunlock-current",
+    title: "New Custom Build",
+    location: "Gunlock, UT",
     status: "Coming Soon",
   },
 ];
@@ -289,14 +295,14 @@ export default function ConstructionPage() {
             className="text-center mb-16"
           >
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Current Project
+              Current Projects
             </h2>
             <p className="text-xl text-gray-600 max-w-3xl mx-auto">
               See what we&apos;re building right now
             </p>
           </motion.div>
 
-          <div className="max-w-md mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
             {currentProjects.map((project, index) => (
               <motion.div
                 key={project.id}
