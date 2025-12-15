@@ -51,7 +51,7 @@ export default function HomePage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-br from-gray-50 to-white pt-32 pb-20">
+      <section className="min-h-screen bg-gradient-to-br from-gray-50 to-white pt-32 pb-32">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -101,41 +101,6 @@ export default function HomePage() {
             ))}
           </div>
 
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ delay: 0.6 }}
-            className="flex justify-center mt-12 gap-4"
-          >
-            <Link href="/contact">
-              <Button size="lg">Start Your Project <ArrowRight className="w-4 h-4 ml-2" /></Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Stats Section */}
-      <section className="py-20 bg-black text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <motion.div
-                key={stat.label}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="text-4xl md:text-5xl font-bold font-serif mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-gray-400 text-sm md:text-base">
-                  {stat.label}
-                </div>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
@@ -161,6 +126,31 @@ export default function HomePage() {
               </Button>
             </Link>
           </motion.div>
+        </div>
+      </section>
+
+      {/* Stats Section */}
+      <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+            {stats.map((stat, index) => (
+              <motion.div
+                key={stat.label}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="text-center"
+              >
+                <div className="text-4xl md:text-5xl font-bold font-serif mb-2">
+                  {stat.value}
+                </div>
+                <div className="text-gray-600 text-sm md:text-base">
+                  {stat.label}
+                </div>
+              </motion.div>
+            ))}
+          </div>
         </div>
       </section>
 

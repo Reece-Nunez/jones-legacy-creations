@@ -573,72 +573,22 @@ export default function ConstructionPage() {
       </AnimatePresence>
 
       {/* Why Choose Us Section */}
-      <section className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <section className="py-24 bg-gradient-to-br from-gray-900 to-black text-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             whileInView={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
-            className="text-center mb-16"
+            className="text-center"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
-              Why Choose Jones Legacy Creations
+            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
+              Why Choose Jones Custom Homes?
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
-              Building excellence through experience, quality, and dedication
+            <p className="text-xl text-gray-300 leading-relaxed">
+              We make building feel simple and personal. With a patient, approachable team and creative financing options, we help make custom homes more achievable. Our streamlined process allows for a faster build without compromising quality—so you can enjoy a well-crafted home, sooner and with confidence.
             </p>
           </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {[
-              {
-                icon: Shield,
-                title: "Licensed & Insured",
-                description: "Fully licensed, bonded, and insured for your protection and peace of mind.",
-              },
-              {
-                icon: Award,
-                title: "Quality Craftsmanship",
-                description: "Meticulous attention to detail and commitment to excellence in every project.",
-              },
-              {
-                icon: Clock,
-                title: "On-Time Delivery",
-                description: "We respect your time and consistently complete projects on schedule.",
-              },
-              {
-                icon: ClipboardCheck,
-                title: "Project Management",
-                description: "Full coordination of all trades and suppliers for seamless execution.",
-              },
-              {
-                icon: Hammer,
-                title: "Experienced Team",
-                description: "Skilled craftsmen with years of experience in residential and commercial construction.",
-              },
-              {
-                icon: CheckCircle,
-                title: "Customer Satisfaction",
-                description: "Your vision is our priority. We work closely with you every step of the way.",
-              },
-            ].map((item, index) => (
-              <motion.div
-                key={item.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="inline-flex items-center justify-center w-16 h-16 bg-black text-white rounded-full mb-4">
-                  <item.icon className="w-8 h-8" />
-                </div>
-                <h3 className="text-xl font-bold mb-3">{item.title}</h3>
-                <p className="text-gray-600">{item.description}</p>
-              </motion.div>
-            ))}
-          </div>
         </div>
       </section>
 
