@@ -80,8 +80,8 @@ export default function HomePage() {
                   ${i === 1 ? "md:-mx-6 md:z-20 md:scale-110 hover:md:scale-[1.15]" : "md:z-10 hover:md:scale-105"}
                   hover:border-white/20 transition-all duration-500 group cursor-pointer`}
               >
-                <div className="w-16 h-16 flex items-center justify-center mb-6">
-                  <Image src={company.icon} alt="" width={40} height={40} />
+                <div className="w-20 h-20 flex items-center justify-center mb-6">
+                  <Image src={company.icon} alt="" width={56} height={56} />
                 </div>
                 <h3 className="text-2xl font-serif font-bold text-white mb-1">{company.name}</h3>
                 <p className="text-white/50 text-sm mb-4">{company.subtitle}</p>
