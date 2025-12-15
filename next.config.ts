@@ -13,6 +13,11 @@ const nextConfig: NextConfig = {
         hostname: "jones-legacy-creations.s3.us-east-1.amazonaws.com",
         pathname: "/construction/**",
       },
+      {
+        protocol: "https",
+        hostname: "jones-legacy-creations.s3.us-east-1.amazonaws.com",
+        pathname: "/about-us/**",
+      },
     ],
   },
   async headers() {
