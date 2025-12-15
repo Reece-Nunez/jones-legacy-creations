@@ -230,10 +230,10 @@ function SpotlightHero() {
 // Option 3: Glassmorphism Cards
 function GlassmorphismHero() {
   return (
-    <section className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-stone-900 to-zinc-900">
+    <section className="min-h-screen relative overflow-hidden bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900">
       {/* Decorative background elements */}
-      <div className="absolute top-20 left-10 w-72 h-72 bg-amber-500/20 rounded-full blur-3xl" />
-      <div className="absolute bottom-20 right-10 w-96 h-96 bg-stone-500/20 rounded-full blur-3xl" />
+      <div className="absolute top-20 left-10 w-72 h-72 bg-slate-500/20 rounded-full blur-3xl" />
+      <div className="absolute bottom-20 right-10 w-96 h-96 bg-gray-500/20 rounded-full blur-3xl" />
 
       <div className="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-32 pb-20">
         <motion.div
@@ -263,7 +263,7 @@ function GlassmorphismHero() {
                 ${i === 1 ? "md:-mx-4 md:z-20 md:scale-105" : "md:z-10"}
                 hover:bg-white/10 hover:border-white/20 transition-all duration-500 group cursor-pointer`}
             >
-              <div className="w-16 h-16 bg-white/10 rounded-2xl flex items-center justify-center mb-6">
+              <div className="w-16 h-16 bg-gray-500/20 rounded-2xl flex items-center justify-center mb-6">
                 <Image src={company.icon} alt="" width={40} height={40} />
               </div>
               <h3 className="text-2xl font-serif font-bold text-white mb-1">{company.name}</h3>
