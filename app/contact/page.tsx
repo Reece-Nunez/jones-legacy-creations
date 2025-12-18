@@ -56,19 +56,13 @@ export default function ContactPage() {
       reset();
     } catch (error) {
       console.error('Error submitting form:', error);
-      toast.error("There was an error sending your message. Please try again or call us directly at (435) 288-9807.");
+      toast.error("There was an error sending your message. Please try again or email us at office@joneslegacycreations.com.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const contactInfo = [
-    {
-      icon: Phone,
-      title: "Phone",
-      content: "(435) 288-9807",
-      link: "tel:+14352889807",
-    },
     {
       icon: Mail,
       title: "Email",
@@ -115,7 +109,7 @@ export default function ContactPage() {
       {/* Contact Info Cards */}
       <section className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-4xl mx-auto">
             {contactInfo.map((info, index) => (
               <motion.div
                 key={info.title}
@@ -229,8 +223,123 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Quick Links Section */}
+      {/* Department Contacts Section */}
       <section className="py-20 bg-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            viewport={{ once: true }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl font-serif font-bold mb-4">
+              Contact Our Teams Directly
+            </h2>
+            <p className="text-lg text-gray-600">
+              Reach out to the specific department for your needs
+            </p>
+          </motion.div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-5xl mx-auto">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.1 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl border-2 border-gray-200"
+            >
+              <h3 className="text-2xl font-serif font-bold mb-3">
+                Real Estate
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Blake Realty - Buying, selling, and property inquiries
+              </p>
+              <div className="space-y-2">
+                <a
+                  href="tel:+14352889807"
+                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>(435) 288-9807</span>
+                </a>
+                <a
+                  href="mailto:blakerealty@joneslegacycreations.com"
+                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors text-sm"
+                >
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span>blakerealty@joneslegacycreations.com</span>
+                </a>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.2 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl border-2 border-gray-200"
+            >
+              <h3 className="text-2xl font-serif font-bold mb-3">
+                Construction
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Jones Custom Homes - New builds and renovations
+              </p>
+              <div className="space-y-2">
+                <a
+                  href="tel:+14354148701"
+                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>(435) 414-8701</span>
+                </a>
+                <a
+                  href="mailto:jch@joneslegacycreations.com"
+                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors text-sm"
+                >
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span>jch@joneslegacycreations.com</span>
+                </a>
+              </div>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+              viewport={{ once: true }}
+              className="bg-white p-8 rounded-xl border-2 border-gray-200"
+            >
+              <h3 className="text-2xl font-serif font-bold mb-3">
+                Interior Design
+              </h3>
+              <p className="text-gray-600 mb-4">
+                Design consultations and home staging services
+              </p>
+              <div className="space-y-2">
+                <a
+                  href="tel:+18017357089"
+                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
+                >
+                  <Phone className="w-4 h-4" />
+                  <span>(801) 735-7089</span>
+                </a>
+                <a
+                  href="mailto:interiors@joneslegacycreations.com"
+                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors text-sm"
+                >
+                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <span>interiors@joneslegacycreations.com</span>
+                </a>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </section>
+
+      {/* Quick Links Section */}
+      <section className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -254,7 +363,7 @@ export default function ContactPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.1 }}
               viewport={{ once: true }}
-              className="group bg-white p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
+              className="group bg-gray-50 p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
             >
               <h3 className="text-2xl font-serif font-bold mb-3 group-hover:text-gray-700">
                 Real Estate Intake
@@ -273,7 +382,7 @@ export default function ContactPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.2 }}
               viewport={{ once: true }}
-              className="group bg-white p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
+              className="group bg-gray-50 p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
             >
               <h3 className="text-2xl font-serif font-bold mb-3 group-hover:text-gray-700">
                 Construction Intake
@@ -292,7 +401,7 @@ export default function ContactPage() {
               whileInView={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.5, delay: 0.3 }}
               viewport={{ once: true }}
-              className="group bg-white p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
+              className="group bg-gray-50 p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
             >
               <h3 className="text-2xl font-serif font-bold mb-3 group-hover:text-gray-700">
                 Design Consultation
