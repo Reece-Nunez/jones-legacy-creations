@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import { Open_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/Toaster";
+import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -48,6 +49,7 @@ export default function RootLayout({
       <body
         className={`${openSans.variable} ${playfair.variable} font-sans antialiased bg-white text-black`}
       >
+        <GoogleAnalytics />
         {children}
         <Toaster />
       </body>

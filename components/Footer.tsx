@@ -3,7 +3,7 @@ import Image from "next/image";
 import { Building2, Home, Palette, Mail, Phone, MapPin, Instagram, Facebook } from "lucide-react";
 
 export function Footer() {
-  const currentYear = new Date().getFullYear();
+  const currentYear = 2025;
 
   return (
     <footer className="bg-black text-white">

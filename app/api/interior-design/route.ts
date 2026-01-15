@@ -1,8 +1,6 @@
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 
-const resend = new Resend(process.env.RESEND_API_KEY);
-
 interface DesignFormData {
   fullName: string;
   email: string;
@@ -167,15 +165,21 @@ const getBusinessEmail = (data: DesignFormData) => `
 export async function POST(request: Request) {
   try {
     const data = await request.json();
+    const resend = new Resend(process.env.RESEND_API_KEY);
 
-    await resend.emails.send({
+    const clientEmailResult = await resend.emails.send({
       from: 'Jones Legacy Creations <noreply@joneslegacycreations.com>',
       to: data.email,
       subject: 'Thank You for Your Design Inquiry',
       html: getClientEmail(data),
     });
 
-    await resend.emails.send({
+    if (clientEmailResult.error) {
+      console.error('Error sending client email:', clientEmailResult.error);
+      return NextResponse.json({ error: clientEmailResult.error.message }, { status: 500 });
+    }
+
+    const businessEmailResult = await resend.emails.send({
       from: 'Jones Legacy Creations <noreply@joneslegacycreations.com>',
       to: 'interiors@joneslegacycreations.com',
       subject: `New Design Inquiry from ${data.fullName}`,
@@ -183,9 +187,15 @@ export async function POST(request: Request) {
       replyTo: data.email,
     });
 
+    if (businessEmailResult.error) {
+      console.error('Error sending business email:', businessEmailResult.error);
+      return NextResponse.json({ error: businessEmailResult.error.message }, { status: 500 });
+    }
+
     return NextResponse.json({ success: true });
   } catch (error) {
     console.error('Error sending emails:', error);
-    return NextResponse.json({ error: 'Failed to send emails' }, { status: 500 });
+    const message = error instanceof Error ? error.message : 'Failed to send emails';
+    return NextResponse.json({ error: message }, { status: 500 });
   }
 }
