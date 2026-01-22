@@ -1,22 +1,7 @@
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
-
-interface RealEstateFormData {
-  fullName: string;
-  email: string;
-  phone: string;
-  serviceType?: string;
-  propertyType?: string;
-  preferredCity: string;
-  preferredState: string;
-  preferredZipCode?: string;
-  budgetRange?: string;
-  bedrooms?: string;
-  bathrooms?: string;
-  moveInTimeline?: string;
-  mustHaveFeatures?: string;
-  additionalNotes?: string;
-}
+import { checkSpamProtection } from '@/lib/spam-protection';
+import { realEstateSubmissionSchema, RealEstateFormData } from '@/lib/schemas/real-estate';
 
 const getClientEmail = (data: RealEstateFormData) => `
 <!DOCTYPE html>
@@ -161,8 +146,36 @@ const getBusinessEmail = (data: RealEstateFormData) => `
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
+    const body = await request.json();
 
+    // 1. Server-side validation with Zod
+    const parseResult = realEstateSubmissionSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parseResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { recaptchaToken, honeypot, ...data } = parseResult.data;
+
+    // 2. Spam protection checks
+    const spamCheck = await checkSpamProtection({
+      request,
+      recaptchaToken,
+      recaptchaAction: 'real_estate_form',
+      honeypotValue: honeypot,
+    });
+
+    if (!spamCheck.passed) {
+      console.log('Spam detected:', spamCheck.error);
+      return NextResponse.json(
+        { error: 'Unable to process request' },
+        { status: 429 }
+      );
+    }
+
+    // 3. Process form submission
     if (!process.env.RESEND_API_KEY) {
       console.error('RESEND_API_KEY is not set');
       return NextResponse.json({ error: 'Email service not configured' }, { status: 500 });

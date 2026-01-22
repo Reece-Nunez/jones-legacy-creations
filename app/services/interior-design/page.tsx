@@ -6,8 +6,10 @@ import Link from "next/link";
 import Image from "next/image";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import toast from "react-hot-toast";
+import { interiorDesignFormSchema, InteriorDesignFormData } from "@/lib/schemas/interior-design";
+import { HoneypotField } from "@/components/ui/HoneypotField";
+import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
@@ -16,40 +18,8 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Palette, Home, Sparkles, Eye, Ruler, PaintBucket, ArrowRight, Instagram, Facebook, Phone } from "lucide-react";
 
-const interiorDesignSchema = z.object({
-  // Personal Information
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-
-  // Service Type
-  serviceType: z.string().min(1, "Please select a service type"),
-
-  // Property Information
-  propertyAddress: z.string().optional(),
-  propertyCity: z.string().min(1, "Please enter a city"),
-  propertyState: z.string().min(2, "Please enter a state"),
-  propertyZipCode: z.string().optional(),
-
-  // Project Details
-  squareFootage: z.string().optional(),
-  numberOfRooms: z.string().optional(),
-  projectDescription: z.string().min(1, "Please describe your project"),
-
-  // Budget & Timeline
-  estimatedBudget: z.string().min(1, "Please select a budget range"),
-  projectTimeline: z.string().min(1, "Please select a timeline"),
-
-  // Style Preferences
-  stylePreference: z.string().optional(),
-  colorPreferences: z.string().optional(),
-
-  // Additional Information
-  additionalNotes: z.string().optional(),
-  howDidYouHear: z.string().optional(),
-});
-
-type InteriorDesignFormData = z.infer<typeof interiorDesignSchema>;
+// Extended type for form with honeypot field
+type InteriorDesignFormWithHoneypot = InteriorDesignFormData & { honeypot?: string };
 
 const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/interior/";
 
@@ -73,26 +43,33 @@ const highlightedImages: PortfolioImage[] = [
 export default function InteriorDesignPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
+  const { executeRecaptcha } = useRecaptcha();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<InteriorDesignFormData>({
-    resolver: zodResolver(interiorDesignSchema),
+  } = useForm<InteriorDesignFormWithHoneypot>({
+    resolver: zodResolver(interiorDesignFormSchema),
   });
 
-  const onSubmit = async (data: InteriorDesignFormData) => {
+  const onSubmit = async (data: InteriorDesignFormWithHoneypot) => {
     setIsSubmitting(true);
 
     try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha('interior_design_form');
+
       const response = await fetch('/api/interior-design', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          recaptchaToken,
+        }),
       });
 
       if (!response.ok) {
@@ -503,6 +480,9 @@ export default function InteriorDesignPage() {
                 onSubmit={handleSubmit(onSubmit)}
                 className="space-y-8 overflow-hidden"
               >
+                {/* Honeypot field - hidden from users, catches bots */}
+                <HoneypotField register={register} />
+
                 {/* Personal Information */}
                 <div className="bg-gray-50 p-6 rounded-xl">
                   <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>

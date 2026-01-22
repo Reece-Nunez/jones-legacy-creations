@@ -4,8 +4,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import toast from "react-hot-toast";
+import { realEstateFormSchema, RealEstateFormData } from "@/lib/schemas/real-estate";
+import { HoneypotField } from "@/components/ui/HoneypotField";
+import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
@@ -31,80 +33,14 @@ const SOUTHERN_UTAH_CITIES = [
   { name: "Cedar City", state: "UT", zipCode: "84720" },
 ];
 
-const realEstateSchema = z.object({
-  // Personal Information
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-
-  // Property Type
-  propertyType: z.string().min(1, "Please select a property type"),
-  serviceType: z.string().min(1, "Please select a service type"),
-
-  // Location Preferences
-  preferredCity: z.string().min(1, "Please select a city"),
-  preferredNeighborhood: z.string().optional(),
-  preferredState: z.string().min(2, "State is required"),
-  preferredZipCode: z.string().optional(),
-
-  // Budget
-  budgetRange: z.string().min(1, "Please select a budget range"),
-
-  // Property Features
-  bedrooms: z.string().min(1, "Please select number of bedrooms"),
-  bathrooms: z.string().min(1, "Please select number of bathrooms"),
-  squareFootage: z.string().optional(),
-  lotSize: z.string().optional(),
-  yearBuilt: z.string().optional(),
-
-  // Garage & Parking
-  garageSpaces: z.string().optional(),
-  parkingType: z.string().optional(),
-
-  // Property Style
-  architecturalStyle: z.string().optional(),
-  stories: z.string().optional(),
-
-  // Interior Features
-  kitchenStyle: z.string().optional(),
-  flooringType: z.string().optional(),
-  hasBasement: z.string().optional(),
-  hasAttic: z.string().optional(),
-  hasFireplace: z.string().optional(),
-
-  // Exterior Features
-  exteriorMaterial: z.string().optional(),
-  roofType: z.string().optional(),
-  hasPool: z.string().optional(),
-  hasDeck: z.string().optional(),
-  hasPatio: z.string().optional(),
-
-  // Systems & Utilities
-  heatingType: z.string().optional(),
-  coolingType: z.string().optional(),
-  hasSmartHome: z.string().optional(),
-  hasSolarPanels: z.string().optional(),
-
-  // Additional Features
-  mustHaveFeatures: z.string().optional(),
-  niceToHaveFeatures: z.string().optional(),
-  dealBreakers: z.string().optional(),
-
-  // Timeline
-  moveInTimeline: z.string().min(1, "Please select a timeline"),
-
-  // Additional Information
-  additionalNotes: z.string().optional(),
-  howDidYouHear: z.string().min(1, "Please select how you heard about us"),
-  howDidYouHearOther: z.string().optional(),
-});
-
-type RealEstateFormData = z.infer<typeof realEstateSchema>;
+// Extended type for form with honeypot field
+type RealEstateFormWithHoneypot = RealEstateFormData & { honeypot?: string };
 
 export default function RealEstatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
+  const { executeRecaptcha } = useRecaptcha();
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev =>
@@ -121,8 +57,8 @@ export default function RealEstatePage() {
     reset,
     watch,
     setValue,
-  } = useForm<RealEstateFormData>({
-    resolver: zodResolver(realEstateSchema),
+  } = useForm<RealEstateFormWithHoneypot>({
+    resolver: zodResolver(realEstateFormSchema),
   });
 
   const handleCityChange = (cityName: string) => {
@@ -136,16 +72,22 @@ export default function RealEstatePage() {
 
   const howDidYouHearValue = watch("howDidYouHear");
 
-  const onSubmit = async (data: RealEstateFormData) => {
+  const onSubmit = async (data: RealEstateFormWithHoneypot) => {
     setIsSubmitting(true);
 
     try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha('real_estate_form');
+
       const response = await fetch('/api/real-estate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          recaptchaToken,
+        }),
       });
 
       if (!response.ok) {
@@ -404,6 +346,9 @@ export default function RealEstatePage() {
                 onSubmit={handleSubmit(onSubmit)}
                 className="space-y-8 overflow-hidden"
               >
+            {/* Honeypot field - hidden from users, catches bots */}
+            <HoneypotField register={register} />
+
             {/* Personal Information */}
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-2xl font-serif font-bold mb-6">Personal Information</h3>

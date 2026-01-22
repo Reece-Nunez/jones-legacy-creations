@@ -4,8 +4,10 @@ import { useState } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import toast from "react-hot-toast";
+import { contactFormSchema, ContactFormData } from "@/lib/schemas/contact";
+import { HoneypotField } from "@/components/ui/HoneypotField";
+import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
@@ -14,38 +16,38 @@ import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
 import { Mail, Phone, MapPin, Clock } from "lucide-react";
 
-const contactSchema = z.object({
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  subject: z.string().min(1, "Please select a subject"),
-  message: z.string().min(10, "Message must be at least 10 characters"),
-});
-
-type ContactFormData = z.infer<typeof contactSchema>;
+// Extended type for form with honeypot field
+type ContactFormWithHoneypot = ContactFormData & { honeypot?: string };
 
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const { executeRecaptcha } = useRecaptcha();
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     reset,
-  } = useForm<ContactFormData>({
-    resolver: zodResolver(contactSchema),
+  } = useForm<ContactFormWithHoneypot>({
+    resolver: zodResolver(contactFormSchema),
   });
 
-  const onSubmit = async (data: ContactFormData) => {
+  const onSubmit = async (data: ContactFormWithHoneypot) => {
     setIsSubmitting(true);
 
     try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha('contact_form');
+
       const response = await fetch('/api/contact', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          recaptchaToken,
+        }),
       });
 
       if (!response.ok) {
@@ -247,6 +249,9 @@ export default function ContactPage() {
             onSubmit={handleSubmit(onSubmit)}
             className="space-y-6"
           >
+            {/* Honeypot field - hidden from users, catches bots */}
+            <HoneypotField register={register} />
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 label="Full Name"

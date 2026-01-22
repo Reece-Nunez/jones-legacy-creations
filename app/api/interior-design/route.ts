@@ -1,24 +1,10 @@
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
+import { checkSpamProtection } from '@/lib/spam-protection';
+import { interiorDesignSubmissionSchema, InteriorDesignFormData } from '@/lib/schemas/interior-design';
 
-interface DesignFormData {
-  fullName: string;
-  email: string;
-  phone: string;
-  serviceType?: string;
-  propertyAddress?: string;
-  propertyCity: string;
-  propertyState: string;
-  propertyZipCode?: string;
-  squareFootage?: string;
-  numberOfRooms?: string;
-  projectDescription?: string;
-  estimatedBudget?: string;
-  projectTimeline?: string;
-  stylePreference?: string;
-  colorPreferences?: string;
-  additionalNotes?: string;
-}
+// Type alias for email templates
+type DesignFormData = InteriorDesignFormData;
 
 const getClientEmail = (data: DesignFormData) => `
 <!DOCTYPE html>
@@ -164,7 +150,36 @@ const getBusinessEmail = (data: DesignFormData) => `
 
 export async function POST(request: Request) {
   try {
-    const data = await request.json();
+    const body = await request.json();
+
+    // 1. Server-side validation with Zod
+    const parseResult = interiorDesignSubmissionSchema.safeParse(body);
+    if (!parseResult.success) {
+      return NextResponse.json(
+        { error: 'Validation failed', details: parseResult.error.flatten() },
+        { status: 400 }
+      );
+    }
+
+    const { recaptchaToken, honeypot, ...data } = parseResult.data;
+
+    // 2. Spam protection checks
+    const spamCheck = await checkSpamProtection({
+      request,
+      recaptchaToken,
+      recaptchaAction: 'interior_design_form',
+      honeypotValue: honeypot,
+    });
+
+    if (!spamCheck.passed) {
+      console.log('Spam detected:', spamCheck.error);
+      return NextResponse.json(
+        { error: 'Unable to process request' },
+        { status: 429 }
+      );
+    }
+
+    // 3. Process form submission
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const clientEmailResult = await resend.emails.send({

@@ -4,8 +4,10 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { z } from "zod";
 import toast from "react-hot-toast";
+import { constructionFormSchema, ConstructionFormData } from "@/lib/schemas/construction";
+import { HoneypotField } from "@/components/ui/HoneypotField";
+import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
@@ -16,87 +18,8 @@ import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, Chevron
 import Link from "next/link";
 import Image from "next/image";
 
-const constructionSchema = z.object({
-  // Personal Information
-  fullName: z.string().min(2, "Name must be at least 2 characters"),
-  email: z.string().email("Invalid email address"),
-  phone: z.string().min(10, "Phone number must be at least 10 digits"),
-  company: z.string().optional(),
-
-  // Project Type
-  projectType: z.string().min(1, "Please select a project type"),
-  projectCategory: z.string().min(1, "Please select a project category"),
-
-  // Property Information
-  propertyAddress: z.string().optional(),
-  propertyCity: z.string().min(1, "Please enter a city"),
-  propertyState: z.string().min(2, "Please enter a state"),
-  propertyZipCode: z.string().optional(),
-  propertyOwnership: z.string().min(1, "Please select property ownership status"),
-
-  // Project Details
-  projectScope: z.string().min(1, "Please describe your project"),
-  squareFootage: z.string().optional(),
-  numberOfFloors: z.string().optional(),
-  numberOfRooms: z.string().optional(),
-
-  // Budget & Timeline
-  estimatedBudget: z.string().min(1, "Please select a budget range"),
-  projectTimeline: z.string().min(1, "Please select a timeline"),
-  startDate: z.string().optional(),
-  completionDate: z.string().optional(),
-
-  // Specific Requirements
-  buildingPermits: z.string().optional(),
-  architecturalPlans: z.string().optional(),
-  zoningCompliance: z.string().optional(),
-
-  // Materials & Finishes
-  materialsPreference: z.string().optional(),
-  qualityLevel: z.string().optional(),
-  sustainabilityPreference: z.string().optional(),
-
-  // Specific Work Areas
-  foundationWork: z.string().optional(),
-  framingWork: z.string().optional(),
-  roofingWork: z.string().optional(),
-  electricalWork: z.string().optional(),
-  plumbingWork: z.string().optional(),
-  hvacWork: z.string().optional(),
-  interiorFinishing: z.string().optional(),
-  exteriorFinishing: z.string().optional(),
-
-  // Demolition
-  demolitionRequired: z.string().optional(),
-  demolitionScope: z.string().optional(),
-
-  // Accessibility & Special Features
-  accessibilityFeatures: z.string().optional(),
-  energyEfficiency: z.string().optional(),
-  smartHomeIntegration: z.string().optional(),
-
-  // Site Conditions
-  siteAccessibility: z.string().optional(),
-  utilityConnections: z.string().optional(),
-  soilConditions: z.string().optional(),
-
-  // Additional Services
-  designServices: z.string().optional(),
-  engineeringServices: z.string().optional(),
-  projectManagement: z.string().optional(),
-
-  // Insurance & Financing
-  hasInsurance: z.string().optional(),
-  financingNeeded: z.string().optional(),
-
-  // Additional Information
-  additionalNotes: z.string().optional(),
-  howDidYouHear: z.string().optional(),
-  howDidYouHearOther: z.string().optional(),
-  attachments: z.string().optional(),
-});
-
-type ConstructionFormData = z.infer<typeof constructionSchema>;
+// Extended type for form with honeypot field
+type ConstructionFormWithHoneypot = ConstructionFormData & { honeypot?: string };
 
 // S3 base URL for construction images
 const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/construction";
@@ -182,6 +105,7 @@ export default function ConstructionPage() {
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<CompletedProject | null>(null);
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+  const { executeRecaptcha } = useRecaptcha();
 
   const toggleSection = (section: string) => {
     setExpandedSections(prev =>
@@ -197,22 +121,28 @@ export default function ConstructionPage() {
     formState: { errors },
     reset,
     watch,
-  } = useForm<ConstructionFormData>({
-    resolver: zodResolver(constructionSchema),
+  } = useForm<ConstructionFormWithHoneypot>({
+    resolver: zodResolver(constructionFormSchema),
   });
 
   const howDidYouHearValue = watch("howDidYouHear");
 
-  const onSubmit = async (data: ConstructionFormData) => {
+  const onSubmit = async (data: ConstructionFormWithHoneypot) => {
     setIsSubmitting(true);
 
     try {
+      // Get reCAPTCHA token
+      const recaptchaToken = await executeRecaptcha('construction_form');
+
       const response = await fetch('/api/construction', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({
+          ...data,
+          recaptchaToken,
+        }),
       });
 
       if (!response.ok) {
@@ -742,6 +672,9 @@ export default function ConstructionPage() {
                 onSubmit={handleSubmit(onSubmit)}
                 className="space-y-8 overflow-hidden"
               >
+            {/* Honeypot field - hidden from users, catches bots */}
+            <HoneypotField register={register} />
+
             {/* Personal Information */}
             <div className="bg-gray-50 p-6 rounded-xl">
               <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>
