@@ -110,6 +110,11 @@ export async function POST(request: Request) {
       recaptchaToken,
       recaptchaAction: 'contact_form',
       honeypotValue: honeypot,
+      contentCheck: {
+        name: data.fullName,
+        message: data.message,
+        minMessageWords: 3,
+      },
     });
 
     if (!spamCheck.passed) {

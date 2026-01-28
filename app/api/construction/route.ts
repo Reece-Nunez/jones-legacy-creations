@@ -160,6 +160,12 @@ export async function POST(request: Request) {
       recaptchaToken,
       recaptchaAction: 'construction_form',
       honeypotValue: honeypot,
+      contentCheck: {
+        name: data.fullName,
+        message: data.projectScope,
+        city: data.propertyCity,
+        minMessageWords: 3,
+      },
     });
 
     if (!spamCheck.passed) {

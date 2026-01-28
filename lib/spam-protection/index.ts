@@ -1,12 +1,14 @@
 import { verifyRecaptcha, RecaptchaResult } from './recaptcha';
 import { validateHoneypot } from './honeypot';
 import { checkRateLimit, getClientIP, RateLimitResult, RateLimitConfig } from './rate-limit';
+import { validateContent, ContentCheckOptions, ContentCheckResult } from './content-validation';
 
 export interface SpamCheckResult {
   passed: boolean;
   recaptcha: RecaptchaResult | null;
   rateLimit: RateLimitResult;
   honeypotTriggered: boolean;
+  contentCheck: ContentCheckResult | null;
   error?: string;
 }
 
@@ -16,6 +18,7 @@ export interface SpamCheckOptions {
   recaptchaAction: string;
   honeypotValue?: string;
   rateLimitConfig?: RateLimitConfig;
+  contentCheck?: ContentCheckOptions;
 }
 
 /**
@@ -27,7 +30,7 @@ export interface SpamCheckOptions {
 export async function checkSpamProtection(
   options: SpamCheckOptions
 ): Promise<SpamCheckResult> {
-  const { request, recaptchaToken, recaptchaAction, honeypotValue, rateLimitConfig } = options;
+  const { request, recaptchaToken, recaptchaAction, honeypotValue, rateLimitConfig, contentCheck } = options;
 
   // 1. Check honeypot first (immediate rejection, no API call needed)
   const honeypotResult = validateHoneypot(honeypotValue);
@@ -38,11 +41,29 @@ export async function checkSpamProtection(
       recaptcha: null,
       rateLimit: { allowed: false, remaining: 0, resetTime: 0 },
       honeypotTriggered: true,
+      contentCheck: null,
       error: 'Bot detected',
     };
   }
 
-  // 2. Check rate limit
+  // 2. Check content for gibberish/spam patterns
+  if (contentCheck) {
+    const contentResult = validateContent(contentCheck);
+    if (!contentResult.valid) {
+      const firstError = Object.values(contentResult.errors)[0];
+      console.log('Spam detected: content validation failed', contentResult.errors);
+      return {
+        passed: false,
+        recaptcha: null,
+        rateLimit: { allowed: false, remaining: 0, resetTime: 0 },
+        honeypotTriggered: false,
+        contentCheck: contentResult,
+        error: firstError || 'Invalid content detected',
+      };
+    }
+  }
+
+  // 3. Check rate limit
   const clientIP = getClientIP(request);
   const rateLimitResult = checkRateLimit(clientIP, rateLimitConfig);
 
@@ -53,6 +74,7 @@ export async function checkSpamProtection(
       recaptcha: null,
       rateLimit: rateLimitResult,
       honeypotTriggered: false,
+      contentCheck: null,
       error: 'Rate limit exceeded. Please try again later.',
     };
   }
@@ -68,6 +90,7 @@ export async function checkSpamProtection(
         recaptcha: recaptchaResult,
         rateLimit: rateLimitResult,
         honeypotTriggered: false,
+        contentCheck: null,
         error: recaptchaResult.error || 'reCAPTCHA verification failed',
       };
     }
@@ -78,9 +101,10 @@ export async function checkSpamProtection(
     recaptcha: recaptchaResult,
     rateLimit: rateLimitResult,
     honeypotTriggered: false,
+    contentCheck: null,
   };
 }
 
 // Re-export individual utilities for direct use
-export { verifyRecaptcha, validateHoneypot, checkRateLimit, getClientIP };
-export type { RecaptchaResult, RateLimitResult, RateLimitConfig };
+export { verifyRecaptcha, validateHoneypot, checkRateLimit, getClientIP, validateContent };
+export type { RecaptchaResult, RateLimitResult, RateLimitConfig, ContentCheckOptions, ContentCheckResult };

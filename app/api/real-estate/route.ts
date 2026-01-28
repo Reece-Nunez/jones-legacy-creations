@@ -165,6 +165,10 @@ export async function POST(request: Request) {
       recaptchaToken,
       recaptchaAction: 'real_estate_form',
       honeypotValue: honeypot,
+      contentCheck: {
+        name: data.fullName,
+        city: data.preferredCity,
+      },
     });
 
     if (!spamCheck.passed) {

@@ -169,6 +169,12 @@ export async function POST(request: Request) {
       recaptchaToken,
       recaptchaAction: 'interior_design_form',
       honeypotValue: honeypot,
+      contentCheck: {
+        name: data.fullName,
+        message: data.projectDescription,
+        city: data.propertyCity,
+        minMessageWords: 3,
+      },
     });
 
     if (!spamCheck.passed) {
