@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -14,72 +15,111 @@ const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/i
 type Category = "All" | "Bedrooms" | "Kitchens" | "Living Rooms" | "Bathrooms" | "Other";
 
 interface PortfolioImage {
-  id: number;
+  filename: string;
   category: Category;
   description?: string;
   rotate?: number;
+  ext?: string;
+  project?: string;
 }
 
 const portfolioImages: PortfolioImage[] = [
   // Bedrooms
-  { id: 11, category: "Bedrooms", description: "Serene bedroom retreat", rotate: 90 },
-  { id: 15, category: "Bedrooms", description: "Modern bedroom styling" },
-  { id: 17, category: "Bedrooms", description: "Cozy bedroom design" },
-  { id: 24, category: "Bedrooms", description: "Contemporary bedroom" },
-  { id: 37, category: "Bedrooms", description: "Sophisticated bedroom space" },
-  { id: 41, category: "Bedrooms", description: "Stylish bedroom interior" },
-  { id: 44, category: "Bedrooms", description: "Comfortable bedroom retreat" },
-  { id: 45, category: "Bedrooms", description: "Refined bedroom styling" },
+  { filename: "bedroom-1", category: "Bedrooms", description: "Serene bedroom retreat", rotate: 90 },
+  { filename: "bedroom-2", category: "Bedrooms", description: "Modern bedroom styling" },
+  { filename: "bedroom-3", category: "Bedrooms", description: "Cozy bedroom design" },
+  { filename: "bedroom-4", category: "Bedrooms", description: "Contemporary bedroom" },
+  { filename: "bedroom-5", category: "Bedrooms", description: "Sophisticated bedroom space" },
+  { filename: "bedroom-6", category: "Bedrooms", description: "Stylish bedroom interior" },
+  { filename: "bedroom-7", category: "Bedrooms", description: "Comfortable bedroom retreat" },
+  { filename: "bedroom-8", category: "Bedrooms", description: "Refined bedroom styling" },
 
   // Kitchens
-  { id: 2, category: "Kitchens", description: "Stunning kitchen transformation" },
-  { id: 3, category: "Kitchens", description: "Modern kitchen design" },
-  { id: 5, category: "Kitchens", description: "Sleek contemporary kitchen" },
-  { id: 9, category: "Kitchens", description: "Gourmet kitchen space" },
-  { id: 10, category: "Kitchens", description: "Custom kitchen cabinetry" },
-  { id: 13, category: "Kitchens", description: "Elegant kitchen styling" },
-  { id: 19, category: "Kitchens", description: "Functional kitchen design" },
-  { id: 22, category: "Kitchens", description: "Sophisticated kitchen" },
-  { id: 32, category: "Kitchens", description: "Stylish kitchen interior" },
-  { id: 33, category: "Kitchens", description: "Contemporary kitchen space" },
-  { id: 38, category: "Kitchens", description: "Designer kitchen" },
-  { id: 51, category: "Kitchens", description: "Modern kitchen styling" },
-  { id: 53, category: "Kitchens", description: "Luxury kitchen design" },
+  { filename: "kitchen-1", category: "Kitchens", description: "Stunning kitchen transformation" },
+  { filename: "kitchen-2", category: "Kitchens", description: "Modern kitchen design" },
+  { filename: "kitchen-3", category: "Kitchens", description: "Sleek contemporary kitchen" },
+  { filename: "kitchen-4", category: "Kitchens", description: "Gourmet kitchen space" },
+  { filename: "kitchen-5", category: "Kitchens", description: "Custom kitchen cabinetry" },
+  { filename: "kitchen-6", category: "Kitchens", description: "Elegant kitchen styling" },
+  { filename: "kitchen-7", category: "Kitchens", description: "Functional kitchen design" },
+  { filename: "kitchen-8", category: "Kitchens", description: "Sophisticated kitchen" },
+  { filename: "kitchen-9", category: "Kitchens", description: "Stylish kitchen interior" },
+  { filename: "kitchen-10", category: "Kitchens", description: "Contemporary kitchen space" },
+  { filename: "kitchen-11", category: "Kitchens", description: "Designer kitchen" },
+  { filename: "kitchen-12", category: "Kitchens", description: "Modern kitchen styling" },
+  { filename: "kitchen-13", category: "Kitchens", description: "Luxury kitchen design" },
 
   // Living Rooms
-  { id: 4, category: "Living Rooms", description: "Inviting living room space" },
-  { id: 8, category: "Living Rooms", description: "Modern living room design" },
-  { id: 12, category: "Living Rooms", description: "Elegant living area" },
-  { id: 14, category: "Living Rooms", description: "Comfortable living space" },
-  { id: 16, category: "Living Rooms", description: "Sophisticated living room" },
-  { id: 23, category: "Living Rooms", description: "Contemporary living area" },
-  { id: 28, category: "Living Rooms", description: "Designer living room" },
-  { id: 29, category: "Living Rooms", description: "Beautiful living area" },
-  { id: 30, category: "Living Rooms", description: "Modern living space" },
-  { id: 34, category: "Living Rooms", description: "Refined living room" },
-  { id: 35, category: "Living Rooms", description: "Elegant living design" },
-  { id: 36, category: "Living Rooms", description: "Luxury living room" },
-  { id: 49, category: "Living Rooms", description: "Stylish living room design" },
-  { id: 50, category: "Living Rooms", description: "Contemporary living room" },
-  { id: 58, category: "Living Rooms", description: "Designer living space" },
-  { id: 60, category: "Living Rooms", description: "Beautiful living room" },
-  { id: 61, category: "Living Rooms", description: "Elegant living interior" },
-  { id: 62, category: "Living Rooms", description: "Premium living room design" },
+  { filename: "living-room-1", category: "Living Rooms", description: "Inviting living room space" },
+  { filename: "living-room-2", category: "Living Rooms", description: "Modern living room design" },
+  { filename: "living-room-3", category: "Living Rooms", description: "Elegant living area" },
+  { filename: "living-room-4", category: "Living Rooms", description: "Comfortable living space" },
+  { filename: "living-room-5", category: "Living Rooms", description: "Sophisticated living room" },
+  { filename: "living-room-6", category: "Living Rooms", description: "Contemporary living area" },
+  { filename: "living-room-7", category: "Living Rooms", description: "Designer living room" },
+  { filename: "living-room-8", category: "Living Rooms", description: "Beautiful living area" },
+  { filename: "living-room-9", category: "Living Rooms", description: "Modern living space" },
+  { filename: "living-room-10", category: "Living Rooms", description: "Refined living room" },
+  { filename: "living-room-11", category: "Living Rooms", description: "Elegant living design" },
+  { filename: "living-room-12", category: "Living Rooms", description: "Luxury living room" },
+  { filename: "living-room-13", category: "Living Rooms", description: "Stylish living room design" },
+  { filename: "living-room-14", category: "Living Rooms", description: "Contemporary living room" },
+  { filename: "living-room-15", category: "Living Rooms", description: "Designer living space" },
+  { filename: "living-room-16", category: "Living Rooms", description: "Beautiful living room" },
+  { filename: "living-room-17", category: "Living Rooms", description: "Elegant living interior" },
+  { filename: "living-room-18", category: "Living Rooms", description: "Premium living room design" },
 
   // Bathrooms
-  { id: 6, category: "Bathrooms", description: "Spa-like bathroom retreat" },
-  { id: 18, category: "Bathrooms", description: "Luxury bathroom styling" },
-  { id: 46, category: "Bathrooms", description: "Elegant bathroom space" },
-  { id: 47, category: "Bathrooms", description: "Contemporary bathroom" },
+  { filename: "bathroom-1", category: "Bathrooms", description: "Spa-like bathroom retreat" },
+  { filename: "bathroom-2", category: "Bathrooms", description: "Luxury bathroom styling" },
+  { filename: "bathroom-3", category: "Bathrooms", description: "Elegant bathroom space" },
+  { filename: "bathroom-4", category: "Bathrooms", description: "Contemporary bathroom" },
 
   // Other
-  { id: 42, category: "Other", description: "Charming nursery design" },
-  { id: 43, category: "Other", description: "Stunning outdoor space" },
-  { id: 56, category: "Other", description: "Custom interior styling" },
+  { filename: "other-1", category: "Other", description: "Charming nursery design" },
+  { filename: "other-2", category: "Other", description: "Stunning outdoor space" },
+  { filename: "other-3", category: "Other", description: "Custom interior styling" },
+
+  // Rolling Rock Drive - Bedrooms
+  { filename: "rolling-rock-drive-bedroom-1", category: "Bedrooms", description: "Rolling Rock Drive bedroom", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bedroom-2", category: "Bedrooms", description: "Rolling Rock Drive bedroom styling", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bedroom-3", category: "Bedrooms", description: "Rolling Rock Drive cozy bedroom", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bedroom-4", category: "Bedrooms", description: "Rolling Rock Drive bedroom retreat", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bedroom-5", category: "Bedrooms", description: "Rolling Rock Drive master bedroom", ext: "jpeg", project: "Rolling Rock Drive" },
+
+  // Rolling Rock Drive - Bathrooms
+  { filename: "rolling-rock-drive-bathroom-1", category: "Bathrooms", description: "Rolling Rock Drive bathroom", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bathroom-2", category: "Bathrooms", description: "Rolling Rock Drive bathroom styling", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bathroom-3", category: "Bathrooms", description: "Rolling Rock Drive spa bathroom", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bathroom-4", category: "Bathrooms", description: "Rolling Rock Drive bathroom retreat", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-bathroom-5", category: "Bathrooms", description: "Rolling Rock Drive modern bathroom", ext: "jpeg", project: "Rolling Rock Drive" },
+
+  // Rolling Rock Drive - Kitchens
+  { filename: "rolling-rock-drive-kitchen-1", category: "Kitchens", description: "Rolling Rock Drive kitchen", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-2", category: "Kitchens", description: "Rolling Rock Drive kitchen styling", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-3", category: "Kitchens", description: "Rolling Rock Drive modern kitchen", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-4", category: "Kitchens", description: "Rolling Rock Drive kitchen design", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-5", category: "Kitchens", description: "Rolling Rock Drive gourmet kitchen", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-6", category: "Kitchens", description: "Rolling Rock Drive kitchen space", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-7", category: "Kitchens", description: "Rolling Rock Drive custom kitchen", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-8", category: "Kitchens", description: "Rolling Rock Drive elegant kitchen", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-kitchen-9", category: "Kitchens", description: "Rolling Rock Drive luxury kitchen", ext: "jpeg", project: "Rolling Rock Drive" },
+
+  // Rolling Rock Drive - Living Rooms
+  { filename: "rolling-rock-drive-living-room-1", category: "Living Rooms", description: "Rolling Rock Drive living room", ext: "jpeg", project: "Rolling Rock Drive" },
+
+  // Rolling Rock Drive - Other
+  { filename: "rolling-rock-drive-other-1", category: "Other", description: "Rolling Rock Drive interior", ext: "jpeg", project: "Rolling Rock Drive" },
+  { filename: "rolling-rock-drive-other-2", category: "Other", description: "Rolling Rock Drive design detail", ext: "jpeg", project: "Rolling Rock Drive" },
 ];
 
 export default function GalleryPage() {
-  const [activeCategory, setActiveCategory] = useState<Category>("All");
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams.get("category");
+  const initialCategory: Category = categoryParam && ["Bedrooms", "Kitchens", "Living Rooms", "Bathrooms", "Other"].includes(categoryParam)
+    ? (categoryParam as Category)
+    : "All";
+  const [activeCategory, setActiveCategory] = useState<Category>(initialCategory);
   const [lightboxImage, setLightboxImage] = useState<PortfolioImage | null>(null);
 
   const categories: Category[] = ["All", "Bedrooms", "Kitchens", "Living Rooms", "Bathrooms", "Other"];
@@ -89,7 +129,7 @@ export default function GalleryPage() {
     : portfolioImages.filter(img => img.category === activeCategory);
 
   // Lightbox navigation
-  const currentImageIndex = lightboxImage ? filteredImages.findIndex(img => img.id === lightboxImage.id) : -1;
+  const currentImageIndex = lightboxImage ? filteredImages.findIndex(img => img.filename === lightboxImage.filename) : -1;
 
   const goToNextImage = () => {
     if (currentImageIndex < filteredImages.length - 1) {
@@ -186,7 +226,7 @@ export default function GalleryPage() {
             >
               {filteredImages.map((image, index) => (
                 <motion.div
-                  key={image.id}
+                  key={image.filename}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.5, delay: index * 0.05 }}
@@ -198,7 +238,7 @@ export default function GalleryPage() {
                   >
                     <div className="aspect-[4/3] relative overflow-hidden">
                       <Image
-                        src={`${S3_BASE_URL}image${image.id}.webp`}
+                        src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
                         alt={image.description || `${image.category} design`}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
@@ -208,7 +248,10 @@ export default function GalleryPage() {
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
                     </div>
                     <div className="p-6">
-                      <div className="text-sm text-gray-500 mb-2">{image.category}</div>
+                      <div className="text-sm text-gray-500 mb-2">
+                        {image.category}
+                        {image.project && <span className="ml-2 text-gray-400">· {image.project}</span>}
+                      </div>
                       <p className="text-gray-700">{image.description}</p>
                     </div>
                   </div>
@@ -298,7 +341,7 @@ export default function GalleryPage() {
             >
               <div className="relative w-full h-full">
                 <Image
-                  src={`${S3_BASE_URL}image${lightboxImage.id}.webp`}
+                  src={`${S3_BASE_URL}${lightboxImage.filename}.${lightboxImage.ext || "webp"}`}
                   alt={lightboxImage.description || `${lightboxImage.category} design`}
                   fill
                   className="object-contain"

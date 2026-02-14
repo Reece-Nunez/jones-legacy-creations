@@ -24,20 +24,21 @@ type InteriorDesignFormWithHoneypot = InteriorDesignFormData & { honeypot?: stri
 const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/interior/";
 
 interface PortfolioImage {
-  id: number;
+  filename: string;
   category: string;
   description?: string;
   rotate?: number;
+  ext?: string;
 }
 
 // Highlighted images for main page (in specific order)
 const highlightedImages: PortfolioImage[] = [
-  { id: 2, category: "Kitchens", description: "Stunning kitchen transformation" },
-  { id: 4, category: "Living Rooms", description: "Inviting living room space" },
-  { id: 41, category: "Bedrooms", description: "Stylish bedroom interior" },
-  { id: 47, category: "Bathrooms", description: "Contemporary bathroom" },
-  { id: 13, category: "Kitchens", description: "Elegant kitchen styling" },
-  { id: 36, category: "Living Rooms", description: "Luxury living room" },
+  { filename: "kitchen-1", category: "Kitchens", description: "Stunning kitchen transformation" },
+  { filename: "living-room-1", category: "Living Rooms", description: "Inviting living room space" },
+  { filename: "bedroom-6", category: "Bedrooms", description: "Stylish bedroom interior" },
+  { filename: "bathroom-4", category: "Bathrooms", description: "Contemporary bathroom" },
+  { filename: "kitchen-6", category: "Kitchens", description: "Elegant kitchen styling" },
+  { filename: "living-room-12", category: "Living Rooms", description: "Luxury living room" },
 ];
 
 export default function InteriorDesignPage() {
@@ -354,29 +355,31 @@ export default function InteriorDesignPage() {
           >
             {highlightedImages.map((image, index) => (
               <motion.div
-                key={image.id}
+                key={image.filename}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.05 }}
                 viewport={{ once: true }}
                 className="group"
               >
-                <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300">
-                  <div className="aspect-[4/3] relative overflow-hidden">
-                    <Image
-                      src={`${S3_BASE_URL}image${image.id}.webp`}
-                      alt={image.description || `${image.category} design`}
-                      fill
-                      sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                      className="object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                <Link href={`/services/interior-design/gallery?category=${encodeURIComponent(image.category)}`}>
+                  <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer">
+                    <div className="aspect-[4/3] relative overflow-hidden">
+                      <Image
+                        src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
+                        alt={image.description || `${image.category} design`}
+                        fill
+                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        className="object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                    </div>
+                    <div className="p-6">
+                      <div className="text-sm text-gray-500 mb-2">{image.category}</div>
+                      <p className="text-gray-700">{image.description}</p>
+                    </div>
                   </div>
-                  <div className="p-6">
-                    <div className="text-sm text-gray-500 mb-2">{image.category}</div>
-                    <p className="text-gray-700">{image.description}</p>
-                  </div>
-                </div>
+                </Link>
               </motion.div>
             ))}
           </motion.div>

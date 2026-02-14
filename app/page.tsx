@@ -69,35 +69,36 @@ export default function HomePage() {
           </motion.div>
 
           {/* Staggered glass cards */}
-          <div className="relative flex flex-col md:flex-row justify-center items-center gap-6 md:gap-8">
+          <div className="relative flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
             {companies.map((company, i) => (
-              <motion.div
-                key={company.id}
-                initial={{ opacity: 0, y: 50 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: i * 0.15 }}
-                className={`w-full md:w-[340px] bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 backdrop-blur-xl border border-white/10 rounded-3xl p-8
-                  ${i === 1 ? "md:-mx-6 md:z-20 md:scale-110 hover:md:scale-[1.15]" : "md:z-10 hover:md:scale-105"}
-                  hover:border-white/20 transition-all duration-500 group cursor-pointer`}
-              >
-                <div className="w-20 h-20 flex items-center justify-center mb-6">
-                  <Image src={company.icon} alt="" width={56} height={56} />
-                </div>
-                <h3 className="text-2xl font-serif font-bold text-white mb-1">{company.name}</h3>
-                <p className="text-white/50 text-sm mb-4">{company.subtitle}</p>
-                <p className="text-white/70 text-sm mb-6">{company.description}</p>
-                <ul className="space-y-2 mb-6">
-                  {company.features.slice(0, 3).map((f) => (
-                    <li key={f} className="text-white/60 text-sm flex items-center gap-2">
-                      <span className="w-1.5 h-1.5 bg-white rounded-full" />
-                      {f}
-                    </li>
-                  ))}
-                </ul>
-                <Link href={company.href} className="inline-flex items-center gap-2 text-white font-medium text-sm group-hover:gap-3 transition-all">
-                  Learn More <ArrowRight className="w-4 h-4" />
-                </Link>
-              </motion.div>
+              <Link key={company.id} href={company.href} className="w-full md:w-[340px]">
+                <motion.div
+                  initial={{ opacity: 0, y: 50 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: i * 0.15 }}
+                  className={`h-full bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 backdrop-blur-xl border border-white/10 rounded-3xl p-8
+                    ${i === 1 ? "md:z-20 md:scale-110 hover:md:scale-[1.15]" : "md:z-10 hover:md:scale-105"}
+                    hover:border-white/20 transition-all duration-500 group cursor-pointer`}
+                >
+                  <div className="w-20 h-20 flex items-center justify-center mb-6">
+                    <Image src={company.icon} alt="" width={56} height={56} />
+                  </div>
+                  <h3 className="text-2xl font-serif font-bold text-white mb-1">{company.name}</h3>
+                  <p className="text-white/50 text-sm mb-4">{company.subtitle}</p>
+                  <p className="text-white/70 text-sm mb-6">{company.description}</p>
+                  <ul className="space-y-2 mb-6">
+                    {company.features.slice(0, 3).map((f) => (
+                      <li key={f} className="text-white/60 text-sm flex items-center gap-2">
+                        <span className="w-1.5 h-1.5 bg-white rounded-full" />
+                        {f}
+                      </li>
+                    ))}
+                  </ul>
+                  <span className="inline-flex items-center gap-2 text-white font-medium text-sm group-hover:gap-3 transition-all">
+                    Learn More <ArrowRight className="w-4 h-4" />
+                  </span>
+                </motion.div>
+              </Link>
             ))}
           </div>
 
