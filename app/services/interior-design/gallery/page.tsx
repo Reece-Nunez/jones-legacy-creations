@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
@@ -114,6 +114,14 @@ const portfolioImages: PortfolioImage[] = [
 ];
 
 export default function GalleryPage() {
+  return (
+    <Suspense>
+      <GalleryContent />
+    </Suspense>
+  );
+}
+
+function GalleryContent() {
   const searchParams = useSearchParams();
   const categoryParam = searchParams.get("category");
   const initialCategory: Category = categoryParam && ["Bedrooms", "Kitchens", "Living Rooms", "Bathrooms", "Other"].includes(categoryParam)
