@@ -71,7 +71,7 @@ export const realEstateFormSchema = z.object({
 
 // Extended schema with spam protection fields (server only)
 export const realEstateSubmissionSchema = realEstateFormSchema.extend({
-  recaptchaToken: z.string().optional(),
+  recaptchaToken: z.string().nullable().optional(),
   honeypot: z.string().max(0, "Bot detected").optional(),
 });
 

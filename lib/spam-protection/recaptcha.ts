@@ -33,7 +33,7 @@ export interface RecaptchaResult {
 }
 
 export async function verifyRecaptcha(
-  token: string | undefined,
+  token: string | null | undefined,
   expectedAction: string
 ): Promise<RecaptchaResult> {
   // If reCAPTCHA is not configured, allow the request (graceful degradation)

@@ -14,7 +14,7 @@ export interface SpamCheckResult {
 
 export interface SpamCheckOptions {
   request: Request;
-  recaptchaToken?: string;
+  recaptchaToken?: string | null;
   recaptchaAction: string;
   honeypotValue?: string;
   rateLimitConfig?: RateLimitConfig;

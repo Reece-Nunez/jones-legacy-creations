@@ -36,7 +36,7 @@ export const interiorDesignFormSchema = z.object({
 
 // Extended schema with spam protection fields (server only)
 export const interiorDesignSubmissionSchema = interiorDesignFormSchema.extend({
-  recaptchaToken: z.string().optional(),
+  recaptchaToken: z.string().nullable().optional(),
   honeypot: z.string().max(0, "Bot detected").optional(),
 });
 
