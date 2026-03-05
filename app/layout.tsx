@@ -3,7 +3,6 @@ import { Open_Sans, Playfair_Display } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/Toaster";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
-import { ReCaptchaProvider } from "@/components/ReCaptchaProvider";
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -51,7 +50,6 @@ export default function RootLayout({
         className={`${openSans.variable} ${playfair.variable} font-sans antialiased bg-white text-black`}
       >
         <GoogleAnalytics />
-        <ReCaptchaProvider />
         {children}
         <Toaster />
       </body>

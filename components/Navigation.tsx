@@ -3,7 +3,6 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, ChevronDown } from "lucide-react";
 
 export function Navigation() {
@@ -65,27 +64,21 @@ export function Navigation() {
                 <ChevronDown className="w-4 h-4" />
               </button>
 
-              <AnimatePresence>
-                {servicesOpen && (
-                  <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.2 }}
-                    className="absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden"
+              <div
+                className={`absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden transition-all duration-200 ${
+                  servicesOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
+                }`}
+              >
+                {services.map((service) => (
+                  <Link
+                    key={service.href}
+                    href={service.href}
+                    className="block px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
                   >
-                    {services.map((service) => (
-                      <Link
-                        key={service.href}
-                        href={service.href}
-                        className="block px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
-                      >
-                        {service.name}
-                      </Link>
-                    ))}
-                  </motion.div>
-                )}
-              </AnimatePresence>
+                    {service.name}
+                  </Link>
+                ))}
+              </div>
             </div>
 
             <Link
@@ -114,58 +107,52 @@ export function Navigation() {
       </div>
 
       {/* Mobile Navigation */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ height: 0, opacity: 0 }}
-            animate={{ height: "auto", opacity: 1 }}
-            exit={{ height: 0, opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="md:hidden bg-white border-t border-gray-200 overflow-hidden"
+      <div
+        className={`md:hidden bg-white border-t border-gray-200 overflow-hidden transition-all duration-300 ${
+          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+        }`}
+      >
+        <div className="px-4 py-6 space-y-4">
+          <Link
+            href="/"
+            className="block text-base font-medium hover:text-gray-600 transition-colors"
+            onClick={() => setIsOpen(false)}
           >
-            <div className="px-4 py-6 space-y-4">
-              <Link
-                href="/"
-                className="block text-base font-medium hover:text-gray-600 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Home
-              </Link>
+            Home
+          </Link>
 
-              <div className="space-y-2">
-                <div className="text-base font-medium text-gray-900">Services</div>
-                <div className="pl-4 space-y-2">
-                  {services.map((service) => (
-                    <Link
-                      key={service.href}
-                      href={service.href}
-                      className="block text-sm text-gray-600 hover:text-gray-900 transition-colors"
-                      onClick={() => setIsOpen(false)}
-                    >
-                      {service.name}
-                    </Link>
-                  ))}
-                </div>
-              </div>
-
-              <Link
-                href="/about"
-                className="block text-base font-medium hover:text-gray-600 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                About
-              </Link>
-              <Link
-                href="/contact"
-                className="block w-full text-center px-6 py-3 bg-black text-white text-base font-medium rounded-full hover:bg-gray-800 transition-colors"
-                onClick={() => setIsOpen(false)}
-              >
-                Contact
-              </Link>
+          <div className="space-y-2">
+            <div className="text-base font-medium text-gray-900">Services</div>
+            <div className="pl-4 space-y-2">
+              {services.map((service) => (
+                <Link
+                  key={service.href}
+                  href={service.href}
+                  className="block text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  onClick={() => setIsOpen(false)}
+                >
+                  {service.name}
+                </Link>
+              ))}
             </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+          </div>
+
+          <Link
+            href="/about"
+            className="block text-base font-medium hover:text-gray-600 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            About
+          </Link>
+          <Link
+            href="/contact"
+            className="block w-full text-center px-6 py-3 bg-black text-white text-base font-medium rounded-full hover:bg-gray-800 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Contact
+          </Link>
+        </div>
+      </div>
     </nav>
   );
 }

@@ -1,11 +1,9 @@
 "use client";
 
-import Script from "next/script";
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
 const RECAPTCHA_SITE_KEY = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY;
 
-// Extend Window interface for grecaptcha enterprise
 declare global {
   interface Window {
     grecaptcha: {
@@ -17,36 +15,25 @@ declare global {
   }
 }
 
-/**
- * Provider component that loads the Google reCAPTCHA Enterprise script.
- * Add this component to your root layout.
- */
-export function ReCaptchaProvider() {
-  if (!RECAPTCHA_SITE_KEY) {
-    return null;
-  }
+function loadRecaptchaScript() {
+  if (!RECAPTCHA_SITE_KEY) return;
+  if (document.querySelector(`script[src*="recaptcha/enterprise.js"]`)) return;
 
-  return (
-    <Script
-      src={`https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`}
-      strategy="afterInteractive"
-    />
-  );
+  const script = document.createElement("script");
+  script.src = `https://www.google.com/recaptcha/enterprise.js?render=${RECAPTCHA_SITE_KEY}`;
+  script.async = true;
+  document.head.appendChild(script);
 }
 
 /**
  * Hook to execute reCAPTCHA Enterprise and get a token.
- * Use this in your form components before submission.
- *
- * @example
- * const { executeRecaptcha } = useRecaptcha();
- *
- * const onSubmit = async (data) => {
- *   const token = await executeRecaptcha('contact_form');
- *   // Include token in your API request
- * };
+ * Automatically loads the reCAPTCHA script when first used.
  */
 export function useRecaptcha() {
+  useEffect(() => {
+    loadRecaptchaScript();
+  }, []);
+
   const executeRecaptcha = useCallback(async (action: string): Promise<string | null> => {
     if (!RECAPTCHA_SITE_KEY) {
       console.warn('reCAPTCHA site key not configured');
