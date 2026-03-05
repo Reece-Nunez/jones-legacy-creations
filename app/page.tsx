@@ -12,6 +12,7 @@ const companies = [
     name: "Jones Custom Homes",
     subtitle: "Custom Construction",
     description: "From concept to completion, we deliver exceptional construction projects on time and within budget.",
+    iconAlt: "Jones Custom Homes icon",
     icon: "/JONES CUSTOM HOMES ICON (2).svg",
     href: "/services/construction",
     features: ["Residential Construction", "Commercial Projects", "Renovations", "Project Management"],
@@ -21,6 +22,7 @@ const companies = [
     name: "Blake Jones Realty",
     subtitle: "Real Estate Services",
     description: "Find your dream property or let us help you sell. Expert guidance through every step.",
+    iconAlt: "Blake Jones Realty icon",
     icon: "/JONES REALTY ICON (2).svg",
     href: "/services/real-estate",
     features: ["Property Search", "Market Analysis", "Buyer/Seller Representation", "Investment Consulting"],
@@ -30,6 +32,7 @@ const companies = [
     name: "Interiors By Jones",
     subtitle: "Design & Staging",
     description: "Transform spaces with professional interior design and staging services that captivate.",
+    iconAlt: "Interiors By Jones icon",
     icon: "/JONES Interior Design & Staging ICON (2).svg",
     href: "/services/interior-design",
     features: ["Interior Design", "Home Staging", "Space Planning", "Color Consultation"],
@@ -73,7 +76,7 @@ export default function HomePage() {
                       hover:border-white/20 transition-all duration-500 group cursor-pointer`}
                   >
                     <div className="w-20 h-20 flex items-center justify-center mb-6">
-                      <Image src={company.icon} alt="" width={56} height={56} />
+                      <Image src={company.icon} alt={company.iconAlt} width={56} height={56} />
                     </div>
                     <h3 className="text-2xl font-serif font-bold text-white mb-1">{company.name}</h3>
                     <p className="text-white/50 text-sm mb-4">{company.subtitle}</p>
