@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
-import { Menu, X, ChevronDown } from "lucide-react";
+import { Menu, X, ChevronDown, Settings } from "lucide-react";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
@@ -88,10 +88,24 @@ export function Navigation() {
               About
             </Link>
             <Link
+              href="/estimate"
+              className="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors"
+            >
+              Free Estimate
+            </Link>
+            <Link
               href="/contact"
               className="px-6 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
             >
               Contact
+            </Link>
+            <Link
+              href="/admin"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+              title="Admin"
+            >
+              <Settings className="w-4 h-4" />
+              Admin
             </Link>
           </div>
 
@@ -145,11 +159,26 @@ export function Navigation() {
             About
           </Link>
           <Link
+            href="/estimate"
+            className="block w-full text-center px-6 py-3 bg-blue-600 text-white text-base font-medium rounded-full hover:bg-blue-700 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            Free Estimate
+          </Link>
+          <Link
             href="/contact"
             className="block w-full text-center px-6 py-3 bg-black text-white text-base font-medium rounded-full hover:bg-gray-800 transition-colors"
             onClick={() => setIsOpen(false)}
           >
             Contact
+          </Link>
+          <Link
+            href="/admin"
+            className="flex items-center justify-center gap-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            onClick={() => setIsOpen(false)}
+          >
+            <Settings className="w-4 h-4" />
+            Admin
           </Link>
         </div>
       </div>
