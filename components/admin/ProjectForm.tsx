@@ -181,6 +181,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             <input
               id="client_email"
               type="email"
+              inputMode="email"
               {...register("client_email")}
               className={inputClassName}
               placeholder="client@example.com"
@@ -198,6 +199,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             <input
               id="client_phone"
               type="tel"
+              inputMode="tel"
               {...register("client_phone")}
               className={inputClassName}
               placeholder="(555) 123-4567"
@@ -314,6 +316,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             <input
               id="estimated_value"
               type="number"
+              inputMode="decimal"
               step="0.01"
               min="0"
               {...register("estimated_value")}
@@ -330,6 +333,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             <input
               id="contract_value"
               type="number"
+              inputMode="decimal"
               step="0.01"
               min="0"
               {...register("contract_value")}

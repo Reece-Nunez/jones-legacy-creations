@@ -97,29 +97,35 @@ export default function ContractorForm({
   }
 
   const inputClass =
-    "w-full rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200";
+    "w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200";
   const labelClass = "mb-1.5 block text-sm font-medium text-gray-700";
 
   return (
     <form
       onSubmit={handleSubmit(onSubmit)}
       className="space-y-6 rounded-xl bg-white p-6 shadow-sm"
+      noValidate
     >
       {/* Name */}
       <div>
         <label htmlFor="name" className={labelClass}>
-          Name *
+          Name <span className="text-red-500">*</span>
         </label>
         <input
           id="name"
           type="text"
           placeholder="John Smith"
+          aria-required="true"
+          aria-invalid={!!errors.name}
+          aria-describedby={errors.name ? "name-error" : undefined}
           className={inputClass}
           style={{ minHeight: 44 }}
           {...register("name")}
         />
         {errors.name && (
-          <p className="mt-1 text-sm text-red-600">{errors.name.message}</p>
+          <p id="name-error" className="mt-1 text-sm text-red-600" role="alert">
+            {errors.name.message}
+          </p>
         )}
       </div>
 
@@ -141,11 +147,14 @@ export default function ContractorForm({
       {/* Trade */}
       <div>
         <label htmlFor="trade" className={labelClass}>
-          Trade *
+          Trade <span className="text-red-500">*</span>
         </label>
         <select
           id="trade"
-          className={inputClass}
+          aria-required="true"
+          aria-invalid={!!errors.trade}
+          aria-describedby={errors.trade ? "trade-error" : undefined}
+          className={`${inputClass} appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236b7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat pr-10`}
           style={{ minHeight: 44 }}
           {...register("trade")}
         >
@@ -157,7 +166,9 @@ export default function ContractorForm({
           ))}
         </select>
         {errors.trade && (
-          <p className="mt-1 text-sm text-red-600">{errors.trade.message}</p>
+          <p id="trade-error" className="mt-1 text-sm text-red-600" role="alert">
+            {errors.trade.message}
+          </p>
         )}
       </div>
 
@@ -170,13 +181,19 @@ export default function ContractorForm({
           <input
             id="email"
             type="email"
+            inputMode="email"
+            autoComplete="email"
             placeholder="john@smithplumbing.com"
+            aria-invalid={!!errors.email}
+            aria-describedby={errors.email ? "email-error" : undefined}
             className={inputClass}
             style={{ minHeight: 44 }}
             {...register("email")}
           />
           {errors.email && (
-            <p className="mt-1 text-sm text-red-600">{errors.email.message}</p>
+            <p id="email-error" className="mt-1 text-sm text-red-600" role="alert">
+              {errors.email.message}
+            </p>
           )}
         </div>
         <div>
@@ -186,6 +203,8 @@ export default function ContractorForm({
           <input
             id="phone"
             type="tel"
+            inputMode="tel"
+            autoComplete="tel"
             placeholder="(801) 555-1234"
             className={inputClass}
             style={{ minHeight: 44 }}
@@ -224,11 +243,11 @@ export default function ContractorForm({
       </div>
 
       {/* Submit */}
-      <div className="flex justify-end gap-3 pt-2">
+      <div className="flex flex-col gap-3 pt-2 sm:flex-row sm:justify-end">
         <button
           type="button"
           onClick={() => router.back()}
-          className="rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+          className="order-2 rounded-lg border border-gray-300 bg-white px-5 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50 sm:order-1"
           style={{ minHeight: 44 }}
         >
           Cancel
@@ -236,7 +255,7 @@ export default function ContractorForm({
         <button
           type="submit"
           disabled={isSubmitting}
-          className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:opacity-50"
+          className="order-1 inline-flex w-full items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 disabled:opacity-50 sm:order-2 sm:w-auto"
           style={{ minHeight: 44 }}
         >
           {isSubmitting ? (

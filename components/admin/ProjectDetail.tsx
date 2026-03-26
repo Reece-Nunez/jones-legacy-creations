@@ -31,6 +31,7 @@ import {
   TrendingDown,
   Banknote,
   Receipt,
+  Circle,
 } from "lucide-react";
 import type {
   Project,
@@ -97,6 +98,40 @@ function timeAgo(dateStr: string): string {
   if (days < 7) return `${days}d ago`;
   if (weeks < 5) return `${weeks}w ago`;
   return `${months}mo ago`;
+}
+
+/** Left border color for status-based cards */
+function invoiceLeftBorder(status: InvoiceStatus): string {
+  switch (status) {
+    case "paid": return "border-l-green-500";
+    case "overdue": return "border-l-red-500";
+    case "sent": return "border-l-blue-500";
+    default: return "border-l-gray-300";
+  }
+}
+
+function permitLeftBorder(status: PermitStatus): string {
+  switch (status) {
+    case "approved": return "border-l-green-500";
+    case "denied": return "border-l-red-500";
+    case "expired": return "border-l-orange-500";
+    case "applied": return "border-l-blue-500";
+    default: return "border-l-gray-300";
+  }
+}
+
+function drawLeftBorder(status: DrawRequestStatus): string {
+  switch (status) {
+    case "funded": return "border-l-green-500";
+    case "denied": return "border-l-red-500";
+    case "approved": return "border-l-blue-500";
+    case "submitted": return "border-l-yellow-500";
+    default: return "border-l-gray-300";
+  }
+}
+
+function paymentLeftBorder(status: string): string {
+  return status === "paid" ? "border-l-green-500" : "border-l-yellow-500";
 }
 
 const TABS = [
@@ -253,19 +288,19 @@ export default function ProjectDetail({
         <div className="mt-4 flex flex-wrap gap-2">
           <button
             onClick={() => setActiveTab("invoices")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
           >
             <FileText className="w-3.5 h-3.5" /> Add Invoice
           </button>
           <button
             onClick={() => setActiveTab("tasks")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
           >
             <CheckSquare className="w-3.5 h-3.5" /> Add Task
           </button>
           <Link
             href={`/admin/projects/${project.id}/edit`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm"
+            className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
           >
             <Edit3 className="w-3.5 h-3.5" /> Edit Project
           </Link>
@@ -273,15 +308,18 @@ export default function ProjectDetail({
 
         {/* Tabs */}
         <div className="mt-6 border-b border-gray-200 overflow-x-auto">
-          <nav className="-mb-px flex gap-2 sm:gap-6 min-w-max">
+          <nav className="-mb-px flex gap-2 sm:gap-6 min-w-max" role="tablist">
             {TABS.map((t) => {
               const Icon = t.icon;
               const active = activeTab === t.key;
               return (
                 <button
                   key={t.key}
+                  role="tab"
+                  aria-selected={active}
+                  aria-controls={`tabpanel-${t.key}`}
                   onClick={() => setActiveTab(t.key)}
-                  className={`flex items-center gap-1.5 px-1 pb-3 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
+                  className={`flex items-center gap-1.5 px-4 py-3 text-sm font-medium border-b-2 transition-colors cursor-pointer whitespace-nowrap ${
                     active
                       ? "border-black text-black"
                       : "border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300"
@@ -298,58 +336,74 @@ export default function ProjectDetail({
         {/* Tab Content */}
         <div className="mt-6">
           {activeTab === "overview" && (
-            <OverviewTab project={project} mutate={mutate} />
+            <div role="tabpanel" id="tabpanel-overview">
+              <OverviewTab project={project} mutate={mutate} />
+            </div>
           )}
           {activeTab === "invoices" && (
-            <InvoicesTab
-              projectId={project.id}
-              invoices={invoices}
-              mutate={mutate}
-              loading={loading}
-            />
+            <div role="tabpanel" id="tabpanel-invoices">
+              <InvoicesTab
+                projectId={project.id}
+                invoices={invoices}
+                mutate={mutate}
+                loading={loading}
+              />
+            </div>
           )}
           {activeTab === "payments" && (
-            <PaymentsTab
-              projectId={project.id}
-              payments={payments}
-              mutate={mutate}
-              loading={loading}
-            />
+            <div role="tabpanel" id="tabpanel-payments">
+              <PaymentsTab
+                projectId={project.id}
+                payments={payments}
+                mutate={mutate}
+                loading={loading}
+              />
+            </div>
           )}
           {activeTab === "draws" && (
-            <DrawsTab
-              projectId={project.id}
-              draws={drawRequests}
-              mutate={mutate}
-              loading={loading}
-            />
+            <div role="tabpanel" id="tabpanel-draws">
+              <DrawsTab
+                projectId={project.id}
+                draws={drawRequests}
+                mutate={mutate}
+                loading={loading}
+              />
+            </div>
           )}
           {activeTab === "permits" && (
-            <PermitsTab
-              projectId={project.id}
-              permits={permits}
-              mutate={mutate}
-              loading={loading}
-            />
+            <div role="tabpanel" id="tabpanel-permits">
+              <PermitsTab
+                projectId={project.id}
+                permits={permits}
+                mutate={mutate}
+                loading={loading}
+              />
+            </div>
           )}
           {activeTab === "documents" && (
-            <DocumentsTab
-              projectId={project.id}
-              documents={documents}
-              mutate={mutate}
-              loading={loading}
-            />
+            <div role="tabpanel" id="tabpanel-documents">
+              <DocumentsTab
+                projectId={project.id}
+                documents={documents}
+                mutate={mutate}
+                loading={loading}
+              />
+            </div>
           )}
           {activeTab === "tasks" && (
-            <TasksTab
-              projectId={project.id}
-              tasks={tasks}
-              mutate={mutate}
-              loading={loading}
-            />
+            <div role="tabpanel" id="tabpanel-tasks">
+              <TasksTab
+                projectId={project.id}
+                tasks={tasks}
+                mutate={mutate}
+                loading={loading}
+              />
+            </div>
           )}
           {activeTab === "activity" && (
-            <ActivityTab activityLog={activityLog} />
+            <div role="tabpanel" id="tabpanel-activity">
+              <ActivityTab activityLog={activityLog} />
+            </div>
           )}
         </div>
       </div>
@@ -384,7 +438,7 @@ function FinancialCard({
         {icon}
         <span className="text-xs text-gray-500 font-medium">{label}</span>
       </div>
-      <p className={`text-sm sm:text-base font-semibold ${colorClass}`}>
+      <p className={`text-lg sm:text-xl font-bold tabular-nums ${colorClass}`}>
         {fmt(value)}
       </p>
     </div>
@@ -415,7 +469,7 @@ function Header({
         <div>
           <Link
             href="/admin"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-black mb-2"
+            className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-black mb-2 transition-colors"
           >
             <ArrowLeft className="w-4 h-4" /> Back to Dashboard
           </Link>
@@ -424,17 +478,19 @@ function Header({
           </h1>
           <div className="mt-2 flex flex-wrap items-center gap-3">
             <span
-              className={`inline-block px-3 py-1 rounded-full text-xs font-medium ${PROJECT_STATUS_COLORS[project.status]}`}
+              className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-medium ${PROJECT_STATUS_COLORS[project.status]}`}
             >
+              <Circle className="w-2 h-2 fill-current" />
               {PROJECT_STATUS_LABELS[project.status]}
             </span>
             <select
               disabled={loading}
               value={project.status}
+              aria-label="Change project status"
               onChange={(e) =>
                 onStatusChange(e.target.value as ProjectStatus)
               }
-              className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-black"
+              className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
             >
               {Object.entries(PROJECT_STATUS_LABELS).map(([val, label]) => (
                 <option key={val} value={val}>
@@ -448,11 +504,13 @@ function Header({
         {/* Quick info */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm text-gray-600">
           <span className="flex items-center gap-1.5">
-            <DollarSign className="w-4 h-4 text-gray-400" />
-            {project.estimated_value ? fmt(project.estimated_value) : "--"}
+            <DollarSign className="w-4 h-4 text-gray-500" />
+            <span className="tabular-nums">
+              {project.estimated_value ? fmt(project.estimated_value) : "--"}
+            </span>
           </span>
           <span className="flex items-center gap-1.5">
-            <Calendar className="w-4 h-4 text-gray-400" />
+            <Calendar className="w-4 h-4 text-gray-500" />
             {fmtDate(project.start_date)}
             {project.end_date ? ` - ${fmtDate(project.end_date)}` : ""}
           </span>
@@ -523,7 +581,11 @@ function OverviewTab({
       <Card title="Description">
         {editingField === "description" ? (
           <div className="space-y-2">
+            <label htmlFor="edit-description" className="block text-sm text-gray-700 font-medium">
+              Description
+            </label>
             <textarea
+              id="edit-description"
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black"
               rows={4}
               value={editValue}
@@ -532,13 +594,13 @@ function OverviewTab({
             <div className="flex gap-2">
               <button
                 onClick={saveEdit}
-                className="inline-flex items-center gap-1 text-sm bg-black text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 cursor-pointer"
+                className="inline-flex items-center gap-1 text-sm bg-black text-white px-3 py-1.5 min-h-[44px] rounded-lg hover:bg-gray-800 cursor-pointer transition-colors"
               >
                 <Check className="w-3.5 h-3.5" /> Save
               </button>
               <button
                 onClick={() => setEditingField(null)}
-                className="text-sm text-gray-500 px-3 py-1.5 cursor-pointer"
+                className="text-sm text-gray-600 px-3 py-1.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -551,7 +613,8 @@ function OverviewTab({
             </p>
             <button
               onClick={() => startEdit("description")}
-              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-black cursor-pointer"
+              aria-label="Edit description"
+              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
             >
               <Edit3 className="w-4 h-4" />
             </button>
@@ -563,7 +626,11 @@ function OverviewTab({
       <Card title="Notes">
         {editingField === "notes" ? (
           <div className="space-y-2">
+            <label htmlFor="edit-notes" className="block text-sm text-gray-700 font-medium">
+              Notes
+            </label>
             <textarea
+              id="edit-notes"
               className="w-full border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-black"
               rows={4}
               value={editValue}
@@ -572,13 +639,13 @@ function OverviewTab({
             <div className="flex gap-2">
               <button
                 onClick={saveEdit}
-                className="inline-flex items-center gap-1 text-sm bg-black text-white px-3 py-1.5 rounded-lg hover:bg-gray-800 cursor-pointer"
+                className="inline-flex items-center gap-1 text-sm bg-black text-white px-3 py-1.5 min-h-[44px] rounded-lg hover:bg-gray-800 cursor-pointer transition-colors"
               >
                 <Check className="w-3.5 h-3.5" /> Save
               </button>
               <button
                 onClick={() => setEditingField(null)}
-                className="text-sm text-gray-500 px-3 py-1.5 cursor-pointer"
+                className="text-sm text-gray-600 px-3 py-1.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -591,7 +658,8 @@ function OverviewTab({
             </p>
             <button
               onClick={() => startEdit("notes")}
-              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 text-gray-400 hover:text-black cursor-pointer"
+              aria-label="Edit notes"
+              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
             >
               <Edit3 className="w-4 h-4" />
             </button>
@@ -658,6 +726,7 @@ function InvoicesTab({
   }
 
   async function deleteInvoice(id: string) {
+    if (!window.confirm("Are you sure you want to delete this invoice?")) return;
     await mutate(`/api/admin/projects/${projectId}/invoices`, "DELETE", { id });
   }
 
@@ -671,62 +740,93 @@ function InvoicesTab({
       }
     >
       {showForm && (
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              placeholder="Invoice #"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.invoice_number}
-              onChange={(e) =>
-                setForm({ ...form, invoice_number: e.target.value })
-              }
-            />
-            <input
-              placeholder="Amount"
-              type="number"
-              step="0.01"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            />
-            <input
-              placeholder="Description"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-            <input
-              type="date"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.due_date}
-              onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-            />
+            <div>
+              <label htmlFor="inv-number" className="block text-sm text-gray-700 font-medium mb-1">
+                Invoice # <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="inv-number"
+                placeholder="Invoice #"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.invoice_number}
+                onChange={(e) =>
+                  setForm({ ...form, invoice_number: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="inv-amount" className="block text-sm text-gray-700 font-medium mb-1">
+                Amount <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="inv-amount"
+                placeholder="Amount"
+                type="number"
+                inputMode="numeric"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="inv-desc" className="block text-sm text-gray-700 font-medium mb-1">
+                Description
+              </label>
+              <input
+                id="inv-desc"
+                placeholder="Description"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="inv-due" className="block text-sm text-gray-700 font-medium mb-1">
+                Due Date
+              </label>
+              <input
+                id="inv-due"
+                type="date"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.due_date}
+                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+              />
+            </div>
           </div>
-          <select
-            value={form.status}
-            onChange={(e) =>
-              setForm({ ...form, status: e.target.value as InvoiceStatus })
-            }
-            className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-          >
-            <option value="draft">Draft</option>
-            <option value="sent">Sent</option>
-            <option value="paid">Paid</option>
-            <option value="overdue">Overdue</option>
-          </select>
+          <div>
+            <label htmlFor="inv-status" className="block text-sm text-gray-700 font-medium mb-1">
+              Status
+            </label>
+            <select
+              id="inv-status"
+              value={form.status}
+              onChange={(e) =>
+                setForm({ ...form, status: e.target.value as InvoiceStatus })
+              }
+              className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+            >
+              <option value="draft">Draft</option>
+              <option value="sent">Sent</option>
+              <option value="paid">Paid</option>
+              <option value="overdue">Overdue</option>
+            </select>
+          </div>
           <div className="flex gap-2">
             <button
               disabled={loading}
               onClick={addInvoice}
-              className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+              className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
             >
-              Save
+              {loading ? "Saving..." : "Save"}
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="text-sm text-gray-500 px-4 py-2 cursor-pointer"
+              className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
             >
               Cancel
             </button>
@@ -742,7 +842,7 @@ function InvoicesTab({
         {invoices.map((inv) => (
           <div
             key={inv.id}
-            className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2"
+            className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${invoiceLeftBorder(inv.status)}`}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -750,8 +850,9 @@ function InvoicesTab({
                   {inv.invoice_number}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${INVOICE_STATUS_COLORS[inv.status]}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${INVOICE_STATUS_COLORS[inv.status]}`}
                 >
+                  <Circle className="w-1.5 h-1.5 fill-current" />
                   {inv.status}
                 </span>
               </div>
@@ -762,25 +863,26 @@ function InvoicesTab({
               )}
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-900 tabular-nums">
                 {fmt(inv.amount)}
               </span>
-              <span className="text-gray-400 text-xs">
+              <span className="text-gray-500 text-xs">
                 Due {fmtDate(inv.due_date)}
               </span>
               {inv.status !== "paid" && (
                 <button
                   disabled={loading}
                   onClick={() => markPaid(inv)}
-                  className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer"
+                  className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
                 >
                   Mark Paid
                 </button>
               )}
               <button
                 disabled={loading}
+                aria-label={`Delete invoice ${inv.invoice_number}`}
                 onClick={() => deleteInvoice(inv.id)}
-                className="text-gray-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -841,6 +943,7 @@ function PaymentsTab({
   }
 
   async function deletePayment(id: string) {
+    if (!window.confirm("Are you sure you want to delete this payment?")) return;
     await mutate(`/api/admin/projects/${projectId}/payments`, "DELETE", { id });
   }
 
@@ -854,50 +957,75 @@ function PaymentsTab({
       }
     >
       {showForm && (
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-            <input
-              placeholder="Contractor Name"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.contractor_name}
-              onChange={(e) =>
-                setForm({ ...form, contractor_name: e.target.value })
-              }
-            />
-            <input
-              placeholder="Amount"
-              type="number"
-              step="0.01"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.amount}
-              onChange={(e) => setForm({ ...form, amount: e.target.value })}
-            />
-            <input
-              placeholder="Description"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.description}
-              onChange={(e) =>
-                setForm({ ...form, description: e.target.value })
-              }
-            />
-            <input
-              type="date"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.due_date}
-              onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-            />
+            <div>
+              <label htmlFor="pay-contractor" className="block text-sm text-gray-700 font-medium mb-1">
+                Contractor Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="pay-contractor"
+                placeholder="Contractor Name"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.contractor_name}
+                onChange={(e) =>
+                  setForm({ ...form, contractor_name: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="pay-amount" className="block text-sm text-gray-700 font-medium mb-1">
+                Amount <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="pay-amount"
+                placeholder="Amount"
+                type="number"
+                inputMode="numeric"
+                step="0.01"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.amount}
+                onChange={(e) => setForm({ ...form, amount: e.target.value })}
+              />
+            </div>
+            <div>
+              <label htmlFor="pay-desc" className="block text-sm text-gray-700 font-medium mb-1">
+                Description
+              </label>
+              <input
+                id="pay-desc"
+                placeholder="Description"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.description}
+                onChange={(e) =>
+                  setForm({ ...form, description: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="pay-due" className="block text-sm text-gray-700 font-medium mb-1">
+                Due Date
+              </label>
+              <input
+                id="pay-due"
+                type="date"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.due_date}
+                onChange={(e) => setForm({ ...form, due_date: e.target.value })}
+              />
+            </div>
           </div>
           <div className="flex gap-2">
             <button
               disabled={loading}
               onClick={addPayment}
-              className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+              className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
             >
-              Save
+              {loading ? "Saving..." : "Save"}
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="text-sm text-gray-500 px-4 py-2 cursor-pointer"
+              className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
             >
               Cancel
             </button>
@@ -913,7 +1041,7 @@ function PaymentsTab({
         {payments.map((p) => (
           <div
             key={p.id}
-            className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2"
+            className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${paymentLeftBorder(p.status)}`}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -921,12 +1049,13 @@ function PaymentsTab({
                   {p.contractor_name}
                 </span>
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${
                     p.status === "paid"
                       ? "bg-green-100 text-green-700"
                       : "bg-yellow-100 text-yellow-700"
                   }`}
                 >
+                  <Circle className="w-1.5 h-1.5 fill-current" />
                   {p.status}
                 </span>
               </div>
@@ -937,25 +1066,26 @@ function PaymentsTab({
               )}
             </div>
             <div className="flex items-center gap-3 text-sm">
-              <span className="font-semibold text-gray-900">
+              <span className="font-semibold text-gray-900 tabular-nums">
                 {fmt(p.amount)}
               </span>
-              <span className="text-gray-400 text-xs">
+              <span className="text-gray-500 text-xs">
                 Due {fmtDate(p.due_date)}
               </span>
               {p.status !== "paid" && (
                 <button
                   disabled={loading}
                   onClick={() => markPaid(p)}
-                  className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer"
+                  className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
                 >
                   Mark Paid
                 </button>
               )}
               <button
                 disabled={loading}
+                aria-label={`Delete payment to ${p.contractor_name}`}
                 onClick={() => deletePayment(p.id)}
-                className="text-gray-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -1042,6 +1172,7 @@ function DrawsTab({
   }
 
   async function deleteDraw(id: string) {
+    if (!window.confirm("Are you sure you want to delete this draw request?")) return;
     await mutate(
       `/api/admin/projects/${projectId}/draws/${id}`,
       "DELETE",
@@ -1054,15 +1185,15 @@ function DrawsTab({
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
         <div className="bg-white rounded-lg shadow-sm p-4">
           <p className="text-xs text-gray-500 font-medium">Total Draws</p>
-          <p className="text-lg font-semibold text-gray-900">{fmt(totalDraws)}</p>
+          <p className="text-lg font-bold text-gray-900 tabular-nums">{fmt(totalDraws)}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm p-4">
           <p className="text-xs text-gray-500 font-medium">Funded</p>
-          <p className="text-lg font-semibold text-green-600">{fmt(fundedAmount)}</p>
+          <p className="text-lg font-bold text-green-600 tabular-nums">{fmt(fundedAmount)}</p>
         </div>
         <div className="bg-white rounded-lg shadow-sm p-4">
           <p className="text-xs text-gray-500 font-medium">Pending</p>
-          <p className="text-lg font-semibold text-blue-600">{fmt(pendingAmount)}</p>
+          <p className="text-lg font-bold text-blue-600 tabular-nums">{fmt(pendingAmount)}</p>
         </div>
       </div>
 
@@ -1078,69 +1209,101 @@ function DrawsTab({
         }
       >
         {showForm && (
-          <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+          <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <input
-                placeholder="Draw #"
-                type="number"
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                value={form.draw_number}
-                onChange={(e) =>
-                  setForm({ ...form, draw_number: e.target.value })
-                }
-              />
-              <input
-                placeholder="Amount"
-                type="number"
-                step="0.01"
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                value={form.amount}
-                onChange={(e) => setForm({ ...form, amount: e.target.value })}
-              />
-              <input
-                placeholder="Description"
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black sm:col-span-2"
-                value={form.description}
-                onChange={(e) =>
-                  setForm({ ...form, description: e.target.value })
-                }
-              />
+              <div>
+                <label htmlFor="draw-number" className="block text-sm text-gray-700 font-medium mb-1">
+                  Draw # <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="draw-number"
+                  placeholder="Draw #"
+                  type="number"
+                  inputMode="numeric"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  value={form.draw_number}
+                  onChange={(e) =>
+                    setForm({ ...form, draw_number: e.target.value })
+                  }
+                />
+              </div>
+              <div>
+                <label htmlFor="draw-amount" className="block text-sm text-gray-700 font-medium mb-1">
+                  Amount <span className="text-red-500">*</span>
+                </label>
+                <input
+                  id="draw-amount"
+                  placeholder="Amount"
+                  type="number"
+                  inputMode="numeric"
+                  step="0.01"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  value={form.amount}
+                  onChange={(e) => setForm({ ...form, amount: e.target.value })}
+                />
+              </div>
+              <div className="sm:col-span-2">
+                <label htmlFor="draw-desc" className="block text-sm text-gray-700 font-medium mb-1">
+                  Description
+                </label>
+                <input
+                  id="draw-desc"
+                  placeholder="Description"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  value={form.description}
+                  onChange={(e) =>
+                    setForm({ ...form, description: e.target.value })
+                  }
+                />
+              </div>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-              <select
-                value={form.status}
-                onChange={(e) =>
-                  setForm({
-                    ...form,
-                    status: e.target.value as DrawRequestStatus,
-                  })
-                }
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              >
-                <option value="draft">Draft</option>
-                <option value="submitted">Submitted</option>
-                <option value="approved">Approved</option>
-                <option value="funded">Funded</option>
-                <option value="denied">Denied</option>
-              </select>
-              <input
-                placeholder="Notes"
-                className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
+              <div>
+                <label htmlFor="draw-status" className="block text-sm text-gray-700 font-medium mb-1">
+                  Status
+                </label>
+                <select
+                  id="draw-status"
+                  value={form.status}
+                  onChange={(e) =>
+                    setForm({
+                      ...form,
+                      status: e.target.value as DrawRequestStatus,
+                    })
+                  }
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                >
+                  <option value="draft">Draft</option>
+                  <option value="submitted">Submitted</option>
+                  <option value="approved">Approved</option>
+                  <option value="funded">Funded</option>
+                  <option value="denied">Denied</option>
+                </select>
+              </div>
+              <div>
+                <label htmlFor="draw-notes" className="block text-sm text-gray-700 font-medium mb-1">
+                  Notes
+                </label>
+                <input
+                  id="draw-notes"
+                  placeholder="Notes"
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  value={form.notes}
+                  onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                />
+              </div>
             </div>
             <div className="flex gap-2">
               <button
                 disabled={loading}
                 onClick={addDraw}
-                className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+                className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
               >
-                Save
+                {loading ? "Saving..." : "Save"}
               </button>
               <button
                 onClick={() => setShowForm(false)}
-                className="text-sm text-gray-500 px-4 py-2 cursor-pointer"
+                className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
               >
                 Cancel
               </button>
@@ -1156,7 +1319,7 @@ function DrawsTab({
           {draws.map((d) => (
             <div
               key={d.id}
-              className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2"
+              className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${drawLeftBorder(d.status)}`}
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
@@ -1164,8 +1327,9 @@ function DrawsTab({
                     Draw #{d.draw_number}
                   </span>
                   <span
-                    className={`px-2 py-0.5 rounded-full text-xs font-medium ${DRAW_STATUS_COLORS[d.status]}`}
+                    className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${DRAW_STATUS_COLORS[d.status]}`}
                   >
+                    <Circle className="w-1.5 h-1.5 fill-current" />
                     {d.status}
                   </span>
                 </div>
@@ -1174,22 +1338,23 @@ function DrawsTab({
                     {d.description}
                   </p>
                 )}
-                <div className="text-xs text-gray-400 mt-0.5">
+                <div className="text-xs text-gray-500 mt-0.5">
                   {d.submitted_date && <>Submitted: {fmtDate(d.submitted_date)}</>}
                   {d.funded_date && <> | Funded: {fmtDate(d.funded_date)}</>}
                 </div>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <span className="font-semibold text-gray-900">
+                <span className="font-semibold text-gray-900 tabular-nums">
                   {fmt(d.amount)}
                 </span>
                 <select
                   disabled={loading}
                   value={d.status}
+                  aria-label={`Change status for Draw #${d.draw_number}`}
                   onChange={(e) =>
                     updateDrawStatus(d, e.target.value as DrawRequestStatus)
                   }
-                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-black"
+                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
                 >
                   <option value="draft">Draft</option>
                   <option value="submitted">Submitted</option>
@@ -1199,8 +1364,9 @@ function DrawsTab({
                 </select>
                 <button
                   disabled={loading}
+                  aria-label={`Delete Draw #${d.draw_number}`}
                   onClick={() => deleteDraw(d.id)}
-                  className="text-gray-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                  className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
@@ -1271,6 +1437,7 @@ function PermitsTab({
   }
 
   async function deletePermit(id: string) {
+    if (!window.confirm("Are you sure you want to delete this permit?")) return;
     await mutate(`/api/admin/projects/${projectId}/permits`, "DELETE", { id });
   }
 
@@ -1284,63 +1451,93 @@ function PermitsTab({
       }
     >
       {showForm && (
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label htmlFor="permit-type" className="block text-sm text-gray-700 font-medium mb-1">
+                Permit Type <span className="text-red-500">*</span>
+              </label>
+              <input
+                id="permit-type"
+                placeholder="Permit Type"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.permit_type}
+                onChange={(e) =>
+                  setForm({ ...form, permit_type: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="permit-number" className="block text-sm text-gray-700 font-medium mb-1">
+                Permit Number
+              </label>
+              <input
+                id="permit-number"
+                placeholder="Permit Number"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.permit_number}
+                onChange={(e) =>
+                  setForm({ ...form, permit_number: e.target.value })
+                }
+              />
+            </div>
+            <div>
+              <label htmlFor="permit-status" className="block text-sm text-gray-700 font-medium mb-1">
+                Status
+              </label>
+              <select
+                id="permit-status"
+                value={form.status}
+                onChange={(e) =>
+                  setForm({ ...form, status: e.target.value as PermitStatus })
+                }
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+              >
+                <option value="not_applied">Not Applied</option>
+                <option value="applied">Applied</option>
+                <option value="approved">Approved</option>
+                <option value="denied">Denied</option>
+                <option value="expired">Expired</option>
+              </select>
+            </div>
+            <div>
+              <label htmlFor="permit-date" className="block text-sm text-gray-700 font-medium mb-1">
+                Applied Date
+              </label>
+              <input
+                id="permit-date"
+                type="date"
+                className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                value={form.applied_date}
+                onChange={(e) =>
+                  setForm({ ...form, applied_date: e.target.value })
+                }
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="permit-notes" className="block text-sm text-gray-700 font-medium mb-1">
+              Notes
+            </label>
             <input
-              placeholder="Permit Type"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.permit_type}
-              onChange={(e) =>
-                setForm({ ...form, permit_type: e.target.value })
-              }
-            />
-            <input
-              placeholder="Permit Number"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.permit_number}
-              onChange={(e) =>
-                setForm({ ...form, permit_number: e.target.value })
-              }
-            />
-            <select
-              value={form.status}
-              onChange={(e) =>
-                setForm({ ...form, status: e.target.value as PermitStatus })
-              }
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            >
-              <option value="not_applied">Not Applied</option>
-              <option value="applied">Applied</option>
-              <option value="approved">Approved</option>
-              <option value="denied">Denied</option>
-              <option value="expired">Expired</option>
-            </select>
-            <input
-              type="date"
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-              value={form.applied_date}
-              onChange={(e) =>
-                setForm({ ...form, applied_date: e.target.value })
-              }
+              id="permit-notes"
+              placeholder="Notes"
+              className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
             />
           </div>
-          <input
-            placeholder="Notes"
-            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            value={form.notes}
-            onChange={(e) => setForm({ ...form, notes: e.target.value })}
-          />
           <div className="flex gap-2">
             <button
               disabled={loading}
               onClick={addPermit}
-              className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+              className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
             >
-              Save
+              {loading ? "Saving..." : "Save"}
             </button>
             <button
               onClick={() => setShowForm(false)}
-              className="text-sm text-gray-500 px-4 py-2 cursor-pointer"
+              className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
             >
               Cancel
             </button>
@@ -1356,7 +1553,7 @@ function PermitsTab({
         {permits.map((p) => (
           <div
             key={p.id}
-            className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2"
+            className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${permitLeftBorder(p.status)}`}
           >
             <div className="flex-1 min-w-0">
               <div className="flex items-center gap-2">
@@ -1369,12 +1566,13 @@ function PermitsTab({
                   </span>
                 )}
                 <span
-                  className={`px-2 py-0.5 rounded-full text-xs font-medium ${PERMIT_STATUS_COLORS[p.status]}`}
+                  className={`inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-xs font-medium ${PERMIT_STATUS_COLORS[p.status]}`}
                 >
+                  <Circle className="w-1.5 h-1.5 fill-current" />
                   {p.status.replace("_", " ")}
                 </span>
               </div>
-              <div className="text-xs text-gray-400 mt-0.5">
+              <div className="text-xs text-gray-500 mt-0.5">
                 {p.applied_date && <>Applied: {fmtDate(p.applied_date)}</>}
                 {p.approved_date && <> | Approved: {fmtDate(p.approved_date)}</>}
                 {p.expiry_date && <> | Expires: {fmtDate(p.expiry_date)}</>}
@@ -1384,10 +1582,11 @@ function PermitsTab({
               <select
                 disabled={loading}
                 value={p.status}
+                aria-label={`Change status for permit ${p.permit_type}`}
                 onChange={(e) =>
                   updatePermitStatus(p.id, e.target.value as PermitStatus)
                 }
-                className="text-xs border border-gray-300 rounded-lg px-2 py-1 focus:outline-none focus:ring-2 focus:ring-black"
+                className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
               >
                 <option value="not_applied">Not Applied</option>
                 <option value="applied">Applied</option>
@@ -1397,8 +1596,9 @@ function PermitsTab({
               </select>
               <button
                 disabled={loading}
+                aria-label={`Delete permit ${p.permit_type}`}
                 onClick={() => deletePermit(p.id)}
-                className="text-gray-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -1449,6 +1649,7 @@ function DocumentsTab({
   }
 
   async function deleteDoc(id: string) {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
     await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id });
   }
 
@@ -1462,48 +1663,60 @@ function DocumentsTab({
       }
     >
       {showForm && (
-        <div className="mb-4 p-4 bg-gray-50 rounded-lg space-y-3">
+        <div className="mb-4 p-4 bg-gray-50 border border-gray-200 rounded-lg space-y-3">
           <div className="flex flex-col sm:flex-row gap-3">
-            <label className="flex-1 flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2 text-sm cursor-pointer hover:border-gray-400">
-              <Upload className="w-4 h-4 text-gray-400" />
-              <span className="text-gray-500 truncate">
-                {file ? file.name : "Choose file..."}
-              </span>
-              <input
-                type="file"
-                className="hidden"
-                onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-              />
-            </label>
-            <select
-              value={category}
-              onChange={(e) =>
-                setCategory(e.target.value as DocumentCategory)
-              }
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-            >
-              <option value="general">General</option>
-              <option value="contract">Contract</option>
-              <option value="permit">Permit</option>
-              <option value="invoice">Invoice</option>
-              <option value="photo">Photo</option>
-              <option value="plan">Plan</option>
-            </select>
+            <div className="flex-1">
+              <label htmlFor="doc-file" className="block text-sm text-gray-700 font-medium mb-1">
+                File <span className="text-red-500">*</span>
+              </label>
+              <label className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-gray-400 transition-colors">
+                <Upload className="w-4 h-4 text-gray-500" />
+                <span className="text-gray-600 truncate">
+                  {file ? file.name : "Choose file..."}
+                </span>
+                <input
+                  id="doc-file"
+                  type="file"
+                  className="hidden"
+                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                />
+              </label>
+            </div>
+            <div>
+              <label htmlFor="doc-category" className="block text-sm text-gray-700 font-medium mb-1">
+                Category
+              </label>
+              <select
+                id="doc-category"
+                value={category}
+                onChange={(e) =>
+                  setCategory(e.target.value as DocumentCategory)
+                }
+                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+              >
+                <option value="general">General</option>
+                <option value="contract">Contract</option>
+                <option value="permit">Permit</option>
+                <option value="invoice">Invoice</option>
+                <option value="photo">Photo</option>
+                <option value="plan">Plan</option>
+              </select>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
               disabled={loading || !file}
               onClick={uploadDoc}
-              className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+              className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
             >
-              Upload
+              {loading ? "Uploading..." : "Upload"}
             </button>
             <button
               onClick={() => {
                 setShowForm(false);
                 setFile(null);
               }}
-              className="text-sm text-gray-500 px-4 py-2 cursor-pointer"
+              className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
             >
               Cancel
             </button>
@@ -1525,7 +1738,7 @@ function DocumentsTab({
               <span className="font-medium text-sm text-gray-900">
                 {doc.name}
               </span>
-              <div className="text-xs text-gray-400 mt-0.5">
+              <div className="text-xs text-gray-500 mt-0.5">
                 {doc.category} | {fmtFileSize(doc.file_size)} |{" "}
                 {fmtDate(doc.created_at)}
               </div>
@@ -1535,14 +1748,16 @@ function DocumentsTab({
                 href={doc.file_url}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-gray-500 hover:text-black"
+                aria-label={`Download ${doc.name}`}
+                className="text-gray-600 hover:text-black min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer transition-colors"
               >
                 <Download className="w-4 h-4" />
               </a>
               <button
                 disabled={loading}
+                aria-label={`Delete document ${doc.name}`}
                 onClick={() => deleteDoc(doc.id)}
-                className="text-gray-400 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -1595,6 +1810,7 @@ function TasksTab({
   }
 
   async function deleteTask(id: string) {
+    if (!window.confirm("Are you sure you want to delete this task?")) return;
     await mutate(`/api/admin/projects/${projectId}/tasks`, "DELETE", { id });
   }
 
@@ -1615,17 +1831,19 @@ function TasksTab({
           >
             <button
               disabled={loading}
+              aria-label={`Mark "${t.title}" as complete`}
               onClick={() => toggleTask(t)}
-              className="w-5 h-5 rounded border-2 border-gray-300 hover:border-black flex-shrink-0 cursor-pointer"
+              className="w-6 h-6 rounded border-2 border-gray-300 hover:border-black flex-shrink-0 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
             />
             <span className="flex-1 text-sm text-gray-900">{t.title}</span>
             {t.due_date && (
-              <span className="text-xs text-gray-400">{fmtDate(t.due_date)}</span>
+              <span className="text-xs text-gray-500">{fmtDate(t.due_date)}</span>
             )}
             <button
               disabled={loading}
+              aria-label={`Delete task "${t.title}"`}
               onClick={() => deleteTask(t.id)}
-              className="text-gray-300 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+              className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
             >
               <X className="w-4 h-4" />
             </button>
@@ -1636,7 +1854,7 @@ function TasksTab({
           <>
             {incomplete.length > 0 && (
               <div className="py-2">
-                <span className="text-xs text-gray-400 font-medium">
+                <span className="text-xs text-gray-500 font-medium">
                   Completed ({completed.length})
                 </span>
               </div>
@@ -1644,27 +1862,29 @@ function TasksTab({
             {completed.map((t) => (
               <div
                 key={t.id}
-                className="flex items-center gap-3 py-2.5"
+                className="flex items-center gap-3 py-2.5 border-l-4 border-l-green-400 pl-3"
               >
                 <button
                   disabled={loading}
+                  aria-label={`Mark "${t.title}" as incomplete`}
                   onClick={() => toggleTask(t)}
-                  className="w-5 h-5 rounded border-2 border-green-500 bg-green-500 flex-shrink-0 flex items-center justify-center cursor-pointer"
+                  className="w-6 h-6 rounded border-2 border-green-500 bg-green-500 flex-shrink-0 flex items-center justify-center cursor-pointer min-h-[44px] min-w-[44px] transition-colors"
                 >
                   <Check className="w-3 h-3 text-white" />
                 </button>
-                <span className="flex-1 text-sm text-gray-400 line-through">
+                <span className="flex-1 text-sm text-gray-500 line-through">
                   {t.title}
                 </span>
                 {t.due_date && (
-                  <span className="text-xs text-gray-300">
+                  <span className="text-xs text-gray-500">
                     {fmtDate(t.due_date)}
                   </span>
                 )}
                 <button
                   disabled={loading}
+                  aria-label={`Delete task "${t.title}"`}
                   onClick={() => deleteTask(t.id)}
-                  className="text-gray-300 hover:text-red-500 disabled:opacity-50 cursor-pointer"
+                  className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                 >
                   <X className="w-4 h-4" />
                 </button>
@@ -1675,26 +1895,34 @@ function TasksTab({
       </div>
 
       {/* Add task inline */}
-      <div className="mt-4 flex flex-col sm:flex-row gap-2">
-        <input
-          placeholder="Add a task..."
-          className="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-          value={newTitle}
-          onChange={(e) => setNewTitle(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addTask()}
-        />
-        <input
-          type="date"
-          className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-          value={newDueDate}
-          onChange={(e) => setNewDueDate(e.target.value)}
-        />
+      <div className="mt-4 p-3 bg-gray-50 border border-gray-200 rounded-lg flex flex-col sm:flex-row gap-2">
+        <div className="flex-1">
+          <label htmlFor="new-task-title" className="sr-only">Task title</label>
+          <input
+            id="new-task-title"
+            placeholder="Add a task..."
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            value={newTitle}
+            onChange={(e) => setNewTitle(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && addTask()}
+          />
+        </div>
+        <div>
+          <label htmlFor="new-task-date" className="sr-only">Due date</label>
+          <input
+            id="new-task-date"
+            type="date"
+            className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+            value={newDueDate}
+            onChange={(e) => setNewDueDate(e.target.value)}
+          />
+        </div>
         <button
           disabled={loading || !newTitle.trim()}
           onClick={addTask}
-          className="bg-black text-white px-4 py-2 rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+          className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
         >
-          Add
+          {loading ? "Adding..." : "Add"}
         </button>
       </div>
     </Card>
@@ -1740,7 +1968,7 @@ function ActivityTab({ activityLog }: { activityLog: ActivityLogEntry[] }) {
                 {/* Content */}
                 <div className="flex-1 min-w-0">
                   <p className="text-sm text-gray-900">{entry.description}</p>
-                  <p className="text-xs text-gray-400 mt-0.5">
+                  <p className="text-xs text-gray-500 mt-0.5">
                     {timeAgo(entry.created_at)}
                     <span className="mx-1.5 text-gray-300">|</span>
                     {fmtDate(entry.created_at)}
@@ -1789,7 +2017,7 @@ function AddButton({
   return (
     <button
       onClick={onClick}
-      className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-black cursor-pointer"
+      className="inline-flex items-center gap-1 text-sm text-gray-600 hover:text-black cursor-pointer min-h-[44px] px-2 transition-colors"
     >
       <Plus className="w-4 h-4" /> {label}
     </button>
@@ -1798,6 +2026,6 @@ function AddButton({
 
 function EmptyState({ label }: { label: string }) {
   return (
-    <p className="text-sm text-gray-400 text-center py-8">{label}</p>
+    <p className="text-sm text-gray-500 text-center py-8">{label}</p>
   );
 }

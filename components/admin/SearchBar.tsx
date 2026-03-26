@@ -10,6 +10,7 @@ import {
   FileText,
   Calculator,
   Loader2,
+  X,
 } from "lucide-react";
 import type { ProjectStatus } from "@/lib/types/database";
 import {
@@ -106,10 +107,28 @@ export default function SearchBar() {
   const [isOpen, setIsOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  const [isMac, setIsMac] = useState(false);
 
   const containerRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   const debounceRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  /* ---- Detect platform for shortcut hint ---- */
+  useEffect(() => {
+    setIsMac(navigator.platform.toUpperCase().includes("MAC"));
+  }, []);
+
+  /* ---- Global Cmd/Ctrl+K shortcut ---- */
+  useEffect(() => {
+    function handleGlobalKeyDown(e: KeyboardEvent) {
+      if ((e.metaKey || e.ctrlKey) && e.key === "k") {
+        e.preventDefault();
+        inputRef.current?.focus();
+      }
+    }
+    document.addEventListener("keydown", handleGlobalKeyDown);
+    return () => document.removeEventListener("keydown", handleGlobalKeyDown);
+  }, []);
 
   /* ---- Close on outside click ---- */
   useEffect(() => {
@@ -157,6 +176,13 @@ export default function SearchBar() {
     debounceRef.current = setTimeout(() => search(value), 300);
   }
 
+  function handleClear() {
+    setQuery("");
+    setResults(null);
+    setIsOpen(false);
+    inputRef.current?.focus();
+  }
+
   /* ---- Keyboard navigation ---- */
   function handleKeyDown(e: React.KeyboardEvent) {
     if (e.key === "Escape") {
@@ -200,6 +226,8 @@ export default function SearchBar() {
   /* ---- Track flat index for keyboard highlight ---- */
   let flatIndex = -1;
 
+  const shortcutHint = isMac ? "\u2318K" : "Ctrl+K";
+
   return (
     <div ref={containerRef} className="relative px-3 py-3">
       {/* Input */}
@@ -214,14 +242,24 @@ export default function SearchBar() {
             if (results) setIsOpen(true);
           }}
           onKeyDown={handleKeyDown}
-          placeholder="Search everything..."
-          className="w-full rounded-lg bg-slate-800 py-2.5 pl-10 pr-4 text-sm text-white placeholder-slate-400 outline-none ring-1 ring-slate-700 transition-shadow focus:ring-2 focus:ring-blue-500"
-          aria-label="Global search"
+          placeholder={`Search... (${shortcutHint})`}
+          className="w-full rounded-lg bg-slate-800 py-3 pl-10 pr-10 text-sm text-white placeholder-slate-400 outline-none ring-1 ring-slate-700 transition-all duration-200 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 focus:ring-offset-slate-900"
+          aria-label="Search projects, contractors, and invoices"
           aria-expanded={isOpen}
+          aria-busy={isLoading}
           role="combobox"
           aria-controls="search-results"
           aria-autocomplete="list"
         />
+        {query && !isLoading && (
+          <button
+            onClick={handleClear}
+            className="absolute right-3 top-1/2 -translate-y-1/2 rounded p-0.5 text-slate-400 transition-colors hover:text-white"
+            aria-label="Clear search"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
         {isLoading && (
           <Loader2 className="absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 animate-spin text-slate-400" />
         )}
@@ -232,10 +270,14 @@ export default function SearchBar() {
         <div
           id="search-results"
           role="listbox"
-          className="absolute left-3 right-3 top-full z-50 mt-1 max-h-[70vh] overflow-y-auto rounded-xl bg-white shadow-xl ring-1 ring-black/5"
+          aria-busy={isLoading}
+          className="absolute left-3 right-3 top-full z-50 mt-1 max-h-[70vh] animate-slide-down-fade overflow-y-auto rounded-xl bg-white shadow-xl ring-1 ring-black/5"
         >
           {!hasResults && !isLoading && (
-            <div className="px-4 py-6 text-center text-sm text-gray-500">
+            <div
+              role="status"
+              className="px-4 py-6 text-center text-sm text-gray-500"
+            >
               No results found
             </div>
           )}

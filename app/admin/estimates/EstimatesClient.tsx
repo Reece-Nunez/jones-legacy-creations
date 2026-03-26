@@ -60,7 +60,7 @@ export default function EstimatesClient({ initialEstimates }: Props) {
         </div>
 
         {/* Filter Pills */}
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filter estimates by status">
           {STATUS_FILTERS.map((sf) => {
             const count = statusCounts[sf.value] || 0;
             const active = filter === sf.value;
@@ -69,7 +69,8 @@ export default function EstimatesClient({ initialEstimates }: Props) {
                 key={sf.value}
                 type="button"
                 onClick={() => setFilter(sf.value)}
-                className={`min-h-[44px] rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                aria-pressed={active}
+                className={`min-h-[44px] rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
                   active
                     ? "bg-gray-900 text-white"
                     : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"

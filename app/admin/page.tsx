@@ -18,10 +18,12 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
+  Clock,
   CreditCard,
   FileText,
   FolderKanban,
   Inbox,
+  Plus,
   ReceiptText,
   TrendingDown,
   TrendingUp,
@@ -73,10 +75,12 @@ function endOfWeek(now: Date): Date {
 // ── Types for action items ──────────────────────────────────
 
 type ActionPriority = "red" | "orange" | "yellow" | "blue";
+type ActionCategory = "overdue" | "payment" | "task" | "permit" | "draw";
 
 interface ActionItem {
   id: string;
   priority: ActionPriority;
+  category: ActionCategory;
   label: string;
   sublabel: string;
   detail: string;
@@ -91,11 +95,31 @@ const PRIORITY_BORDER: Record<ActionPriority, string> = {
   blue: "border-l-blue-400",
 };
 
-const PRIORITY_DOT: Record<ActionPriority, string> = {
-  red: "bg-red-500",
-  orange: "bg-orange-500",
-  yellow: "bg-yellow-400",
-  blue: "bg-blue-400",
+const PRIORITY_ICON: Record<ActionPriority, typeof AlertTriangle> = {
+  red: AlertTriangle,
+  orange: AlertTriangle,
+  yellow: Clock,
+  blue: Clock,
+};
+
+const CATEGORY_LABELS: Record<ActionCategory, string> = {
+  overdue: "Overdue",
+  payment: "Payments Due",
+  task: "Tasks",
+  permit: "Permits",
+  draw: "Draw Requests",
+};
+
+// Status-based left-border colors for project cards
+const STATUS_LEFT_BORDER: Record<ProjectStatus, string> = {
+  lead: "border-l-gray-400",
+  estimate_sent: "border-l-blue-400",
+  approved: "border-l-green-400",
+  waiting_on_permit: "border-l-yellow-400",
+  in_progress: "border-l-indigo-500",
+  waiting_on_payment: "border-l-orange-400",
+  completed: "border-l-emerald-500",
+  archived: "border-l-slate-300",
 };
 
 // ── Main Component ──────────────────────────────────────────
@@ -203,6 +227,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `inv-${inv.id}`,
       priority: "red",
+      category: "overdue",
       label: `Invoice #${inv.invoice_number} overdue`,
       sublabel: proj?.client_name ?? "Unknown client",
       detail: `${fmtFull(inv.amount)} — ${daysOver} day${daysOver !== 1 ? "s" : ""} overdue`,
@@ -219,6 +244,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `pay-${pay.id}`,
       priority: days <= 2 ? "orange" : "yellow",
+      category: "payment",
       label: `Payment to ${pay.contractor_name}`,
       sublabel: projectName(pay.project_id),
       detail: `${fmtFull(pay.amount)} — due ${days === 0 ? "today" : `in ${days} day${days !== 1 ? "s" : ""}`}`,
@@ -235,6 +261,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `pay-over-${pay.id}`,
       priority: "red",
+      category: "overdue",
       label: `Overdue payment to ${pay.contractor_name}`,
       sublabel: projectName(pay.project_id),
       detail: `${fmtFull(pay.amount)} — ${daysOver} day${daysOver !== 1 ? "s" : ""} overdue`,
@@ -248,6 +275,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `task-${task.id}`,
       priority: days <= 1 ? "orange" : "yellow",
+      category: "task",
       label: task.title,
       sublabel: projectName(task.project_id),
       detail: days === 0 ? "Due today" : days === 1 ? "Due tomorrow" : `Due in ${days} days`,
@@ -261,6 +289,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `task-over-${task.id}`,
       priority: "red",
+      category: "overdue",
       label: task.title,
       sublabel: projectName(task.project_id),
       detail: `${daysOver} day${daysOver !== 1 ? "s" : ""} overdue`,
@@ -277,6 +306,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `permit-${permit.id}`,
       priority: daysWaiting > 30 ? "orange" : "yellow",
+      category: "permit",
       label: `Permit: ${permit.permit_type}`,
       sublabel: projectName(permit.project_id),
       detail: `Waiting ${daysWaiting} day${daysWaiting !== 1 ? "s" : ""}`,
@@ -292,6 +322,7 @@ export default async function AdminDashboard({
     actionItems.push({
       id: `draw-${draw.id}`,
       priority: draw.status === "submitted" ? "blue" : "yellow",
+      category: "draw",
       label: `Draw #${draw.draw_number} — ${draw.status === "draft" ? "needs submission" : "submitted, awaiting approval"}`,
       sublabel: projectName(draw.project_id),
       detail: fmtFull(draw.amount),
@@ -307,6 +338,19 @@ export default async function AdminDashboard({
     blue: 3,
   };
   actionItems.sort((a, b) => priorityOrder[a.priority] - priorityOrder[b.priority]);
+
+  // Group action items by category for section headers
+  const groupedActions: { category: ActionCategory; items: ActionItem[] }[] = [];
+  const seenCategories = new Set<ActionCategory>();
+  for (const item of actionItems) {
+    if (!seenCategories.has(item.category)) {
+      seenCategories.add(item.category);
+      groupedActions.push({
+        category: item.category,
+        items: actionItems.filter((a) => a.category === item.category),
+      });
+    }
+  }
 
   // ── Financial snapshot ────────────────────────────────────
   const unpaidInvoices = invoices.filter((i) => i.status !== "paid");
@@ -385,129 +429,173 @@ export default async function AdminDashboard({
           <h1 className="text-2xl font-bold text-gray-900 sm:text-3xl">
             {getGreeting()}
           </h1>
-          <p className="mt-1 text-sm text-gray-500">
+          <p className="mt-1 text-sm text-gray-600">
             Here&apos;s what&apos;s happening across your projects.
           </p>
         </div>
 
         {/* Quick Stats Bar */}
         <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="rounded-xl bg-gradient-to-br from-white to-indigo-50/40 p-4 shadow-sm sm:p-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-                <FolderKanban className="h-5 w-5 text-indigo-600" />
+                <FolderKanban className="h-5 w-5 text-indigo-600" aria-hidden="true" />
               </div>
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-gray-600">
                 Active Projects
               </span>
             </div>
-            <p className="mt-3 text-2xl font-bold text-gray-900 sm:text-3xl">
+            <p className="mt-3 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
               {activeProjects.length}
             </p>
           </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="rounded-xl bg-gradient-to-br from-white to-amber-50/40 p-4 shadow-sm sm:p-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50">
-                <CalendarClock className="h-5 w-5 text-amber-600" />
+                <CalendarClock className="h-5 w-5 text-amber-600" aria-hidden="true" />
               </div>
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-gray-600">
                 Due This Week
               </span>
             </div>
-            <p className="mt-3 text-2xl font-bold text-gray-900 sm:text-3xl">
+            <p className="mt-3 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
               {tasksDueThisWeek.length}
             </p>
           </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="rounded-xl bg-gradient-to-br from-white to-red-50/40 p-4 shadow-sm sm:p-6">
             <div className="flex items-center gap-3">
               <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50">
-                <AlertTriangle className="h-5 w-5 text-red-600" />
+                <AlertTriangle className="h-5 w-5 text-red-600" aria-hidden="true" />
               </div>
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-gray-600">
                 Overdue Items
               </span>
             </div>
-            <p className={`mt-3 text-2xl font-bold sm:text-3xl ${overdueCount > 0 ? "text-red-600" : "text-gray-900"}`}>
+            <p
+              className={`mt-3 text-2xl font-bold tabular-nums sm:text-3xl ${overdueCount > 0 ? "text-red-600" : "text-gray-900"}`}
+              role={overdueCount > 0 ? "alert" : undefined}
+            >
               {overdueCount}
             </p>
           </div>
 
-          <div className="rounded-xl bg-white p-4 shadow-sm sm:p-6">
+          <div className="rounded-xl bg-gradient-to-br from-white to-emerald-50/40 p-4 shadow-sm sm:p-6">
             <div className="flex items-center gap-3">
               <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${cashFlow >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
                 {cashFlow >= 0 ? (
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
                 ) : (
-                  <TrendingDown className="h-5 w-5 text-red-600" />
+                  <TrendingDown className="h-5 w-5 text-red-600" aria-hidden="true" />
                 )}
               </div>
-              <span className="text-sm font-medium text-gray-500">
+              <span className="text-sm font-medium text-gray-600">
                 Cash Flow
               </span>
             </div>
-            <p className={`mt-3 text-2xl font-bold sm:text-3xl ${cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+            <p className={`mt-3 text-2xl font-semibold tabular-nums sm:text-3xl ${cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
               {fmt(cashFlow)}
             </p>
-            <p className="mt-1 text-xs text-gray-400">This month</p>
+            <p className="mt-1 text-sm text-gray-500">This month</p>
           </div>
         </div>
 
         {/* ────────────────────────────────────────────────── */}
         {/* 2. NEEDS ATTENTION                                */}
         {/* ────────────────────────────────────────────────── */}
-        <section className="mb-8">
-          <div className="mb-4 flex items-center gap-2">
-            <Inbox className="h-5 w-5 text-gray-700" />
-            <h2 className="text-lg font-bold text-gray-900">Needs Attention</h2>
+        <section className="mb-8" aria-label="Items needing attention">
+          <div className="mb-4 flex items-center gap-3">
+            <Inbox className="h-6 w-6 text-gray-800" aria-hidden="true" />
+            <h2 className="text-xl font-extrabold text-gray-900">Needs Attention</h2>
             {actionItems.length > 0 && (
-              <span className="rounded-full bg-red-100 px-2.5 py-0.5 text-xs font-semibold text-red-700">
+              <span
+                className="inline-flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full bg-red-100 px-2.5 text-sm font-bold tabular-nums text-red-700"
+                aria-label={`${actionItems.length} items need attention`}
+              >
                 {actionItems.length}
               </span>
             )}
           </div>
 
           {actionItems.length === 0 ? (
-            <div className="flex items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-6">
-              <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                <CheckCircle2 className="h-6 w-6 text-emerald-600" />
+            <div className="flex flex-col items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center sm:flex-row sm:text-left">
+              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                <CheckCircle2 className="h-7 w-7 text-emerald-600" aria-hidden="true" />
               </div>
-              <div>
+              <div className="flex-1">
                 <p className="font-semibold text-emerald-800">
                   You&apos;re all caught up!
                 </p>
-                <p className="text-sm text-emerald-600">
+                <p className="mt-1 text-sm text-emerald-700">
                   No overdue items or pending actions right now.
                 </p>
               </div>
+              <Link
+                href="/admin/projects"
+                className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-emerald-700"
+                aria-label="View all projects"
+              >
+                <FolderKanban className="h-4 w-4" aria-hidden="true" />
+                View Projects
+              </Link>
             </div>
           ) : (
-            <div className="space-y-2">
-              {actionItems.map((item) => (
-                <Link
-                  key={item.id}
-                  href={item.href}
-                  className={`group flex items-center gap-4 rounded-xl border-l-4 bg-white p-4 shadow-sm transition-shadow hover:shadow-md ${PRIORITY_BORDER[item.priority]}`}
-                >
-                  <div
-                    className={`mt-0.5 h-2.5 w-2.5 shrink-0 rounded-full ${PRIORITY_DOT[item.priority]}`}
-                  />
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900 group-hover:text-indigo-600">
-                      {item.label}
-                    </p>
-                    <p className="text-sm text-gray-500">
-                      {item.sublabel}
-                    </p>
+            <div className="space-y-4" role="alert" aria-live="polite">
+              {groupedActions.map((group) => (
+                <div key={group.category}>
+                  <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
+                    {group.category === "overdue" && <AlertTriangle className="h-4 w-4 text-red-500" aria-hidden="true" />}
+                    {group.category === "payment" && <CreditCard className="h-4 w-4 text-orange-500" aria-hidden="true" />}
+                    {group.category === "task" && <CalendarClock className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
+                    {group.category === "permit" && <FileText className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
+                    {group.category === "draw" && <ReceiptText className="h-4 w-4 text-blue-500" aria-hidden="true" />}
+                    {CATEGORY_LABELS[group.category]}
+                    <span className="text-sm font-medium tabular-nums text-gray-400">
+                      ({group.items.length})
+                    </span>
+                  </h3>
+                  <div className="space-y-2">
+                    {group.items.map((item) => {
+                      const PriorityIcon = PRIORITY_ICON[item.priority];
+                      return (
+                        <Link
+                          key={item.id}
+                          href={item.href}
+                          className={`group flex min-h-[44px] items-center gap-4 rounded-xl border-l-4 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${PRIORITY_BORDER[item.priority]}`}
+                          aria-label={`${item.label} - ${item.sublabel} - ${item.detail}`}
+                        >
+                          <PriorityIcon
+                            className={`h-4 w-4 shrink-0 ${
+                              item.priority === "red"
+                                ? "text-red-500"
+                                : item.priority === "orange"
+                                  ? "text-orange-500"
+                                  : item.priority === "yellow"
+                                    ? "text-yellow-500"
+                                    : "text-blue-500"
+                            }`}
+                            aria-hidden="true"
+                          />
+                          <div className="min-w-0 flex-1">
+                            <p className="font-medium text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
+                              {item.label}
+                            </p>
+                            <p className="text-sm text-gray-600">
+                              {item.sublabel}
+                            </p>
+                          </div>
+                          <div className="hidden shrink-0 text-right sm:block">
+                            <p className="text-sm font-semibold tabular-nums text-gray-700">
+                              {item.detail}
+                            </p>
+                          </div>
+                          <ArrowRight className="h-4 w-4 shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-indigo-500" aria-hidden="true" />
+                        </Link>
+                      );
+                    })}
                   </div>
-                  <div className="hidden shrink-0 text-right sm:block">
-                    <p className="text-sm font-medium text-gray-700">
-                      {item.detail}
-                    </p>
-                  </div>
-                  <ArrowRight className="h-4 w-4 shrink-0 text-gray-300 transition-colors group-hover:text-indigo-500" />
-                </Link>
+                </div>
               ))}
             </div>
           )}
@@ -516,53 +604,54 @@ export default async function AdminDashboard({
         {/* ────────────────────────────────────────────────── */}
         {/* 3. FINANCIAL SNAPSHOT                              */}
         {/* ────────────────────────────────────────────────── */}
-        <section className="mb-8">
+        <section className="mb-8" aria-label="Financial snapshot">
           <h2 className="mb-4 text-lg font-bold text-gray-900">
             Financial Snapshot
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Money Coming In */}
-            <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+            <div className="rounded-xl bg-gradient-to-br from-white to-emerald-50/30 p-5 shadow-sm sm:p-6">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
-                  <TrendingUp className="h-5 w-5 text-emerald-600" />
+                  <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
                 </div>
                 <h3 className="font-semibold text-gray-900">Money Coming In</h3>
               </div>
-              <p className="text-2xl font-bold text-emerald-600 sm:text-3xl">
+              <p className="text-2xl font-bold tabular-nums text-emerald-600 sm:text-3xl">
                 {fmt(unpaidTotal)}
               </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-1 text-sm text-gray-600">
                 {unpaidInvoices.length} unpaid invoice{unpaidInvoices.length !== 1 ? "s" : ""} outstanding
               </p>
               {overdueInvoices.length > 0 && (
-                <p className="mt-2 text-sm font-medium text-red-600">
+                <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-red-600" role="alert">
+                  <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
                   {overdueInvoices.length} overdue
                 </p>
               )}
             </div>
 
             {/* Money Going Out */}
-            <div className="rounded-xl bg-white p-5 shadow-sm sm:p-6">
+            <div className="rounded-xl bg-gradient-to-br from-white to-orange-50/30 p-5 shadow-sm sm:p-6">
               <div className="mb-4 flex items-center gap-3">
                 <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
-                  <TrendingDown className="h-5 w-5 text-orange-600" />
+                  <TrendingDown className="h-5 w-5 text-orange-600" aria-hidden="true" />
                 </div>
                 <h3 className="font-semibold text-gray-900">Money Going Out</h3>
               </div>
               <div className="flex items-baseline gap-4">
                 <div>
-                  <p className="text-2xl font-bold text-orange-600 sm:text-3xl">
+                  <p className="text-2xl font-bold tabular-nums text-orange-600 sm:text-3xl">
                     {fmt(pendingPaymentsTotal)}
                   </p>
-                  <p className="mt-1 text-sm text-gray-500">
+                  <p className="mt-1 text-sm text-gray-600">
                     {pendingPaymentsAll.length} pending payment{pendingPaymentsAll.length !== 1 ? "s" : ""}
                   </p>
                 </div>
               </div>
               {pendingDrawsTotal > 0 && (
-                <p className="mt-3 border-t border-gray-100 pt-3 text-sm text-gray-500">
-                  <span className="font-medium text-gray-700">{fmt(pendingDrawsTotal)}</span>{" "}
+                <p className="mt-3 border-t border-gray-100 pt-3 text-sm text-gray-600">
+                  <span className="font-semibold tabular-nums text-gray-700">{fmt(pendingDrawsTotal)}</span>{" "}
                   in pending draw requests
                 </p>
               )}
@@ -573,18 +662,20 @@ export default async function AdminDashboard({
         {/* ────────────────────────────────────────────────── */}
         {/* 4. PROJECTS GRID                                  */}
         {/* ────────────────────────────────────────────────── */}
-        <section className="mb-8">
+        <section className="mb-8" aria-label="Projects">
           <h2 className="mb-4 text-lg font-bold text-gray-900">Projects</h2>
 
           {/* Filter Pills */}
-          <div className="mb-5 flex flex-wrap gap-2">
+          <div className="mb-5 flex flex-wrap gap-3">
             <Link
               href={filterUrl({})}
-              className={`min-h-[44px] rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+              className={`inline-flex min-h-[44px] items-center rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                 !statusFilter
                   ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
+                  : "bg-white text-gray-700 shadow-sm hover:bg-gray-100"
               }`}
+              aria-label={`Show all projects (${projects.length})`}
+              aria-current={!statusFilter ? "true" : undefined}
             >
               All ({projects.length})
             </Link>
@@ -593,11 +684,13 @@ export default async function AdminDashboard({
                 <Link
                   key={s}
                   href={filterUrl({ status: s })}
-                  className={`min-h-[44px] rounded-full px-4 py-2 text-sm font-medium transition-colors ${
+                  className={`inline-flex min-h-[44px] items-center rounded-full px-4 py-2.5 text-sm font-medium transition-all duration-200 ${
                     statusFilter === s
                       ? "bg-gray-900 text-white"
-                      : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
+                      : "bg-white text-gray-700 shadow-sm hover:bg-gray-100"
                   }`}
+                  aria-label={`Filter by ${PROJECT_STATUS_LABELS[s]} (${statusCounts[s]})`}
+                  aria-current={statusFilter === s ? "true" : undefined}
                 >
                   {PROJECT_STATUS_LABELS[s]} ({statusCounts[s]})
                 </Link>
@@ -608,15 +701,33 @@ export default async function AdminDashboard({
           {/* Grid */}
           {filteredProjects.length === 0 ? (
             <div className="rounded-xl bg-white p-12 text-center shadow-sm">
-              <FolderKanban className="mx-auto h-10 w-10 text-gray-300" />
-              <p className="mt-4 text-lg font-medium text-gray-500">
+              <FolderKanban className="mx-auto h-10 w-10 text-gray-400" aria-hidden="true" />
+              <p className="mt-4 text-lg font-medium text-gray-700">
                 No projects found
               </p>
-              <p className="mt-1 text-sm text-gray-400">
+              <p className="mt-1 text-sm text-gray-500">
                 {statusFilter
                   ? "Try adjusting your filters."
                   : "Create your first project to get started."}
               </p>
+              {statusFilter ? (
+                <Link
+                  href={filterUrl({})}
+                  className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-gray-800"
+                  aria-label="Clear filters and show all projects"
+                >
+                  Clear Filters
+                </Link>
+              ) : (
+                <Link
+                  href="/admin/projects/new"
+                  className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-700"
+                  aria-label="Create a new project"
+                >
+                  <Plus className="h-4 w-4" aria-hidden="true" />
+                  New Project
+                </Link>
+              )}
             </div>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -635,15 +746,16 @@ export default async function AdminDashboard({
                   <Link
                     key={project.id}
                     href={`/admin/projects/${project.id}`}
-                    className="group rounded-xl bg-white p-5 shadow-sm transition-shadow hover:shadow-md sm:p-6"
+                    className={`group cursor-pointer rounded-xl border-l-4 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6 ${STATUS_LEFT_BORDER[project.status]}`}
+                    aria-label={`${project.name} - ${PROJECT_STATUS_LABELS[project.status]} - ${project.client_name}`}
                   >
                     {/* Header */}
                     <div className="mb-3 flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600">
+                      <h3 className="font-semibold text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
                         {project.name}
                       </h3>
                       <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                        className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${
                           PROJECT_STATUS_COLORS[project.status]
                         }`}
                       >
@@ -652,13 +764,13 @@ export default async function AdminDashboard({
                     </div>
 
                     {/* Client + Location */}
-                    <div className="flex items-center gap-1.5 text-sm text-gray-500">
-                      <Users className="h-3.5 w-3.5" />
+                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
+                      <Users className="h-3.5 w-3.5" aria-hidden="true" />
                       <span>{project.client_name}</span>
                     </div>
 
                     {(project.city || project.state) && (
-                      <p className="mt-1 text-sm text-gray-400">
+                      <p className="mt-1 text-sm text-gray-500">
                         {[project.city, project.state]
                           .filter(Boolean)
                           .join(", ")}
@@ -667,7 +779,7 @@ export default async function AdminDashboard({
 
                     {/* Value */}
                     {project.estimated_value != null && (
-                      <p className="mt-2 text-lg font-bold text-gray-900">
+                      <p className="mt-2 text-lg font-bold tabular-nums text-gray-900">
                         {fmt(project.estimated_value)}
                       </p>
                     )}
@@ -675,15 +787,15 @@ export default async function AdminDashboard({
                     {/* Task Progress */}
                     {taskTotal > 0 && (
                       <div className="mt-3">
-                        <div className="mb-1 flex items-center justify-between text-xs text-gray-500">
+                        <div className="mb-1 flex items-center justify-between text-sm text-gray-600">
                           <span>
                             {taskCompleted}/{taskTotal} tasks
                           </span>
-                          <span>{taskPercent}%</span>
+                          <span className="font-semibold tabular-nums">{taskPercent}%</span>
                         </div>
                         <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
                           <div
-                            className="h-full rounded-full bg-indigo-500 transition-all"
+                            className="h-full rounded-full bg-indigo-500 transition-all duration-200"
                             style={{ width: `${taskPercent}%` }}
                           />
                         </div>
@@ -694,14 +806,14 @@ export default async function AdminDashboard({
                     {(unpaidCount > 0 || pendingPayCount > 0) && (
                       <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
                         {unpaidCount > 0 && (
-                          <span className="flex items-center gap-1 text-xs font-medium text-orange-600">
-                            <FileText className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1.5 text-sm font-medium text-orange-600">
+                            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
                             {unpaidCount} unpaid
                           </span>
                         )}
                         {pendingPayCount > 0 && (
-                          <span className="flex items-center gap-1 text-xs font-medium text-red-600">
-                            <CreditCard className="h-3.5 w-3.5" />
+                          <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                            <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
                             {pendingPayCount} pending
                           </span>
                         )}
@@ -718,13 +830,13 @@ export default async function AdminDashboard({
         {/* 5. RECENT ESTIMATES                               */}
         {/* ────────────────────────────────────────────────── */}
         {estimates.length > 0 && (
-          <section>
+          <section aria-label="Recent estimates">
             <div className="mb-4 flex items-center gap-2">
-              <ReceiptText className="h-5 w-5 text-gray-700" />
+              <ReceiptText className="h-5 w-5 text-gray-700" aria-hidden="true" />
               <h2 className="text-lg font-bold text-gray-900">
                 Recent Estimates
               </h2>
-              <span className="rounded-full bg-blue-100 px-2.5 py-0.5 text-xs font-semibold text-blue-700">
+              <span className="inline-flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full bg-blue-100 px-2.5 text-sm font-semibold tabular-nums text-blue-700">
                 {estimates.length}
               </span>
             </div>
@@ -733,28 +845,28 @@ export default async function AdminDashboard({
               {estimates.map((est) => (
                 <div
                   key={est.id}
-                  className="flex items-center gap-4 rounded-xl bg-white p-4 shadow-sm"
+                  className="flex min-h-[44px] items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
                 >
                   <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                    <ClipboardCheck className="h-5 w-5 text-blue-600" />
+                    <ClipboardCheck className="h-5 w-5 text-blue-600" aria-hidden="true" />
                   </div>
                   <div className="min-w-0 flex-1">
                     <p className="font-medium text-gray-900">
                       {est.client_name}
                     </p>
-                    <p className="text-sm text-gray-500">{est.project_type}</p>
+                    <p className="text-sm text-gray-600">{est.project_type}</p>
                   </div>
                   <div className="hidden text-right sm:block">
                     {est.estimated_min != null && est.estimated_max != null ? (
-                      <p className="text-sm font-medium text-gray-700">
+                      <p className="text-sm font-semibold tabular-nums text-gray-700">
                         {fmt(est.estimated_min)} &ndash; {fmt(est.estimated_max)}
                       </p>
                     ) : est.budget_range ? (
-                      <p className="text-sm font-medium text-gray-700">
+                      <p className="text-sm font-semibold tabular-nums text-gray-700">
                         {est.budget_range}
                       </p>
                     ) : null}
-                    <p className="text-xs text-gray-400">
+                    <p className="text-sm text-gray-500">
                       {new Date(est.created_at).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
@@ -762,13 +874,23 @@ export default async function AdminDashboard({
                     </p>
                   </div>
                   <span
-                    className={`shrink-0 rounded-full px-3 py-1 text-xs font-semibold ${
+                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
                       est.status === "new"
                         ? "bg-blue-100 text-blue-700"
                         : "bg-yellow-100 text-yellow-700"
                     }`}
                   >
-                    {est.status === "new" ? "New" : "Reviewed"}
+                    {est.status === "new" ? (
+                      <>
+                        <Inbox className="h-3.5 w-3.5" aria-hidden="true" />
+                        New
+                      </>
+                    ) : (
+                      <>
+                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                        Reviewed
+                      </>
+                    )}
                   </span>
                 </div>
               ))}

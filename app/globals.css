@@ -14,6 +14,18 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-open-sans);
   --font-serif: var(--font-playfair);
+  --animate-slide-down-fade: slide-down-fade 0.2s ease-out;
+}
+
+@keyframes slide-down-fade {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 body {
@@ -64,4 +76,55 @@ select {
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
+}
+
+/* Touch optimization */
+button, a, [role="button"], input[type="submit"] {
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* Tabular numbers for financial data */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+/* Smooth scroll on supported browsers */
+@media (prefers-reduced-motion: no-preference) {
+  html {
+    scroll-behavior: smooth;
+  }
+}
+
+/* Reduced motion preference */
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* Prevent content layout shift */
+img, video {
+  max-width: 100%;
+  height: auto;
+}
+
+/* Better form defaults */
+input, textarea, select {
+  font-size: 16px; /* Prevents iOS zoom on focus */
+}
+
+/* Overscroll containment for admin panels */
+.overscroll-contain {
+  overscroll-behavior: contain;
+}
+
+/* Print styles - hide navigation */
+@media print {
+  nav, aside, .no-print {
+    display: none !important;
+  }
 }

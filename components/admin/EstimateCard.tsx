@@ -35,6 +35,46 @@ const STATUS_LABELS: Record<EstimateStatus, string> = {
   declined: "Declined",
 };
 
+const STATUS_BORDER_COLORS: Record<EstimateStatus, string> = {
+  new: "border-l-blue-500",
+  reviewed: "border-l-yellow-500",
+  converted: "border-l-green-500",
+  declined: "border-l-gray-400",
+};
+
+/** Returns a human-readable relative time string */
+function relativeTime(dateStr: string): string {
+  const now = Date.now();
+  const then = new Date(dateStr).getTime();
+  const diffMs = now - then;
+  const diffSec = Math.floor(diffMs / 1000);
+  const diffMin = Math.floor(diffSec / 60);
+  const diffHr = Math.floor(diffMin / 60);
+  const diffDay = Math.floor(diffHr / 24);
+  const diffWeek = Math.floor(diffDay / 7);
+
+  if (diffSec < 60) return "just now";
+  if (diffMin < 60) return `${diffMin}m ago`;
+  if (diffHr < 24) return `${diffHr}h ago`;
+  if (diffDay < 7) return `${diffDay}d ago`;
+  if (diffWeek < 4) return `${diffWeek}w ago`;
+  return new Date(dateStr).toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+function fullDate(dateStr: string): string {
+  return new Date(dateStr).toLocaleString("en-US", {
+    weekday: "long",
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}
+
 interface EstimateCardProps {
   estimate: Estimate;
   onUpdate: () => void;
@@ -45,6 +85,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   const [notes, setNotes] = useState(estimate.notes || "");
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
+  const [convertedSuccess, setConvertedSuccess] = useState(false);
 
   const projectTypeLabel =
     PROJECT_TYPE_OPTIONS.find((o) => o.value === estimate.project_type)?.label ||
@@ -73,6 +114,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   }
 
   async function handleDecline() {
+    if (!confirm("Are you sure you want to decline this estimate? This action can be reversed later.")) return;
     setActionLoading("declined");
     try {
       await patchEstimate({ status: "declined" });
@@ -118,6 +160,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
         status: "converted",
       });
 
+      setConvertedSuccess(true);
+      setTimeout(() => setConvertedSuccess(false), 3000);
       onUpdate();
     } catch {
       alert("Failed to convert estimate to project");
@@ -138,7 +182,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   }
 
   async function handleDelete() {
-    if (!confirm("Are you sure you want to delete this estimate?")) return;
+    if (!confirm("Are you sure you want to permanently delete this estimate? This cannot be undone.")) return;
     setActionLoading("delete");
     try {
       const res = await fetch(`/api/admin/estimates/${estimate.id}`, {
@@ -154,26 +198,42 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   }
 
   const hasAddress = estimate.address || estimate.city || estimate.state;
+  const notesId = `notes-${estimate.id}`;
 
   return (
-    <div className="rounded-xl bg-white shadow-sm border border-gray-100 overflow-hidden">
+    <div className={`rounded-xl bg-white shadow-sm border border-gray-100 border-l-4 ${STATUS_BORDER_COLORS[estimate.status]} overflow-hidden`}>
+      {/* Converted success toast */}
+      {convertedSuccess && (
+        <div role="status" className="flex items-center gap-2 bg-green-50 px-5 py-3 text-sm font-medium text-green-700">
+          <CheckCircle2 className="h-4 w-4" />
+          Successfully converted to project!
+        </div>
+      )}
+
       {/* Main Row */}
       <button
         type="button"
         onClick={() => setExpanded(!expanded)}
-        className="w-full text-left p-5 sm:p-6 hover:bg-gray-50 transition-colors"
+        aria-expanded={expanded}
+        className="w-full text-left p-5 sm:p-6 hover:bg-gray-50/50 transition-colors"
       >
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="font-semibold text-gray-900">
+              <h3 className="text-base font-semibold text-gray-900">
                 {estimate.client_name}
               </h3>
               <span
-                className={`rounded-full px-3 py-0.5 text-xs font-semibold ${
+                className={`inline-flex items-center gap-1.5 rounded-full px-3 py-0.5 text-xs font-semibold ${
                   ESTIMATE_STATUS_COLORS[estimate.status]
                 }`}
               >
+                {estimate.status === "new" && (
+                  <span className="relative flex h-2 w-2">
+                    <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-blue-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-blue-500" />
+                  </span>
+                )}
                 {STATUS_LABELS[estimate.status]}
               </span>
             </div>
@@ -184,7 +244,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
               <a
                 href={`mailto:${estimate.client_email}`}
                 onClick={(e) => e.stopPropagation()}
-                className="flex items-center gap-1 hover:text-gray-900 transition-colors"
+                className="flex items-center gap-1 hover:text-blue-600 transition-colors underline-offset-2 hover:underline"
               >
                 <Mail className="h-3.5 w-3.5" />
                 {estimate.client_email}
@@ -193,7 +253,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
                 <a
                   href={`tel:${estimate.client_phone}`}
                   onClick={(e) => e.stopPropagation()}
-                  className="flex items-center gap-1 hover:text-gray-900 transition-colors"
+                  className="flex items-center gap-1 hover:text-blue-600 transition-colors underline-offset-2 hover:underline"
                 >
                   <Phone className="h-3.5 w-3.5" />
                   {estimate.client_phone}
@@ -218,20 +278,19 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
 
           <div className="flex flex-col items-end gap-2 shrink-0">
             {estimate.estimated_min != null && estimate.estimated_max != null ? (
-              <p className="text-sm font-semibold text-gray-900">
+              <p className="text-lg font-bold text-gray-900">
                 {fmt(estimate.estimated_min)} &ndash; {fmt(estimate.estimated_max)}
               </p>
             ) : estimate.budget_range ? (
-              <p className="text-sm font-medium text-gray-700">
+              <p className="text-base font-semibold text-gray-700">
                 {estimate.budget_range}
               </p>
             ) : null}
-            <p className="text-xs text-gray-400">
-              {new Date(estimate.created_at).toLocaleDateString("en-US", {
-                month: "short",
-                day: "numeric",
-                year: "numeric",
-              })}
+            <p
+              className="text-xs text-gray-400"
+              title={fullDate(estimate.created_at)}
+            >
+              {relativeTime(estimate.created_at)}
             </p>
             {expanded ? (
               <ChevronUp className="h-4 w-4 text-gray-400" />
@@ -251,7 +310,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
 
       {/* Expanded Content */}
       {expanded && (
-        <div className="border-t border-gray-100 px-5 pb-5 sm:px-6 sm:pb-6">
+        <div className="border-t border-gray-100 bg-gray-50/50 px-5 pb-5 sm:px-6 sm:pb-6">
           {/* Full Description */}
           <div className="mt-4">
             <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
@@ -279,20 +338,25 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
 
           {/* Notes */}
           <div className="mt-4">
-            <h4 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">
+            <label
+              htmlFor={notesId}
+              className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2"
+            >
               Internal Notes
-            </h4>
+            </label>
             <textarea
+              id={notesId}
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add internal notes about this estimate..."
-              className="w-full rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
+              className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <button
               type="button"
               onClick={handleSaveNotes}
               disabled={saving}
+              aria-label="Save internal notes"
               className="mt-2 rounded-lg bg-gray-100 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-200 transition-colors disabled:opacity-50"
             >
               {saving ? "Saving..." : "Save Notes"}
@@ -300,14 +364,15 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
           </div>
 
           {/* Actions */}
-          <div className="mt-6 flex flex-wrap gap-3 border-t border-gray-100 pt-4">
+          <div className="mt-6 flex flex-wrap gap-3 border-t border-gray-200 pt-4">
             {estimate.status !== "converted" && estimate.status !== "declined" && (
               <>
                 <button
                   type="button"
                   onClick={handleConvert}
                   disabled={actionLoading !== null}
-                  className="flex items-center gap-2 rounded-lg bg-blue-600 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-700 transition-colors disabled:opacity-50"
+                  aria-label="Convert estimate to project"
+                  className="flex min-h-[44px] items-center gap-2 rounded-lg bg-blue-600 px-5 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 transition-colors disabled:opacity-50"
                 >
                   {actionLoading === "convert" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -322,7 +387,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
                     type="button"
                     onClick={handleMarkReviewed}
                     disabled={actionLoading !== null}
-                    className="flex items-center gap-2 rounded-lg bg-yellow-100 px-4 py-2.5 text-sm font-semibold text-yellow-800 hover:bg-yellow-200 transition-colors disabled:opacity-50"
+                    aria-label="Mark estimate as reviewed"
+                    className="flex min-h-[44px] items-center gap-2 rounded-lg bg-yellow-100 px-4 py-2.5 text-sm font-semibold text-yellow-800 hover:bg-yellow-200 transition-colors disabled:opacity-50"
                   >
                     {actionLoading === "reviewed" ? (
                       <Loader2 className="h-4 w-4 animate-spin" />
@@ -337,7 +403,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
                   type="button"
                   onClick={handleDecline}
                   disabled={actionLoading !== null}
-                  className="flex items-center gap-2 rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-semibold text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-50"
+                  aria-label="Decline this estimate"
+                  className="flex min-h-[44px] items-center gap-2 rounded-lg bg-red-50 px-4 py-2.5 text-sm font-semibold text-red-600 hover:bg-red-100 transition-colors disabled:opacity-50"
                 >
                   {actionLoading === "declined" ? (
                     <Loader2 className="h-4 w-4 animate-spin" />
@@ -353,7 +420,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
               type="button"
               onClick={handleDelete}
               disabled={actionLoading !== null}
-              className="flex items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 ml-auto"
+              aria-label="Delete this estimate permanently"
+              className="flex min-h-[44px] items-center gap-2 rounded-lg px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors disabled:opacity-50 ml-auto"
             >
               {actionLoading === "delete" ? (
                 <Loader2 className="h-4 w-4 animate-spin" />

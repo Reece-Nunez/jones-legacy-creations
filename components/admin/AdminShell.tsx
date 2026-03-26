@@ -78,7 +78,10 @@ export default function AdminShell({
     <>
       {/* Logo */}
       <div className="flex items-center px-4 py-4">
-        <Link href="/admin">
+        <Link
+          href="/admin"
+          className="transition-opacity duration-150 hover:opacity-80"
+        >
           <Image
             src="/jones-legacy-creations-logo-new.svg"
             alt="Jones Legacy Creations"
@@ -94,7 +97,7 @@ export default function AdminShell({
       <SearchBar />
 
       {/* Nav links */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-3 space-y-1.5" aria-label="Admin navigation">
         {navLinks.map((link) => {
           const Icon = link.icon;
           const active = isActive(link.href, link.exact);
@@ -103,10 +106,11 @@ export default function AdminShell({
               key={link.href}
               href={link.href}
               onClick={() => setSidebarOpen(false)}
-              className={`flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors ${
+              aria-current={active ? "page" : undefined}
+              className={`flex items-center gap-3 rounded-md px-3 py-3 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
                 active
-                  ? "bg-slate-700 text-white"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "border-l-[3px] border-blue-400 bg-slate-700 text-white"
+                  : "border-l-[3px] border-transparent text-slate-300 hover:bg-slate-800 hover:text-white"
               }`}
             >
               <Icon className="h-5 w-5 shrink-0" />
@@ -134,7 +138,7 @@ export default function AdminShell({
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+              className="flex items-center gap-3 rounded-md px-3 py-3 min-h-[44px] text-sm font-medium text-slate-300 transition-colors duration-150 hover:bg-slate-800 hover:text-white"
             >
               <Icon className="h-5 w-5 shrink-0" />
               {link.label}
@@ -145,7 +149,7 @@ export default function AdminShell({
               key={link.href}
               href={link.href}
               onClick={() => setSidebarOpen(false)}
-              className="flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-300 transition-colors hover:bg-slate-800 hover:text-white"
+              className="flex items-center gap-3 rounded-md px-3 py-3 min-h-[44px] text-sm font-medium text-slate-300 transition-colors duration-150 hover:bg-slate-800 hover:text-white"
             >
               <Icon className="h-5 w-5 shrink-0" />
               {link.label}
@@ -156,9 +160,11 @@ export default function AdminShell({
 
       {/* Footer */}
       <div className="px-3 py-4 space-y-3">
+        <div className="border-t border-slate-700" />
         <button
           onClick={handleSignOut}
-          className="flex w-full items-center gap-3 rounded-md px-3 py-2 text-sm font-medium text-slate-400 transition-colors hover:bg-slate-800 hover:text-white"
+          aria-label="Sign out"
+          className="flex w-full items-center gap-3 rounded-md px-3 py-3 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white"
         >
           <LogOut className="h-5 w-5 shrink-0" />
           Sign Out
@@ -175,21 +181,21 @@ export default function AdminShell({
       {/* Mobile backdrop */}
       {sidebarOpen && (
         <div
-          className="fixed inset-0 z-40 bg-black/50 transition-opacity lg:hidden"
+          className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-in-out lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
       )}
 
       {/* Mobile sidebar */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 transition-transform duration-200 ease-in-out lg:hidden ${
+        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 transition-transform duration-300 ease-in-out lg:hidden ${
           sidebarOpen ? "translate-x-0" : "-translate-x-full"
         }`}
       >
         {/* Close button */}
         <button
           onClick={() => setSidebarOpen(false)}
-          className="absolute right-3 top-4 rounded-md p-1 text-slate-400 hover:text-white"
+          className="absolute right-3 top-4 flex h-11 w-11 items-center justify-center rounded-md text-slate-400 hover:text-white"
         >
           <X className="h-5 w-5" />
         </button>
@@ -208,9 +214,12 @@ export default function AdminShell({
           <div className="flex h-14 items-center px-4">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="rounded-md p-1.5 text-slate-600 hover:bg-slate-100"
+              aria-expanded={sidebarOpen}
+              aria-controls="mobile-sidebar"
+              className="flex h-11 w-11 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
             >
               <Menu className="h-6 w-6" />
+              <span className="sr-only">Open menu</span>
             </button>
             <Image
               src="/jones-legacy-creations-logo-new.svg"

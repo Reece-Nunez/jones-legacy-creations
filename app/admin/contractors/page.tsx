@@ -114,12 +114,13 @@ export default async function ContractorsPage({
         <form method="GET" className="mb-6">
           {trade && <input type="hidden" name="trade" value={trade} />}
           <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
+            <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
               type="text"
               name="q"
               defaultValue={q ?? ""}
               placeholder="Search by name or company..."
+              aria-label="Search contractors by name or company"
               className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
               style={{ minHeight: 44 }}
             />
@@ -127,15 +128,17 @@ export default async function ContractorsPage({
         </form>
 
         {/* Trade Filter Pills */}
-        <div className="mb-6 flex flex-wrap gap-2">
+        <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filter by trade">
           <Link
             href={`/admin/contractors${q ? `?q=${encodeURIComponent(q)}` : ""}`}
-            className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+            className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
               !trade
                 ? "bg-gray-900 text-white"
                 : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
             }`}
-            style={{ minHeight: 36 }}
+            style={{ minHeight: 44 }}
+            aria-pressed={!trade}
+            role="button"
           >
             All
           </Link>
@@ -143,12 +146,14 @@ export default async function ContractorsPage({
             <Link
               key={t}
               href={`/admin/contractors?trade=${encodeURIComponent(t)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
-              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+              className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
                 trade === t
                   ? "bg-gray-900 text-white"
                   : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
               }`}
-              style={{ minHeight: 36 }}
+              style={{ minHeight: 44 }}
+              aria-pressed={trade === t}
+              role="button"
             >
               {t}
             </Link>
@@ -174,7 +179,7 @@ export default async function ContractorsPage({
                 style={{ minHeight: 44 }}
               >
                 <Plus className="h-5 w-5" />
-                Add Contractor
+                Add Your First Contractor
               </Link>
             )}
           </div>
@@ -189,7 +194,8 @@ export default async function ContractorsPage({
                 <Link
                   key={contractor.id}
                   href={`/admin/contractors/${contractor.id}`}
-                  className="group rounded-xl bg-white p-6 shadow-sm transition-shadow hover:shadow-md"
+                  aria-label={`View details for ${contractor.name}${contractor.company ? `, ${contractor.company}` : ""}`}
+                  className="group cursor-pointer rounded-xl bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
                 >
                   {/* Name & Trade */}
                   <div className="mb-3 flex items-start justify-between gap-2">
@@ -229,7 +235,8 @@ export default async function ContractorsPage({
                         >
                           <a
                             href={`tel:${contractor.phone}`}
-                            className="text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
+                            aria-label={`Call ${contractor.name} at ${contractor.phone}`}
+                            className="rounded px-1 py-1 text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
                             style={{ minHeight: 44, display: "inline-flex", alignItems: "center" }}
                           >
                             {contractor.phone}
@@ -246,7 +253,8 @@ export default async function ContractorsPage({
                         >
                           <a
                             href={`mailto:${contractor.email}`}
-                            className="text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
+                            aria-label={`Email ${contractor.name} at ${contractor.email}`}
+                            className="rounded px-1 py-1 text-indigo-600 underline decoration-indigo-300 underline-offset-2 hover:text-indigo-800"
                             style={{ minHeight: 44, display: "inline-flex", alignItems: "center" }}
                           >
                             {contractor.email}
@@ -264,7 +272,7 @@ export default async function ContractorsPage({
 
                   {/* Stats */}
                   <div className="flex items-center gap-4 border-t border-gray-100 pt-3">
-                    <span className="flex items-center gap-1 text-sm text-gray-600">
+                    <span className="flex items-center gap-1 text-sm tabular-nums text-green-600">
                       <DollarSign className="h-4 w-4 text-green-500" />
                       {formatCurrency(totalPaid)}
                     </span>

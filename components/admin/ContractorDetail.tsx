@@ -20,6 +20,7 @@ import {
   Save,
   X,
   Loader2,
+  AlertTriangle,
 } from "lucide-react";
 
 const formatCurrency = (amount: number) =>
@@ -77,6 +78,7 @@ export default function ContractorDetail({
   const [contractor, setContractor] = useState(initialContractor);
   const [isEditing, setIsEditing] = useState(false);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(contractor.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
@@ -90,7 +92,6 @@ export default function ContractorDetail({
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
   async function handleDelete() {
-    if (!confirm("Delete this contractor? This cannot be undone.")) return;
     setIsDeleting(true);
     try {
       const res = await fetch(`/api/admin/contractors/${contractor.id}`, {
@@ -104,6 +105,7 @@ export default function ContractorDetail({
       toast.error("Failed to delete contractor");
     } finally {
       setIsDeleting(false);
+      setShowDeleteConfirm(false);
     }
   }
 
@@ -137,6 +139,7 @@ export default function ContractorDetail({
             </h1>
             <button
               onClick={() => setIsEditing(false)}
+              aria-label="Cancel editing"
               className="rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
               style={{ minHeight: 44 }}
             >
@@ -195,6 +198,7 @@ export default function ContractorDetail({
             <div className="flex gap-2">
               <button
                 onClick={() => setIsEditing(true)}
+                aria-label="Edit contractor"
                 className="inline-flex items-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
                 style={{ minHeight: 44 }}
               >
@@ -202,21 +206,56 @@ export default function ContractorDetail({
                 Edit
               </button>
               <button
-                onClick={handleDelete}
-                disabled={isDeleting}
+                onClick={() => setShowDeleteConfirm(true)}
+                aria-label="Delete contractor"
                 className="inline-flex items-center gap-2 rounded-lg border border-red-200 bg-white px-4 py-2.5 text-sm font-medium text-red-600 shadow-sm transition-colors hover:bg-red-50 disabled:opacity-50"
                 style={{ minHeight: 44 }}
               >
-                {isDeleting ? (
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                ) : (
-                  <Trash2 className="h-4 w-4" />
-                )}
+                <Trash2 className="h-4 w-4" />
                 Delete
               </button>
             </div>
           </div>
         </div>
+
+        {/* Delete Confirmation Dialog */}
+        {showDeleteConfirm && (
+          <div className="mb-8 rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
+              <div className="flex-1">
+                <h3 className="text-sm font-semibold text-red-800">
+                  Delete this contractor?
+                </h3>
+                <p className="mt-1 text-sm text-red-700">
+                  This will permanently remove {contractor.name} and cannot be undone.
+                </p>
+                <div className="mt-4 flex gap-2">
+                  <button
+                    onClick={handleDelete}
+                    disabled={isDeleting}
+                    className="inline-flex items-center gap-2 rounded-lg bg-red-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-red-700 disabled:opacity-50"
+                    style={{ minHeight: 44 }}
+                  >
+                    {isDeleting ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <Trash2 className="h-4 w-4" />
+                    )}
+                    Yes, Delete
+                  </button>
+                  <button
+                    onClick={() => setShowDeleteConfirm(false)}
+                    className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+                    style={{ minHeight: 44 }}
+                  >
+                    Cancel
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
 
         {/* Contact & Stats */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2">
@@ -229,10 +268,13 @@ export default function ContractorDetail({
               {contractor.phone && (
                 <a
                   href={`tel:${contractor.phone}`}
-                  className="flex items-center gap-3 rounded-lg p-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                  aria-label={`Call ${contractor.name} at ${contractor.phone}`}
+                  className="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-700 transition-colors hover:bg-gray-50"
                   style={{ minHeight: 44 }}
                 >
-                  <Phone className="h-5 w-5 text-indigo-500" />
+                  <div className="rounded-lg bg-indigo-50 p-2">
+                    <Phone className="h-5 w-5 text-indigo-500" />
+                  </div>
                   <span className="text-indigo-600 underline decoration-indigo-300 underline-offset-2">
                     {contractor.phone}
                   </span>
@@ -241,10 +283,13 @@ export default function ContractorDetail({
               {contractor.email && (
                 <a
                   href={`mailto:${contractor.email}`}
-                  className="flex items-center gap-3 rounded-lg p-2 text-sm text-gray-700 transition-colors hover:bg-gray-50"
+                  aria-label={`Email ${contractor.name} at ${contractor.email}`}
+                  className="flex items-center gap-3 rounded-lg p-3 text-sm text-gray-700 transition-colors hover:bg-gray-50"
                   style={{ minHeight: 44 }}
                 >
-                  <Mail className="h-5 w-5 text-indigo-500" />
+                  <div className="rounded-lg bg-indigo-50 p-2">
+                    <Mail className="h-5 w-5 text-indigo-500" />
+                  </div>
                   <span className="text-indigo-600 underline decoration-indigo-300 underline-offset-2">
                     {contractor.email}
                   </span>
@@ -252,10 +297,12 @@ export default function ContractorDetail({
               )}
               {contractor.license_number && (
                 <div
-                  className="flex items-center gap-3 p-2 text-sm text-gray-700"
+                  className="flex items-center gap-3 p-3 text-sm text-gray-700"
                   style={{ minHeight: 44 }}
                 >
-                  <Wrench className="h-5 w-5 text-gray-400" />
+                  <div className="rounded-lg bg-gray-50 p-2">
+                    <Wrench className="h-5 w-5 text-gray-400" />
+                  </div>
                   <span>License: {contractor.license_number}</span>
                 </div>
               )}
@@ -277,7 +324,7 @@ export default function ContractorDetail({
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Paid</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xl font-bold tabular-nums text-green-600">
                     {formatCurrency(totalPaid)}
                   </p>
                 </div>
@@ -288,7 +335,7 @@ export default function ContractorDetail({
                 </div>
                 <div>
                   <p className="text-sm text-gray-500">Total Pending</p>
-                  <p className="text-xl font-bold text-gray-900">
+                  <p className="text-xl font-bold tabular-nums text-gray-900">
                     {formatCurrency(totalPending)}
                   </p>
                 </div>
@@ -306,6 +353,7 @@ export default function ContractorDetail({
             {!editingNotes && (
               <button
                 onClick={() => setEditingNotes(true)}
+                aria-label="Edit notes"
                 className="inline-flex items-center gap-1 text-sm font-medium text-indigo-600 hover:text-indigo-800"
                 style={{ minHeight: 44 }}
               >
@@ -316,7 +364,11 @@ export default function ContractorDetail({
           </div>
           {editingNotes ? (
             <div className="space-y-3">
+              <label htmlFor="contractor-notes" className="sr-only">
+                Contractor notes
+              </label>
               <textarea
+                id="contractor-notes"
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 rows={4}
@@ -329,6 +381,7 @@ export default function ContractorDetail({
                     setNotes(contractor.notes ?? "");
                     setEditingNotes(false);
                   }}
+                  aria-label="Cancel editing notes"
                   className="inline-flex items-center gap-1 rounded-lg border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
                   style={{ minHeight: 44 }}
                 >
@@ -338,6 +391,7 @@ export default function ContractorDetail({
                 <button
                   onClick={handleSaveNotes}
                   disabled={savingNotes}
+                  aria-label="Save notes"
                   className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
                   style={{ minHeight: 44 }}
                 >
@@ -391,12 +445,17 @@ export default function ContractorDetail({
                         </span>
                       )}
                       <span
-                        className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                        className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                           payment.status === "paid"
                             ? "bg-green-100 text-green-700"
                             : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
+                        {payment.status === "paid" ? (
+                          <CheckCircle2 className="h-3 w-3" />
+                        ) : (
+                          <Clock className="h-3 w-3" />
+                        )}
                         {payment.status === "paid" ? "Paid" : "Pending"}
                       </span>
                     </div>
@@ -406,10 +465,10 @@ export default function ContractorDetail({
                       </p>
                     )}
                     <div className="flex items-center justify-between">
-                      <span className="text-lg font-semibold text-gray-900">
+                      <span className="text-lg font-semibold tabular-nums text-gray-900">
                         {formatCurrency(payment.amount)}
                       </span>
-                      <span className="text-xs text-gray-400">
+                      <span className="text-xs tabular-nums text-gray-400">
                         {formatDate(payment.paid_date ?? payment.due_date ?? payment.created_at)}
                       </span>
                     </div>
@@ -418,19 +477,19 @@ export default function ContractorDetail({
               </div>
 
               {/* Desktop: table */}
-              <table className="hidden w-full sm:table">
+              <table className="hidden w-full sm:table" role="table">
                 <thead>
                   <tr className="border-b border-gray-100 text-left text-xs font-semibold uppercase tracking-wider text-gray-400">
-                    <th className="pb-3 pr-4">Project</th>
-                    <th className="pb-3 pr-4">Description</th>
-                    <th className="pb-3 pr-4">Amount</th>
-                    <th className="pb-3 pr-4">Status</th>
-                    <th className="pb-3">Date</th>
+                    <th scope="col" className="pb-3 pr-4">Project</th>
+                    <th scope="col" className="pb-3 pr-4">Description</th>
+                    <th scope="col" className="pb-3 pr-4">Amount</th>
+                    <th scope="col" className="pb-3 pr-4">Status</th>
+                    <th scope="col" className="pb-3">Date</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-50">
-                  {payments.map((payment) => (
-                    <tr key={payment.id} className="text-sm">
+                  {payments.map((payment, index) => (
+                    <tr key={payment.id} className={`text-sm ${index % 2 === 1 ? "bg-gray-50/50" : ""}`}>
                       <td className="py-3 pr-4">
                         {payment.projects ? (
                           <Link
@@ -446,21 +505,26 @@ export default function ContractorDetail({
                       <td className="py-3 pr-4 text-gray-600">
                         {payment.description || "-"}
                       </td>
-                      <td className="py-3 pr-4 font-medium text-gray-900">
+                      <td className="py-3 pr-4 font-medium tabular-nums text-gray-900">
                         {formatCurrency(payment.amount)}
                       </td>
                       <td className="py-3 pr-4">
                         <span
-                          className={`rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                          className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
                             payment.status === "paid"
                               ? "bg-green-100 text-green-700"
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
+                          {payment.status === "paid" ? (
+                            <CheckCircle2 className="h-3 w-3" />
+                          ) : (
+                            <Clock className="h-3 w-3" />
+                          )}
                           {payment.status === "paid" ? "Paid" : "Pending"}
                         </span>
                       </td>
-                      <td className="py-3 text-gray-500">
+                      <td className="py-3 tabular-nums text-gray-500">
                         {formatDate(payment.paid_date ?? payment.due_date ?? payment.created_at)}
                       </td>
                     </tr>
