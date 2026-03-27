@@ -1039,8 +1039,7 @@ function InvoicesTab({
   }
 
   async function markPaid(inv: Invoice) {
-    await mutate(`/api/admin/projects/${projectId}/invoices`, "PATCH", {
-      id: inv.id,
+    await mutate(`/api/admin/projects/${projectId}/invoices/${inv.id}`, "PATCH", {
       status: "paid",
       paid_date: new Date().toISOString().split("T")[0],
     });
@@ -1048,7 +1047,7 @@ function InvoicesTab({
 
   async function deleteInvoice(id: string) {
     if (!(await confirmAction("Delete this invoice?"))) return;
-    await mutate(`/api/admin/projects/${projectId}/invoices`, "DELETE", { id });
+    await mutate(`/api/admin/projects/${projectId}/invoices/${id}`, "DELETE");
   }
 
   return (
@@ -1476,8 +1475,7 @@ function PaymentsTab({
   }
 
   async function markPaid(p: ContractorPayment) {
-    await mutate(`/api/admin/projects/${projectId}/payments`, "PATCH", {
-      id: p.id,
+    await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
       status: "paid",
       paid_date: new Date().toISOString().split("T")[0],
     });
@@ -1485,7 +1483,7 @@ function PaymentsTab({
 
   async function deletePayment(id: string) {
     if (!(await confirmAction("Delete this payment?"))) return;
-    await mutate(`/api/admin/projects/${projectId}/payments`, "DELETE", { id });
+    await mutate(`/api/admin/projects/${projectId}/payments/${id}`, "DELETE");
   }
 
   return (
@@ -2928,8 +2926,7 @@ function PermitsTab({
   }
 
   async function updatePermitStatus(id: string, status: PermitStatus) {
-    await mutate(`/api/admin/projects/${projectId}/permits`, "PATCH", {
-      id,
+    await mutate(`/api/admin/projects/${projectId}/permits/${id}`, "PATCH", {
       status,
       ...(status === "approved"
         ? { approved_date: new Date().toISOString().split("T")[0] }
@@ -2939,7 +2936,7 @@ function PermitsTab({
 
   async function deletePermit(id: string) {
     if (!(await confirmAction("Delete this permit?"))) return;
-    await mutate(`/api/admin/projects/${projectId}/permits`, "DELETE", { id });
+    await mutate(`/api/admin/projects/${projectId}/permits/${id}`, "DELETE");
   }
 
   return (
@@ -3644,15 +3641,14 @@ function TasksTab({
   }
 
   async function toggleTask(t: Task) {
-    await mutate(`/api/admin/projects/${projectId}/tasks`, "PATCH", {
-      id: t.id,
+    await mutate(`/api/admin/projects/${projectId}/tasks/${t.id}`, "PATCH", {
       completed: !t.completed,
     });
   }
 
   async function deleteTask(id: string) {
     if (!(await confirmAction("Delete this task?"))) return;
-    await mutate(`/api/admin/projects/${projectId}/tasks`, "DELETE", { id });
+    await mutate(`/api/admin/projects/${projectId}/tasks/${id}`, "DELETE");
   }
 
   const incomplete = tasks.filter((t) => !t.completed);
