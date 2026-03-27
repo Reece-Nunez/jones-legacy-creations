@@ -169,3 +169,32 @@ export async function POST(
     { status: 201 }
   );
 }
+
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const body = await request.json();
+
+  const { id: docId, ...updates } = body;
+
+  if (!docId) {
+    return NextResponse.json({ error: "Document id is required" }, { status: 400 });
+  }
+
+  const { data, error } = await supabase
+    .from("documents")
+    .update(updates)
+    .eq("id", docId)
+    .eq("project_id", id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json(data);
+}

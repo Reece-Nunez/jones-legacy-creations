@@ -1563,7 +1563,7 @@ function DrawsTab({
   }, [draws.length]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // Documents grouped by draw
-  const unassignedDocs = documents.filter((d) => !d.draw_request_id);
+  const unassignedDocs = documents.filter((d) => !d.draw_request_id && d.category !== "permit");
   const docsByDraw = draws.reduce<Record<string, Document[]>>((acc, draw) => {
     acc[draw.id] = documents
       .filter((d) => d.draw_request_id === draw.id)
