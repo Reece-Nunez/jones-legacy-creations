@@ -83,6 +83,8 @@ create table contractor_payments (
   )),
   due_date date,
   paid_date date,
+  invoice_file_url text,
+  invoice_file_name text,
   created_at timestamptz default now()
 );
 

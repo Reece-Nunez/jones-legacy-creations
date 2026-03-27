@@ -32,11 +32,13 @@ import {
   Banknote,
   Receipt,
   Circle,
+  Paperclip,
 } from "lucide-react";
 import type {
   Project,
   Invoice,
   ContractorPayment,
+  Contractor,
   Permit,
   Document,
   Task,
@@ -171,6 +173,7 @@ interface Props {
   tasks: Task[];
   drawRequests: DrawRequest[];
   activityLog: ActivityLogEntry[];
+  contractors: Contractor[];
 }
 
 // ---------------------------------------------------------------------------
@@ -198,6 +201,7 @@ export default function ProjectDetail({
   tasks,
   drawRequests,
   activityLog,
+  contractors,
 }: Props) {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabKey>("overview");
@@ -350,6 +354,7 @@ export default function ProjectDetail({
             <PaymentsTab
               projectId={project.id}
               payments={payments}
+              contractors={contractors}
               mutate={mutate}
               loading={loading}
             />
@@ -908,36 +913,59 @@ function InvoicesTab({
 function PaymentsTab({
   projectId,
   payments,
+  contractors,
   mutate,
   loading,
 }: {
   projectId: string;
   payments: ContractorPayment[];
+  contractors: Contractor[];
   mutate: (
     url: string,
     method: string,
-    body?: Record<string, unknown>,
+    body?: Record<string, unknown> | FormData,
   ) => Promise<Response | undefined>;
   loading: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
+    contractor_id: "",
     contractor_name: "",
     description: "",
     amount: "",
     due_date: "",
   });
+  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+
+  function handleContractorChange(value: string) {
+    if (value === "other") {
+      setForm({ ...form, contractor_id: "other", contractor_name: "" });
+    } else if (value === "") {
+      setForm({ ...form, contractor_id: "", contractor_name: "" });
+    } else {
+      const contractor = contractors.find((c) => c.id === value);
+      setForm({
+        ...form,
+        contractor_id: value,
+        contractor_name: contractor?.name ?? "",
+      });
+    }
+  }
 
   async function addPayment() {
     if (!form.contractor_name || !form.amount) return;
-    await mutate(`/api/admin/projects/${projectId}/payments`, "POST", {
-      contractor_name: form.contractor_name,
-      description: form.description || null,
-      amount: parseFloat(unformatCurrency(form.amount)),
-      status: "pending",
-      due_date: form.due_date || null,
-    });
-    setForm({ contractor_name: "", description: "", amount: "", due_date: "" });
+
+    const fd = new FormData();
+    fd.append("contractor_id", form.contractor_id);
+    fd.append("contractor_name", form.contractor_name);
+    fd.append("description", form.description);
+    fd.append("amount", unformatCurrency(form.amount));
+    fd.append("due_date", form.due_date);
+    if (invoiceFile) fd.append("invoice_file", invoiceFile);
+
+    await mutate(`/api/admin/projects/${projectId}/payments`, "POST", fd);
+    setForm({ contractor_id: "", contractor_name: "", description: "", amount: "", due_date: "" });
+    setInvoiceFile(null);
     setShowForm(false);
   }
 
@@ -972,18 +1000,39 @@ function PaymentsTab({
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label htmlFor="pay-contractor" className="block text-sm text-gray-700 font-medium mb-1">
-                      Contractor Name <span className="text-red-500">*</span>
+                      Contractor <span className="text-red-500">*</span>
                     </label>
-                    <input
+                    <select
                       id="pay-contractor"
-                      placeholder="Contractor Name"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      value={form.contractor_name}
-                      onChange={(e) =>
-                        setForm({ ...form, contractor_name: e.target.value })
-                      }
-                    />
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                      value={form.contractor_id}
+                      onChange={(e) => handleContractorChange(e.target.value)}
+                    >
+                      <option value="">Select contractor...</option>
+                      {contractors.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.name}{c.company ? ` \u2014 ${c.company}` : ""}
+                        </option>
+                      ))}
+                      <option value="other">Other (type name)</option>
+                    </select>
                   </div>
+                  {form.contractor_id === "other" && (
+                    <div>
+                      <label htmlFor="pay-contractor-name" className="block text-sm text-gray-700 font-medium mb-1">
+                        Contractor Name <span className="text-red-500">*</span>
+                      </label>
+                      <input
+                        id="pay-contractor-name"
+                        placeholder="Contractor Name"
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                        value={form.contractor_name}
+                        onChange={(e) =>
+                          setForm({ ...form, contractor_name: e.target.value })
+                        }
+                      />
+                    </div>
+                  )}
                   <div>
                     <label htmlFor="pay-amount" className="block text-sm text-gray-700 font-medium mb-1">
                       Amount <span className="text-red-500">*</span>
@@ -1024,6 +1073,24 @@ function PaymentsTab({
                       onChange={(e) => setForm({ ...form, due_date: e.target.value })}
                     />
                   </div>
+                  <div>
+                    <label htmlFor="pay-invoice" className="block text-sm text-gray-700 font-medium mb-1">
+                      Attach Invoice (optional)
+                    </label>
+                    <input
+                      id="pay-invoice"
+                      type="file"
+                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm file:mr-3 file:px-3 file:py-1.5 file:rounded-md file:border-0 file:bg-gray-200 file:text-sm file:font-medium file:text-gray-700 file:cursor-pointer focus:outline-none focus:ring-2 focus:ring-black"
+                      onChange={(e) => setInvoiceFile(e.target.files?.[0] ?? null)}
+                    />
+                    {invoiceFile && (
+                      <p className="text-xs text-gray-500 mt-1 flex items-center gap-1">
+                        <Paperclip className="w-3 h-3" />
+                        {invoiceFile.name}
+                      </p>
+                    )}
+                  </div>
                 </div>
                 <div className="flex gap-2">
                   <button
@@ -1034,7 +1101,10 @@ function PaymentsTab({
                     {loading ? "Saving..." : "Save"}
                   </button>
                   <button
-                    onClick={() => setShowForm(false)}
+                    onClick={() => {
+                      setShowForm(false);
+                      setInvoiceFile(null);
+                    }}
                     className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
                   >
                     Cancel
@@ -1057,9 +1127,18 @@ function PaymentsTab({
             >
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm text-gray-900">
-                    {p.contractor_name}
-                  </span>
+                  {p.contractor_id ? (
+                    <Link
+                      href={`/admin/contractors/${p.contractor_id}`}
+                      className="font-medium text-sm text-blue-600 hover:underline"
+                    >
+                      {p.contractor_name}
+                    </Link>
+                  ) : (
+                    <span className="font-medium text-sm text-gray-900">
+                      {p.contractor_name}
+                    </span>
+                  )}
                   <Badge
                     variant="outline"
                     className={`inline-flex items-center gap-1 rounded-full ${
@@ -1076,6 +1155,17 @@ function PaymentsTab({
                   <p className="text-xs text-gray-500 mt-0.5 truncate">
                     {p.description}
                   </p>
+                )}
+                {p.invoice_file_url && (
+                  <a
+                    href={p.invoice_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5"
+                  >
+                    <Paperclip className="w-3 h-3" />
+                    {p.invoice_file_name ?? "Invoice"}
+                  </a>
                 )}
               </div>
               <div className="flex items-center gap-3 text-sm">

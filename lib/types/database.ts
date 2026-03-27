@@ -73,6 +73,8 @@ export interface ContractorPayment {
   status: PaymentStatus;
   due_date: string | null;
   paid_date: string | null;
+  invoice_file_url: string | null;
+  invoice_file_name: string | null;
   created_at: string;
 }
 
