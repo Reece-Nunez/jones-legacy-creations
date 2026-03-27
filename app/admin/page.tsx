@@ -208,14 +208,36 @@ export default async function AdminDashboard({
   );
   const overdueCount = overdueInvoices.length + overdueTasks.length;
 
-  // Cash flow this month
-  const paidThisMonth = invoices
-    .filter((i) => i.status === "paid" && i.paid_date && i.paid_date >= monthStart && i.paid_date <= monthEnd)
-    .reduce((s, i) => s + (i.amount || 0), 0);
-  const spentThisMonth = payments
-    .filter((p) => p.status === "paid" && p.paid_date && p.paid_date >= monthStart && p.paid_date <= monthEnd)
-    .reduce((s, p) => s + (p.amount || 0), 0);
-  const cashFlow = paidThisMonth - spentThisMonth;
+  // Total projected profit across all active projects
+  // Profit = sale_price - total_costs - origination_fee - accrued_interest
+  let totalProjectedProfit = 0;
+  let projectsWithProfit = 0;
+  for (const p of activeProjects) {
+    if (p.sale_price && p.sale_price > 0) {
+      const projectCosts = payments
+        .filter((pay) => pay.project_id === p.id)
+        .reduce((s, pay) => s + (pay.amount || 0), 0);
+      const loanAmt = p.loan_amount || 0;
+      const origFee = loanAmt * (p.origination_fee_percent || 2) / 100;
+      // Simplified interest estimate — use funded draws
+      const projectDraws = draws.filter((d) => d.project_id === p.id && d.status === "funded");
+      let interest = 0;
+      const rate = (p.interest_rate || 8.75) / 100;
+      for (const d of projectDraws) {
+        if (d.funded_date) {
+          const days = Math.max(0, (now.getTime() - new Date(d.funded_date).getTime()) / (1000 * 60 * 60 * 24));
+          interest += d.amount * rate * (days / 365);
+        }
+      }
+      const profit = p.sale_price - projectCosts - origFee - interest;
+      totalProjectedProfit += profit;
+      projectsWithProfit++;
+    }
+  }
+
+  // Pending draws (submitted but not funded)
+  const pendingDraws = draws.filter((d) => d.status === "submitted" || d.status === "approved");
+  const pendingDrawTotal = pendingDraws.reduce((s, d) => s + (d.amount || 0), 0);
 
   // ── Build Action Items ────────────────────────────────────
   const actionItems: ActionItem[] = [];
@@ -490,21 +512,23 @@ export default async function AdminDashboard({
           <Card className="bg-gradient-to-br from-white to-emerald-50/40 shadow-sm">
             <CardContent className="pt-6 p-4 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${cashFlow >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-                  {cashFlow >= 0 ? (
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${totalProjectedProfit >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
+                  {totalProjectedProfit >= 0 ? (
                     <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
                   ) : (
                     <TrendingDown className="h-5 w-5 text-red-600" aria-hidden="true" />
                   )}
                 </div>
                 <span className="text-sm font-medium text-gray-600">
-                  Cash Flow
+                  Projected Profit
                 </span>
               </div>
-              <p className={`mt-3 text-2xl font-semibold tabular-nums sm:text-3xl ${cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-                {fmt(cashFlow)}
+              <p className={`mt-3 text-2xl font-semibold tabular-nums sm:text-3xl ${totalProjectedProfit >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                {projectsWithProfit > 0 ? fmt(totalProjectedProfit) : "--"}
               </p>
-              <p className="mt-1 text-sm text-gray-500">This month</p>
+              <p className="mt-1 text-sm text-gray-500">
+                {projectsWithProfit > 0 ? `Across ${projectsWithProfit} project${projectsWithProfit !== 1 ? "s" : ""}` : "Add sale prices to see profit"}
+              </p>
             </CardContent>
           </Card>
         </div>
