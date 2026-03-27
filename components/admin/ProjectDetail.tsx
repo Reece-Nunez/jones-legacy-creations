@@ -10,7 +10,6 @@ import {
   MapPin,
   DollarSign,
   Calendar,
-  FileText,
   CreditCard,
   ClipboardList,
   FolderOpen,
@@ -47,7 +46,6 @@ import {
 } from "lucide-react";
 import type {
   Project,
-  Invoice,
   ContractorPayment,
   Contractor,
   Permit,
@@ -56,7 +54,6 @@ import type {
   DrawRequest,
   ActivityLogEntry,
   ProjectStatus,
-  InvoiceStatus,
   PermitStatus,
   DrawRequestStatus,
   DocumentCategory,
@@ -65,7 +62,6 @@ import type {
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
-  INVOICE_STATUS_COLORS,
   PERMIT_STATUS_COLORS,
   DRAW_STATUS_COLORS,
 } from "@/lib/types/database";
@@ -156,15 +152,6 @@ function confirmAction(message: string): Promise<boolean> {
 }
 
 /** Left border color for status-based cards */
-function invoiceLeftBorder(status: InvoiceStatus): string {
-  switch (status) {
-    case "paid": return "border-l-green-500";
-    case "overdue": return "border-l-red-500";
-    case "sent": return "border-l-blue-500";
-    default: return "border-l-gray-300";
-  }
-}
-
 function permitLeftBorder(status: PermitStatus): string {
   switch (status) {
     case "approved": return "border-l-green-500";
@@ -191,7 +178,6 @@ function paymentLeftBorder(status: string): string {
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "invoices", label: "Invoices", icon: FileText },
   { key: "payments", label: "Payments", icon: CreditCard },
   { key: "draws", label: "Draws", icon: Banknote },
   { key: "permits", label: "Permits", icon: ClipboardList },
@@ -208,7 +194,6 @@ type TabKey = (typeof TABS)[number]["key"];
 
 interface Props {
   project: Project;
-  invoices: Invoice[];
   payments: ContractorPayment[];
   permits: Permit[];
   documents: Document[];
@@ -236,7 +221,6 @@ async function logActivity(projectId: string, action: string, description: strin
 
 export default function ProjectDetail({
   project,
-  invoices,
   payments,
   permits,
   documents,
@@ -251,12 +235,7 @@ export default function ProjectDetail({
 
   // ---- financial calculations -------------------------------------------
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
-  const totalInvoiced = invoices.reduce((s, i) => s + i.amount, 0);
-  const totalCollected = invoices
-    .filter((i) => i.status === "paid")
-    .reduce((s, i) => s + i.amount, 0);
   const totalCosts = payments.reduce((s, p) => s + p.amount, 0);
-  const profit = totalCollected - totalCosts;
 
   // ---- loan / profit calculations ----------------------------------------
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
@@ -377,21 +356,11 @@ export default function ProjectDetail({
             profitMargin={profitMargin}
           />
         ) : (
-          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 gap-3">
             <FinancialCard
               icon={<Receipt className="w-4 h-4 text-blue-500" />}
               label="Contract Value"
               value={contractValue}
-            />
-            <FinancialCard
-              icon={<FileText className="w-4 h-4 text-indigo-500" />}
-              label="Invoiced"
-              value={totalInvoiced}
-            />
-            <FinancialCard
-              icon={<DollarSign className="w-4 h-4 text-green-500" />}
-              label="Collected"
-              value={totalCollected}
             />
             <FinancialCard
               icon={<CreditCard className="w-4 h-4 text-orange-500" />}
@@ -400,14 +369,14 @@ export default function ProjectDetail({
             />
             <FinancialCard
               icon={
-                profit >= 0 ? (
+                contractValue - totalCosts >= 0 ? (
                   <TrendingUp className="w-4 h-4 text-green-500" />
                 ) : (
                   <TrendingDown className="w-4 h-4 text-red-500" />
                 )
               }
               label="Profit"
-              value={profit}
+              value={contractValue - totalCosts}
               colored
             />
           </div>
@@ -415,12 +384,6 @@ export default function ProjectDetail({
 
         {/* Quick Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveTab("invoices")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-          >
-            <FileText className="w-3.5 h-3.5" /> Add Invoice
-          </button>
           <button
             onClick={() => setActiveTab("tasks")}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
@@ -455,14 +418,6 @@ export default function ProjectDetail({
 
           <TabsContent value="overview">
             <OverviewTab project={project} mutate={mutate} />
-          </TabsContent>
-          <TabsContent value="invoices">
-            <InvoicesTab
-              projectId={project.id}
-              invoices={invoices}
-              mutate={mutate}
-              loading={loading}
-            />
           </TabsContent>
           <TabsContent value="payments">
             <PaymentsTab
@@ -961,346 +916,6 @@ function OverviewTab({
 }
 
 // ===========================================================================
-// Invoices Tab
-// ===========================================================================
-
-function InvoicesTab({
-  projectId,
-  invoices,
-  mutate,
-  loading,
-}: {
-  projectId: string;
-  invoices: Invoice[];
-  mutate: (
-    url: string,
-    method: string,
-    body?: Record<string, unknown>,
-  ) => Promise<Response | undefined>;
-  loading: boolean;
-}) {
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    invoice_number: "",
-    description: "",
-    amount: "",
-    status: "draft" as InvoiceStatus,
-    due_date: "",
-  });
-
-  const [editingInvoice, setEditingInvoice] = useState<string | null>(null);
-  const [editInvoiceForm, setEditInvoiceForm] = useState({
-    invoice_number: "",
-    description: "",
-    amount: "",
-    status: "draft" as InvoiceStatus,
-    due_date: "",
-  });
-
-  function startEditInvoice(inv: Invoice) {
-    setEditingInvoice(inv.id);
-    setEditInvoiceForm({
-      invoice_number: inv.invoice_number,
-      description: inv.description || "",
-      amount: formatCurrencyInput(String(inv.amount)),
-      status: inv.status,
-      due_date: inv.due_date ?? "",
-    });
-  }
-
-  async function saveEditInvoice(id: string) {
-    await mutate(`/api/admin/projects/${projectId}/invoices/${id}`, "PATCH", {
-      invoice_number: editInvoiceForm.invoice_number,
-      description: editInvoiceForm.description || null,
-      amount: parseFloat(unformatCurrency(editInvoiceForm.amount)),
-      status: editInvoiceForm.status,
-      due_date: editInvoiceForm.due_date || null,
-    });
-    setEditingInvoice(null);
-  }
-
-  async function addInvoice() {
-    if (!form.invoice_number || !form.amount) return;
-    await mutate(`/api/admin/projects/${projectId}/invoices`, "POST", {
-      invoice_number: form.invoice_number,
-      description: form.description || null,
-      amount: parseFloat(unformatCurrency(form.amount)),
-      status: form.status,
-      due_date: form.due_date || null,
-    });
-    setForm({
-      invoice_number: "",
-      description: "",
-      amount: "",
-      status: "draft",
-      due_date: "",
-    });
-    setShowForm(false);
-  }
-
-  async function markPaid(inv: Invoice) {
-    await mutate(`/api/admin/projects/${projectId}/invoices/${inv.id}`, "PATCH", {
-      status: "paid",
-      paid_date: new Date().toISOString().split("T")[0],
-    });
-  }
-
-  async function deleteInvoice(id: string) {
-    if (!(await confirmAction("Delete this invoice?"))) return;
-    await mutate(`/api/admin/projects/${projectId}/invoices/${id}`, "DELETE");
-  }
-
-  return (
-    <ShadCard>
-      <CardHeader>
-        <CardTitle>Invoices</CardTitle>
-        {!showForm && (
-          <CardAction>
-            <AddButton label="Add Invoice" onClick={() => setShowForm(true)} />
-          </CardAction>
-        )}
-      </CardHeader>
-      <CardContent>
-        {showForm && (
-          <ShadCard className="mb-4 bg-gray-50 border-dashed">
-            <CardContent className="pt-4">
-              <div className="space-y-3">
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label htmlFor="inv-number" className="block text-sm text-gray-700 font-medium mb-1">
-                      Invoice # <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="inv-number"
-                      placeholder="Invoice #"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      value={form.invoice_number}
-                      onChange={(e) =>
-                        setForm({ ...form, invoice_number: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="inv-amount" className="block text-sm text-gray-700 font-medium mb-1">
-                      Amount <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      id="inv-amount"
-                      placeholder="$0.00"
-                      type="text"
-                      inputMode="decimal"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      value={form.amount}
-                      onChange={(e) => setForm({ ...form, amount: formatCurrencyInput(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="inv-desc" className="block text-sm text-gray-700 font-medium mb-1">
-                      Description
-                    </label>
-                    <input
-                      id="inv-desc"
-                      placeholder="Description"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      value={form.description}
-                      onChange={(e) =>
-                        setForm({ ...form, description: e.target.value })
-                      }
-                    />
-                  </div>
-                  <div>
-                    <label htmlFor="inv-due" className="block text-sm text-gray-700 font-medium mb-1">
-                      Due Date
-                    </label>
-                    <input
-                      id="inv-due"
-                      type="date"
-                      className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      value={form.due_date}
-                      onChange={(e) => setForm({ ...form, due_date: e.target.value })}
-                    />
-                  </div>
-                </div>
-                <div>
-                  <label htmlFor="inv-status" className="block text-sm text-gray-700 font-medium mb-1">
-                    Status
-                  </label>
-                  <select
-                    id="inv-status"
-                    value={form.status}
-                    onChange={(e) =>
-                      setForm({ ...form, status: e.target.value as InvoiceStatus })
-                    }
-                    className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                  >
-                    <option value="draft">Draft</option>
-                    <option value="sent">Sent</option>
-                    <option value="paid">Paid</option>
-                    <option value="overdue">Overdue</option>
-                  </select>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    disabled={loading}
-                    onClick={addInvoice}
-                    className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
-                  >
-                    {loading ? "Saving..." : "Save"}
-                  </button>
-                  <button
-                    onClick={() => setShowForm(false)}
-                    className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-          </ShadCard>
-        )}
-
-        {invoices.length === 0 && !showForm && (
-          <EmptyState label="No invoices yet" />
-        )}
-
-        <div className="divide-y divide-gray-100">
-          {invoices.map((inv) => (
-            <div key={inv.id}>
-              {editingInvoice === inv.id ? (
-                <div className="bg-gray-50 rounded-lg p-3 my-2 space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs text-gray-600 font-medium mb-1">Invoice #</label>
-                      <input
-                        value={editInvoiceForm.invoice_number}
-                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, invoice_number: e.target.value })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 font-medium mb-1">Amount</label>
-                      <input
-                        type="text"
-                        inputMode="decimal"
-                        value={editInvoiceForm.amount}
-                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, amount: formatCurrencyInput(e.target.value) })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 font-medium mb-1">Description</label>
-                      <input
-                        value={editInvoiceForm.description}
-                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, description: e.target.value })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-xs text-gray-600 font-medium mb-1">Due Date</label>
-                      <input
-                        type="date"
-                        value={editInvoiceForm.due_date}
-                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, due_date: e.target.value })}
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                      />
-                    </div>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
-                    <select
-                      value={editInvoiceForm.status}
-                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, status: e.target.value as InvoiceStatus })}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
-                      <option value="draft">Draft</option>
-                      <option value="sent">Sent</option>
-                      <option value="paid">Paid</option>
-                      <option value="overdue">Overdue</option>
-                    </select>
-                  </div>
-                  <div className="flex gap-2">
-                    <button
-                      disabled={loading}
-                      onClick={() => saveEditInvoice(inv.id)}
-                      className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
-                    >
-                      {loading ? "Saving..." : "Save Changes"}
-                    </button>
-                    <button
-                      onClick={() => setEditingInvoice(null)}
-                      className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              ) : (
-                <div
-                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${invoiceLeftBorder(inv.status)}`}
-                >
-                  <div className="flex-1 min-w-0">
-                    <div className="flex items-center gap-2">
-                      <span className="font-medium text-sm text-gray-900">
-                        {inv.invoice_number}
-                      </span>
-                      <Badge
-                        variant="outline"
-                        className={`inline-flex items-center gap-1 rounded-full ${INVOICE_STATUS_COLORS[inv.status]}`}
-                      >
-                        <Circle className="w-1.5 h-1.5 fill-current" />
-                        {inv.status}
-                      </Badge>
-                    </div>
-                    {inv.description && (
-                      <p className="text-xs text-gray-500 mt-0.5 truncate">
-                        {inv.description}
-                      </p>
-                    )}
-                  </div>
-                  <div className="flex items-center gap-3 text-sm">
-                    <span className="font-semibold text-gray-900 tabular-nums">
-                      {fmt(inv.amount)}
-                    </span>
-                    <span className="text-gray-500 text-xs">
-                      Due {fmtDate(inv.due_date)}
-                    </span>
-                    {inv.status !== "paid" && (
-                      <button
-                        disabled={loading}
-                        onClick={() => markPaid(inv)}
-                        className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
-                      >
-                        Mark Paid
-                      </button>
-                    )}
-                    <button
-                      disabled={loading}
-                      aria-label={`Edit invoice ${inv.invoice_number}`}
-                      onClick={() => startEditInvoice(inv)}
-                      className="text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-                    >
-                      <Edit3 className="w-3.5 h-3.5" />
-                    </button>
-                    <button
-                      disabled={loading}
-                      aria-label={`Delete invoice ${inv.invoice_number}`}
-                      onClick={() => deleteInvoice(inv.id)}
-                      className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-                    >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-          ))}
-        </div>
-      </CardContent>
-    </ShadCard>
-  );
-}
-
-// ===========================================================================
 // Payments Tab
 // ===========================================================================
 
@@ -1474,7 +1089,7 @@ function PaymentsTab({
     setEditingPayment(null);
   }
 
-  async function markPaid(p: ContractorPayment) {
+  async function markFunded(p: ContractorPayment) {
     await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
       status: "paid",
       paid_date: new Date().toISOString().split("T")[0],
@@ -1793,8 +1408,8 @@ function PaymentsTab({
                       onChange={(e) => setEditPaymentForm({ ...editPaymentForm, status: e.target.value })}
                       className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                     >
-                      <option value="pending">Pending</option>
-                      <option value="paid">Paid</option>
+                      <option value="pending">Needs Draw</option>
+                      <option value="paid">Funded</option>
                     </select>
                   </div>
                   <div className="flex gap-2">
@@ -1836,11 +1451,11 @@ function PaymentsTab({
                         className={`inline-flex items-center gap-1 rounded-full ${
                           p.status === "paid"
                             ? "bg-green-100 text-green-700"
-                            : "bg-yellow-100 text-yellow-700"
+                            : "bg-orange-100 text-orange-700"
                         }`}
                       >
                         <Circle className="w-1.5 h-1.5 fill-current" />
-                        {p.status}
+                        {p.status === "paid" ? "Funded" : "Needs Draw"}
                       </Badge>
                     </div>
                     {p.description && (
@@ -1870,10 +1485,10 @@ function PaymentsTab({
                     {p.status !== "paid" && (
                       <button
                         disabled={loading}
-                        onClick={() => markPaid(p)}
+                        onClick={() => markFunded(p)}
                         className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
                       >
-                        Mark Paid
+                        Mark Funded
                       </button>
                     )}
                     <button

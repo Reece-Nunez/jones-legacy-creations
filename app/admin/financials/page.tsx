@@ -2,7 +2,6 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import type {
   Project,
-  Invoice,
   ContractorPayment,
   DrawRequest,
   DrawRequestStatus,
@@ -12,14 +11,11 @@ import {
   DollarSign,
   TrendingUp,
   TrendingDown,
-  AlertTriangle,
-  Calendar,
+  Landmark,
   Clock,
   FileText,
-  CreditCard,
-  ArrowRight,
   ExternalLink,
-  Inbox,
+  Banknote,
 } from "lucide-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -42,7 +38,6 @@ const pct = (n: number) =>
     maximumFractionDigits: 1,
   }).format(n);
 
-/** Spoken-format dollar amount for aria-label, e.g. "$1,234.56" -> "1234 dollars and 56 cents" */
 function spokenDollars(n: number): string {
   const abs = Math.abs(n);
   const dollars = Math.floor(abs);
@@ -54,16 +49,6 @@ function spokenDollars(n: number): string {
   return `${neg}${dollars} dollars and ${cents} cents`;
 }
 
-function daysOverdue(dueDate: string | null): number {
-  if (!dueDate) return 0;
-  const diff = Date.now() - new Date(dueDate).getTime();
-  return Math.max(0, Math.floor(diff / 86_400_000));
-}
-
-function daysUntil(date: string): number {
-  return Math.ceil((new Date(date).getTime() - Date.now()) / 86_400_000);
-}
-
 function formatDate(iso: string | null): string {
   if (!iso) return "--";
   return new Date(iso).toLocaleDateString("en-US", {
@@ -71,6 +56,46 @@ function formatDate(iso: string | null): string {
     day: "numeric",
     year: "numeric",
   });
+}
+
+/** Calculate accrued interest for a project's funded draws (same logic as ProjectDetail) */
+function calcAccruedInterest(
+  project: Project,
+  projectDraws: DrawRequest[]
+): number {
+  const interestRate = project.interest_rate ?? 0;
+  if (!interestRate) return 0;
+
+  const fundedDraws = projectDraws
+    .filter((d) => d.status === "funded" && d.funded_date)
+    .sort(
+      (a, b) =>
+        new Date(a.funded_date!).getTime() - new Date(b.funded_date!).getTime()
+    );
+
+  if (fundedDraws.length === 0) return 0;
+
+  const endDate = project.end_date
+    ? new Date(project.end_date)
+    : new Date();
+
+  let interest = 0;
+  let runningBalance = 0;
+  for (let i = 0; i < fundedDraws.length; i++) {
+    const draw = fundedDraws[i];
+    const drawDate = new Date(draw.funded_date!);
+    runningBalance += draw.amount;
+    const nextDate =
+      i < fundedDraws.length - 1
+        ? new Date(fundedDraws[i + 1].funded_date!)
+        : endDate;
+    const days = Math.max(
+      0,
+      (nextDate.getTime() - drawDate.getTime()) / (1000 * 60 * 60 * 24)
+    );
+    interest += runningBalance * (interestRate / 100) * (days / 365);
+  }
+  return interest;
 }
 
 /* ------------------------------------------------------------------ */
@@ -82,42 +107,25 @@ export default async function FinancialsPage({
 }: {
   searchParams: Promise<Record<string, string | undefined>>;
 }) {
-  await searchParams; // consume to satisfy Next.js
+  await searchParams;
 
   const supabase = await createClient();
 
-  const [projectsRes, invoicesRes, paymentsRes, drawsRes] = await Promise.all([
+  const [projectsRes, paymentsRes, drawsRes] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
       .order("updated_at", { ascending: false }),
-    supabase.from("invoices").select("*"),
     supabase.from("contractor_payments").select("*"),
     supabase.from("draw_requests").select("*"),
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
-  const invoices: Invoice[] = invoicesRes.data ?? [];
   const payments: ContractorPayment[] = paymentsRes.data ?? [];
   const draws: DrawRequest[] = drawsRes.data ?? [];
 
   // ── Maps ─────────────────────────────────────────────────────────
   const projectMap = new Map(projects.map((p) => [p.id, p]));
-
-  // ── Summary Numbers ──────────────────────────────────────────────
-  const paidInvoices = invoices.filter((i) => i.status === "paid");
-  const unpaidInvoices = invoices.filter((i) => i.status !== "paid");
-  const overdueInvoices = invoices.filter((i) => i.status === "overdue");
-
-  const totalRevenue = paidInvoices.reduce((s, i) => s + i.amount, 0);
-  const outstandingTotal = unpaidInvoices.reduce((s, i) => s + i.amount, 0);
-
-  const pendingPayments = payments.filter((p) => p.status === "pending");
-  const paidPayments = payments.filter((p) => p.status === "paid");
-  const owedToContractors = pendingPayments.reduce((s, p) => s + p.amount, 0);
-  const paidToContractors = paidPayments.reduce((s, p) => s + p.amount, 0);
-
-  const netPosition = totalRevenue - paidToContractors;
 
   // ── Active Projects (not archived) ──────────────────────────────
   const activeProjects = projects.filter((p) => p.status !== "archived");
@@ -125,110 +133,81 @@ export default async function FinancialsPage({
   // ── Per-project financials ──────────────────────────────────────
   interface ProjectFinancials {
     project: Project;
-    contractValue: number;
-    totalInvoiced: number;
-    totalCollected: number;
+    salePrice: number;
     totalCosts: number;
-    pendingCosts: number;
-    profitMargin: number;
+    loanAmount: number;
     drawsFunded: number;
     drawsPending: number;
+    totalDraws: number;
+    originationFeePercent: number;
+    originationFee: number;
+    interestRate: number;
+    accruedInterest: number;
+    projectedProfit: number;
+    profitMargin: number;
   }
 
   const projectFinancials: ProjectFinancials[] = activeProjects.map((p) => {
-    const projInvoices = invoices.filter((i) => i.project_id === p.id);
     const projPayments = payments.filter((pm) => pm.project_id === p.id);
     const projDraws = draws.filter((d) => d.project_id === p.id);
 
-    const totalInvoiced = projInvoices.reduce((s, i) => s + i.amount, 0);
-    const totalCollected = projInvoices
-      .filter((i) => i.status === "paid")
-      .reduce((s, i) => s + i.amount, 0);
-    const totalCosts = projPayments
-      .filter((pm) => pm.status === "paid")
-      .reduce((s, pm) => s + pm.amount, 0);
-    const pendingCosts = projPayments
-      .filter((pm) => pm.status === "pending")
-      .reduce((s, pm) => s + pm.amount, 0);
+    const salePrice = p.sale_price ?? 0;
+    const loanAmount = p.loan_amount ?? 0;
+    const originationFeePercent = p.origination_fee_percent ?? 0;
+    const interestRate = p.interest_rate ?? 0;
+
+    const totalCosts = projPayments.reduce((s, pm) => s + pm.amount, 0);
+
     const drawsFunded = projDraws
       .filter((d) => d.status === "funded")
       .reduce((s, d) => s + d.amount, 0);
     const drawsPending = projDraws
-      .filter((d) => d.status !== "funded" && d.status !== "denied")
+      .filter((d) => d.status === "submitted" || d.status === "approved")
       .reduce((s, d) => s + d.amount, 0);
+    const totalDraws = projDraws.reduce((s, d) => s + d.amount, 0);
+
+    const originationFee = (loanAmount * originationFeePercent) / 100;
+    const accruedInterest = calcAccruedInterest(p, projDraws);
+    const projectedProfit =
+      salePrice - totalCosts - originationFee - accruedInterest;
+    const profitMargin = salePrice > 0 ? projectedProfit / salePrice : 0;
 
     return {
       project: p,
-      contractValue: p.contract_value ?? p.estimated_value ?? 0,
-      totalInvoiced,
-      totalCollected,
+      salePrice,
       totalCosts,
-      pendingCosts,
-      profitMargin: totalCollected - totalCosts,
+      loanAmount,
       drawsFunded,
       drawsPending,
+      totalDraws,
+      originationFeePercent,
+      originationFee,
+      interestRate,
+      accruedInterest,
+      projectedProfit,
+      profitMargin,
     };
   });
 
   // Sort: projects with activity first, then by profit descending
   projectFinancials.sort((a, b) => {
-    const aHasActivity = a.totalInvoiced + a.totalCosts > 0;
-    const bHasActivity = b.totalInvoiced + b.totalCosts > 0;
+    const aHasActivity = a.totalCosts + a.totalDraws > 0;
+    const bHasActivity = b.totalCosts + b.totalDraws > 0;
     if (aHasActivity !== bHasActivity) return aHasActivity ? -1 : 1;
-    return b.profitMargin - a.profitMargin;
+    return b.projectedProfit - a.projectedProfit;
   });
 
-  // ── Upcoming Payments (next 30 days) ────────────────────────────
-  const today = new Date();
-  const thirtyDaysOut = new Date(today.getTime() + 30 * 86_400_000);
-
-  interface UpcomingItem {
-    date: string;
-    type: "invoice" | "payment";
-    projectName: string;
-    projectId: string;
-    name: string; // client or contractor
-    amount: number;
-    daysAway: number;
-  }
-
-  const upcomingItems: UpcomingItem[] = [];
-
-  for (const inv of invoices) {
-    if (inv.status === "paid" || !inv.due_date) continue;
-    const d = new Date(inv.due_date);
-    if (d <= thirtyDaysOut) {
-      const proj = projectMap.get(inv.project_id);
-      upcomingItems.push({
-        date: inv.due_date,
-        type: "invoice",
-        projectName: proj?.name ?? "Unknown",
-        projectId: inv.project_id,
-        name: proj?.client_name ?? "Unknown",
-        amount: inv.amount,
-        daysAway: daysUntil(inv.due_date),
-      });
-    }
-  }
-
-  for (const pm of payments) {
-    if (pm.status === "paid" || !pm.due_date) continue;
-    const d = new Date(pm.due_date);
-    if (d <= thirtyDaysOut) {
-      const proj = projectMap.get(pm.project_id);
-      upcomingItems.push({
-        date: pm.due_date,
-        type: "payment",
-        projectName: proj?.name ?? "Unknown",
-        projectId: pm.project_id,
-        name: pm.contractor_name,
-        amount: pm.amount,
-        daysAway: daysUntil(pm.due_date),
-      });
-    }
-  }
-
-  upcomingItems.sort((a, b) => a.date.localeCompare(b.date));
+  // ── Summary totals ──────────────────────────────────────────────
+  const totalBuildCosts = payments.reduce((s, pm) => s + pm.amount, 0);
+  const totalDrawsFunded = draws
+    .filter((d) => d.status === "funded")
+    .reduce((s, d) => s + d.amount, 0);
+  const totalPendingDraws = draws
+    .filter((d) => d.status === "submitted" || d.status === "approved")
+    .reduce((s, d) => s + d.amount, 0);
+  const totalProjectedProfit = projectFinancials
+    .filter((pf) => pf.salePrice > 0)
+    .reduce((s, pf) => s + pf.projectedProfit, 0);
 
   // ── Draw Requests by Project ────────────────────────────────────
   const drawsByProject = new Map<
@@ -243,6 +222,13 @@ export default async function FinancialsPage({
     }
     drawsByProject.get(d.project_id)!.draws.push(d);
   }
+  // Sort draws within each project by draw_number
+  for (const entry of drawsByProject.values()) {
+    entry.draws.sort((a, b) => a.draw_number - b.draw_number);
+  }
+
+  // ── Pending Contractor Payments (needs draw request) ────────────
+  const pendingPayments = payments.filter((p) => p.status === "pending");
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -254,7 +240,7 @@ export default async function FinancialsPage({
               Financial Overview
             </h1>
             <p className="mt-1 text-sm text-gray-500">
-              Complete picture of revenue, costs, and cash flow
+              Construction loan tracking, draw requests, and projected profit
             </p>
           </div>
           <Link
@@ -267,7 +253,7 @@ export default async function FinancialsPage({
 
         {/* ── A. Summary Cards ──────────────────────────────────── */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
-          {/* Total Revenue */}
+          {/* Total Build Costs */}
           <Card className="border-t-4 border-green-500 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
@@ -275,396 +261,237 @@ export default async function FinancialsPage({
                   <DollarSign className="h-5 w-5 text-green-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  Total Revenue
+                  Total Build Costs
                 </span>
               </div>
               <p
                 className="mt-3 text-3xl font-bold tabular-nums text-green-700"
-                aria-label={spokenDollars(totalRevenue)}
+                aria-label={spokenDollars(totalBuildCosts)}
               >
-                {fmt(totalRevenue)}
+                {fmt(totalBuildCosts)}
               </p>
               <p className="mt-1 text-sm text-gray-500">
-                {paidInvoices.length} paid invoice
-                {paidInvoices.length !== 1 && "s"}
+                {payments.length} contractor payment
+                {payments.length !== 1 && "s"}
               </p>
             </CardContent>
           </Card>
 
-          {/* Outstanding */}
+          {/* Draws Funded */}
           <Card className="border-t-4 border-blue-500 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-blue-50 p-2">
-                  <FileText className="h-5 w-5 text-blue-600" />
+                  <Landmark className="h-5 w-5 text-blue-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  Outstanding
+                  Draws Funded
                 </span>
               </div>
               <p
                 className="mt-3 text-3xl font-bold tabular-nums text-blue-700"
-                aria-label={spokenDollars(outstandingTotal)}
+                aria-label={spokenDollars(totalDrawsFunded)}
               >
-                {fmt(outstandingTotal)}
+                {fmt(totalDrawsFunded)}
               </p>
               <p className="mt-1 text-sm text-gray-500">
-                {unpaidInvoices.length} unpaid invoice
-                {unpaidInvoices.length !== 1 && "s"}
-                {overdueInvoices.length > 0 && (
-                  <span className="ml-1 font-medium text-red-500">
-                    ({overdueInvoices.length} overdue)
-                  </span>
-                )}
+                {draws.filter((d) => d.status === "funded").length} funded draw
+                {draws.filter((d) => d.status === "funded").length !== 1 && "s"}
               </p>
             </CardContent>
           </Card>
 
-          {/* Owed to Contractors */}
+          {/* Pending Draws */}
           <Card className="border-t-4 border-orange-500 shadow-sm">
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-orange-50 p-2">
-                  <CreditCard className="h-5 w-5 text-orange-600" />
+                  <Clock className="h-5 w-5 text-orange-600" />
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  Owed to Contractors
+                  Pending Draws
                 </span>
               </div>
               <p
                 className="mt-3 text-3xl font-bold tabular-nums text-orange-700"
-                aria-label={spokenDollars(owedToContractors)}
+                aria-label={spokenDollars(totalPendingDraws)}
               >
-                {fmt(owedToContractors)}
+                {fmt(totalPendingDraws)}
               </p>
               <p className="mt-1 text-sm text-gray-500">
-                {pendingPayments.length} pending payment
-                {pendingPayments.length !== 1 && "s"}
+                Submitted or approved, awaiting lender
               </p>
             </CardContent>
           </Card>
 
-          {/* Net Position */}
+          {/* Total Projected Profit */}
           <Card
             className={`border-t-4 shadow-sm ${
-              netPosition >= 0 ? "border-green-500" : "border-red-500"
+              totalProjectedProfit >= 0 ? "border-green-500" : "border-red-500"
             }`}
           >
             <CardContent className="pt-6">
               <div className="flex items-center gap-3">
                 <div
                   className={`rounded-lg p-2 ${
-                    netPosition >= 0 ? "bg-green-50" : "bg-red-50"
+                    totalProjectedProfit >= 0 ? "bg-green-50" : "bg-red-50"
                   }`}
                 >
-                  {netPosition >= 0 ? (
+                  {totalProjectedProfit >= 0 ? (
                     <TrendingUp className="h-5 w-5 text-green-600" />
                   ) : (
                     <TrendingDown className="h-5 w-5 text-red-600" />
                   )}
                 </div>
                 <span className="text-sm font-medium text-gray-700">
-                  Net Position
+                  Projected Profit
                 </span>
               </div>
               <p
                 className={`mt-3 text-3xl font-bold tabular-nums ${
-                  netPosition >= 0 ? "text-green-700" : "text-red-700"
+                  totalProjectedProfit >= 0 ? "text-green-700" : "text-red-700"
                 }`}
-                aria-label={spokenDollars(netPosition)}
+                aria-label={spokenDollars(totalProjectedProfit)}
               >
-                {fmt(netPosition)}
+                {fmt(totalProjectedProfit)}
               </p>
               <p className="mt-1 text-sm text-gray-500">
-                Revenue minus paid costs
+                Sale price minus all costs
               </p>
             </CardContent>
           </Card>
         </div>
 
-        {/* ── Section Divider ─────────────────────────────────────── */}
         <Separator className="mb-8" />
 
-        {/* ── B. Overdue Invoices Alert ──────────────────────────── */}
-        {overdueInvoices.length > 0 && (
-          <Card
-            role="alert"
-            className="mb-8 border-red-200 bg-gradient-to-br from-red-50 via-red-50 to-orange-50 shadow-sm"
-          >
-            <CardContent className="pt-6">
-            <div className="mb-4 flex items-center gap-2">
-              <AlertTriangle className="h-5 w-5 text-red-600" />
-              <h2 className="text-lg font-semibold text-red-800">
-                Overdue Invoices ({overdueInvoices.length})
-              </h2>
-            </div>
-
-            {/* Desktop table */}
-            <div className="hidden overflow-x-auto md:block">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-red-200 text-left">
-                    <th scope="col" className="pb-2 pr-4 font-semibold text-gray-900">Client</th>
-                    <th scope="col" className="pb-2 pr-4 font-semibold text-gray-900">Project</th>
-                    <th scope="col" className="pb-2 pr-4 font-semibold text-gray-900">Invoice #</th>
-                    <th scope="col" className="pb-2 pr-4 text-right font-semibold text-gray-900">Amount</th>
-                    <th scope="col" className="pb-2 pr-4 text-right font-semibold text-gray-900">
-                      Days Overdue
-                    </th>
-                    <th scope="col" className="pb-2 font-semibold text-gray-900">
-                      <span className="sr-only">Actions</span>
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {overdueInvoices.map((inv) => {
-                    const proj = projectMap.get(inv.project_id);
-                    const days = daysOverdue(inv.due_date);
-                    return (
-                      <tr
-                        key={inv.id}
-                        className="min-h-[44px] border-b border-red-100 last:border-0"
-                      >
-                        <th scope="row" className="py-3 pr-4 text-left font-medium text-red-900">
-                          {proj?.client_name ?? "Unknown"}
-                        </th>
-                        <td className="py-3 pr-4 text-gray-700">
-                          {proj?.name ?? "Unknown"}
-                        </td>
-                        <td className="py-3 pr-4 tabular-nums text-gray-700">
-                          {inv.invoice_number}
-                        </td>
-                        <td
-                          className="py-3 pr-4 text-right tabular-nums font-semibold text-red-900"
-                          aria-label={spokenDollars(inv.amount)}
-                        >
-                          {fmt(inv.amount)}
-                        </td>
-                        <td className="py-3 pr-4 text-right tabular-nums">
-                          <Badge variant="outline" className="bg-red-200 text-red-800 font-bold">
-                            {days} day{days !== 1 && "s"}
-                          </Badge>
-                        </td>
-                        <td className="py-3">
-                          {proj && (
-                            <Link
-                              href={`/admin/projects/${proj.id}`}
-                              className="inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:text-red-900"
-                              aria-label={`View overdue invoice for project ${proj.name}`}
-                            >
-                              View project
-                              <ExternalLink className="h-3 w-3" />
-                            </Link>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-
-            {/* Mobile card layout */}
-            <div className="space-y-3 md:hidden">
-              {overdueInvoices.map((inv) => {
-                const proj = projectMap.get(inv.project_id);
-                const days = daysOverdue(inv.due_date);
-                return (
-                  <div
-                    key={inv.id}
-                    className="rounded-lg border border-red-200 bg-white/80 p-4"
-                  >
-                    <div className="mb-2 flex items-center justify-between">
-                      <span className="font-medium text-red-900">
-                        {proj?.client_name ?? "Unknown"}
-                      </span>
-                      <Badge variant="outline" className="bg-red-200 text-red-800 font-bold">
-                        {days} day{days !== 1 && "s"} overdue
-                      </Badge>
-                    </div>
-                    <p className="text-sm text-gray-700">{proj?.name ?? "Unknown"}</p>
-                    <p className="text-xs tabular-nums text-gray-500">Invoice {inv.invoice_number}</p>
-                    <div className="mt-2 flex items-center justify-between">
-                      <span
-                        className="text-lg font-bold tabular-nums text-red-900"
-                        aria-label={spokenDollars(inv.amount)}
-                      >
-                        {fmt(inv.amount)}
-                      </span>
-                      {proj && (
-                        <Link
-                          href={`/admin/projects/${proj.id}`}
-                          className="inline-flex items-center gap-1 text-xs font-medium text-red-700 hover:text-red-900"
-                          aria-label={`View overdue invoice for project ${proj.name}`}
-                        >
-                          View project
-                          <ExternalLink className="h-3 w-3" />
-                        </Link>
-                      )}
-                    </div>
-                  </div>
-                );
-              })}
-            </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* ── Section Divider ─────────────────────────────────────── */}
-        <Separator className="mb-8" />
-
-        {/* ── C. Project Financial Breakdown ─────────────────────── */}
-        <div className="mb-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">
-            Project Financial Breakdown
-          </h2>
-
-          {projectFinancials.length === 0 ? (
-            <Card className="shadow-sm">
-              <CardContent className="p-12 text-center">
-                <Inbox className="mx-auto h-10 w-10 text-gray-300" />
-                <p className="mt-3 text-sm text-gray-500">
-                  No active projects with financial data
-                </p>
-              </CardContent>
-            </Card>
-          ) : (
-            <>
-              {/* Desktop table */}
-              <Card className="relative hidden overflow-x-auto shadow-sm md:block">
-                {/* Scroll indicator gradient on right edge */}
-                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/80 to-transparent lg:hidden" />
-                <div className="max-h-[600px] overflow-y-auto">
+        {/* ── B. Per-Project Financial Breakdown ────────────────── */}
+        <Card className="mb-8 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">
+              Per-Project Financial Breakdown
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            {projectFinancials.length === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-500">
+                No active projects.
+              </p>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full text-sm">
-                    <thead className="sticky top-0 z-10 bg-white">
-                      <tr className="border-b border-gray-200 text-left">
-                        <th scope="col" className="px-4 py-3 font-semibold text-gray-900">Project</th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">
-                          Contract Value
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th scope="col" className="pb-3 pr-4 font-semibold text-gray-900">
+                          Project
                         </th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">Invoiced</th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">
-                          Collected
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Sale Price
                         </th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">
-                          Costs (Paid)
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Total Costs
                         </th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">
-                          Costs (Pending)
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Loan Amount
                         </th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">Profit</th>
-                        <th scope="col" className="hidden px-4 py-3 text-right font-semibold text-gray-900 lg:table-cell">
-                          Draws
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Draws Funded
                         </th>
-                        <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">Margin</th>
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Origination
+                        </th>
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Interest
+                        </th>
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Projected Profit
+                        </th>
+                        <th scope="col" className="pb-3 text-right font-semibold text-gray-900">
+                          Margin
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {projectFinancials.map((pf) => {
-                        const marginPct =
-                          pf.totalCollected > 0
-                            ? pf.profitMargin / pf.totalCollected
-                            : 0;
-                        const profitable = pf.profitMargin >= 0;
-
+                        const profitable = pf.projectedProfit >= 0;
                         return (
                           <tr
                             key={pf.project.id}
-                            className="min-h-[44px] border-b border-gray-100 last:border-0 even:bg-gray-50 hover:bg-gray-100"
+                            className="border-b last:border-0"
                           >
-                            <th scope="row" className="px-4 py-3 text-left">
+                            <td className="py-3 pr-4">
                               <Link
                                 href={`/admin/projects/${pf.project.id}`}
                                 className="font-medium text-indigo-600 hover:text-indigo-500"
-                                aria-label={`View financials for project ${pf.project.name}`}
                               >
                                 {pf.project.name}
                               </Link>
-                              <p className="text-xs text-gray-500">
-                                {pf.project.client_name}
-                              </p>
-                            </th>
-                            <td
-                              className="px-4 py-3 text-right tabular-nums font-medium text-gray-700"
-                              aria-label={pf.contractValue > 0 ? spokenDollars(pf.contractValue) : undefined}
-                            >
-                              {pf.contractValue > 0
-                                ? fmt(pf.contractValue)
-                                : "--"}
                             </td>
                             <td
-                              className="px-4 py-3 text-right tabular-nums text-gray-700"
-                              aria-label={spokenDollars(pf.totalInvoiced)}
+                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
+                              aria-label={spokenDollars(pf.salePrice)}
                             >
-                              {fmt(pf.totalInvoiced)}
+                              {pf.salePrice > 0 ? fmt(pf.salePrice) : "--"}
                             </td>
                             <td
-                              className="px-4 py-3 text-right tabular-nums font-medium text-green-700"
-                              aria-label={spokenDollars(pf.totalCollected)}
-                            >
-                              {fmt(pf.totalCollected)}
-                            </td>
-                            <td
-                              className="px-4 py-3 text-right tabular-nums text-gray-700"
+                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
                               aria-label={spokenDollars(pf.totalCosts)}
                             >
                               {fmt(pf.totalCosts)}
                             </td>
                             <td
-                              className="px-4 py-3 text-right tabular-nums text-blue-600"
-                              aria-label={pf.pendingCosts > 0 ? spokenDollars(pf.pendingCosts) : undefined}
+                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
+                              aria-label={spokenDollars(pf.loanAmount)}
                             >
-                              {pf.pendingCosts > 0 ? fmt(pf.pendingCosts) : "--"}
+                              {pf.loanAmount > 0 ? fmt(pf.loanAmount) : "--"}
+                            </td>
+                            <td className="py-3 pr-4 text-right tabular-nums text-gray-700">
+                              {fmt(pf.drawsFunded)}
+                              {pf.totalDraws > 0 && (
+                                <span className="ml-1 text-xs text-gray-400">
+                                  / {fmt(pf.totalDraws)}
+                                </span>
+                              )}
                             </td>
                             <td
-                              className={`px-4 py-3 text-right tabular-nums font-semibold ${
+                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
+                              aria-label={spokenDollars(pf.originationFee)}
+                            >
+                              {fmt(pf.originationFee)}
+                              {pf.originationFeePercent > 0 && (
+                                <span className="ml-1 text-xs text-gray-400">
+                                  ({pf.originationFeePercent}%)
+                                </span>
+                              )}
+                            </td>
+                            <td
+                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
+                              aria-label={spokenDollars(pf.accruedInterest)}
+                            >
+                              {fmt(pf.accruedInterest)}
+                              {pf.interestRate > 0 && (
+                                <span className="ml-1 text-xs text-gray-400">
+                                  ({pf.interestRate}%)
+                                </span>
+                              )}
+                            </td>
+                            <td
+                              className={`py-3 pr-4 text-right tabular-nums font-semibold ${
                                 profitable ? "text-green-700" : "text-red-700"
                               }`}
-                              aria-label={spokenDollars(pf.profitMargin)}
+                              aria-label={spokenDollars(pf.projectedProfit)}
                             >
-                              <span className="inline-flex items-center gap-1">
-                                {profitable ? (
-                                  <TrendingUp className="h-3.5 w-3.5 text-green-600" />
-                                ) : (
-                                  <TrendingDown className="h-3.5 w-3.5 text-red-600" />
-                                )}
-                                {fmt(pf.profitMargin)}
-                              </span>
+                              {pf.salePrice > 0
+                                ? fmt(pf.projectedProfit)
+                                : "--"}
                             </td>
-                            <td className="hidden px-4 py-3 text-right lg:table-cell">
-                              {pf.drawsFunded + pf.drawsPending > 0 ? (
-                                <span className="text-xs tabular-nums text-gray-700">
-                                  <span className="font-medium text-green-700">
-                                    {fmt(pf.drawsFunded)}
-                                  </span>
-                                  {pf.drawsPending > 0 && (
-                                    <>
-                                      {" / "}
-                                      <span className="text-blue-600">
-                                        {fmt(pf.drawsPending)}
-                                      </span>
-                                    </>
-                                  )}
-                                </span>
-                              ) : (
-                                <span className="text-gray-500">--</span>
-                              )}
-                            </td>
-                            <td className="px-4 py-3 text-right tabular-nums">
-                              {pf.totalCollected > 0 ? (
-                                <Badge
-                                  variant="outline"
-                                  className={
-                                    profitable
-                                      ? "bg-green-50 text-green-700"
-                                      : "bg-red-50 text-red-700"
-                                  }
-                                >
-                                  {pct(marginPct)}
-                                </Badge>
-                              ) : (
-                                <span className="text-xs text-gray-500">--</span>
-                              )}
+                            <td
+                              className={`py-3 text-right tabular-nums font-semibold ${
+                                profitable ? "text-green-700" : "text-red-700"
+                              }`}
+                            >
+                              {pf.salePrice > 0 ? pct(pf.profitMargin) : "--"}
                             </td>
                           </tr>
                         );
@@ -672,437 +499,446 @@ export default async function FinancialsPage({
                     </tbody>
                   </table>
                 </div>
-              </Card>
 
-              {/* Mobile card layout */}
-              <div className="space-y-3 md:hidden">
-                {projectFinancials.map((pf) => {
-                  const marginPct =
-                    pf.totalCollected > 0
-                      ? pf.profitMargin / pf.totalCollected
-                      : 0;
-                  const profitable = pf.profitMargin >= 0;
-
-                  return (
-                    <Card
-                      key={pf.project.id}
-                      className="shadow-sm"
-                    >
-                    <CardContent className="p-4">
-                      <div className="mb-3 flex items-center justify-between">
-                        <div>
+                {/* Mobile card layout */}
+                <div className="space-y-4 lg:hidden">
+                  {projectFinancials.map((pf) => {
+                    const profitable = pf.projectedProfit >= 0;
+                    return (
+                      <div
+                        key={pf.project.id}
+                        className={`rounded-lg border p-4 ${
+                          profitable
+                            ? "border-green-200 bg-green-50/30"
+                            : "border-red-200 bg-red-50/30"
+                        }`}
+                      >
+                        <div className="mb-3 flex items-center justify-between">
                           <Link
                             href={`/admin/projects/${pf.project.id}`}
                             className="font-medium text-indigo-600 hover:text-indigo-500"
-                            aria-label={`View financials for project ${pf.project.name}`}
                           >
                             {pf.project.name}
                           </Link>
-                          <p className="text-xs text-gray-500">{pf.project.client_name}</p>
+                          {pf.salePrice > 0 && (
+                            <Badge
+                              variant="outline"
+                              className={
+                                profitable
+                                  ? "bg-green-100 text-green-700"
+                                  : "bg-red-100 text-red-700"
+                              }
+                            >
+                              {pct(pf.profitMargin)} margin
+                            </Badge>
+                          )}
                         </div>
-                        {pf.totalCollected > 0 && (
-                          <span
-                            className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
-                              profitable
-                                ? "bg-green-50 text-green-700"
-                                : "bg-red-50 text-red-700"
-                            }`}
-                          >
-                            {pct(marginPct)}
-                          </span>
-                        )}
-                      </div>
-                      <div className="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                          <p className="text-xs text-gray-500">Contract</p>
-                          <p className="tabular-nums font-medium text-gray-700" aria-label={pf.contractValue > 0 ? spokenDollars(pf.contractValue) : undefined}>
-                            {pf.contractValue > 0 ? fmt(pf.contractValue) : "--"}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Collected</p>
-                          <p className="tabular-nums font-medium text-green-700" aria-label={spokenDollars(pf.totalCollected)}>
-                            {fmt(pf.totalCollected)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Costs</p>
-                          <p className="tabular-nums text-gray-700" aria-label={spokenDollars(pf.totalCosts)}>
-                            {fmt(pf.totalCosts)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Profit</p>
-                          <p
-                            className={`tabular-nums font-semibold ${profitable ? "text-green-700" : "text-red-700"}`}
-                            aria-label={spokenDollars(pf.profitMargin)}
-                          >
-                            <span className="inline-flex items-center gap-1">
-                              {profitable ? (
-                                <TrendingUp className="h-3 w-3" />
-                              ) : (
-                                <TrendingDown className="h-3 w-3" />
-                              )}
-                              {fmt(pf.profitMargin)}
+                        <div className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                          <div>
+                            <span className="text-gray-500">Sale Price</span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {pf.salePrice > 0 ? fmt(pf.salePrice) : "--"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Total Costs</span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {fmt(pf.totalCosts)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Loan Amount</span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {pf.loanAmount > 0 ? fmt(pf.loanAmount) : "--"}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Draws Funded</span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {fmt(pf.drawsFunded)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">
+                              Origination
+                              {pf.originationFeePercent > 0 &&
+                                ` (${pf.originationFeePercent}%)`}
                             </span>
-                          </p>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {fmt(pf.originationFee)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">
+                              Interest
+                              {pf.interestRate > 0 &&
+                                ` (${pf.interestRate}%)`}
+                            </span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {fmt(pf.accruedInterest)}
+                            </p>
+                          </div>
                         </div>
-                      </div>
-                    </CardContent>
-                    </Card>
-                  );
-                })}
-              </div>
-            </>
-          )}
-        </div>
-
-        {/* ── Section Divider ─────────────────────────────────────── */}
-        <Separator className="mb-8" />
-
-        {/* ── D. Upcoming Payments Due ───────────────────────────── */}
-        <div className="mb-8">
-          <h2 className="mb-4 text-xl font-semibold text-gray-900">
-            Upcoming Payments Due{" "}
-            <span className="text-sm font-normal text-gray-500">
-              (next 30 days)
-            </span>
-          </h2>
-          {upcomingItems.length > 0 ? (
-            <>
-              {/* Desktop table */}
-              <Card className="relative hidden overflow-x-auto shadow-sm md:block">
-                <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/80 to-transparent lg:hidden" />
-                <table className="w-full text-sm">
-                  <thead>
-                    <tr className="border-b border-gray-200 text-left">
-                      <th scope="col" className="px-4 py-3 font-semibold text-gray-900">Due Date</th>
-                      <th scope="col" className="px-4 py-3 font-semibold text-gray-900">Type</th>
-                      <th scope="col" className="px-4 py-3 font-semibold text-gray-900">Project</th>
-                      <th scope="col" className="px-4 py-3 font-semibold text-gray-900">Client / Contractor</th>
-                      <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">Amount</th>
-                      <th scope="col" className="px-4 py-3 text-right font-semibold text-gray-900">Status</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {upcomingItems.map((item, idx) => {
-                      const isOverdue = item.daysAway < 0;
-                      const isDueSoon =
-                        item.daysAway >= 0 && item.daysAway <= 7;
-
-                      return (
-                        <tr
-                          key={`${item.type}-${idx}`}
-                          className={`min-h-[44px] border-b border-gray-100 last:border-0 even:bg-gray-50 ${
-                            isOverdue ? "!bg-red-50/50" : ""
-                          }`}
-                        >
-                          <td className="px-4 py-3">
-                            <div className="flex items-center gap-2">
-                              <Calendar className="h-4 w-4 text-gray-500" />
+                        {pf.salePrice > 0 && (
+                          <div className="mt-3 border-t pt-3">
+                            <div className="flex items-center justify-between">
+                              <span className="text-sm font-medium text-gray-700">
+                                Projected Profit
+                              </span>
                               <span
-                                className={
-                                  isOverdue
-                                    ? "font-medium text-red-700"
-                                    : "text-gray-700"
-                                }
+                                className={`text-lg font-bold tabular-nums ${
+                                  profitable
+                                    ? "text-green-700"
+                                    : "text-red-700"
+                                }`}
+                                aria-label={spokenDollars(pf.projectedProfit)}
                               >
-                                {formatDate(item.date)}
+                                {fmt(pf.projectedProfit)}
                               </span>
                             </div>
-                          </td>
-                          <td className="px-4 py-3">
-                            {item.type === "invoice" ? (
-                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
-                                <FileText className="h-3 w-3" />
-                                Invoice
-                              </Badge>
-                            ) : (
-                              <Badge variant="outline" className="bg-orange-50 text-orange-700">
-                                <CreditCard className="h-3 w-3" />
-                                Payment
-                              </Badge>
-                            )}
-                          </td>
-                          <td className="px-4 py-3">
-                            <Link
-                              href={`/admin/projects/${item.projectId}`}
-                              className="font-medium text-indigo-600 hover:text-indigo-500"
-                              aria-label={`View upcoming ${item.type} for project ${item.projectName}`}
-                            >
-                              {item.projectName}
-                            </Link>
-                          </td>
-                          <td className="px-4 py-3 text-gray-700">
-                            {item.name}
-                          </td>
-                          <td
-                            className="px-4 py-3 text-right tabular-nums font-semibold text-gray-900"
-                            aria-label={spokenDollars(item.amount)}
-                          >
-                            {fmt(item.amount)}
-                          </td>
-                          <td className="px-4 py-3 text-right tabular-nums">
-                            {isOverdue ? (
-                              <Badge variant="outline" className="bg-red-100 text-red-700 font-bold">
-                                <Clock className="h-3 w-3" />
-                                {Math.abs(item.daysAway)}d overdue
-                              </Badge>
-                            ) : isDueSoon ? (
-                              <Badge variant="outline" className="bg-yellow-100 text-yellow-700 font-bold">
-                                <Clock className="h-3 w-3" />
-                                {item.daysAway === 0
-                                  ? "Today"
-                                  : `${item.daysAway}d`}
-                              </Badge>
-                            ) : (
-                              <span className="text-xs text-gray-500">
-                                {item.daysAway}d
-                              </span>
-                            )}
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
-              </Card>
-
-              {/* Mobile timeline layout */}
-              <div className="space-y-0 md:hidden">
-                {upcomingItems.map((item, idx) => {
-                  const isOverdue = item.daysAway < 0;
-                  const isDueSoon =
-                    item.daysAway >= 0 && item.daysAway <= 7;
-
-                  return (
-                    <div
-                      key={`${item.type}-${idx}`}
-                      className="relative flex gap-4 pb-4"
-                    >
-                      {/* Timeline line and dot */}
-                      <div className="flex flex-col items-center">
-                        <div
-                          className={`mt-1.5 h-3 w-3 rounded-full ring-2 ring-white ${
-                            isOverdue
-                              ? "bg-red-500"
-                              : isDueSoon
-                              ? "bg-yellow-500"
-                              : "bg-gray-300"
-                          }`}
-                        />
-                        {idx < upcomingItems.length - 1 && (
-                          <div className="w-0.5 flex-1 bg-gray-200" />
+                          </div>
                         )}
                       </div>
-                      {/* Card */}
+                    );
+                  })}
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── C. Draw Request Overview ──────────────────────────── */}
+        <Card className="mb-8 shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-lg">Draw Request Overview</CardTitle>
+          </CardHeader>
+          <CardContent>
+            {drawsByProject.size === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-500">
+                No draw requests yet.
+              </p>
+            ) : (
+              <div className="space-y-6">
+                {Array.from(drawsByProject.values()).map(
+                  ({ project: proj, draws: projDraws }) => {
+                    const projTotal = projDraws.reduce(
+                      (s, d) => s + d.amount,
+                      0
+                    );
+                    const projFunded = projDraws
+                      .filter((d) => d.status === "funded")
+                      .reduce((s, d) => s + d.amount, 0);
+
+                    return (
+                      <div key={proj.id}>
+                        <div className="mb-2 flex items-center justify-between">
+                          <Link
+                            href={`/admin/projects/${proj.id}`}
+                            className="font-medium text-indigo-600 hover:text-indigo-500"
+                          >
+                            {proj.name}
+                          </Link>
+                          <span className="text-sm tabular-nums text-gray-500">
+                            {fmt(projFunded)} funded / {fmt(projTotal)} total
+                          </span>
+                        </div>
+
+                        {/* Desktop table */}
+                        <div className="hidden overflow-x-auto md:block">
+                          <table className="w-full text-sm">
+                            <thead>
+                              <tr className="border-b text-left">
+                                <th scope="col" className="pb-2 pr-4 font-semibold text-gray-700">
+                                  Draw #
+                                </th>
+                                <th scope="col" className="pb-2 pr-4 text-right font-semibold text-gray-700">
+                                  Amount
+                                </th>
+                                <th scope="col" className="pb-2 pr-4 font-semibold text-gray-700">
+                                  Status
+                                </th>
+                                <th scope="col" className="pb-2 pr-4 font-semibold text-gray-700">
+                                  Submitted
+                                </th>
+                                <th scope="col" className="pb-2 font-semibold text-gray-700">
+                                  Funded
+                                </th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {projDraws.map((d) => (
+                                <tr
+                                  key={d.id}
+                                  className="border-b last:border-0"
+                                >
+                                  <td className="py-2 pr-4 tabular-nums text-gray-900">
+                                    #{d.draw_number}
+                                  </td>
+                                  <td
+                                    className="py-2 pr-4 text-right tabular-nums font-medium text-gray-900"
+                                    aria-label={spokenDollars(d.amount)}
+                                  >
+                                    {fmt(d.amount)}
+                                  </td>
+                                  <td className="py-2 pr-4">
+                                    <Badge
+                                      variant="outline"
+                                      className={
+                                        DRAW_STATUS_COLORS[
+                                          d.status as DrawRequestStatus
+                                        ] ?? ""
+                                      }
+                                    >
+                                      {d.status}
+                                    </Badge>
+                                  </td>
+                                  <td className="py-2 pr-4 tabular-nums text-gray-600">
+                                    {formatDate(d.submitted_date)}
+                                  </td>
+                                  <td className="py-2 tabular-nums text-gray-600">
+                                    {formatDate(d.funded_date)}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+
+                        {/* Mobile card layout */}
+                        <div className="space-y-2 md:hidden">
+                          {projDraws.map((d) => (
+                            <div
+                              key={d.id}
+                              className="rounded-lg border bg-white p-3"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="tabular-nums font-medium text-gray-900">
+                                  Draw #{d.draw_number}
+                                </span>
+                                <Badge
+                                  variant="outline"
+                                  className={
+                                    DRAW_STATUS_COLORS[
+                                      d.status as DrawRequestStatus
+                                    ] ?? ""
+                                  }
+                                >
+                                  {d.status}
+                                </Badge>
+                              </div>
+                              <p
+                                className="mt-1 text-lg font-bold tabular-nums text-gray-900"
+                                aria-label={spokenDollars(d.amount)}
+                              >
+                                {fmt(d.amount)}
+                              </p>
+                              <div className="mt-1 flex gap-4 text-xs text-gray-500">
+                                <span>
+                                  Submitted: {formatDate(d.submitted_date)}
+                                </span>
+                                <span>
+                                  Funded: {formatDate(d.funded_date)}
+                                </span>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+
+                        <Separator className="mt-4" />
+                      </div>
+                    );
+                  }
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+
+        {/* ── D. Needs Draw Request ────────────────────────────── */}
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Banknote className="h-5 w-5 text-orange-500" />
+              Needs Draw Request
+            </CardTitle>
+            <p className="text-sm text-gray-500">
+              Pending contractor payments to include in the next draw request to
+              the lender
+            </p>
+          </CardHeader>
+          <CardContent>
+            {pendingPayments.length === 0 ? (
+              <p className="py-8 text-center text-sm text-gray-500">
+                No pending contractor payments.
+              </p>
+            ) : (
+              <>
+                {/* Desktop table */}
+                <div className="hidden overflow-x-auto md:block">
+                  <table className="w-full text-sm">
+                    <thead>
+                      <tr className="border-b text-left">
+                        <th scope="col" className="pb-3 pr-4 font-semibold text-gray-900">
+                          Contractor
+                        </th>
+                        <th scope="col" className="pb-3 pr-4 font-semibold text-gray-900">
+                          Project
+                        </th>
+                        <th scope="col" className="pb-3 pr-4 font-semibold text-gray-900">
+                          Description
+                        </th>
+                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
+                          Amount
+                        </th>
+                        <th scope="col" className="pb-3 font-semibold text-gray-900">
+                          Invoice
+                        </th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {pendingPayments.map((pm) => {
+                        const proj = projectMap.get(pm.project_id);
+                        return (
+                          <tr
+                            key={pm.id}
+                            className="border-b last:border-0"
+                          >
+                            <td className="py-3 pr-4 font-medium text-gray-900">
+                              {pm.contractor_name}
+                            </td>
+                            <td className="py-3 pr-4">
+                              {proj ? (
+                                <Link
+                                  href={`/admin/projects/${proj.id}`}
+                                  className="text-indigo-600 hover:text-indigo-500"
+                                >
+                                  {proj.name}
+                                </Link>
+                              ) : (
+                                <span className="text-gray-500">Unknown</span>
+                              )}
+                            </td>
+                            <td className="py-3 pr-4 text-gray-600">
+                              {pm.description ?? "--"}
+                            </td>
+                            <td
+                              className="py-3 pr-4 text-right tabular-nums font-semibold text-gray-900"
+                              aria-label={spokenDollars(pm.amount)}
+                            >
+                              {fmt(pm.amount)}
+                            </td>
+                            <td className="py-3">
+                              {pm.invoice_file_url ? (
+                                <a
+                                  href={pm.invoice_file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                                >
+                                  <FileText className="h-3 w-3" />
+                                  {pm.invoice_file_name ?? "View"}
+                                  <ExternalLink className="h-3 w-3" />
+                                </a>
+                              ) : (
+                                <span className="text-xs text-gray-400">
+                                  None
+                                </span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr className="border-t-2">
+                        <td
+                          colSpan={3}
+                          className="py-3 pr-4 text-right font-semibold text-gray-900"
+                        >
+                          Total
+                        </td>
+                        <td
+                          className="py-3 pr-4 text-right tabular-nums font-bold text-gray-900"
+                          aria-label={spokenDollars(
+                            pendingPayments.reduce((s, p) => s + p.amount, 0)
+                          )}
+                        >
+                          {fmt(
+                            pendingPayments.reduce((s, p) => s + p.amount, 0)
+                          )}
+                        </td>
+                        <td />
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+
+                {/* Mobile card layout */}
+                <div className="space-y-3 md:hidden">
+                  {pendingPayments.map((pm) => {
+                    const proj = projectMap.get(pm.project_id);
+                    return (
                       <div
-                        className={`flex-1 rounded-lg border p-3 ${
-                          isOverdue
-                            ? "border-red-200 bg-red-50/50"
-                            : "border-gray-200 bg-white"
-                        }`}
+                        key={pm.id}
+                        className="rounded-lg border bg-white p-4"
                       >
                         <div className="mb-1 flex items-center justify-between">
-                          <span className="text-xs text-gray-500">
-                            {formatDate(item.date)}
+                          <span className="font-medium text-gray-900">
+                            {pm.contractor_name}
                           </span>
-                          {isOverdue ? (
-                            <Badge variant="outline" className="bg-red-100 text-red-700 font-bold">
-                              <Clock className="h-3 w-3" />
-                              {Math.abs(item.daysAway)}d overdue
-                            </Badge>
-                          ) : isDueSoon ? (
-                            <Badge variant="outline" className="bg-yellow-100 text-yellow-700 font-bold">
-                              {item.daysAway === 0 ? "Today" : `${item.daysAway}d`}
-                            </Badge>
-                          ) : (
-                            <span className="text-xs text-gray-500">{item.daysAway}d</span>
-                          )}
-                        </div>
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Link
-                              href={`/admin/projects/${item.projectId}`}
-                              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-                              aria-label={`View upcoming ${item.type} for project ${item.projectName}`}
-                            >
-                              {item.projectName}
-                            </Link>
-                            <p className="text-xs text-gray-500">{item.name}</p>
-                          </div>
                           <span
-                            className="text-sm tabular-nums font-semibold text-gray-900"
-                            aria-label={spokenDollars(item.amount)}
+                            className="text-lg font-bold tabular-nums text-gray-900"
+                            aria-label={spokenDollars(pm.amount)}
                           >
-                            {fmt(item.amount)}
+                            {fmt(pm.amount)}
                           </span>
                         </div>
-                        <div className="mt-1">
-                          {item.type === "invoice" ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
-                              <FileText className="h-3 w-3" />
-                              Invoice
-                            </span>
-                          ) : (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
-                              <CreditCard className="h-3 w-3" />
-                              Payment
-                            </span>
-                          )}
-                        </div>
+                        {proj && (
+                          <Link
+                            href={`/admin/projects/${proj.id}`}
+                            className="text-sm text-indigo-600 hover:text-indigo-500"
+                          >
+                            {proj.name}
+                          </Link>
+                        )}
+                        {pm.description && (
+                          <p className="mt-1 text-sm text-gray-500">
+                            {pm.description}
+                          </p>
+                        )}
+                        {pm.invoice_file_url && (
+                          <a
+                            href={pm.invoice_file_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500"
+                          >
+                            <FileText className="h-3 w-3" />
+                            {pm.invoice_file_name ?? "View Invoice"}
+                            <ExternalLink className="h-3 w-3" />
+                          </a>
+                        )}
                       </div>
-                    </div>
-                  );
-                })}
-              </div>
-            </>
-          ) : (
-            <Card className="shadow-sm">
-              <CardContent className="p-8 text-center">
-                <Calendar className="mx-auto h-8 w-8 text-gray-300" />
-                <p className="mt-3 text-sm text-gray-500">
-                  No upcoming payments due in the next 30 days
-                </p>
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* ── Section Divider ─────────────────────────────────────── */}
-        <Separator className="mb-8" />
-
-        {/* ── E. Draw Request Summary ────────────────────────────── */}
-        {draws.length > 0 ? (
-          <div className="mb-8">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">
-              Draw Request Summary
-            </h2>
-            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-              {Array.from(drawsByProject.values()).map(
-                ({ project, draws: projDraws }) => {
-                  const funded = projDraws
-                    .filter((d) => d.status === "funded")
-                    .reduce((s, d) => s + d.amount, 0);
-                  const pending = projDraws
-                    .filter(
-                      (d) => d.status !== "funded" && d.status !== "denied"
-                    )
-                    .reduce((s, d) => s + d.amount, 0);
-
-                  return (
-                    <Card
-                      key={project.id}
-                      className="shadow-sm"
+                    );
+                  })}
+                  <div className="rounded-lg border-2 border-gray-200 bg-gray-50 p-3 text-right">
+                    <span className="text-sm font-medium text-gray-700">
+                      Total:{" "}
+                    </span>
+                    <span
+                      className="text-lg font-bold tabular-nums text-gray-900"
+                      aria-label={spokenDollars(
+                        pendingPayments.reduce((s, p) => s + p.amount, 0)
+                      )}
                     >
-                    <CardContent className="p-5">
-                      <div className="mb-3 flex items-center justify-between">
-                        <Link
-                          href={`/admin/projects/${project.id}`}
-                          className="font-semibold text-indigo-600 hover:text-indigo-500"
-                          aria-label={`View draw requests for project ${project.name}`}
-                        >
-                          {project.name}
-                        </Link>
-                        <span className="text-xs text-gray-500">
-                          {projDraws.length} draw
-                          {projDraws.length !== 1 && "s"}
-                        </span>
-                      </div>
-
-                      <div className="mb-3 grid grid-cols-2 gap-3">
-                        <div>
-                          <p className="text-xs text-gray-500">Funded</p>
-                          <p
-                            className="text-lg font-bold tabular-nums text-green-700"
-                            aria-label={spokenDollars(funded)}
-                          >
-                            {fmt(funded)}
-                          </p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-gray-500">Pending</p>
-                          <p
-                            className="text-lg font-bold tabular-nums text-blue-600"
-                            aria-label={spokenDollars(pending)}
-                          >
-                            {fmt(pending)}
-                          </p>
-                        </div>
-                      </div>
-
-                      <div className="space-y-1.5 border-t border-gray-100 pt-3">
-                        {projDraws.map((d) => (
-                          <div
-                            key={d.id}
-                            className="flex items-center justify-between text-xs"
-                          >
-                            <div className="flex items-center gap-2">
-                              <Badge
-                                variant="outline"
-                                className={
-                                  DRAW_STATUS_COLORS[
-                                    d.status as DrawRequestStatus
-                                  ]
-                                }
-                              >
-                                {d.status}
-                              </Badge>
-                              <span className="text-gray-700">
-                                Draw #{d.draw_number}
-                              </span>
-                            </div>
-                            <span
-                              className="font-semibold tabular-nums text-gray-700"
-                              aria-label={spokenDollars(d.amount)}
-                            >
-                              {fmt(d.amount)}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                    </Card>
-                  );
-                }
-              )}
-            </div>
-          </div>
-        ) : (
-          <div className="mb-8">
-            <h2 className="mb-4 text-xl font-semibold text-gray-900">
-              Draw Request Summary
-            </h2>
-            <Card className="shadow-sm">
-              <CardContent className="p-8 text-center">
-                <FileText className="mx-auto h-8 w-8 text-gray-300" />
-                <p className="mt-3 text-sm text-gray-500">
-                  No draw requests yet
-                </p>
-              </CardContent>
-            </Card>
-          </div>
-        )}
-
-        {/* ── Footer Quick Nav ───────────────────────────────────── */}
-        <div className="flex items-center justify-center gap-4 pt-4 text-sm">
-          <Link
-            href="/admin"
-            className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700"
-            aria-label="Navigate to admin dashboard"
-          >
-            Dashboard
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-          <Link
-            href="/admin/projects"
-            className="inline-flex items-center gap-1 text-gray-500 hover:text-gray-700"
-            aria-label="Navigate to all projects"
-          >
-            Projects
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
+                      {fmt(pendingPayments.reduce((s, p) => s + p.amount, 0))}
+                    </span>
+                  </div>
+                </div>
+              </>
+            )}
+          </CardContent>
+        </Card>
       </div>
     </div>
   );

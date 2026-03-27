@@ -11,7 +11,7 @@ import {
   Users,
   DollarSign,
   Calculator,
-  AlertCircle,
+  Banknote,
   FileCheck,
   ExternalLink,
   Menu,
@@ -39,9 +39,9 @@ const navLinks = [
 
 const quickLinks = [
   {
-    label: "Unpaid Invoices",
-    href: "/admin?filter=unpaid",
-    icon: AlertCircle,
+    label: "Pending Draws",
+    href: "/admin?filter=draws",
+    icon: Banknote,
   },
   {
     label: "Pending Permits",

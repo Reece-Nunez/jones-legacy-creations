@@ -12,7 +12,6 @@ export default async function ProjectDetailPage({
 
   const [
     { data: project },
-    { data: invoices },
     { data: payments },
     { data: permits },
     { data: documents },
@@ -22,11 +21,6 @@ export default async function ProjectDetailPage({
     { data: contractors },
   ] = await Promise.all([
     supabase.from("projects").select("*").eq("id", id).single(),
-    supabase
-      .from("invoices")
-      .select("*")
-      .eq("project_id", id)
-      .order("created_at", { ascending: false }),
     supabase
       .from("contractor_payments")
       .select("*")
@@ -68,7 +62,6 @@ export default async function ProjectDetailPage({
   return (
     <ProjectDetail
       project={project}
-      invoices={invoices ?? []}
       payments={payments ?? []}
       permits={permits ?? []}
       documents={documents ?? []}

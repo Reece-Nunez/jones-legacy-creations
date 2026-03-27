@@ -3,8 +3,6 @@ import { createClient } from "@/lib/supabase/server";
 import {
   type ProjectStatus,
   type Project,
-  type Invoice,
-  type ContractorPayment,
   type DrawRequest,
   type Permit,
   type Task,
@@ -19,7 +17,6 @@ import {
   CheckCircle2,
   ClipboardCheck,
   Clock,
-  CreditCard,
   FileText,
   FolderKanban,
   Inbox,
@@ -28,6 +25,7 @@ import {
   TrendingDown,
   TrendingUp,
   Users,
+  Banknote,
 } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -75,7 +73,7 @@ function endOfWeek(now: Date): Date {
 // ── Types for action items ──────────────────────────────────
 
 type ActionPriority = "red" | "orange" | "yellow" | "blue";
-type ActionCategory = "overdue" | "payment" | "task" | "permit" | "draw";
+type ActionCategory = "overdue" | "task" | "permit" | "draw";
 
 interface ActionItem {
   id: string;
@@ -104,7 +102,6 @@ const PRIORITY_ICON: Record<ActionPriority, typeof AlertTriangle> = {
 
 const CATEGORY_LABELS: Record<ActionCategory, string> = {
   overdue: "Overdue",
-  payment: "Payments Due",
   task: "Tasks",
   permit: "Permits",
   draw: "Draw Requests",
@@ -135,23 +132,10 @@ export default async function AdminDashboard({
   const today = now.toISOString().split("T")[0];
   const weekEnd = endOfWeek(now);
   const weekEndStr = weekEnd.toISOString().split("T")[0];
-  const sevenDaysOut = new Date(now);
-  sevenDaysOut.setDate(sevenDaysOut.getDate() + 7);
-  const sevenDaysOutStr = sevenDaysOut.toISOString().split("T")[0];
-
-  // Month boundaries for cash flow
-  const monthStart = new Date(now.getFullYear(), now.getMonth(), 1)
-    .toISOString()
-    .split("T")[0];
-  const monthEnd = new Date(now.getFullYear(), now.getMonth() + 1, 0)
-    .toISOString()
-    .split("T")[0];
 
   // ── Fetch all data in parallel ────────────────────────────
   const [
     projectsRes,
-    invoicesRes,
-    paymentsRes,
     permitsRes,
     tasksRes,
     drawsRes,
@@ -161,8 +145,6 @@ export default async function AdminDashboard({
       .from("projects")
       .select("*")
       .order("updated_at", { ascending: false }),
-    supabase.from("invoices").select("*"),
-    supabase.from("contractor_payments").select("*"),
     supabase.from("permits").select("*"),
     supabase.from("tasks").select("*"),
     supabase.from("draw_requests").select("*"),
@@ -175,8 +157,6 @@ export default async function AdminDashboard({
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
-  const invoices: Invoice[] = invoicesRes.data ?? [];
-  const payments: ContractorPayment[] = paymentsRes.data ?? [];
   const permits: Permit[] = permitsRes.data ?? [];
   const tasks: Task[] = tasksRes.data ?? [];
   const draws: DrawRequest[] = drawsRes.data ?? [];
@@ -197,16 +177,11 @@ export default async function AdminDashboard({
     (t) => !t.completed && t.due_date && t.due_date <= weekEndStr && t.due_date >= today
   );
 
-  // Overdue items (invoices + tasks)
-  const overdueInvoices = invoices.filter(
-    (i) =>
-      i.status === "overdue" ||
-      (i.status !== "paid" && i.due_date && i.due_date < today)
-  );
+  // Overdue items (tasks only)
   const overdueTasks = tasks.filter(
     (t) => !t.completed && t.due_date && t.due_date < today
   );
-  const overdueCount = overdueInvoices.length + overdueTasks.length;
+  const overdueCount = overdueTasks.length;
 
   // Total projected profit across all active projects
   // Profit = sale_price - total_costs - origination_fee - accrued_interest
@@ -214,82 +189,34 @@ export default async function AdminDashboard({
   let projectsWithProfit = 0;
   for (const p of activeProjects) {
     if (p.sale_price && p.sale_price > 0) {
-      const projectCosts = payments
-        .filter((pay) => pay.project_id === p.id)
-        .reduce((s, pay) => s + (pay.amount || 0), 0);
+      const projectDrawsFunded = draws.filter((d) => d.project_id === p.id && d.status === "funded");
+      const totalFundedForProject = projectDrawsFunded.reduce((s, d) => s + (d.amount || 0), 0);
       const loanAmt = p.loan_amount || 0;
       const origFee = loanAmt * (p.origination_fee_percent || 2) / 100;
       // Simplified interest estimate — use funded draws
-      const projectDraws = draws.filter((d) => d.project_id === p.id && d.status === "funded");
       let interest = 0;
       const rate = (p.interest_rate || 8.75) / 100;
-      for (const d of projectDraws) {
+      for (const d of projectDrawsFunded) {
         if (d.funded_date) {
           const days = Math.max(0, (now.getTime() - new Date(d.funded_date).getTime()) / (1000 * 60 * 60 * 24));
           interest += d.amount * rate * (days / 365);
         }
       }
-      const profit = p.sale_price - projectCosts - origFee - interest;
+      const profit = p.sale_price - totalFundedForProject - origFee - interest;
       totalProjectedProfit += profit;
       projectsWithProfit++;
     }
   }
 
-  // Pending draws (submitted but not funded)
+  // Draws: funded vs pending
+  const fundedDraws = draws.filter((d) => d.status === "funded");
+  const fundedDrawTotal = fundedDraws.reduce((s, d) => s + (d.amount || 0), 0);
+
   const pendingDraws = draws.filter((d) => d.status === "submitted" || d.status === "approved");
   const pendingDrawTotal = pendingDraws.reduce((s, d) => s + (d.amount || 0), 0);
 
   // ── Build Action Items ────────────────────────────────────
   const actionItems: ActionItem[] = [];
-
-  // Overdue invoices
-  for (const inv of overdueInvoices) {
-    const proj = projectMap.get(inv.project_id);
-    const daysOver = inv.due_date ? daysBetween(inv.due_date, now) : 0;
-    actionItems.push({
-      id: `inv-${inv.id}`,
-      priority: "red",
-      category: "overdue",
-      label: `Invoice #${inv.invoice_number} overdue`,
-      sublabel: proj?.client_name ?? "Unknown client",
-      detail: `${fmtFull(inv.amount)} — ${daysOver} day${daysOver !== 1 ? "s" : ""} overdue`,
-      href: `/admin/projects/${inv.project_id}`,
-    });
-  }
-
-  // Contractor payments due within 7 days
-  const upcomingPayments = payments.filter(
-    (p) => p.status === "pending" && p.due_date && p.due_date <= sevenDaysOutStr && p.due_date >= today
-  );
-  for (const pay of upcomingPayments) {
-    const days = daysUntil(pay.due_date!, now);
-    actionItems.push({
-      id: `pay-${pay.id}`,
-      priority: days <= 2 ? "orange" : "yellow",
-      category: "payment",
-      label: `Payment to ${pay.contractor_name}`,
-      sublabel: projectName(pay.project_id),
-      detail: `${fmtFull(pay.amount)} — due ${days === 0 ? "today" : `in ${days} day${days !== 1 ? "s" : ""}`}`,
-      href: `/admin/projects/${pay.project_id}`,
-    });
-  }
-
-  // Overdue contractor payments
-  const overduePayments = payments.filter(
-    (p) => p.status === "pending" && p.due_date && p.due_date < today
-  );
-  for (const pay of overduePayments) {
-    const daysOver = daysBetween(pay.due_date!, now);
-    actionItems.push({
-      id: `pay-over-${pay.id}`,
-      priority: "red",
-      category: "overdue",
-      label: `Overdue payment to ${pay.contractor_name}`,
-      sublabel: projectName(pay.project_id),
-      detail: `${fmtFull(pay.amount)} — ${daysOver} day${daysOver !== 1 ? "s" : ""} overdue`,
-      href: `/admin/projects/${pay.project_id}`,
-    });
-  }
 
   // Tasks due this week
   for (const task of tasksDueThisWeek) {
@@ -337,15 +264,26 @@ export default async function AdminDashboard({
   }
 
   // Draw requests needing action
-  const actionableDraws = draws.filter(
-    (d) => d.status === "draft" || d.status === "submitted"
-  );
-  for (const draw of actionableDraws) {
+  const draftDraws = draws.filter((d) => d.status === "draft");
+  for (const draw of draftDraws) {
     actionItems.push({
       id: `draw-${draw.id}`,
-      priority: draw.status === "submitted" ? "blue" : "yellow",
+      priority: "yellow",
       category: "draw",
-      label: `Draw #${draw.draw_number} — ${draw.status === "draft" ? "needs submission" : "submitted, awaiting approval"}`,
+      label: `Draw #${draw.draw_number} — submit to lender`,
+      sublabel: projectName(draw.project_id),
+      detail: fmtFull(draw.amount),
+      href: `/admin/projects/${draw.project_id}`,
+    });
+  }
+
+  const submittedDraws = draws.filter((d) => d.status === "submitted" || d.status === "approved");
+  for (const draw of submittedDraws) {
+    actionItems.push({
+      id: `draw-${draw.id}`,
+      priority: "blue",
+      category: "draw",
+      label: `Draw #${draw.draw_number} — waiting on lender`,
       sublabel: projectName(draw.project_id),
       detail: fmtFull(draw.amount),
       href: `/admin/projects/${draw.project_id}`,
@@ -374,36 +312,10 @@ export default async function AdminDashboard({
     }
   }
 
-  // ── Financial snapshot ────────────────────────────────────
-  const unpaidInvoices = invoices.filter((i) => i.status !== "paid");
-  const unpaidTotal = unpaidInvoices.reduce((s, i) => s + (i.amount || 0), 0);
-
-  const pendingPaymentsAll = payments.filter((p) => p.status === "pending");
-  const pendingPaymentsTotal = pendingPaymentsAll.reduce(
-    (s, p) => s + (p.amount || 0),
-    0
-  );
-
-  const pendingDrawsTotal = actionableDraws.reduce(
-    (s, d) => s + (d.amount || 0),
-    0
-  );
-
   // ── Projects grid data ───────────────────────────────────
   const statusCounts: Record<string, number> = {};
   for (const p of projects) {
     statusCounts[p.status] = (statusCounts[p.status] || 0) + 1;
-  }
-
-  const unpaidByProject: Record<string, number> = {};
-  for (const inv of unpaidInvoices) {
-    unpaidByProject[inv.project_id] = (unpaidByProject[inv.project_id] || 0) + 1;
-  }
-
-  const pendingPaymentsByProject: Record<string, number> = {};
-  for (const p of pendingPaymentsAll) {
-    pendingPaymentsByProject[p.project_id] =
-      (pendingPaymentsByProject[p.project_id] || 0) + 1;
   }
 
   const tasksByProject: Record<string, { total: number; completed: number }> = {};
@@ -577,7 +489,6 @@ export default async function AdminDashboard({
                 <div key={group.category}>
                   <h3 className="mb-2 flex items-center gap-2 text-sm font-semibold uppercase tracking-wider text-gray-500">
                     {group.category === "overdue" && <AlertTriangle className="h-4 w-4 text-red-500" aria-hidden="true" />}
-                    {group.category === "payment" && <CreditCard className="h-4 w-4 text-orange-500" aria-hidden="true" />}
                     {group.category === "task" && <CalendarClock className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
                     {group.category === "permit" && <FileText className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
                     {group.category === "draw" && <ReceiptText className="h-4 w-4 text-blue-500" aria-hidden="true" />}
@@ -637,62 +548,52 @@ export default async function AdminDashboard({
         </section>
 
         {/* ────────────────────────────────────────────────── */}
-        {/* 3. FINANCIAL SNAPSHOT                              */}
+        {/* 3. FINANCIAL SNAPSHOT (Draw-focused)               */}
         {/* ────────────────────────────────────────────────── */}
         <section className="mb-8" aria-label="Financial snapshot">
           <h2 className="mb-4 text-lg font-bold text-gray-900">
             Financial Snapshot
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
-            {/* Money Coming In */}
+            {/* Draws Funded */}
             <Card className="bg-gradient-to-br from-white to-emerald-50/30 shadow-sm">
               <CardContent className="p-5 sm:p-6">
                 <div className="mb-4 flex items-center gap-3">
                   <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
-                    <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+                    <Banknote className="h-5 w-5 text-emerald-600" aria-hidden="true" />
                   </div>
-                  <h3 className="font-semibold text-gray-900">Money Coming In</h3>
+                  <h3 className="font-semibold text-gray-900">Draws Funded</h3>
                 </div>
                 <p className="text-2xl font-bold tabular-nums text-emerald-600 sm:text-3xl">
-                  {fmt(unpaidTotal)}
+                  {fmt(fundedDrawTotal)}
                 </p>
                 <p className="mt-1 text-sm text-gray-600">
-                  {unpaidInvoices.length} unpaid invoice{unpaidInvoices.length !== 1 ? "s" : ""} outstanding
+                  {fundedDraws.length} funded draw{fundedDraws.length !== 1 ? "s" : ""} across all projects
                 </p>
-                {overdueInvoices.length > 0 && (
-                  <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-red-600" role="alert">
-                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-                    {overdueInvoices.length} overdue
-                  </p>
-                )}
               </CardContent>
             </Card>
 
-            {/* Money Going Out */}
-            <Card className="bg-gradient-to-br from-white to-orange-50/30 shadow-sm">
+            {/* Pending Draws */}
+            <Card className="bg-gradient-to-br from-white to-blue-50/30 shadow-sm">
               <CardContent className="p-5 sm:p-6">
                 <div className="mb-4 flex items-center gap-3">
-                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
-                    <TrendingDown className="h-5 w-5 text-orange-600" aria-hidden="true" />
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-blue-50">
+                    <Clock className="h-5 w-5 text-blue-600" aria-hidden="true" />
                   </div>
-                  <h3 className="font-semibold text-gray-900">Money Going Out</h3>
+                  <h3 className="font-semibold text-gray-900">Pending Draws</h3>
                 </div>
-                <div className="flex items-baseline gap-4">
-                  <div>
-                    <p className="text-2xl font-bold tabular-nums text-orange-600 sm:text-3xl">
-                      {fmt(pendingPaymentsTotal)}
-                    </p>
-                    <p className="mt-1 text-sm text-gray-600">
-                      {pendingPaymentsAll.length} pending payment{pendingPaymentsAll.length !== 1 ? "s" : ""}
-                    </p>
-                  </div>
-                </div>
-                {pendingDrawsTotal > 0 && (
+                <p className="text-2xl font-bold tabular-nums text-blue-600 sm:text-3xl">
+                  {fmt(pendingDrawTotal)}
+                </p>
+                <p className="mt-1 text-sm text-gray-600">
+                  {pendingDraws.length} draw{pendingDraws.length !== 1 ? "s" : ""} awaiting lender funding
+                </p>
+                {draftDraws.length > 0 && (
                   <>
                     <Separator className="my-3" />
                     <p className="text-sm text-gray-600">
-                      <span className="font-semibold tabular-nums text-gray-700">{fmt(pendingDrawsTotal)}</span>{" "}
-                      in pending draw requests
+                      <span className="font-semibold tabular-nums text-gray-700">{draftDraws.length}</span>{" "}
+                      draft draw{draftDraws.length !== 1 ? "s" : ""} still need{draftDraws.length === 1 ? "s" : ""} submission
                     </p>
                   </>
                 )}
@@ -776,8 +677,6 @@ export default async function AdminDashboard({
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project) => {
-                const unpaidCount = unpaidByProject[project.id] || 0;
-                const pendingPayCount = pendingPaymentsByProject[project.id] || 0;
                 const taskData = tasksByProject[project.id];
                 const taskTotal = taskData?.total ?? 0;
                 const taskCompleted = taskData?.completed ?? 0;
@@ -841,27 +740,6 @@ export default async function AdminDashboard({
                               />
                             </div>
                           </div>
-                        )}
-
-                        {/* Indicators */}
-                        {(unpaidCount > 0 || pendingPayCount > 0) && (
-                          <>
-                            <Separator className="my-3" />
-                            <div className="flex flex-wrap items-center gap-3">
-                              {unpaidCount > 0 && (
-                                <span className="flex items-center gap-1.5 text-sm font-medium text-orange-600">
-                                  <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-                                  {unpaidCount} unpaid
-                                </span>
-                              )}
-                              {pendingPayCount > 0 && (
-                                <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
-                                  <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
-                                  {pendingPayCount} pending
-                                </span>
-                              )}
-                            </div>
-                          </>
                         )}
                       </CardContent>
                     </Card>
