@@ -32,15 +32,17 @@ export async function POST(request: NextRequest) {
   const supabase = await createClient();
   const body = await request.json();
 
+  // Support bulk insert (array) or single insert (object)
+  const isBulk = Array.isArray(body);
+
   const { data, error } = await supabase
     .from("contractors")
-    .insert(body)
-    .select()
-    .single();
+    .insert(isBulk ? body : body)
+    .select();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  return NextResponse.json(data, { status: 201 });
+  return NextResponse.json(isBulk ? data : data?.[0], { status: 201 });
 }

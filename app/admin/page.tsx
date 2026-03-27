@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase/server";
 import {
   type ProjectStatus,
   type Project,
+  type Contractor,
   type DrawRequest,
   type Permit,
   type Task,
@@ -73,7 +74,7 @@ function endOfWeek(now: Date): Date {
 // ── Types for action items ──────────────────────────────────
 
 type ActionPriority = "red" | "orange" | "yellow" | "blue";
-type ActionCategory = "overdue" | "task" | "permit" | "draw";
+type ActionCategory = "overdue" | "task" | "permit" | "draw" | "w9";
 
 interface ActionItem {
   id: string;
@@ -102,6 +103,7 @@ const PRIORITY_ICON: Record<ActionPriority, typeof AlertTriangle> = {
 
 const CATEGORY_LABELS: Record<ActionCategory, string> = {
   overdue: "Overdue",
+  w9: "Missing W9s",
   task: "Tasks",
   permit: "Permits",
   draw: "Draw Requests",
@@ -140,6 +142,7 @@ export default async function AdminDashboard({
     tasksRes,
     drawsRes,
     estimatesRes,
+    contractorsRes,
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -154,6 +157,11 @@ export default async function AdminDashboard({
       .in("status", ["new", "reviewed"])
       .order("created_at", { ascending: false })
       .limit(5),
+    supabase
+      .from("contractors")
+      .select("id, name, company, type, w9_file_url")
+      .eq("type", "contractor")
+      .is("w9_file_url", null),
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
@@ -161,6 +169,7 @@ export default async function AdminDashboard({
   const tasks: Task[] = tasksRes.data ?? [];
   const draws: DrawRequest[] = drawsRes.data ?? [];
   const estimates: Estimate[] = estimatesRes.data ?? [];
+  const contractorsMissingW9: Pick<Contractor, "id" | "name" | "company">[] = contractorsRes.data ?? [];
 
   // ── Project lookup map ────────────────────────────────────
   const projectMap = new Map<string, Project>();
@@ -243,6 +252,19 @@ export default async function AdminDashboard({
       sublabel: projectName(task.project_id),
       detail: `${daysOver} day${daysOver !== 1 ? "s" : ""} overdue`,
       href: `/admin/projects/${task.project_id}`,
+    });
+  }
+
+  // Contractors missing W9
+  for (const c of contractorsMissingW9) {
+    actionItems.push({
+      id: `w9-${c.id}`,
+      priority: "orange",
+      category: "w9",
+      label: `W9 missing: ${c.name}`,
+      sublabel: c.company || "No company",
+      detail: "Lender requires W9 before payout",
+      href: `/admin/contractors/${c.id}`,
     });
   }
 

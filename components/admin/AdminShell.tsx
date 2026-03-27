@@ -27,7 +27,7 @@ const navLinks = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
   { label: "Projects", href: "/admin/projects", icon: FolderOpen },
   { label: "New Project", href: "/admin/projects/new", icon: PlusCircle },
-  { label: "Contractors & Vendors", href: "/admin/contractors", icon: Users },
+  { label: "Contractors & Vendors", href: "/admin/contractors", icon: Users, badgeKey: "w9" },
   { label: "Financials", href: "/admin/financials", icon: DollarSign },
   {
     label: "Estimates",
@@ -65,22 +65,30 @@ export default function AdminShell({
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newEstimateCount, setNewEstimateCount] = useState(0);
+  const [missingW9Count, setMissingW9Count] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
 
-    async function fetchNewEstimates() {
-      const { count } = await supabase
-        .from("estimates")
-        .select("*", { count: "exact", head: true })
-        .eq("status", "new");
-      setNewEstimateCount(count ?? 0);
+    async function fetchBadgeCounts() {
+      const [{ count: estimateCount }, { count: w9Count }] = await Promise.all([
+        supabase
+          .from("estimates")
+          .select("*", { count: "exact", head: true })
+          .eq("status", "new"),
+        supabase
+          .from("contractors")
+          .select("*", { count: "exact", head: true })
+          .eq("type", "contractor")
+          .is("w9_file_url", null),
+      ]);
+      setNewEstimateCount(estimateCount ?? 0);
+      setMissingW9Count(w9Count ?? 0);
     }
 
-    fetchNewEstimates();
+    fetchBadgeCounts();
 
-    // Re-check when navigating back to admin pages
-    const interval = setInterval(fetchNewEstimates, 30000);
+    const interval = setInterval(fetchBadgeCounts, 30000);
     return () => clearInterval(interval);
   }, [pathname]);
 
@@ -142,6 +150,15 @@ export default function AdminShell({
                 <span className="ml-auto flex h-2 w-2">
                   <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-red-400 opacity-75" />
                   <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
+              )}
+              {link.badgeKey === "w9" && missingW9Count > 0 && (
+                <span className="ml-auto flex items-center gap-1.5">
+                  <span className="flex h-2 w-2">
+                    <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-amber-400 opacity-75" />
+                    <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+                  </span>
+                  <span className="text-xs text-amber-400">{missingW9Count}</span>
                 </span>
               )}
             </Link>

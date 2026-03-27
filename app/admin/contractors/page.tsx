@@ -15,6 +15,7 @@ import {
   Store,
   Tag,
   FileText,
+  ListPlus,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -119,14 +120,24 @@ export default async function ContractorsPage({
           <h1 className="text-3xl font-bold text-gray-900">
             Contractors & Vendors
           </h1>
-          <Link
-            href="/admin/contractors/new"
-            className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 active:bg-indigo-700"
-            style={{ minHeight: 44 }}
-          >
-            <Plus className="h-5 w-5" />
-            Add New
-          </Link>
+          <div className="flex gap-2">
+            <Link
+              href="/admin/contractors/bulk"
+              className="inline-flex items-center justify-center gap-2 rounded-lg border border-gray-300 bg-white px-4 py-3 text-sm font-medium text-gray-700 shadow-sm transition-colors hover:bg-gray-50"
+              style={{ minHeight: 44 }}
+            >
+              <ListPlus className="h-5 w-5" />
+              Bulk Add
+            </Link>
+            <Link
+              href="/admin/contractors/new"
+              className="inline-flex items-center justify-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500 active:bg-indigo-700"
+              style={{ minHeight: 44 }}
+            >
+              <Plus className="h-5 w-5" />
+              Add New
+            </Link>
+          </div>
         </div>
 
         {/* Search Bar */}
