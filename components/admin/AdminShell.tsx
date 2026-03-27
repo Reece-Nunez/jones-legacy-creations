@@ -6,6 +6,7 @@ import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
 import {
   LayoutDashboard,
+  FolderOpen,
   PlusCircle,
   Users,
   DollarSign,
@@ -24,6 +25,7 @@ import SearchBar from "./SearchBar";
 
 const navLinks = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+  { label: "Projects", href: "/admin/projects", icon: FolderOpen },
   { label: "New Project", href: "/admin/projects/new", icon: PlusCircle },
   { label: "Contractors", href: "/admin/contractors", icon: Users },
   { label: "Financials", href: "/admin/financials", icon: DollarSign },
