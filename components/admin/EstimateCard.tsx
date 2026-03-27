@@ -13,12 +13,40 @@ import {
   Loader2,
   Trash2,
 } from "lucide-react";
+import toast from "react-hot-toast";
 import {
   type Estimate,
   type EstimateStatus,
   ESTIMATE_STATUS_COLORS,
   PROJECT_TYPE_OPTIONS,
 } from "@/lib/types/database";
+
+function confirmAction(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium">{message}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { toast.dismiss(t.id); resolve(true); }}
+              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors"
+            >
+              Yes, Continue
+            </button>
+            <button
+              onClick={() => { toast.dismiss(t.id); resolve(false); }}
+              className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 10000 }
+    );
+  });
+}
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -107,20 +135,20 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
       await patchEstimate({ status: "reviewed" });
       onUpdate();
     } catch {
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     } finally {
       setActionLoading(null);
     }
   }
 
   async function handleDecline() {
-    if (!confirm("Are you sure you want to decline this estimate? This action can be reversed later.")) return;
+    if (!(await confirmAction("Decline this estimate?"))) return;
     setActionLoading("declined");
     try {
       await patchEstimate({ status: "declined" });
       onUpdate();
     } catch {
-      alert("Failed to update status");
+      toast.error("Failed to update status");
     } finally {
       setActionLoading(null);
     }
@@ -164,7 +192,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
       setTimeout(() => setConvertedSuccess(false), 3000);
       onUpdate();
     } catch {
-      alert("Failed to convert estimate to project");
+      toast.error("Failed to convert estimate to project");
     } finally {
       setActionLoading(null);
     }
@@ -175,14 +203,14 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
     try {
       await patchEstimate({ notes });
     } catch {
-      alert("Failed to save notes");
+      toast.error("Failed to save notes");
     } finally {
       setSaving(false);
     }
   }
 
   async function handleDelete() {
-    if (!confirm("Are you sure you want to permanently delete this estimate? This cannot be undone.")) return;
+    if (!(await confirmAction("Permanently delete this estimate?"))) return;
     setActionLoading("delete");
     try {
       const res = await fetch(`/api/admin/estimates/${estimate.id}`, {
@@ -191,7 +219,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
       if (!res.ok) throw new Error("Failed to delete");
       onUpdate();
     } catch {
-      alert("Failed to delete estimate");
+      toast.error("Failed to delete estimate");
     } finally {
       setActionLoading(null);
     }
