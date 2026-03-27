@@ -149,6 +149,7 @@ create table tasks (
   title text not null,
   completed boolean default false,
   due_date date,
+  assigned_to text,
   sort_order integer default 0,
   created_at timestamptz default now()
 );

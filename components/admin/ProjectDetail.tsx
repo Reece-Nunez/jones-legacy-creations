@@ -43,6 +43,7 @@ import {
   Landmark,
   Building,
   Percent,
+  UserCircle,
 } from "lucide-react";
 import type {
   Project,
@@ -51,6 +52,7 @@ import type {
   Permit,
   Document,
   Task,
+  TeamMember,
   DrawRequest,
   ActivityLogEntry,
   ProjectStatus,
@@ -3221,18 +3223,29 @@ function TasksTab({
 }) {
   const [newTitle, setNewTitle] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
+  const [newAssignee, setNewAssignee] = useState("");
+  const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
 
   const [editingTask, setEditingTask] = useState<string | null>(null);
   const [editTaskForm, setEditTaskForm] = useState({
     title: "",
     due_date: "",
+    assigned_to: "",
   });
+
+  useEffect(() => {
+    fetch("/api/admin/team")
+      .then((res) => res.json())
+      .then((data) => setTeamMembers(data))
+      .catch(() => {});
+  }, []);
 
   function startEditTask(t: Task) {
     setEditingTask(t.id);
     setEditTaskForm({
       title: t.title,
       due_date: t.due_date ?? "",
+      assigned_to: t.assigned_to ?? "",
     });
   }
 
@@ -3240,6 +3253,7 @@ function TasksTab({
     await mutate(`/api/admin/projects/${projectId}/tasks/${id}`, "PATCH", {
       title: editTaskForm.title,
       due_date: editTaskForm.due_date || null,
+      assigned_to: editTaskForm.assigned_to || null,
     });
     setEditingTask(null);
   }
@@ -3249,10 +3263,12 @@ function TasksTab({
     await mutate(`/api/admin/projects/${projectId}/tasks`, "POST", {
       title: newTitle.trim(),
       due_date: newDueDate || null,
+      assigned_to: newAssignee || null,
       sort_order: tasks.length,
     });
     setNewTitle("");
     setNewDueDate("");
+    setNewAssignee("");
   }
 
   async function toggleTask(t: Task) {
@@ -3302,6 +3318,19 @@ function TasksTab({
                         className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                       />
                     </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Assign To</label>
+                      <select
+                        value={editTaskForm.assigned_to}
+                        onChange={(e) => setEditTaskForm({ ...editTaskForm, assigned_to: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      >
+                        <option value="">Unassigned</option>
+                        {teamMembers.map((m) => (
+                          <option key={m.email} value={m.email}>{m.name}</option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -3327,9 +3356,17 @@ function TasksTab({
                     onClick={() => toggleTask(t)}
                     className="w-6 h-6 rounded border-2 border-gray-300 hover:border-black flex-shrink-0 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
                   />
-                  <span className="flex-1 text-sm text-gray-900">{t.title}</span>
+                  <div className="flex-1 min-w-0">
+                    <span className="text-sm text-gray-900">{t.title}</span>
+                    {t.assigned_to && (
+                      <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-indigo-50 px-2 py-0.5 text-xs text-indigo-700">
+                        <UserCircle className="w-3 h-3" />
+                        {teamMembers.find((m) => m.email === t.assigned_to)?.name || t.assigned_to}
+                      </span>
+                    )}
+                  </div>
                   {t.due_date && (
-                    <span className="text-xs text-gray-500">{fmtDate(t.due_date)}</span>
+                    <span className="text-xs text-gray-500 shrink-0">{fmtDate(t.due_date)}</span>
                   )}
                   <button
                     disabled={loading}
@@ -3410,11 +3447,19 @@ function TasksTab({
                       >
                         <Check className="w-3 h-3 text-white" />
                       </button>
-                      <span className="flex-1 text-sm text-gray-500 line-through">
-                        {t.title}
-                      </span>
+                      <div className="flex-1 min-w-0">
+                        <span className="text-sm text-gray-500 line-through">
+                          {t.title}
+                        </span>
+                        {t.assigned_to && (
+                          <span className="ml-2 inline-flex items-center gap-1 rounded-full bg-gray-100 px-2 py-0.5 text-xs text-gray-500">
+                            <UserCircle className="w-3 h-3" />
+                            {teamMembers.find((m) => m.email === t.assigned_to)?.name || t.assigned_to}
+                          </span>
+                        )}
+                      </div>
                       {t.due_date && (
-                        <span className="text-xs text-gray-500">
+                        <span className="text-xs text-gray-500 shrink-0">
                           {fmtDate(t.due_date)}
                         </span>
                       )}
@@ -3466,6 +3511,20 @@ function TasksTab({
                   value={newDueDate}
                   onChange={(e) => setNewDueDate(e.target.value)}
                 />
+              </div>
+              <div>
+                <label htmlFor="new-task-assignee" className="sr-only">Assign to</label>
+                <select
+                  id="new-task-assignee"
+                  value={newAssignee}
+                  onChange={(e) => setNewAssignee(e.target.value)}
+                  className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                >
+                  <option value="">Assign to...</option>
+                  {teamMembers.map((m) => (
+                    <option key={m.email} value={m.email}>{m.name}</option>
+                  ))}
+                </select>
               </div>
               <button
                 disabled={loading || !newTitle.trim()}

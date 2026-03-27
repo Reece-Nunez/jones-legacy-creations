@@ -135,8 +135,14 @@ export interface Task {
   title: string;
   completed: boolean;
   due_date: string | null;
+  assigned_to: string | null;
   sort_order: number;
   created_at: string;
+}
+
+export interface TeamMember {
+  email: string;
+  name: string;
 }
 
 export interface ActivityLogEntry {
@@ -278,27 +284,17 @@ export const TRADES = [
 // Cost ranges for the bid estimator (per sq ft)
 export const COST_RANGES: Record<string, { min: number; max: number }> = {
   new_home: { min: 150, max: 350 },
-  kitchen_remodel: { min: 100, max: 250 },
-  bathroom_remodel: { min: 120, max: 300 },
   addition: { min: 150, max: 300 },
-  deck_patio: { min: 25, max: 75 },
   garage: { min: 40, max: 80 },
-  commercial_buildout: { min: 75, max: 200 },
-  interior_design: { min: 15, max: 50 },
-  whole_home_renovation: { min: 100, max: 250 },
+  deck_patio: { min: 25, max: 75 },
   other: { min: 50, max: 150 },
 };
 
 export const PROJECT_TYPE_OPTIONS = [
-  { value: "new_home", label: "New Home Construction" },
-  { value: "kitchen_remodel", label: "Kitchen Remodel" },
-  { value: "bathroom_remodel", label: "Bathroom Remodel" },
+  { value: "new_home", label: "New Custom Home" },
   { value: "addition", label: "Home Addition" },
-  { value: "deck_patio", label: "Deck / Patio" },
   { value: "garage", label: "Garage" },
-  { value: "commercial_buildout", label: "Commercial Build-out" },
-  { value: "interior_design", label: "Interior Design & Staging" },
-  { value: "whole_home_renovation", label: "Whole Home Renovation" },
+  { value: "deck_patio", label: "Deck / Patio" },
   { value: "other", label: "Other" },
 ] as const;
 

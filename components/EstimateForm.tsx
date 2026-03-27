@@ -3,14 +3,9 @@
 import { useState } from "react";
 import {
   Home,
-  UtensilsCrossed,
-  Bath,
   PlusSquare,
   Fence,
   Warehouse,
-  Building2,
-  Palette,
-  Hammer,
   HelpCircle,
   ArrowLeft,
   ArrowRight,
@@ -29,14 +24,9 @@ import { formatPhoneNumber, formatNumber, unformatNumber } from "@/lib/formatter
 // ── Icon map for project types ──────────────────────────────
 const PROJECT_TYPE_ICONS: Record<string, React.ElementType> = {
   new_home: Home,
-  kitchen_remodel: UtensilsCrossed,
-  bathroom_remodel: Bath,
   addition: PlusSquare,
   deck_patio: Fence,
   garage: Warehouse,
-  commercial_buildout: Building2,
-  interior_design: Palette,
-  whole_home_renovation: Hammer,
   other: HelpCircle,
 };
 
@@ -56,7 +46,7 @@ const FLOORING_OPTIONS = ["No preference", "Carpet", "LVP/Vinyl", "Tile", "Hardw
 const COUNTERTOP_OPTIONS = ["No preference", "Laminate", "Quartz", "Granite", "Marble"];
 const CABINET_OPTIONS = ["No preference", "Stock", "Semi-Custom", "Custom"];
 
-const SHOWS_BEDROOMS_BATHROOMS = ["new_home", "addition", "whole_home_renovation"];
+const SHOWS_BEDROOMS_BATHROOMS = ["new_home", "addition"];
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat("en-US", {

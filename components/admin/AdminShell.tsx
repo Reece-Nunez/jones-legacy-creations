@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -33,7 +33,7 @@ const navLinks = [
     label: "Estimates",
     href: "/admin/estimates",
     icon: Calculator,
-    badge: true,
+    badgeKey: "estimates",
   },
 ];
 
@@ -64,6 +64,25 @@ export default function AdminShell({
   const pathname = usePathname();
   const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [newEstimateCount, setNewEstimateCount] = useState(0);
+
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function fetchNewEstimates() {
+      const { count } = await supabase
+        .from("estimates")
+        .select("*", { count: "exact", head: true })
+        .eq("status", "new");
+      setNewEstimateCount(count ?? 0);
+    }
+
+    fetchNewEstimates();
+
+    // Re-check when navigating back to admin pages
+    const interval = setInterval(fetchNewEstimates, 30000);
+    return () => clearInterval(interval);
+  }, [pathname]);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -119,8 +138,11 @@ export default function AdminShell({
             >
               <Icon className="h-5 w-5 shrink-0" />
               {link.label}
-              {link.badge && (
-                <span className="ml-auto h-2 w-2 rounded-full bg-red-500" />
+              {link.badgeKey === "estimates" && newEstimateCount > 0 && (
+                <span className="ml-auto flex h-2 w-2">
+                  <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-red-400 opacity-75" />
+                  <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+                </span>
               )}
             </Link>
           );
