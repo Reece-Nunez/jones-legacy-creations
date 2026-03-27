@@ -306,13 +306,7 @@ export default function AdminShell({
                   {sidebarContent}
                 </SheetContent>
               </Sheet>
-              <Image
-                src="/logo-transparent.png"
-                alt="Jones Legacy Creations"
-                width={130}
-                height={39}
-                className="h-7 w-auto"
-              />
+              <span className="text-sm font-bold text-slate-800 tracking-tight">JLC Admin</span>
             </div>
             {/* Mobile search toggle area */}
             <div className="flex items-center gap-1">

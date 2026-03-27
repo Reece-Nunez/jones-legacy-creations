@@ -252,25 +252,27 @@ export default async function FinancialsPage({
         </div>
 
         {/* ── A. Summary Cards ──────────────────────────────────── */}
-        <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div className="mb-8 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4 sm:gap-4">
           {/* Total Build Costs */}
           <Card className="border-t-4 border-green-500 shadow-sm">
-            <CardContent className="pt-6">
+            <CardContent className="p-4 sm:pt-6 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-green-50 p-2">
+                <div className="rounded-lg bg-green-50 p-2 shrink-0">
                   <DollarSign className="h-5 w-5 text-green-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Total Build Costs
-                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
+                    Total Build Costs
+                  </p>
+                  <p
+                    className="text-xl font-bold tabular-nums text-green-700 sm:text-2xl lg:text-3xl sm:mt-1"
+                    aria-label={spokenDollars(totalBuildCosts)}
+                  >
+                    {fmt(totalBuildCosts)}
+                  </p>
+                </div>
               </div>
-              <p
-                className="mt-3 text-3xl font-bold tabular-nums text-green-700"
-                aria-label={spokenDollars(totalBuildCosts)}
-              >
-                {fmt(totalBuildCosts)}
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 sm:text-sm">
                 {payments.length} contractor payment
                 {payments.length !== 1 && "s"}
               </p>
@@ -279,22 +281,24 @@ export default async function FinancialsPage({
 
           {/* Draws Funded */}
           <Card className="border-t-4 border-blue-500 shadow-sm">
-            <CardContent className="pt-6">
+            <CardContent className="p-4 sm:pt-6 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-blue-50 p-2">
+                <div className="rounded-lg bg-blue-50 p-2 shrink-0">
                   <Landmark className="h-5 w-5 text-blue-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Draws Funded
-                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
+                    Draws Funded
+                  </p>
+                  <p
+                    className="text-xl font-bold tabular-nums text-blue-700 sm:text-2xl lg:text-3xl sm:mt-1"
+                    aria-label={spokenDollars(totalDrawsFunded)}
+                  >
+                    {fmt(totalDrawsFunded)}
+                  </p>
+                </div>
               </div>
-              <p
-                className="mt-3 text-3xl font-bold tabular-nums text-blue-700"
-                aria-label={spokenDollars(totalDrawsFunded)}
-              >
-                {fmt(totalDrawsFunded)}
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 sm:text-sm">
                 {draws.filter((d) => d.status === "funded").length} funded draw
                 {draws.filter((d) => d.status === "funded").length !== 1 && "s"}
               </p>
@@ -303,23 +307,25 @@ export default async function FinancialsPage({
 
           {/* Pending Draws */}
           <Card className="border-t-4 border-orange-500 shadow-sm">
-            <CardContent className="pt-6">
+            <CardContent className="p-4 sm:pt-6 sm:p-6">
               <div className="flex items-center gap-3">
-                <div className="rounded-lg bg-orange-50 p-2">
+                <div className="rounded-lg bg-orange-50 p-2 shrink-0">
                   <Clock className="h-5 w-5 text-orange-600" />
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Pending Draws
-                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
+                    Pending Draws
+                  </p>
+                  <p
+                    className="text-xl font-bold tabular-nums text-orange-700 sm:text-2xl lg:text-3xl sm:mt-1"
+                    aria-label={spokenDollars(totalPendingDraws)}
+                  >
+                    {fmt(totalPendingDraws)}
+                  </p>
+                </div>
               </div>
-              <p
-                className="mt-3 text-3xl font-bold tabular-nums text-orange-700"
-                aria-label={spokenDollars(totalPendingDraws)}
-              >
-                {fmt(totalPendingDraws)}
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                Submitted or approved, awaiting lender
+              <p className="mt-2 text-xs text-gray-500 sm:text-sm">
+                Awaiting lender
               </p>
             </CardContent>
           </Card>
@@ -330,10 +336,10 @@ export default async function FinancialsPage({
               totalProjectedProfit >= 0 ? "border-green-500" : "border-red-500"
             }`}
           >
-            <CardContent className="pt-6">
+            <CardContent className="p-4 sm:pt-6 sm:p-6">
               <div className="flex items-center gap-3">
                 <div
-                  className={`rounded-lg p-2 ${
+                  className={`rounded-lg p-2 shrink-0 ${
                     totalProjectedProfit >= 0 ? "bg-green-50" : "bg-red-50"
                   }`}
                 >
@@ -343,19 +349,21 @@ export default async function FinancialsPage({
                     <TrendingDown className="h-5 w-5 text-red-600" />
                   )}
                 </div>
-                <span className="text-sm font-medium text-gray-700">
-                  Projected Profit
-                </span>
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-gray-500 sm:text-sm">
+                    Projected Profit
+                  </p>
+                  <p
+                    className={`text-xl font-bold tabular-nums sm:text-2xl lg:text-3xl sm:mt-1 ${
+                      totalProjectedProfit >= 0 ? "text-green-700" : "text-red-700"
+                    }`}
+                    aria-label={spokenDollars(totalProjectedProfit)}
+                  >
+                    {fmt(totalProjectedProfit)}
+                  </p>
+                </div>
               </div>
-              <p
-                className={`mt-3 text-3xl font-bold tabular-nums ${
-                  totalProjectedProfit >= 0 ? "text-green-700" : "text-red-700"
-                }`}
-                aria-label={spokenDollars(totalProjectedProfit)}
-              >
-                {fmt(totalProjectedProfit)}
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
+              <p className="mt-2 text-xs text-gray-500 sm:text-sm">
                 Sale price minus all costs
               </p>
             </CardContent>
