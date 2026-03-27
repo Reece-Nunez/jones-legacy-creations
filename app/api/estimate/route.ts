@@ -111,6 +111,40 @@ export async function POST(request: NextRequest) {
     const apiKey = process.env.ANTHROPIC_API_KEY;
     if (apiKey) {
       try {
+        // Pull real project data to ground the AI in Blake's actual costs
+        const { data: realProjects } = await supabase
+          .from("projects")
+          .select("name, project_type, estimated_value, contract_value, sale_price, status, description")
+          .in("status", ["completed", "in_progress", "waiting_on_payment"])
+          .not("contract_value", "is", null)
+          .order("created_at", { ascending: false })
+          .limit(10);
+
+        // Pull actual contractor payment totals per project for real cost data
+        const { data: paymentTotals } = await supabase
+          .from("contractor_payments")
+          .select("project_id, amount, status");
+
+        const costByProject: Record<string, number> = {};
+        if (paymentTotals) {
+          for (const p of paymentTotals) {
+            costByProject[p.project_id] = (costByProject[p.project_id] || 0) + (p.amount || 0);
+          }
+        }
+
+        let referenceData = "";
+        if (realProjects && realProjects.length > 0) {
+          referenceData = `\n\nREAL PROJECT DATA FROM THIS BUILDER (use these as primary reference for pricing):\n`;
+          for (const p of realProjects) {
+            const actualCost = costByProject[p.name] || p.contract_value || p.estimated_value;
+            referenceData += `- ${p.name} (${p.project_type}): Build cost $${actualCost?.toLocaleString() || "unknown"}`;
+            if (p.sale_price) referenceData += `, Sale price $${p.sale_price.toLocaleString()}`;
+            if (p.description) referenceData += ` — ${p.description}`;
+            referenceData += `\n`;
+          }
+          referenceData += `\nIMPORTANT: Base your estimates primarily on this builder's actual project costs above. These are REAL numbers from their business in Southern Utah. New home construction for this builder runs approximately $160-180/sq ft for standard finishes.\n`;
+        }
+
         const client = new Anthropic({ apiKey });
         const response = await client.messages.create({
           model: "claude-haiku-4-5-20251001",
@@ -118,7 +152,7 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "user",
-              content: `You are a construction cost estimator for Southern Utah (Hurricane, St. George area). Give a realistic cost estimate for this project.
+              content: `You are a construction cost estimator for Jones Legacy Creations, a builder in Southern Utah (Hurricane, St. George area). Give a realistic cost estimate for this project.
 
 Project Type: ${project_type}
 Description: ${description}
@@ -132,15 +166,15 @@ Cabinets: ${cabinet_preference || "No preference"}
 Budget Range: ${budget_range || "Not specified"}
 Timeline: ${timeline || "Not specified"}
 Location: ${city || "Southern Utah"}, ${state || "UT"}
-
+${referenceData}
 Return ONLY a JSON object:
 {
   "min": 150000,
   "max": 200000,
-  "breakdown": "A brief 3-5 line breakdown explaining the estimate. Include major cost categories and why the range exists. Keep it friendly and professional. Mention Southern Utah market conditions if relevant."
+  "breakdown": "A brief 3-5 line breakdown explaining the estimate. Include major cost categories and why the range exists. Keep it friendly and professional. Reference Southern Utah market conditions."
 }
 
-Base your estimates on current 2026 Southern Utah construction costs. Be realistic — not too low, not inflated. Consider the finish level significantly affects cost.
+Be realistic based on this builder's actual costs. Do NOT underestimate. Construction costs in Southern Utah in 2026 are higher than national averages. For new homes, this builder's costs run $160-180+/sq ft depending on finish level.
 
 Return ONLY valid JSON.`,
             },
