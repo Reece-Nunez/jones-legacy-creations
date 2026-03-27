@@ -1594,6 +1594,7 @@ function DrawsTab({
   // Post-upload review state
   interface UploadedDocReview {
     id: string;
+    fileUrl: string;
     originalName: string;
     suggestedName: string;
     editedName: string;
@@ -1852,6 +1853,7 @@ function DrawsTab({
 
           uploadedDocs.push({
             id: result.id,
+            fileUrl: result.file_url,
             originalName: file.name,
             suggestedName,
             editedName: suggestedName,
@@ -1898,6 +1900,19 @@ function DrawsTab({
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify(updates),
         });
+
+        // Also update the linked contractor payment's invoice_file_name
+        const linkedPayment = payments.find((p) => p.invoice_file_url === doc.fileUrl);
+        if (linkedPayment) {
+          await fetch(`/api/admin/projects/${projectId}/payments/${linkedPayment.id}`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              invoice_file_name: doc.editedName,
+              contractor_name: doc.vendor || linkedPayment.contractor_name,
+            }),
+          });
+        }
       }
       toast.success("Document names updated");
       drawsRouter.refresh();
