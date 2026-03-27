@@ -158,79 +158,65 @@ export default async function ContractorsPage({
           </div>
         </form>
 
-        {/* Type Filter Tabs */}
-        <div className="mb-4 flex gap-2" role="group" aria-label="Filter by type">
-          <Link
-            href={buildUrl({ q, trade })}
-            className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-              !type
-                ? "bg-gray-900 text-white"
-                : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
-            }`}
-            style={{ minHeight: 44 }}
-          >
-            All
-          </Link>
-          <Link
-            href={buildUrl({ q, trade, type: "contractor" })}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-              showingContractors
-                ? "bg-gray-900 text-white"
-                : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
-            }`}
-            style={{ minHeight: 44 }}
-          >
-            <User className="h-3.5 w-3.5" />
-            Contractors
-          </Link>
-          <Link
-            href={buildUrl({ q, type: "vendor" })}
-            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-              showingVendors
-                ? "bg-gray-900 text-white"
-                : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
-            }`}
-            style={{ minHeight: 44 }}
-          >
-            <Store className="h-3.5 w-3.5" />
-            Vendors
-          </Link>
-        </div>
-
-        {/* Trade Filter Pills — only show for contractors */}
-        {!showingVendors && (
-          <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filter by trade">
+        {/* Filters Row */}
+        <div className="mb-6 flex flex-col sm:flex-row gap-3">
+          {/* Type Filter */}
+          <div className="flex rounded-lg border border-gray-300 overflow-hidden shrink-0">
             <Link
-              href={buildUrl({ q, type })}
-              className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-                !trade
-                  ? "bg-gray-900 text-white"
-                  : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
+              href={buildUrl({ q, trade })}
+              className={`px-4 py-2.5 text-sm font-medium transition-colors ${
+                !type ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
               }`}
               style={{ minHeight: 44 }}
-              aria-pressed={!trade}
-              role="button"
             >
-              All Trades
+              All
             </Link>
-            {TRADES.map((t) => (
-              <Link
-                key={t}
-                href={buildUrl({ q, type, trade: t })}
-                className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-                  trade === t
-                    ? "bg-gray-900 text-white"
-                    : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
-                }`}
-                style={{ minHeight: 44 }}
-                aria-pressed={trade === t}
-                role="button"
-              >
-                {t}
-              </Link>
-            ))}
+            <Link
+              href={buildUrl({ q, trade, type: "contractor" })}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l border-gray-300 transition-colors ${
+                showingContractors ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+              style={{ minHeight: 44 }}
+            >
+              <User className="h-3.5 w-3.5" />
+              Contractors
+            </Link>
+            <Link
+              href={buildUrl({ q, type: "vendor" })}
+              className={`flex items-center gap-1.5 px-4 py-2.5 text-sm font-medium border-l border-gray-300 transition-colors ${
+                showingVendors ? "bg-gray-900 text-white" : "bg-white text-gray-600 hover:bg-gray-50"
+              }`}
+              style={{ minHeight: 44 }}
+            >
+              <Store className="h-3.5 w-3.5" />
+              Vendors
+            </Link>
           </div>
-        )}
+
+          {/* Trade Dropdown — only for non-vendor views */}
+          {!showingVendors && (
+            <form method="GET" className="flex-1 sm:max-w-xs">
+              {q && <input type="hidden" name="q" value={q} />}
+              {type && <input type="hidden" name="type" value={type} />}
+              <select
+                name="trade"
+                defaultValue={trade ?? ""}
+                onChange={(e) => {
+                  const form = e.target.closest("form");
+                  if (form) form.submit();
+                }}
+                className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2.5 text-sm text-gray-900 shadow-sm focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200 appearance-none bg-[url('data:image/svg+xml;charset=utf-8,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%20fill%3D%22%236b7280%22%3E%3Cpath%20fill-rule%3D%22evenodd%22%20d%3D%22M5.23%207.21a.75.75%200%20011.06.02L10%2011.168l3.71-3.938a.75.75%200%20111.08%201.04l-4.25%204.5a.75.75%200%2001-1.08%200l-4.25-4.5a.75.75%200%2001.02-1.06z%22%20clip-rule%3D%22evenodd%22%2F%3E%3C%2Fsvg%3E')] bg-[length:20px_20px] bg-[right_12px_center] bg-no-repeat pr-10"
+                style={{ minHeight: 44 }}
+                aria-label="Filter by trade"
+              >
+                <option value="">All Trades</option>
+                {TRADES.map((t) => (
+                  <option key={t} value={t}>{t}</option>
+                ))}
+              </select>
+            </form>
+          )}
+        </div>
 
         {/* Cards */}
         {contractorList.length === 0 ? (

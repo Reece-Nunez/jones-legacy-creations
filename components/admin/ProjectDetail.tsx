@@ -554,23 +554,28 @@ function FinancialSummary({
     <ShadCard className="mt-4 overflow-hidden">
       <button
         onClick={() => setExpanded((v) => !v)}
-        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+        className="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer"
       >
         <div className="flex items-center gap-2">
-          <DollarSign className="w-4 h-4 text-blue-600" />
+          <DollarSign className="w-4 h-4 text-blue-600 shrink-0" />
           <span className="text-sm font-semibold text-gray-900">Financial Summary</span>
           {lenderName && (
-            <span className="text-xs text-gray-500 ml-1">({lenderName})</span>
+            <span className="text-xs text-gray-500">({lenderName})</span>
+          )}
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-400 sm:hidden" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400 sm:hidden" />
           )}
         </div>
-        <div className="flex items-center gap-3">
+        <div className="flex items-center gap-3 pl-6 sm:pl-0">
           <span className={`text-sm font-bold tabular-nums ${profitColor}`}>
-            Projected Profit: {fmt(projectedProfit)}
+            Profit: {fmt(projectedProfit)}
           </span>
           {expanded ? (
-            <ChevronUp className="w-4 h-4 text-gray-400" />
+            <ChevronUp className="w-4 h-4 text-gray-400 hidden sm:block" />
           ) : (
-            <ChevronDown className="w-4 h-4 text-gray-400" />
+            <ChevronDown className="w-4 h-4 text-gray-400 hidden sm:block" />
           )}
         </div>
       </button>
@@ -578,7 +583,7 @@ function FinancialSummary({
       {expanded && (
         <CardContent className="px-4 pb-4 pt-0 space-y-3">
           {/* Row 1: Project Overview */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <MiniCard
               icon={<DollarSign className="w-3.5 h-3.5 text-blue-500" />}
               label="Sale Price"
@@ -599,14 +604,14 @@ function FinancialSummary({
             />
             <MiniCard
               icon={<Banknote className="w-3.5 h-3.5 text-emerald-500" />}
-              label="Down Payment (collateral)"
+              label="Down Payment"
               value={fmt(downPayment)}
               className="text-gray-900"
             />
           </div>
 
           {/* Row 2: Lender Costs */}
-          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             <MiniCard
               icon={<Percent className="w-3.5 h-3.5 text-purple-500" />}
               label={`Origination Fee (${originationFeePercent}%)`}
