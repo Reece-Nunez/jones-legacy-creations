@@ -65,6 +65,7 @@ import {
   DRAW_STATUS_COLORS,
 } from "@/lib/types/database";
 import { formatCurrencyInput, unformatCurrency } from "@/lib/formatters";
+import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
   Card as ShadCard,
   CardHeader,
@@ -371,6 +372,7 @@ export default function ProjectDetail({
             <DrawsTab
               projectId={project.id}
               draws={drawRequests}
+              documents={documents}
               mutate={mutate}
               loading={loading}
             />
@@ -1417,15 +1419,17 @@ function PaymentsTab({
 function DrawsTab({
   projectId,
   draws,
+  documents,
   mutate,
   loading,
 }: {
   projectId: string;
   draws: DrawRequest[];
+  documents: Document[];
   mutate: (
     url: string,
     method: string,
-    body?: Record<string, unknown>,
+    body?: Record<string, unknown> | FormData,
   ) => Promise<Response | undefined>;
   loading: boolean;
 }) {
@@ -1434,10 +1438,31 @@ function DrawsTab({
     draw_number: "",
     description: "",
     amount: "",
-    status: "draft" as DrawRequestStatus,
-    notes: "",
   });
+  const [expandedDraws, setExpandedDraws] = useState<Set<string>>(new Set());
+  const [uploadingDrawId, setUploadingDrawId] = useState<string | null>(null);
+  const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploading, setUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
 
+  // Auto-expand the latest draw on first render
+  useEffect(() => {
+    if (draws.length > 0) {
+      const sorted = [...draws].sort((a, b) => b.draw_number - a.draw_number);
+      setExpandedDraws(new Set([sorted[0].id]));
+    }
+  }, [draws.length]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Documents grouped by draw
+  const unassignedDocs = documents.filter((d) => !d.draw_request_id);
+  const docsByDraw = draws.reduce<Record<string, Document[]>>((acc, draw) => {
+    acc[draw.id] = documents
+      .filter((d) => d.draw_request_id === draw.id)
+      .sort((a, b) => (a.line_item_number ?? 999) - (b.line_item_number ?? 999));
+    return acc;
+  }, {});
+
+  // Financial summaries
   const totalDraws = draws.reduce((s, d) => s + d.amount, 0);
   const fundedAmount = draws
     .filter((d) => d.status === "funded")
@@ -1446,25 +1471,32 @@ function DrawsTab({
     .filter((d) => d.status === "submitted" || d.status === "approved")
     .reduce((s, d) => s + d.amount, 0);
 
+  // Auto-increment draw number
+  const nextDrawNumber = draws.length > 0
+    ? Math.max(...draws.map((d) => d.draw_number)) + 1
+    : 1;
+
+  function toggleExpanded(drawId: string) {
+    setExpandedDraws((prev) => {
+      const next = new Set(prev);
+      if (next.has(drawId)) next.delete(drawId);
+      else next.add(drawId);
+      return next;
+    });
+  }
+
   async function addDraw() {
-    if (!form.draw_number || !form.amount) return;
+    const drawNum = form.draw_number ? parseInt(form.draw_number) : nextDrawNumber;
+    const amount = form.amount ? parseFloat(unformatCurrency(form.amount)) : 0;
+    if (!amount) return;
     await mutate(`/api/admin/projects/${projectId}/draws`, "POST", {
-      draw_number: parseInt(form.draw_number),
+      draw_number: drawNum,
       description: form.description || null,
-      amount: parseFloat(unformatCurrency(form.amount)),
-      status: form.status,
-      notes: form.notes || null,
-      ...(form.status === "submitted"
-        ? { submitted_date: new Date().toISOString().split("T")[0] }
-        : {}),
-    });
-    setForm({
-      draw_number: "",
-      description: "",
-      amount: "",
+      amount,
       status: "draft",
-      notes: "",
+      notes: null,
     });
+    setForm({ draw_number: "", description: "", amount: "" });
     setShowForm(false);
   }
 
@@ -1486,11 +1518,63 @@ function DrawsTab({
 
   async function deleteDraw(id: string) {
     if (!window.confirm("Are you sure you want to delete this draw request?")) return;
-    await mutate(
-      `/api/admin/projects/${projectId}/draws/${id}`,
-      "DELETE",
-    );
+    await mutate(`/api/admin/projects/${projectId}/draws/${id}`, "DELETE");
   }
+
+  async function assignDocToDraw(docId: string, drawId: string) {
+    await mutate(`/api/admin/projects/${projectId}/documents`, "PATCH", {
+      id: docId,
+      draw_request_id: drawId,
+    });
+  }
+
+  async function deleteDoc(id: string) {
+    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id });
+  }
+
+  function handleUploadFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const selected = e.target.files;
+    if (!selected) return;
+    setUploadFiles((prev) => [...prev, ...Array.from(selected)]);
+  }
+
+  function removeUploadFile(index: number) {
+    setUploadFiles((prev) => prev.filter((_, i) => i !== index));
+  }
+
+  async function uploadFilesToDraw(drawId: string) {
+    if (uploadFiles.length === 0) return;
+    setUploading(true);
+    setUploadProgress({ done: 0, total: uploadFiles.length });
+
+    for (let i = 0; i < uploadFiles.length; i++) {
+      const file = uploadFiles[i];
+      const parsed = parseDrawFilename(file.name);
+      const fd = new FormData();
+      fd.append("file", file);
+      fd.append("category", "draw_request");
+      fd.append("draw_request_id", drawId);
+      if (parsed.lineItemNumber !== null) {
+        fd.append("line_item_number", String(parsed.lineItemNumber));
+      }
+      if (parsed.vendor) {
+        fd.append("vendor", parsed.vendor);
+      }
+      if (parsed.docType) {
+        fd.append("doc_type", parsed.docType);
+      }
+      await mutate(`/api/admin/projects/${projectId}/documents`, "POST", fd);
+      setUploadProgress({ done: i + 1, total: uploadFiles.length });
+    }
+
+    setUploadFiles([]);
+    setUploadingDrawId(null);
+    setUploading(false);
+    setUploadProgress(null);
+  }
+
+  const sortedDraws = [...draws].sort((a, b) => b.draw_number - a.draw_number);
 
   return (
     <div className="space-y-4">
@@ -1516,170 +1600,451 @@ function DrawsTab({
         </ShadCard>
       </div>
 
-      <ShadCard>
-        <CardHeader>
-          <CardTitle>Draw Requests</CardTitle>
-          {!showForm && (
-            <CardAction>
-              <AddButton
-                label="Add Draw Request"
-                onClick={() => setShowForm(true)}
-              />
-            </CardAction>
-          )}
-        </CardHeader>
-        <CardContent>
-          {showForm && (
-            <ShadCard className="mb-4 bg-gray-50 border-dashed">
-              <CardContent className="pt-4">
-                <div className="space-y-3">
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label htmlFor="draw-number" className="block text-sm text-gray-700 font-medium mb-1">
-                        Draw # <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="draw-number"
-                        placeholder="Draw #"
-                        type="number"
-                        inputMode="numeric"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                        value={form.draw_number}
-                        onChange={(e) =>
-                          setForm({ ...form, draw_number: e.target.value })
-                        }
-                      />
-                    </div>
-                    <div>
-                      <label htmlFor="draw-amount" className="block text-sm text-gray-700 font-medium mb-1">
-                        Amount <span className="text-red-500">*</span>
-                      </label>
-                      <input
-                        id="draw-amount"
-                        placeholder="$0.00"
-                        type="text"
-                        inputMode="decimal"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                        value={form.amount}
-                        onChange={(e) => setForm({ ...form, amount: formatCurrencyInput(e.target.value) })}
-                      />
-                    </div>
-                    <div className="sm:col-span-2">
-                      <label htmlFor="draw-desc" className="block text-sm text-gray-700 font-medium mb-1">
-                        Description
-                      </label>
-                      <input
-                        id="draw-desc"
-                        placeholder="Description"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                        value={form.description}
-                        onChange={(e) =>
-                          setForm({ ...form, description: e.target.value })
-                        }
-                      />
-                    </div>
-                  </div>
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                    <div>
-                      <label htmlFor="draw-status" className="block text-sm text-gray-700 font-medium mb-1">
-                        Status
-                      </label>
-                      <select
-                        id="draw-status"
-                        value={form.status}
-                        onChange={(e) =>
-                          setForm({
-                            ...form,
-                            status: e.target.value as DrawRequestStatus,
-                          })
-                        }
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+      {/* Header with New Draw button */}
+      <div className="flex items-center justify-between">
+        <h3 className="text-lg font-semibold text-gray-900">Draw Requests</h3>
+        {!showForm && (
+          <AddButton label="New Draw" onClick={() => setShowForm(true)} />
+        )}
+      </div>
+
+      {/* New Draw Form */}
+      {showForm && (
+        <ShadCard className="bg-gray-50 border-dashed">
+          <CardContent className="pt-4">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label htmlFor="draw-number" className="block text-sm text-gray-700 font-medium mb-1">
+                    Draw #
+                  </label>
+                  <input
+                    id="draw-number"
+                    placeholder={String(nextDrawNumber)}
+                    type="number"
+                    inputMode="numeric"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    value={form.draw_number}
+                    onChange={(e) => setForm({ ...form, draw_number: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="draw-amount" className="block text-sm text-gray-700 font-medium mb-1">
+                    Amount <span className="text-red-500">*</span>
+                  </label>
+                  <input
+                    id="draw-amount"
+                    placeholder="$0.00"
+                    type="text"
+                    inputMode="decimal"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    value={form.amount}
+                    onChange={(e) => setForm({ ...form, amount: formatCurrencyInput(e.target.value) })}
+                  />
+                </div>
+                <div>
+                  <label htmlFor="draw-desc" className="block text-sm text-gray-700 font-medium mb-1">
+                    Description
+                  </label>
+                  <input
+                    id="draw-desc"
+                    placeholder="Description"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    value={form.description}
+                    onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <button
+                  disabled={loading}
+                  onClick={addDraw}
+                  className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                >
+                  {loading ? "Saving..." : "Create Draw"}
+                </button>
+                <button
+                  onClick={() => setShowForm(false)}
+                  className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </CardContent>
+        </ShadCard>
+      )}
+
+      {/* Unassigned Documents */}
+      {unassignedDocs.length > 0 && (
+        <ShadCard className="border-amber-200 bg-amber-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-amber-800">
+              Unassigned Documents ({unassignedDocs.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {unassignedDocs.map((doc) => {
+                const parsed = parseDrawFilename(doc.name);
+                return (
+                  <div
+                    key={doc.id}
+                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 py-2 border-b border-amber-100 last:border-0"
+                  >
+                    <div className="flex-1 min-w-0">
+                      <a
+                        href={doc.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block transition-colors"
                       >
-                        <option value="draft">Draft</option>
-                        <option value="submitted">Submitted</option>
-                        <option value="approved">Approved</option>
-                        <option value="funded">Funded</option>
-                        <option value="denied">Denied</option>
+                        {doc.name}
+                      </a>
+                      <div className="flex items-center gap-2 mt-0.5 text-xs text-gray-500">
+                        {parsed.lineItemNumber !== null && (
+                          <span>#{parsed.lineItemNumber}</span>
+                        )}
+                        {(doc.vendor || parsed.vendor) && (
+                          <span>{doc.vendor || parsed.vendor}</span>
+                        )}
+                        {(doc.doc_type || parsed.docType) && (
+                          <span>{doc.doc_type || parsed.docType}</span>
+                        )}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <select
+                        disabled={loading}
+                        defaultValue=""
+                        aria-label={`Assign ${doc.name} to a draw`}
+                        onChange={(e) => {
+                          if (e.target.value) assignDocToDraw(doc.id, e.target.value);
+                        }}
+                        className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 min-h-[36px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
+                      >
+                        <option value="" disabled>Assign to Draw...</option>
+                        {sortedDraws.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            Draw #{d.draw_number}
+                          </option>
+                        ))}
                       </select>
                     </div>
-                    <div>
-                      <label htmlFor="draw-notes" className="block text-sm text-gray-700 font-medium mb-1">
-                        Notes
-                      </label>
-                      <input
-                        id="draw-notes"
-                        placeholder="Notes"
-                        className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
-                        value={form.notes}
-                        onChange={(e) => setForm({ ...form, notes: e.target.value })}
-                      />
-                    </div>
                   </div>
-                  <div className="flex gap-2">
-                    <button
-                      disabled={loading}
-                      onClick={addDraw}
-                      className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
-                    >
-                      {loading ? "Saving..." : "Save"}
-                    </button>
-                    <button
-                      onClick={() => setShowForm(false)}
-                      className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
-                    >
-                      Cancel
-                    </button>
-                  </div>
-                </div>
-              </CardContent>
-            </ShadCard>
-          )}
+                );
+              })}
+            </div>
+          </CardContent>
+        </ShadCard>
+      )}
 
-          {draws.length === 0 && !showForm && (
-            <EmptyState label="No draw requests yet" />
-          )}
+      {/* Draw Cards */}
+      {draws.length === 0 && !showForm && unassignedDocs.length === 0 && (
+        <EmptyState label="No draw requests yet" />
+      )}
 
-          <div className="divide-y divide-gray-100">
-            {draws.map((d) => (
-              <div
-                key={d.id}
-                className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${drawLeftBorder(d.status)}`}
-              >
-                <div className="flex-1 min-w-0">
-                  <div className="flex items-center gap-2">
-                    <span className="font-medium text-sm text-gray-900">
-                      Draw #{d.draw_number}
+      {sortedDraws.map((draw) => {
+        const drawDocs = docsByDraw[draw.id] || [];
+        const isExpanded = expandedDraws.has(draw.id);
+        const isUploading = uploadingDrawId === draw.id;
+
+        return (
+          <ShadCard key={draw.id} className={`border-l-4 ${drawLeftBorder(draw.status)}`}>
+            {/* Draw Header - clickable to expand/collapse */}
+            <button
+              type="button"
+              onClick={() => toggleExpanded(draw.id)}
+              className="w-full text-left cursor-pointer"
+            >
+              <CardHeader className="pb-2">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    {isExpanded ? (
+                      <ChevronDown className="w-4 h-4 text-gray-400 shrink-0" />
+                    ) : (
+                      <ChevronRight className="w-4 h-4 text-gray-400 shrink-0" />
+                    )}
+                    <span className="font-semibold text-gray-900">
+                      Draw #{draw.draw_number}
+                    </span>
+                    <span className="text-gray-500">--</span>
+                    <span className="font-semibold text-gray-900 tabular-nums">
+                      {fmt(draw.amount)}
                     </span>
                     <Badge
                       variant="outline"
-                      className={`inline-flex items-center gap-1 rounded-full ${DRAW_STATUS_COLORS[d.status]}`}
+                      className={`inline-flex items-center gap-1 rounded-full text-xs ${DRAW_STATUS_COLORS[draw.status]}`}
                     >
                       <Circle className="w-1.5 h-1.5 fill-current" />
-                      {d.status}
+                      {draw.status.charAt(0).toUpperCase() + draw.status.slice(1)}
                     </Badge>
                   </div>
-                  {d.description && (
-                    <p className="text-xs text-gray-500 mt-0.5 truncate">
-                      {d.description}
-                    </p>
-                  )}
-                  <div className="text-xs text-gray-500 mt-0.5">
-                    {d.submitted_date && <>Submitted: {fmtDate(d.submitted_date)}</>}
-                    {d.funded_date && <> | Funded: {fmtDate(d.funded_date)}</>}
-                  </div>
                 </div>
-                <div className="flex items-center gap-3 text-sm">
-                  <span className="font-semibold text-gray-900 tabular-nums">
-                    {fmt(d.amount)}
-                  </span>
+                {draw.description && (
+                  <p className="text-xs text-gray-500 mt-1 ml-6">{draw.description}</p>
+                )}
+                <p className="text-xs text-gray-400 mt-0.5 ml-6">
+                  {drawDocs.length} document{drawDocs.length !== 1 ? "s" : ""}
+                  {draw.submitted_date && <> | Submitted: {fmtDate(draw.submitted_date)}</>}
+                  {draw.funded_date && <> | Funded: {fmtDate(draw.funded_date)}</>}
+                </p>
+              </CardHeader>
+            </button>
+
+            {/* Expanded Content */}
+            {isExpanded && (
+              <CardContent className="pt-0">
+                <Separator className="mb-3" />
+
+                {/* Upload Files Button */}
+                {!isUploading && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setUploadingDrawId(draw.id);
+                      setUploadFiles([]);
+                    }}
+                    className="inline-flex items-center gap-1.5 text-xs text-gray-600 hover:text-black mb-3 cursor-pointer min-h-[36px] px-2 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5" /> Upload Files to Draw
+                  </button>
+                )}
+
+                {/* Upload Form (inline) */}
+                {isUploading && (
+                  <div className="mb-4 p-3 bg-gray-50 rounded-lg border border-dashed border-gray-300 space-y-3">
+                    <label className="flex flex-col items-center gap-2 border-2 border-dashed border-gray-300 rounded-lg px-4 py-4 text-sm cursor-pointer hover:border-gray-400 hover:bg-gray-100/50 transition-colors">
+                      <Upload className="w-5 h-5 text-gray-400" />
+                      <span className="text-gray-600 text-xs">
+                        Click to select files -- you can pick multiple
+                      </span>
+                      <input
+                        type="file"
+                        multiple
+                        className="hidden"
+                        onChange={handleUploadFileSelect}
+                      />
+                    </label>
+
+                    {uploadFiles.length > 0 && (
+                      <div className="space-y-1">
+                        <p className="text-xs font-medium text-gray-500">
+                          {uploadFiles.length} file{uploadFiles.length !== 1 ? "s" : ""} selected
+                        </p>
+                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
+                          {uploadFiles.map((f, i) => {
+                            const parsed = parseDrawFilename(f.name);
+                            return (
+                              <div
+                                key={`${f.name}-${i}`}
+                                className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50"
+                              >
+                                <div className="flex-1 min-w-0">
+                                  <p className="truncate text-gray-900 text-xs">{f.name}</p>
+                                  <p className="text-xs text-gray-400">
+                                    {parsed.lineItemNumber !== null && `#${parsed.lineItemNumber} `}
+                                    {parsed.category && `${parsed.category} `}
+                                    {parsed.docType && `/ ${parsed.docType} `}
+                                    {parsed.vendor && `- ${parsed.vendor}`}
+                                  </p>
+                                </div>
+                                <button
+                                  onClick={() => removeUploadFile(i)}
+                                  aria-label={`Remove ${f.name}`}
+                                  className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Upload progress */}
+                    {uploadProgress && (
+                      <div className="space-y-1.5">
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-600 text-xs">
+                            Uploading {uploadProgress.done} of {uploadProgress.total}...
+                          </span>
+                          <span className="text-gray-500 tabular-nums text-xs">
+                            {Math.round((uploadProgress.done / uploadProgress.total) * 100)}%
+                          </span>
+                        </div>
+                        <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                          <div
+                            className="h-full rounded-full bg-sky-600 transition-all duration-300"
+                            style={{ width: `${(uploadProgress.done / uploadProgress.total) * 100}%` }}
+                          />
+                        </div>
+                      </div>
+                    )}
+
+                    <div className="flex gap-2">
+                      <button
+                        disabled={uploading || loading || uploadFiles.length === 0}
+                        onClick={() => uploadFilesToDraw(draw.id)}
+                        className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                      >
+                        {uploading
+                          ? `Uploading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}...`
+                          : `Upload ${uploadFiles.length || ""} File${uploadFiles.length !== 1 ? "s" : ""}`}
+                      </button>
+                      <button
+                        disabled={uploading}
+                        onClick={() => {
+                          setUploadingDrawId(null);
+                          setUploadFiles([]);
+                        }}
+                        className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50"
+                      >
+                        Cancel
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Document List */}
+                {drawDocs.length === 0 && !isUploading && (
+                  <p className="text-xs text-gray-400 text-center py-4">
+                    No documents in this draw yet
+                  </p>
+                )}
+
+                {drawDocs.length > 0 && (
+                  <>
+                    {/* Desktop table */}
+                    <div className="hidden sm:block overflow-x-auto">
+                      <table className="w-full text-sm">
+                        <thead>
+                          <tr className="border-b border-gray-200 text-left text-xs text-gray-500">
+                            <th className="pb-2 pr-3 font-medium w-10">#</th>
+                            <th className="pb-2 pr-3 font-medium">Category</th>
+                            <th className="pb-2 pr-3 font-medium">Type</th>
+                            <th className="pb-2 pr-3 font-medium">Vendor</th>
+                            <th className="pb-2 pr-3 font-medium">Filename</th>
+                            <th className="pb-2 font-medium w-20"></th>
+                          </tr>
+                        </thead>
+                        <tbody className="divide-y divide-gray-100">
+                          {drawDocs.map((doc) => (
+                            <tr key={doc.id} className="hover:bg-gray-50">
+                              <td className="py-2 pr-3 text-xs text-gray-500 tabular-nums">
+                                {doc.line_item_number ?? "--"}
+                              </td>
+                              <td className="py-2 pr-3 text-xs text-gray-700">
+                                {doc.line_item_number !== null
+                                  ? parseDrawFilename(doc.name).category ?? doc.category
+                                  : doc.category}
+                              </td>
+                              <td className="py-2 pr-3 text-xs text-gray-700">
+                                {doc.doc_type ?? "--"}
+                              </td>
+                              <td className="py-2 pr-3 text-xs text-gray-700">
+                                {doc.vendor ?? "--"}
+                              </td>
+                              <td className="py-2 pr-3 text-xs min-w-0">
+                                <a
+                                  href={doc.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:text-blue-800 truncate block max-w-[200px] transition-colors"
+                                  title={doc.name}
+                                >
+                                  {doc.name}
+                                </a>
+                              </td>
+                              <td className="py-2">
+                                <div className="flex items-center gap-1">
+                                  <a
+                                    href={doc.file_url}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    aria-label={`Download ${doc.name}`}
+                                    className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
+                                  >
+                                    <Download className="w-3.5 h-3.5" />
+                                  </a>
+                                  <button
+                                    disabled={loading}
+                                    aria-label={`Delete ${doc.name}`}
+                                    onClick={() => deleteDoc(doc.id)}
+                                    className="text-gray-400 hover:text-red-500 disabled:opacity-50 p-1 cursor-pointer transition-colors"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                  </button>
+                                </div>
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+
+                    {/* Mobile card layout */}
+                    <div className="sm:hidden space-y-2">
+                      {drawDocs.map((doc) => (
+                        <div
+                          key={doc.id}
+                          className="bg-gray-50 rounded-lg p-3 space-y-1"
+                        >
+                          <div className="flex items-start justify-between gap-2">
+                            <a
+                              href={doc.file_url}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-xs font-medium text-blue-600 hover:text-blue-800 truncate flex-1 transition-colors"
+                            >
+                              {doc.name}
+                            </a>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <a
+                                href={doc.file_url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                aria-label={`Download ${doc.name}`}
+                                className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
+                              >
+                                <Download className="w-3.5 h-3.5" />
+                              </a>
+                              <button
+                                disabled={loading}
+                                aria-label={`Delete ${doc.name}`}
+                                onClick={() => deleteDoc(doc.id)}
+                                className="text-gray-400 hover:text-red-500 disabled:opacity-50 p-1 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          </div>
+                          <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
+                            {doc.line_item_number !== null && (
+                              <span>#{doc.line_item_number}</span>
+                            )}
+                            {doc.doc_type && <span>{doc.doc_type}</span>}
+                            {doc.vendor && <span>{doc.vendor}</span>}
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </>
+                )}
+
+                {/* Draw Actions */}
+                <Separator className="my-3" />
+                <div className="flex flex-wrap items-center gap-2">
                   <select
                     disabled={loading}
-                    value={d.status}
-                    aria-label={`Change status for Draw #${d.draw_number}`}
-                    onChange={(e) =>
-                      updateDrawStatus(d, e.target.value as DrawRequestStatus)
-                    }
-                    className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
+                    value={draw.status}
+                    aria-label={`Change status for Draw #${draw.draw_number}`}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      updateDrawStatus(draw, e.target.value as DrawRequestStatus);
+                    }}
+                    className="text-xs border border-gray-300 rounded-lg px-2 py-1.5 min-h-[36px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
                   >
                     <option value="draft">Draft</option>
                     <option value="submitted">Submitted</option>
@@ -1689,18 +2054,21 @@ function DrawsTab({
                   </select>
                   <button
                     disabled={loading}
-                    aria-label={`Delete Draw #${d.draw_number}`}
-                    onClick={() => deleteDraw(d.id)}
-                    className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    aria-label={`Delete Draw #${draw.draw_number}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deleteDraw(draw.id);
+                    }}
+                    className="text-xs text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[36px] px-2 flex items-center gap-1 transition-colors"
                   >
-                    <Trash2 className="w-4 h-4" />
+                    <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
                 </div>
-              </div>
-            ))}
-          </div>
-        </CardContent>
-      </ShadCard>
+              </CardContent>
+            )}
+          </ShadCard>
+        );
+      })}
     </div>
   );
 }

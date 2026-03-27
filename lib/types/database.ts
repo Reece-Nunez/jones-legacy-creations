@@ -112,6 +112,10 @@ export interface Document {
   file_type: string | null;
   file_size: number | null;
   category: DocumentCategory;
+  draw_request_id: string | null;
+  line_item_number: number | null;
+  vendor: string | null;
+  doc_type: string | null;
   created_at: string;
 }
 

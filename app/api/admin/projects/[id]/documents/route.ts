@@ -32,6 +32,10 @@ export async function POST(
   const file = formData.get("file") as File | null;
   const name = formData.get("name") as string | null;
   const category = formData.get("category") as string | null;
+  const drawRequestId = formData.get("draw_request_id") as string | null;
+  const lineItemNumber = formData.get("line_item_number") as string | null;
+  const vendor = formData.get("vendor") as string | null;
+  const docType = formData.get("doc_type") as string | null;
 
   if (!file) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
@@ -60,6 +64,10 @@ export async function POST(
       file_type: file.type,
       file_size: file.size,
       category: category || "general",
+      draw_request_id: drawRequestId || null,
+      line_item_number: lineItemNumber ? parseInt(lineItemNumber) : null,
+      vendor: vendor || null,
+      doc_type: docType || null,
     })
     .select()
     .single();
