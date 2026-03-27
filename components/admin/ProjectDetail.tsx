@@ -39,7 +39,11 @@ import {
   Send,
   ChevronDown,
   ChevronRight,
+  ChevronUp,
   RefreshCw,
+  Landmark,
+  Building,
+  Percent,
 } from "lucide-react";
 import type {
   Project,
@@ -254,6 +258,49 @@ export default function ProjectDetail({
   const totalCosts = payments.reduce((s, p) => s + p.amount, 0);
   const profit = totalCollected - totalCosts;
 
+  // ---- loan / profit calculations ----------------------------------------
+  const hasLoanFields = !!(project.sale_price && project.loan_amount);
+
+  const salePrice = project.sale_price ?? 0;
+  const loanAmount = project.loan_amount ?? 0;
+  const downPayment = project.down_payment ?? 0;
+  const originationFeePercent = project.origination_fee_percent ?? 0;
+  const interestRate = project.interest_rate ?? 0;
+
+  const originationFee = loanAmount * originationFeePercent / 100;
+
+  // Accrued interest: per-draw method
+  const accruedInterest = (() => {
+    if (!interestRate) return 0;
+    const fundedDraws = drawRequests
+      .filter((d) => d.status === "funded" && d.funded_date)
+      .sort((a, b) => new Date(a.funded_date!).getTime() - new Date(b.funded_date!).getTime());
+    if (fundedDraws.length === 0) return 0;
+
+    const endDate = project.status === "completed" && project.end_date
+      ? new Date(project.end_date)
+      : new Date();
+
+    let interest = 0;
+    let runningBalance = 0;
+    for (let i = 0; i < fundedDraws.length; i++) {
+      const draw = fundedDraws[i];
+      runningBalance += draw.amount;
+      const drawDate = new Date(draw.funded_date!);
+      // Interest accrues from this draw's funded_date to the next draw's funded_date (or endDate)
+      const nextDate = i < fundedDraws.length - 1
+        ? new Date(fundedDraws[i + 1].funded_date!)
+        : endDate;
+      const days = Math.max(0, (nextDate.getTime() - drawDate.getTime()) / (1000 * 60 * 60 * 24));
+      interest += runningBalance * (interestRate / 100) * (days / 365);
+    }
+    return interest;
+  })();
+
+  const totalLenderCost = originationFee + accruedInterest;
+  const projectedProfit = salePrice - totalCosts - downPayment - originationFee - accruedInterest;
+  const profitMargin = salePrice > 0 ? (projectedProfit / salePrice) * 100 : 0;
+
   // ---- generic mutation helper -------------------------------------------
   async function mutate(
     url: string,
@@ -312,41 +359,58 @@ export default function ProjectDetail({
           loading={loading}
         />
 
-        {/* Financial Summary Bar */}
-        <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-          <FinancialCard
-            icon={<Receipt className="w-4 h-4 text-blue-500" />}
-            label="Contract Value"
-            value={contractValue}
+        {/* Financial Summary */}
+        {hasLoanFields ? (
+          <FinancialSummary
+            salePrice={salePrice}
+            totalCosts={totalCosts}
+            loanAmount={loanAmount}
+            downPayment={downPayment}
+            lenderName={project.lender_name}
+            originationFee={originationFee}
+            originationFeePercent={originationFeePercent}
+            accruedInterest={accruedInterest}
+            interestRate={interestRate}
+            totalLenderCost={totalLenderCost}
+            projectedProfit={projectedProfit}
+            profitMargin={profitMargin}
           />
-          <FinancialCard
-            icon={<FileText className="w-4 h-4 text-indigo-500" />}
-            label="Invoiced"
-            value={totalInvoiced}
-          />
-          <FinancialCard
-            icon={<DollarSign className="w-4 h-4 text-green-500" />}
-            label="Collected"
-            value={totalCollected}
-          />
-          <FinancialCard
-            icon={<CreditCard className="w-4 h-4 text-orange-500" />}
-            label="Costs"
-            value={totalCosts}
-          />
-          <FinancialCard
-            icon={
-              profit >= 0 ? (
-                <TrendingUp className="w-4 h-4 text-green-500" />
-              ) : (
-                <TrendingDown className="w-4 h-4 text-red-500" />
-              )
-            }
-            label="Profit"
-            value={profit}
-            colored
-          />
-        </div>
+        ) : (
+          <div className="mt-4 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
+            <FinancialCard
+              icon={<Receipt className="w-4 h-4 text-blue-500" />}
+              label="Contract Value"
+              value={contractValue}
+            />
+            <FinancialCard
+              icon={<FileText className="w-4 h-4 text-indigo-500" />}
+              label="Invoiced"
+              value={totalInvoiced}
+            />
+            <FinancialCard
+              icon={<DollarSign className="w-4 h-4 text-green-500" />}
+              label="Collected"
+              value={totalCollected}
+            />
+            <FinancialCard
+              icon={<CreditCard className="w-4 h-4 text-orange-500" />}
+              label="Costs"
+              value={totalCosts}
+            />
+            <FinancialCard
+              icon={
+                profit >= 0 ? (
+                  <TrendingUp className="w-4 h-4 text-green-500" />
+                ) : (
+                  <TrendingDown className="w-4 h-4 text-red-500" />
+                )
+              }
+              label="Profit"
+              value={profit}
+              colored
+            />
+          </div>
+        )}
 
         {/* Quick Actions */}
         <div className="mt-4 flex flex-wrap gap-2">
@@ -484,6 +548,175 @@ function FinancialCard({
         </p>
       </CardContent>
     </ShadCard>
+  );
+}
+
+// ===========================================================================
+// Financial Summary (Loan / Profit Calculator)
+// ===========================================================================
+
+function FinancialSummary({
+  salePrice,
+  totalCosts,
+  loanAmount,
+  downPayment,
+  lenderName,
+  originationFee,
+  originationFeePercent,
+  accruedInterest,
+  interestRate,
+  totalLenderCost,
+  projectedProfit,
+  profitMargin,
+}: {
+  salePrice: number;
+  totalCosts: number;
+  loanAmount: number;
+  downPayment: number;
+  lenderName: string | null;
+  originationFee: number;
+  originationFeePercent: number;
+  accruedInterest: number;
+  interestRate: number;
+  totalLenderCost: number;
+  projectedProfit: number;
+  profitMargin: number;
+}) {
+  const [expanded, setExpanded] = useState(true);
+
+  const profitColor = projectedProfit >= 0 ? "text-green-600" : "text-red-600";
+  const profitBg = projectedProfit >= 0 ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200";
+  const marginColor = profitMargin >= 0 ? "text-green-600" : "text-red-600";
+
+  return (
+    <ShadCard className="mt-4 overflow-hidden">
+      <button
+        onClick={() => setExpanded((v) => !v)}
+        className="w-full flex items-center justify-between px-4 py-3 text-left hover:bg-gray-50 transition-colors cursor-pointer"
+      >
+        <div className="flex items-center gap-2">
+          <DollarSign className="w-4 h-4 text-blue-600" />
+          <span className="text-sm font-semibold text-gray-900">Financial Summary</span>
+          {lenderName && (
+            <span className="text-xs text-gray-500 ml-1">({lenderName})</span>
+          )}
+        </div>
+        <div className="flex items-center gap-3">
+          <span className={`text-sm font-bold tabular-nums ${profitColor}`}>
+            Projected Profit: {fmt(projectedProfit)}
+          </span>
+          {expanded ? (
+            <ChevronUp className="w-4 h-4 text-gray-400" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-gray-400" />
+          )}
+        </div>
+      </button>
+
+      {expanded && (
+        <CardContent className="px-4 pb-4 pt-0 space-y-3">
+          {/* Row 1: Project Overview */}
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            <MiniCard
+              icon={<DollarSign className="w-3.5 h-3.5 text-blue-500" />}
+              label="Sale Price"
+              value={fmt(salePrice)}
+              className="text-gray-900"
+            />
+            <MiniCard
+              icon={<CreditCard className="w-3.5 h-3.5 text-orange-500" />}
+              label="Total Costs"
+              value={fmt(totalCosts)}
+              className="text-gray-900"
+            />
+            <MiniCard
+              icon={<Landmark className="w-3.5 h-3.5 text-indigo-500" />}
+              label="Loan Amount"
+              value={fmt(loanAmount)}
+              className="text-gray-900"
+            />
+            <MiniCard
+              icon={<Banknote className="w-3.5 h-3.5 text-emerald-500" />}
+              label="Down Payment"
+              value={fmt(downPayment)}
+              className="text-gray-900"
+            />
+          </div>
+
+          {/* Row 2: Lender Costs */}
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <MiniCard
+              icon={<Percent className="w-3.5 h-3.5 text-purple-500" />}
+              label={`Origination Fee (${originationFeePercent}%)`}
+              value={fmt(originationFee)}
+              className="text-gray-900"
+            />
+            <MiniCard
+              icon={<TrendingUp className="w-3.5 h-3.5 text-amber-500" />}
+              label={`Accrued Interest (${interestRate}%)`}
+              value={fmt(accruedInterest)}
+              className="text-gray-900"
+            />
+            <MiniCard
+              icon={<Building className="w-3.5 h-3.5 text-red-500" />}
+              label="Total Lender Cost"
+              value={fmt(totalLenderCost)}
+              className="text-red-600 font-bold"
+            />
+          </div>
+
+          {/* Row 3: Bottom Line */}
+          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg border ${profitBg}`}>
+            <div className="flex items-center gap-3">
+              {projectedProfit >= 0 ? (
+                <TrendingUp className="w-5 h-5 text-green-500" />
+              ) : (
+                <TrendingDown className="w-5 h-5 text-red-500" />
+              )}
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Projected Profit</p>
+                <p className={`text-2xl font-bold tabular-nums ${profitColor}`}>
+                  {fmt(projectedProfit)}
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Percent className={`w-5 h-5 ${profitMargin >= 0 ? "text-green-500" : "text-red-500"}`} />
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Profit Margin</p>
+                <p className={`text-2xl font-bold tabular-nums ${marginColor}`}>
+                  {profitMargin.toFixed(1)}%
+                </p>
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      )}
+    </ShadCard>
+  );
+}
+
+function MiniCard({
+  icon,
+  label,
+  value,
+  className,
+}: {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  className?: string;
+}) {
+  return (
+    <div className="bg-gray-50 rounded-lg p-2.5">
+      <div className="flex items-center gap-1.5 mb-0.5">
+        {icon}
+        <span className="text-[11px] text-gray-500 font-medium">{label}</span>
+      </div>
+      <p className={`text-sm font-semibold tabular-nums ${className ?? "text-gray-900"}`}>
+        {value}
+      </p>
+    </div>
   );
 }
 

@@ -45,6 +45,14 @@ export interface Project {
   notes: string | null;
   estimated_value: number | null;
   contract_value: number | null;
+  sale_price: number | null;
+  lender_name: string | null;
+  loan_amount: number | null;
+  down_payment: number | null;
+  down_payment_percent: number | null;
+  interest_rate: number | null;
+  origination_fee_percent: number | null;
+  loan_start_date: string | null;
   start_date: string | null;
   end_date: string | null;
   created_at: string;

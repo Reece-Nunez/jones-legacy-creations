@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -34,6 +34,14 @@ const projectSchema = z.object({
   notes: z.string().optional(),
   estimated_value: z.string().optional(),
   contract_value: z.string().optional(),
+  sale_price: z.string().optional(),
+  lender_name: z.string().optional(),
+  loan_amount: z.string().optional(),
+  down_payment: z.string().optional(),
+  down_payment_percent: z.string().optional(),
+  interest_rate: z.string().optional(),
+  origination_fee_percent: z.string().optional(),
+  loan_start_date: z.string().optional(),
   start_date: z.string().optional(),
   end_date: z.string().optional(),
 });
@@ -48,6 +56,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!project;
+  const lastChangedBy = useRef<"loan_amount" | "down_payment" | "down_payment_percent" | null>(null);
 
   const {
     register,
@@ -72,6 +81,14 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       notes: project?.notes ?? "",
       estimated_value: project?.estimated_value ? formatCurrencyInput(String(project.estimated_value)) : "",
       contract_value: project?.contract_value ? formatCurrencyInput(String(project.contract_value)) : "",
+      sale_price: project?.sale_price ? formatCurrencyInput(String(project.sale_price)) : "",
+      lender_name: project?.lender_name ?? "",
+      loan_amount: project?.loan_amount ? formatCurrencyInput(String(project.loan_amount)) : "",
+      down_payment: project?.down_payment ? formatCurrencyInput(String(project.down_payment)) : "",
+      down_payment_percent: project?.down_payment_percent != null ? String(project.down_payment_percent) : "20",
+      interest_rate: project?.interest_rate != null ? String(project.interest_rate) : "8.75",
+      origination_fee_percent: project?.origination_fee_percent != null ? String(project.origination_fee_percent) : "2",
+      loan_start_date: project?.loan_start_date ?? "",
       start_date: project?.start_date ?? "",
       end_date: project?.end_date ?? "",
     },
@@ -80,6 +97,38 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const phone = watch("client_phone");
   const estimatedValue = watch("estimated_value");
   const contractValue = watch("contract_value");
+  const salePrice = watch("sale_price");
+  const loanAmount = watch("loan_amount");
+  const downPayment = watch("down_payment");
+  const downPaymentPercent = watch("down_payment_percent");
+
+  // Auto-calculate down_payment from loan_amount and down_payment_percent
+  useEffect(() => {
+    if (lastChangedBy.current === "loan_amount" || lastChangedBy.current === "down_payment_percent") {
+      const loanNum = loanAmount ? parseFloat(unformatCurrency(loanAmount)) : 0;
+      const pct = downPaymentPercent ? parseFloat(downPaymentPercent) : 0;
+      if (loanNum > 0 && pct > 0) {
+        const totalProject = loanNum / (1 - pct / 100);
+        const dp = totalProject * (pct / 100);
+        setValue("down_payment", formatCurrencyInput(dp.toFixed(2)));
+      }
+      lastChangedBy.current = null;
+    }
+  }, [loanAmount, downPaymentPercent, setValue]);
+
+  // Auto-calculate down_payment_percent from down_payment and loan_amount
+  useEffect(() => {
+    if (lastChangedBy.current === "down_payment") {
+      const loanNum = loanAmount ? parseFloat(unformatCurrency(loanAmount)) : 0;
+      const dpNum = downPayment ? parseFloat(unformatCurrency(downPayment)) : 0;
+      if (loanNum > 0 && dpNum > 0) {
+        const totalProject = loanNum + dpNum;
+        const pct = (dpNum / totalProject) * 100;
+        setValue("down_payment_percent", pct.toFixed(2));
+      }
+      lastChangedBy.current = null;
+    }
+  }, [downPayment, loanAmount, setValue]);
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
@@ -101,6 +150,26 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         contract_value: data.contract_value
           ? parseFloat(unformatCurrency(data.contract_value))
           : null,
+        sale_price: data.sale_price
+          ? parseFloat(unformatCurrency(data.sale_price))
+          : null,
+        lender_name: data.lender_name || null,
+        loan_amount: data.loan_amount
+          ? parseFloat(unformatCurrency(data.loan_amount))
+          : null,
+        down_payment: data.down_payment
+          ? parseFloat(unformatCurrency(data.down_payment))
+          : null,
+        down_payment_percent: data.down_payment_percent
+          ? parseFloat(data.down_payment_percent)
+          : null,
+        interest_rate: data.interest_rate
+          ? parseFloat(data.interest_rate)
+          : null,
+        origination_fee_percent: data.origination_fee_percent
+          ? parseFloat(data.origination_fee_percent)
+          : null,
+        loan_start_date: data.loan_start_date || null,
         start_date: data.start_date || null,
         end_date: data.end_date || null,
       };
@@ -399,6 +468,147 @@ export default function ProjectForm({ project }: ProjectFormProps) {
               {...register("notes")}
               className={inputClassName}
               placeholder="Internal notes..."
+            />
+          </div>
+        </div>
+      </div>
+
+      {/* Financing & Loan Details */}
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div className="border-b border-gray-200 pb-4 mb-6">
+          <h2 className="text-lg font-semibold text-gray-900">
+            Financing & Loan Details
+          </h2>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {/* Sale Price */}
+          <div>
+            <label htmlFor="sale_price" className={labelClassName}>
+              Sale Price ($)
+            </label>
+            <input
+              id="sale_price"
+              type="text"
+              inputMode="decimal"
+              value={salePrice || ""}
+              onChange={(e) => setValue("sale_price", formatCurrencyInput(e.target.value))}
+              className={inputClassName}
+              placeholder="$0.00"
+            />
+          </div>
+
+          {/* Lender Name */}
+          <div>
+            <label htmlFor="lender_name" className={labelClassName}>
+              Lender Name
+            </label>
+            <input
+              id="lender_name"
+              type="text"
+              {...register("lender_name")}
+              className={inputClassName}
+              placeholder="e.g. Mountain West Capital"
+            />
+          </div>
+
+          {/* Loan Amount */}
+          <div>
+            <label htmlFor="loan_amount" className={labelClassName}>
+              Loan Amount ($)
+            </label>
+            <input
+              id="loan_amount"
+              type="text"
+              inputMode="decimal"
+              value={loanAmount || ""}
+              onChange={(e) => {
+                lastChangedBy.current = "loan_amount";
+                setValue("loan_amount", formatCurrencyInput(e.target.value));
+              }}
+              className={inputClassName}
+              placeholder="$0.00"
+            />
+          </div>
+
+          {/* Down Payment */}
+          <div>
+            <label htmlFor="down_payment" className={labelClassName}>
+              Down Payment ($)
+            </label>
+            <input
+              id="down_payment"
+              type="text"
+              inputMode="decimal"
+              value={downPayment || ""}
+              onChange={(e) => {
+                lastChangedBy.current = "down_payment";
+                setValue("down_payment", formatCurrencyInput(e.target.value));
+              }}
+              className={inputClassName}
+              placeholder="$0.00"
+            />
+          </div>
+
+          {/* Down Payment % */}
+          <div>
+            <label htmlFor="down_payment_percent" className={labelClassName}>
+              Down Payment %
+            </label>
+            <input
+              id="down_payment_percent"
+              type="number"
+              step="0.01"
+              {...register("down_payment_percent")}
+              onChange={(e) => {
+                lastChangedBy.current = "down_payment_percent";
+                setValue("down_payment_percent", e.target.value);
+              }}
+              className={`${inputClassName} max-w-[140px]`}
+              placeholder="20"
+            />
+          </div>
+
+          {/* Interest Rate % */}
+          <div>
+            <label htmlFor="interest_rate" className={labelClassName}>
+              Interest Rate %
+            </label>
+            <input
+              id="interest_rate"
+              type="number"
+              step="0.01"
+              {...register("interest_rate")}
+              className={`${inputClassName} max-w-[140px]`}
+              placeholder="8.75"
+            />
+          </div>
+
+          {/* Origination Fee % */}
+          <div>
+            <label htmlFor="origination_fee_percent" className={labelClassName}>
+              Origination Fee %
+            </label>
+            <input
+              id="origination_fee_percent"
+              type="number"
+              step="0.01"
+              {...register("origination_fee_percent")}
+              className={`${inputClassName} max-w-[140px]`}
+              placeholder="2"
+            />
+          </div>
+
+          {/* Loan Start Date */}
+          <div>
+            <label htmlFor="loan_start_date" className={labelClassName}>
+              Loan Start Date
+            </label>
+            <input
+              id="loan_start_date"
+              type="date"
+              {...register("loan_start_date")}
+              className={inputClassName}
             />
           </div>
         </div>
