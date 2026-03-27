@@ -1736,6 +1736,7 @@ function DrawsTab({
           fd.append("category", "draw_request");
           fd.append("draw_request_id", drawId);
           fd.append("auto_create_payment", "true");
+          fd.append("use_ai", "true");
           if (parsed.lineItemNumber != null) fd.append("line_item_number", String(parsed.lineItemNumber));
           if (parsed.vendor) fd.append("vendor", parsed.vendor);
           if (parsed.docType) fd.append("doc_type", parsed.docType);
@@ -1831,6 +1832,7 @@ function DrawsTab({
       fd.append("category", "draw_request");
       fd.append("draw_request_id", drawId);
       fd.append("auto_create_payment", "true");
+      fd.append("use_ai", "true");
       if (parsed.lineItemNumber !== null) {
         fd.append("line_item_number", String(parsed.lineItemNumber));
       }
@@ -2967,6 +2969,9 @@ function DocumentsTab({
       const fd = new FormData();
       fd.append("file", files[i]);
       fd.append("category", category);
+      if (category === "invoice" || category === "draw_request") {
+        fd.append("use_ai", "true");
+      }
       await mutate(
         `/api/admin/projects/${projectId}/documents`,
         "POST",

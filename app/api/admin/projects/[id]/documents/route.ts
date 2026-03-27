@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { extractInvoiceData } from "@/lib/extract-invoice";
 
 export async function GET(
   request: NextRequest,
@@ -37,16 +38,17 @@ export async function POST(
   const vendor = formData.get("vendor") as string | null;
   const docType = formData.get("doc_type") as string | null;
   const autoCreatePayment = formData.get("auto_create_payment") as string | null;
+  const useAi = formData.get("use_ai") as string | null;
 
   if (!file) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
   }
 
-  const fileName = `${id}/${Date.now()}-${file.name}`;
-
+  // Upload file to storage
+  const storagePath = `${id}/${Date.now()}-${file.name}`;
   const { error: uploadError } = await supabase.storage
     .from("project-documents")
-    .upload(fileName, file, { contentType: file.type });
+    .upload(storagePath, file, { contentType: file.type });
 
   if (uploadError) {
     return NextResponse.json({ error: uploadError.message }, { status: 500 });
@@ -54,10 +56,23 @@ export async function POST(
 
   const { data: urlData } = supabase.storage
     .from("project-documents")
-    .getPublicUrl(fileName);
+    .getPublicUrl(storagePath);
 
   const fileUrl = urlData.publicUrl;
 
+  // AI extraction if requested
+  let aiData = null;
+  if (useAi === "true") {
+    const buffer = await file.arrayBuffer();
+    aiData = await extractInvoiceData(buffer, file.type, file.name);
+  }
+
+  // Determine final values — AI data overrides filename parsing, but explicit form values override everything
+  const finalVendor = vendor || aiData?.vendor_company || aiData?.vendor_name || null;
+  const finalDocType = docType || (aiData?.category ? "Invoice" : null);
+  const finalCategory = category || (drawRequestId ? "draw_request" : "general");
+
+  // Create document record
   const { data, error } = await supabase
     .from("documents")
     .insert({
@@ -66,11 +81,11 @@ export async function POST(
       file_url: fileUrl,
       file_type: file.type,
       file_size: file.size,
-      category: category || "general",
+      category: finalCategory,
       draw_request_id: drawRequestId || null,
       line_item_number: lineItemNumber ? parseInt(lineItemNumber) : null,
-      vendor: vendor || null,
-      doc_type: docType || null,
+      vendor: finalVendor,
+      doc_type: finalDocType,
     })
     .select()
     .single();
@@ -79,40 +94,54 @@ export async function POST(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // Auto-create contractor payment when uploading invoices/receipts to a draw
+  // Auto-create contractor payment when we have invoice data
+  let paymentRecord = null;
   if (
-    autoCreatePayment === "true" &&
-    drawRequestId &&
-    vendor &&
-    (docType?.toLowerCase() === "invoice" || docType?.toLowerCase() === "receipt")
+    (autoCreatePayment === "true" || useAi === "true") &&
+    finalVendor &&
+    (finalDocType?.toLowerCase() === "invoice" || finalDocType?.toLowerCase() === "receipt" || aiData?.amount)
   ) {
     // Try to match vendor to a contractor in the directory
+    const searchName = finalVendor;
     const { data: contractors } = await supabase
       .from("contractors")
       .select("id, name, company")
-      .or(`name.ilike.%${vendor}%,company.ilike.%${vendor}%`)
+      .or(`name.ilike.%${searchName}%,company.ilike.%${searchName}%`)
       .limit(1);
 
     const matchedContractor = contractors?.[0] || null;
 
-    await supabase.from("contractor_payments").insert({
-      project_id: id,
-      contractor_id: matchedContractor?.id || null,
-      contractor_name: matchedContractor?.name || vendor,
-      description: `${docType} — ${name || file.name}`,
-      amount: 0, // Amount unknown from filename — Blake can edit later
-      status: "pending",
-      invoice_file_url: fileUrl,
-      invoice_file_name: file.name,
-    });
+    const { data: payment } = await supabase
+      .from("contractor_payments")
+      .insert({
+        project_id: id,
+        contractor_id: matchedContractor?.id || null,
+        contractor_name: matchedContractor?.company || matchedContractor?.name || finalVendor,
+        description: aiData?.description || `${finalDocType || "Invoice"} — ${file.name}`,
+        amount: aiData?.amount || 0,
+        status: "pending",
+        due_date: aiData?.due_date || null,
+        invoice_file_url: fileUrl,
+        invoice_file_name: file.name,
+      })
+      .select()
+      .single();
 
-    // Log activity
+    paymentRecord = payment;
+
     await supabase.from("activity_log").insert({
       project_id: id,
       action: "payment_created",
-      description: `Auto-created payment record for ${vendor} from draw upload`,
+      description: `${aiData?.amount ? `$${aiData.amount.toLocaleString()}` : "Invoice"} from ${finalVendor}${aiData?.description ? ` — ${aiData.description}` : ""}`,
     });
   }
 
-  return NextResponse.json(data, { status: 201 });
+  return NextResponse.json(
+    {
+      ...data,
+      ai_extracted: aiData,
+      payment_created: paymentRecord,
+    },
+    { status: 201 }
+  );
 }
