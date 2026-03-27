@@ -2122,24 +2122,30 @@ function DrawsTab({
 
                   {doc.editing ? (
                     <div className="space-y-2">
-                      <div className="grid grid-cols-3 gap-2">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                         <div>
-                          <label className="text-[10px] font-medium text-gray-500 uppercase">Line #</label>
-                          <input
-                            type="text"
+                          <label className="text-[10px] font-medium text-gray-500 uppercase">Category</label>
+                          <select
                             value={doc.lineItemNumber}
                             onChange={(e) => {
                               const updated = [...reviewDocs];
-                              updated[idx] = { ...doc, lineItemNumber: e.target.value };
-                              // Rebuild name
+                              const lineNum = e.target.value;
+                              const categoryName = DEFAULT_BUDGET_LINE_ITEMS.find((b) => String(b.line_number) === lineNum)?.description || "";
+                              updated[idx] = { ...doc, lineItemNumber: lineNum };
                               const ext = doc.originalName.split(".").pop() || "pdf";
-                              const parts = [e.target.value, updated[idx].docType, updated[idx].vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+                              const parts = [lineNum, updated[idx].docType, updated[idx].vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
                               updated[idx].editedName = `${parts.join("_")}.${ext}`;
                               setReviewDocs(updated);
                             }}
-                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                            placeholder="#"
-                          />
+                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
+                          >
+                            <option value="">Select category...</option>
+                            {DEFAULT_BUDGET_LINE_ITEMS.map((item) => (
+                              <option key={item.line_number} value={String(item.line_number)}>
+                                {item.line_number}. {item.description}
+                              </option>
+                            ))}
+                          </select>
                         </div>
                         <div>
                           <label className="text-[10px] font-medium text-gray-500 uppercase">Type</label>
@@ -2408,28 +2414,33 @@ function DrawsTab({
                             return (
                               <div
                                 key={`${f.name}-${i}`}
-                                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50"
+                                className="flex flex-col sm:flex-row sm:items-center gap-2 rounded px-2 py-2 text-sm hover:bg-gray-50"
                               >
-                                <div className="shrink-0 w-16">
-                                  <input
-                                    type="text"
-                                    inputMode="numeric"
-                                    placeholder="Line #"
+                                <div className="shrink-0 sm:w-44">
+                                  <select
                                     value={uploadLineItems[i] || ""}
                                     onChange={(e) => setUploadLineItems((prev) => ({ ...prev, [i]: e.target.value }))}
-                                    className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                                  />
+                                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 appearance-none bg-white"
+                                    aria-label={`Category for ${f.name}`}
+                                  >
+                                    <option value="">Select category...</option>
+                                    {DEFAULT_BUDGET_LINE_ITEMS.map((item) => (
+                                      <option key={item.line_number} value={String(item.line_number)}>
+                                        {item.line_number}. {item.description}
+                                      </option>
+                                    ))}
+                                  </select>
                                 </div>
-                                <div className="flex-1 min-w-0">
-                                  <p className="truncate text-gray-900 text-xs">{f.name}</p>
+                                <div className="flex items-center gap-2 flex-1 min-w-0">
+                                  <p className="truncate text-gray-900 text-xs flex-1">{f.name}</p>
+                                  <button
+                                    onClick={() => removeUploadFile(i)}
+                                    aria-label={`Remove ${f.name}`}
+                                    className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors shrink-0"
+                                  >
+                                    <X className="w-3.5 h-3.5" />
+                                  </button>
                                 </div>
-                                <button
-                                  onClick={() => removeUploadFile(i)}
-                                  aria-label={`Remove ${f.name}`}
-                                  className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors shrink-0"
-                                >
-                                  <X className="w-3.5 h-3.5" />
-                                </button>
                               </div>
                             );
                           })}
@@ -2510,8 +2521,8 @@ function DrawsTab({
                                 {doc.line_item_number ?? "--"}
                               </td>
                               <td className="py-2 pr-3 text-xs text-gray-700">
-                                {doc.line_item_number !== null
-                                  ? parseDrawFilename(doc.name).category ?? doc.category
+                                {doc.line_item_number != null
+                                  ? DEFAULT_BUDGET_LINE_ITEMS.find((b) => b.line_number === doc.line_item_number)?.description ?? doc.category
                                   : doc.category}
                               </td>
                               <td className="py-2 pr-3 text-xs text-gray-700">
