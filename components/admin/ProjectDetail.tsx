@@ -3995,14 +3995,37 @@ function BudgetTab({
               </button>
             )}
             {hasBudget && !editing && (
-              <button
-                onClick={startEditing}
-                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
-                style={{ minHeight: 36 }}
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                Edit Budget
-              </button>
+              <>
+                <button
+                  onClick={startEditing}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  style={{ minHeight: 36 }}
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  Edit Budget
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm("Delete the entire budget and start fresh? This cannot be undone.")) return;
+                    setSaving(true);
+                    try {
+                      await fetch(`/api/admin/projects/${projectId}/budget`, { method: "DELETE" });
+                      router.refresh();
+                      toast.success("Budget deleted");
+                    } catch {
+                      toast.error("Failed to delete budget");
+                    } finally {
+                      setSaving(false);
+                    }
+                  }}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-2 text-xs font-medium text-red-600 hover:bg-red-50 transition-colors"
+                  style={{ minHeight: 36 }}
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  Reset
+                </button>
+              </>
             )}
             {editing && (
               <>
