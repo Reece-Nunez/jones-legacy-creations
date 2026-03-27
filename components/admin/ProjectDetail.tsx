@@ -298,7 +298,8 @@ export default function ProjectDetail({
   })();
 
   const totalLenderCost = originationFee + accruedInterest;
-  const projectedProfit = salePrice - totalCosts - downPayment - originationFee - accruedInterest;
+  // Down payment is collateral — Blake gets it back at closing, not a cost
+  const projectedProfit = salePrice - totalCosts - originationFee - accruedInterest;
   const profitMargin = salePrice > 0 ? (projectedProfit / salePrice) * 100 : 0;
 
   // ---- generic mutation helper -------------------------------------------
@@ -637,7 +638,7 @@ function FinancialSummary({
             />
             <MiniCard
               icon={<Banknote className="w-3.5 h-3.5 text-emerald-500" />}
-              label="Down Payment"
+              label="Down Payment (collateral)"
               value={fmt(downPayment)}
               className="text-gray-900"
             />
