@@ -46,6 +46,7 @@ import {
   UserCircle,
   FileSpreadsheet,
   Sparkles,
+  Wallet,
 } from "lucide-react";
 import type {
   Project,
@@ -55,6 +56,7 @@ import type {
   Document,
   Task,
   TeamMember,
+  BudgetLineItem,
   DrawRequest,
   ActivityLogEntry,
   ProjectStatus,
@@ -63,6 +65,7 @@ import type {
   DocumentCategory,
   InvoiceUploadToken,
 } from "@/lib/types/database";
+import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
@@ -182,6 +185,7 @@ function paymentLeftBorder(status: string): string {
 
 const TABS = [
   { key: "overview", label: "Overview", icon: LayoutDashboard },
+  { key: "budget", label: "Budget", icon: Wallet },
   { key: "payments", label: "Payments", icon: CreditCard },
   { key: "draws", label: "Draws", icon: Banknote },
   { key: "permits", label: "Permits", icon: ClipboardList },
@@ -202,6 +206,7 @@ interface Props {
   permits: Permit[];
   documents: Document[];
   tasks: Task[];
+  budgetLineItems: BudgetLineItem[];
   drawRequests: DrawRequest[];
   activityLog: ActivityLogEntry[];
   contractors: Contractor[];
@@ -229,6 +234,7 @@ export default function ProjectDetail({
   permits,
   documents,
   tasks,
+  budgetLineItems,
   drawRequests,
   activityLog,
   contractors,
@@ -422,6 +428,16 @@ export default function ProjectDetail({
 
           <TabsContent value="overview">
             <OverviewTab project={project} mutate={mutate} />
+          </TabsContent>
+          <TabsContent value="budget">
+            <BudgetTab
+              projectId={project.id}
+              budgetLineItems={budgetLineItems}
+              payments={payments}
+              documents={documents}
+              mutate={mutate}
+              loading={loading}
+            />
           </TabsContent>
           <TabsContent value="payments">
             <PaymentsTab
@@ -3821,6 +3837,366 @@ function TasksTab({
             </div>
           </CardContent>
         </ShadCard>
+      </CardContent>
+    </ShadCard>
+  );
+}
+
+// ===========================================================================
+// Budget Tab
+// ===========================================================================
+
+function BudgetTab({
+  projectId,
+  budgetLineItems,
+  payments,
+  documents,
+  mutate,
+  loading,
+}: {
+  projectId: string;
+  budgetLineItems: BudgetLineItem[];
+  payments: ContractorPayment[];
+  documents: Document[];
+  mutate: (
+    url: string,
+    method: string,
+    body?: Record<string, unknown> | FormData,
+  ) => Promise<Response | undefined>;
+  loading: boolean;
+}) {
+  const router = useRouter();
+  const [editing, setEditing] = useState(false);
+  const [editAmounts, setEditAmounts] = useState<Record<number, string>>({});
+  const [saving, setSaving] = useState(false);
+
+  const hasBudget = budgetLineItems.length > 0;
+
+  // Build actual spent per line item from documents + payments
+  const spentByLine = new Map<number, number>();
+  for (const doc of documents) {
+    if (doc.line_item_number == null) continue;
+    const payment = payments.find((p) => p.invoice_file_url === doc.file_url);
+    if (payment) {
+      const current = spentByLine.get(doc.line_item_number) || 0;
+      spentByLine.set(doc.line_item_number, current + payment.amount);
+    }
+  }
+
+  // Use budget line items if they exist, otherwise show defaults
+  const lineItems = hasBudget
+    ? budgetLineItems
+    : DEFAULT_BUDGET_LINE_ITEMS.map((d) => ({
+        ...d,
+        id: "",
+        project_id: projectId,
+        budgeted_amount: 0,
+        notes: null,
+        created_at: "",
+        updated_at: "",
+      }));
+
+  const totalBudgeted = lineItems.reduce((s, i) => s + (i.budgeted_amount || 0), 0);
+  const totalSpent = Array.from(spentByLine.values()).reduce((s, v) => s + v, 0);
+
+  async function initializeBudget() {
+    setSaving(true);
+    try {
+      await fetch(`/api/admin/projects/${projectId}/budget`, { method: "PUT" });
+      router.refresh();
+      toast.success("Budget initialized with default line items");
+    } catch {
+      toast.error("Failed to initialize budget");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  function startEditing() {
+    const amounts: Record<number, string> = {};
+    for (const item of lineItems) {
+      amounts[item.line_number] = item.budgeted_amount ? String(item.budgeted_amount) : "";
+    }
+    setEditAmounts(amounts);
+    setEditing(true);
+  }
+
+  async function saveBudget() {
+    setSaving(true);
+    try {
+      const items = lineItems.map((item) => ({
+        line_number: item.line_number,
+        description: item.description,
+        budgeted_amount: parseFloat(editAmounts[item.line_number] || "0") || 0,
+      }));
+
+      await fetch(`/api/admin/projects/${projectId}/budget`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(items),
+      });
+
+      router.refresh();
+      setEditing(false);
+      toast.success("Budget saved");
+    } catch {
+      toast.error("Failed to save budget");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <ShadCard>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Budget vs Actual</CardTitle>
+          <div className="flex gap-2">
+            {!hasBudget && !editing && (
+              <button
+                onClick={initializeBudget}
+                disabled={saving}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                style={{ minHeight: 36 }}
+              >
+                <Plus className="w-3.5 h-3.5" />
+                Set Up Budget
+              </button>
+            )}
+            {hasBudget && !editing && (
+              <button
+                onClick={startEditing}
+                className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                style={{ minHeight: 36 }}
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                Edit Budget
+              </button>
+            )}
+            {editing && (
+              <>
+                <button
+                  onClick={saveBudget}
+                  disabled={saving}
+                  className="inline-flex items-center gap-1.5 rounded-lg bg-indigo-600 px-3 py-2 text-xs font-semibold text-white hover:bg-indigo-500 disabled:opacity-50 transition-colors"
+                  style={{ minHeight: 36 }}
+                >
+                  {saving ? "Saving..." : "Save Budget"}
+                </button>
+                <button
+                  onClick={() => setEditing(false)}
+                  className="inline-flex items-center rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+                  style={{ minHeight: 36 }}
+                >
+                  Cancel
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {!hasBudget && !editing ? (
+          <EmptyState label="No budget set up yet — click 'Set Up Budget' to add the standard 29 line items" />
+        ) : (
+          <>
+            {/* Summary bar */}
+            <div className="mb-4 grid grid-cols-1 sm:grid-cols-3 gap-3">
+              <div className="rounded-lg bg-blue-50 p-3">
+                <p className="text-xs font-medium text-blue-600">Total Budgeted</p>
+                <p className="text-lg font-bold tabular-nums text-blue-900">{fmt(totalBudgeted)}</p>
+              </div>
+              <div className="rounded-lg bg-orange-50 p-3">
+                <p className="text-xs font-medium text-orange-600">Total Spent</p>
+                <p className="text-lg font-bold tabular-nums text-orange-900">{fmt(totalSpent)}</p>
+              </div>
+              <div className={`rounded-lg p-3 ${totalBudgeted - totalSpent >= 0 ? "bg-green-50" : "bg-red-50"}`}>
+                <p className={`text-xs font-medium ${totalBudgeted - totalSpent >= 0 ? "text-green-600" : "text-red-600"}`}>
+                  {totalBudgeted - totalSpent >= 0 ? "Under Budget" : "Over Budget"}
+                </p>
+                <p className={`text-lg font-bold tabular-nums ${totalBudgeted - totalSpent >= 0 ? "text-green-900" : "text-red-900"}`}>
+                  {fmt(Math.abs(totalBudgeted - totalSpent))}
+                </p>
+              </div>
+            </div>
+
+            {/* Overall progress bar */}
+            {totalBudgeted > 0 && (
+              <div className="mb-6">
+                <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                  <span>{Math.min(Math.round((totalSpent / totalBudgeted) * 100), 100)}% of budget used</span>
+                  <span>{fmt(totalBudgeted - totalSpent)} remaining</span>
+                </div>
+                <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+                  <div
+                    className={`h-full rounded-full transition-all duration-500 ${
+                      totalSpent / totalBudgeted > 1
+                        ? "bg-red-500"
+                        : totalSpent / totalBudgeted > 0.9
+                          ? "bg-amber-500"
+                          : "bg-emerald-500"
+                    }`}
+                    style={{ width: `${Math.min((totalSpent / totalBudgeted) * 100, 100)}%` }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Desktop table */}
+            <div className="hidden sm:block overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-200 text-left text-xs font-semibold uppercase tracking-wider text-gray-500">
+                    <th className="pb-2 pr-3 w-10">#</th>
+                    <th className="pb-2 pr-3">Description</th>
+                    <th className="pb-2 pr-3 text-right w-32">Budgeted</th>
+                    <th className="pb-2 pr-3 text-right w-32">Spent</th>
+                    <th className="pb-2 pr-3 text-right w-32">Remaining</th>
+                    <th className="pb-2 w-40">Progress</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {lineItems.map((item) => {
+                    const budgeted = item.budgeted_amount || 0;
+                    const spent = spentByLine.get(item.line_number) || 0;
+                    const remaining = budgeted - spent;
+                    const pctUsed = budgeted > 0 ? (spent / budgeted) * 100 : 0;
+                    const overBudget = remaining < 0;
+
+                    return (
+                      <tr key={item.line_number} className={`${overBudget ? "bg-red-50/50" : ""}`}>
+                        <td className="py-2.5 pr-3 text-xs text-gray-400 tabular-nums">{item.line_number}</td>
+                        <td className="py-2.5 pr-3 font-medium text-gray-900">{item.description}</td>
+                        <td className="py-2.5 pr-3 text-right tabular-nums">
+                          {editing ? (
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={editAmounts[item.line_number] || ""}
+                              onChange={(e) => setEditAmounts((prev) => ({ ...prev, [item.line_number]: e.target.value }))}
+                              placeholder="0.00"
+                              className="w-full text-right rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            />
+                          ) : (
+                            <span className="text-gray-700">{budgeted > 0 ? fmt(budgeted) : "--"}</span>
+                          )}
+                        </td>
+                        <td className="py-2.5 pr-3 text-right tabular-nums text-gray-700">
+                          {spent > 0 ? fmt(spent) : "--"}
+                        </td>
+                        <td className={`py-2.5 pr-3 text-right tabular-nums font-medium ${overBudget ? "text-red-600" : "text-green-600"}`}>
+                          {budgeted > 0 || spent > 0 ? fmt(remaining) : "--"}
+                        </td>
+                        <td className="py-2.5">
+                          {budgeted > 0 && (
+                            <div className="flex items-center gap-2">
+                              <div className="flex-1 h-2 rounded-full bg-gray-200 overflow-hidden">
+                                <div
+                                  className={`h-full rounded-full ${
+                                    pctUsed > 100 ? "bg-red-500" : pctUsed > 90 ? "bg-amber-500" : "bg-emerald-500"
+                                  }`}
+                                  style={{ width: `${Math.min(pctUsed, 100)}%` }}
+                                />
+                              </div>
+                              <span className={`text-xs tabular-nums w-10 text-right ${overBudget ? "text-red-600 font-bold" : "text-gray-500"}`}>
+                                {Math.round(pctUsed)}%
+                              </span>
+                            </div>
+                          )}
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+                <tfoot>
+                  <tr className="border-t-2 border-gray-300 font-bold">
+                    <td className="py-3 pr-3"></td>
+                    <td className="py-3 pr-3 text-gray-900">TOTALS</td>
+                    <td className="py-3 pr-3 text-right tabular-nums text-gray-900">{fmt(totalBudgeted)}</td>
+                    <td className="py-3 pr-3 text-right tabular-nums text-gray-900">{fmt(totalSpent)}</td>
+                    <td className={`py-3 pr-3 text-right tabular-nums ${totalBudgeted - totalSpent >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {fmt(totalBudgeted - totalSpent)}
+                    </td>
+                    <td className="py-3"></td>
+                  </tr>
+                </tfoot>
+              </table>
+            </div>
+
+            {/* Mobile card layout */}
+            <div className="sm:hidden space-y-2">
+              {lineItems.map((item) => {
+                const budgeted = item.budgeted_amount || 0;
+                const spent = spentByLine.get(item.line_number) || 0;
+                const remaining = budgeted - spent;
+                const pctUsed = budgeted > 0 ? (spent / budgeted) * 100 : 0;
+                const overBudget = remaining < 0;
+
+                return (
+                  <div
+                    key={item.line_number}
+                    className={`rounded-lg border p-3 ${overBudget ? "border-red-200 bg-red-50/30" : "border-gray-100"}`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="text-sm font-medium text-gray-900">
+                        <span className="text-gray-400 mr-1.5">#{item.line_number}</span>
+                        {item.description}
+                      </span>
+                    </div>
+                    {editing ? (
+                      <div className="mt-2">
+                        <label className="text-[10px] font-medium text-gray-500 uppercase">Budget Amount</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={editAmounts[item.line_number] || ""}
+                          onChange={(e) => setEditAmounts((prev) => ({ ...prev, [item.line_number]: e.target.value }))}
+                          placeholder="0.00"
+                          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 mt-1"
+                        />
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center justify-between text-xs mt-1">
+                          <span className="text-gray-500">Budget: {budgeted > 0 ? fmt(budgeted) : "--"}</span>
+                          <span className="text-gray-500">Spent: {spent > 0 ? fmt(spent) : "--"}</span>
+                          <span className={`font-semibold ${overBudget ? "text-red-600" : "text-green-600"}`}>
+                            {budgeted > 0 || spent > 0 ? fmt(remaining) : ""}
+                          </span>
+                        </div>
+                        {budgeted > 0 && (
+                          <div className="mt-2 h-1.5 rounded-full bg-gray-200 overflow-hidden">
+                            <div
+                              className={`h-full rounded-full ${
+                                pctUsed > 100 ? "bg-red-500" : pctUsed > 90 ? "bg-amber-500" : "bg-emerald-500"
+                              }`}
+                              style={{ width: `${Math.min(pctUsed, 100)}%` }}
+                            />
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              })}
+
+              {/* Mobile totals */}
+              {!editing && (
+                <div className="rounded-lg border-2 border-gray-300 p-3 mt-3">
+                  <p className="text-sm font-bold text-gray-900 mb-1">TOTALS</p>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Budget: {fmt(totalBudgeted)}</span>
+                    <span className="text-gray-600">Spent: {fmt(totalSpent)}</span>
+                    <span className={`font-bold ${totalBudgeted - totalSpent >= 0 ? "text-green-600" : "text-red-600"}`}>
+                      {fmt(totalBudgeted - totalSpent)}
+                    </span>
+                  </div>
+                </div>
+              )}
+            </div>
+          </>
+        )}
       </CardContent>
     </ShadCard>
   );

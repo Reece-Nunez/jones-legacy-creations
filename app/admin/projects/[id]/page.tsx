@@ -16,6 +16,7 @@ export default async function ProjectDetailPage({
     { data: permits },
     { data: documents },
     { data: tasks },
+    { data: budgetLineItems },
     { data: drawRequests },
     { data: activityLog },
     { data: contractors },
@@ -42,6 +43,11 @@ export default async function ProjectDetailPage({
       .eq("project_id", id)
       .order("sort_order", { ascending: true }),
     supabase
+      .from("budget_line_items")
+      .select("*")
+      .eq("project_id", id)
+      .order("line_number", { ascending: true }),
+    supabase
       .from("draw_requests")
       .select("*")
       .eq("project_id", id)
@@ -66,6 +72,7 @@ export default async function ProjectDetailPage({
       permits={permits ?? []}
       documents={documents ?? []}
       tasks={tasks ?? []}
+      budgetLineItems={budgetLineItems ?? []}
       drawRequests={drawRequests ?? []}
       activityLog={activityLog ?? []}
       contractors={contractors ?? []}

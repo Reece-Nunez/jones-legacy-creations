@@ -160,6 +160,21 @@ create table tasks (
 );
 
 -- ============================================
+-- BUDGET LINE ITEMS
+-- ============================================
+create table budget_line_items (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid not null references projects(id) on delete cascade,
+  line_number integer not null,
+  description text not null,
+  budgeted_amount numeric(12,2) not null default 0,
+  notes text,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
+  unique(project_id, line_number)
+);
+
+-- ============================================
 -- ACTIVITY LOG
 -- ============================================
 create table activity_log (
