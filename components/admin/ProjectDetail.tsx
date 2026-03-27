@@ -65,6 +65,7 @@ import {
   PERMIT_STATUS_COLORS,
   DRAW_STATUS_COLORS,
 } from "@/lib/types/database";
+import toast from "react-hot-toast";
 import { formatCurrencyInput, unformatCurrency } from "@/lib/formatters";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
@@ -120,6 +121,34 @@ function timeAgo(dateStr: string): string {
   if (days < 7) return `${days}d ago`;
   if (weeks < 5) return `${weeks}w ago`;
   return `${months}mo ago`;
+}
+
+/** Toast-based confirmation instead of window.confirm */
+function confirmAction(message: string): Promise<boolean> {
+  return new Promise((resolve) => {
+    toast(
+      (t) => (
+        <div className="flex flex-col gap-3">
+          <p className="text-sm font-medium">{message}</p>
+          <div className="flex gap-2">
+            <button
+              onClick={() => { toast.dismiss(t.id); resolve(true); }}
+              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors"
+            >
+              Yes, Delete
+            </button>
+            <button
+              onClick={() => { toast.dismiss(t.id); resolve(false); }}
+              className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition-colors"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      ),
+      { duration: 10000 }
+    );
+  });
 }
 
 /** Left border color for status-based cards */
@@ -246,10 +275,21 @@ export default function ProjectDetail({
       });
       if (!res.ok) {
         const err = await res.json().catch(() => ({}));
-        throw new Error(err.error ?? "Request failed");
+        const msg = err.error ?? "Request failed";
+        toast.error(msg);
+        throw new Error(msg);
       }
+      // Success feedback based on method
+      if (method === "POST") toast.success("Created successfully");
+      else if (method === "PATCH") toast.success("Updated successfully");
+      else if (method === "DELETE") toast.success("Deleted");
       router.refresh();
       return res;
+    } catch (e) {
+      if (e instanceof Error && !e.message.includes("Request failed")) {
+        toast.error("Something went wrong");
+      }
+      throw e;
     } finally {
       setLoading(false);
     }
@@ -773,7 +813,7 @@ function InvoicesTab({
   }
 
   async function deleteInvoice(id: string) {
-    if (!window.confirm("Are you sure you want to delete this invoice?")) return;
+    if (!(await confirmAction("Delete this invoice?"))) return;
     await mutate(`/api/admin/projects/${projectId}/invoices`, "DELETE", { id });
   }
 
@@ -1210,7 +1250,7 @@ function PaymentsTab({
   }
 
   async function deletePayment(id: string) {
-    if (!window.confirm("Are you sure you want to delete this payment?")) return;
+    if (!(await confirmAction("Delete this payment?"))) return;
     await mutate(`/api/admin/projects/${projectId}/payments`, "DELETE", { id });
   }
 
@@ -1797,7 +1837,7 @@ function DrawsTab({
   }
 
   async function deleteDraw(id: string) {
-    if (!window.confirm("Are you sure you want to delete this draw request?")) return;
+    if (!(await confirmAction("Delete this draw request and all its documents?"))) return;
     await mutate(`/api/admin/projects/${projectId}/draws/${id}`, "DELETE");
   }
 
@@ -1809,7 +1849,7 @@ function DrawsTab({
   }
 
   async function deleteDoc(id: string) {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    if (!(await confirmAction("Delete this document?"))) return;
     await mutate(`/api/admin/projects/${projectId}/documents/${id}`, "DELETE");
   }
 
@@ -2664,7 +2704,7 @@ function PermitsTab({
   }
 
   async function deletePermit(id: string) {
-    if (!window.confirm("Are you sure you want to delete this permit?")) return;
+    if (!(await confirmAction("Delete this permit?"))) return;
     await mutate(`/api/admin/projects/${projectId}/permits`, "DELETE", { id });
   }
 
@@ -3015,7 +3055,7 @@ function DocumentsTab({
   }
 
   async function bulkDelete() {
-    if (!window.confirm(`Delete ${selectedIds.size} documents?`)) return;
+    if (!(await confirmAction(`Delete ${selectedIds.size} documents?`))) return;
     for (const docId of selectedIds) {
       await mutate(`/api/admin/projects/${projectId}/documents/${docId}`, "DELETE");
     }
@@ -3061,7 +3101,7 @@ function DocumentsTab({
   }
 
   async function deleteDoc(id: string) {
-    if (!window.confirm("Are you sure you want to delete this document?")) return;
+    if (!(await confirmAction("Delete this document?"))) return;
     await mutate(`/api/admin/projects/${projectId}/documents/${id}`, "DELETE");
   }
 
@@ -3377,7 +3417,7 @@ function TasksTab({
   }
 
   async function deleteTask(id: string) {
-    if (!window.confirm("Are you sure you want to delete this task?")) return;
+    if (!(await confirmAction("Delete this task?"))) return;
     await mutate(`/api/admin/projects/${projectId}/tasks`, "DELETE", { id });
   }
 
