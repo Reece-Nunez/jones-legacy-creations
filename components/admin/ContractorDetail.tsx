@@ -21,7 +21,12 @@ import {
   X,
   Loader2,
   AlertTriangle,
+  FileText,
+  Store,
+  Tag,
+  Upload,
 } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -85,6 +90,10 @@ export default function ContractorDetail({
   const [editingNotes, setEditingNotes] = useState(false);
   const [notes, setNotes] = useState(contractor.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
+  const [w9Uploading, setW9Uploading] = useState(false);
+
+  const isVendor = contractor.type === "vendor";
+  const entityLabel = isVendor ? "Vendor" : "Contractor";
 
   const totalPaid = payments
     .filter((p) => p.status === "paid")
@@ -101,11 +110,11 @@ export default function ContractorDetail({
         method: "DELETE",
       });
       if (!res.ok) throw new Error("Failed to delete");
-      toast.success("Contractor deleted");
+      toast.success(`${entityLabel} deleted`);
       router.push("/admin/contractors");
       router.refresh();
     } catch {
-      toast.error("Failed to delete contractor");
+      toast.error(`Failed to delete ${entityLabel.toLowerCase()}`);
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -138,7 +147,7 @@ export default function ContractorDetail({
         <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="mb-8 flex items-center justify-between">
             <h1 className="text-3xl font-bold text-gray-900">
-              Edit Contractor
+              Edit {entityLabel}
             </h1>
             <button
               onClick={() => setIsEditing(false)}
@@ -171,7 +180,7 @@ export default function ContractorDetail({
           style={{ minHeight: 44, display: "inline-flex", alignItems: "center" }}
         >
           <ArrowLeft className="h-4 w-4" />
-          Back to Contractors
+          Back to Contractors & Vendors
         </Link>
 
         {/* Header */}
@@ -179,24 +188,35 @@ export default function ContractorDetail({
         <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                <Building2 className="h-7 w-7" />
+              <div className={`flex h-14 w-14 shrink-0 items-center justify-center rounded-full ${
+                isVendor ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"
+              }`}>
+                {isVendor ? <Store className="h-7 w-7" /> : <Building2 className="h-7 w-7" />}
               </div>
               <div>
                 <h1 className="text-2xl font-bold text-gray-900">
-                  {contractor.name}
+                  {isVendor ? (contractor.company || contractor.name) : contractor.name}
                 </h1>
-                {contractor.company && (
-                  <p className="mt-0.5 text-gray-500">{contractor.company}</p>
+                {isVendor ? (
+                  contractor.company && contractor.name !== contractor.company && (
+                    <p className="mt-0.5 text-gray-500">{contractor.name}</p>
+                  )
+                ) : (
+                  contractor.company && (
+                    <p className="mt-0.5 text-gray-500">{contractor.company}</p>
+                  )
                 )}
-                <Badge
-                  variant="outline"
-                  className={`mt-2 ${
-                    TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other
-                  }`}
-                >
-                  {contractor.trade}
-                </Badge>
+                <div className="mt-2 flex items-center gap-2">
+                  <Badge
+                    variant="outline"
+                    className={isVendor ? "bg-emerald-50 text-emerald-700" : TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other}
+                  >
+                    {isVendor ? (contractor.vendor_category || "Vendor") : contractor.trade}
+                  </Badge>
+                  <Badge variant="outline" className="bg-gray-50 text-gray-600">
+                    {entityLabel}
+                  </Badge>
+                </div>
               </div>
             </div>
 
@@ -232,7 +252,7 @@ export default function ContractorDetail({
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-red-800">
-                  Delete this contractor?
+                  Delete this {entityLabel.toLowerCase()}?
                 </h3>
                 <p className="mt-1 text-sm text-red-700">
                   This will permanently remove {contractor.name} and cannot be undone.
@@ -306,7 +326,7 @@ export default function ContractorDetail({
                   </span>
                 </a>
               )}
-              {contractor.license_number && (
+              {!isVendor && contractor.license_number && (
                 <div
                   className="flex items-center gap-3 p-3 text-sm text-gray-700"
                   style={{ minHeight: 44 }}
@@ -317,7 +337,18 @@ export default function ContractorDetail({
                   <span>License: {contractor.license_number}</span>
                 </div>
               )}
-              {!contractor.phone && !contractor.email && !contractor.license_number && (
+              {isVendor && contractor.account_number && (
+                <div
+                  className="flex items-center gap-3 p-3 text-sm text-gray-700"
+                  style={{ minHeight: 44 }}
+                >
+                  <div className="rounded-lg bg-gray-50 p-2">
+                    <Tag className="h-5 w-5 text-gray-400" />
+                  </div>
+                  <span>Account: {contractor.account_number}</span>
+                </div>
+              )}
+              {!contractor.phone && !contractor.email && !contractor.license_number && !contractor.account_number && (
                 <p className="text-sm text-gray-400">No contact info on file</p>
               )}
             </div>
@@ -359,6 +390,121 @@ export default function ContractorDetail({
             </CardContent>
           </Card>
         </div>
+
+        {/* W9 — contractors only */}
+        {!isVendor && (
+          <Card className="mb-8 shadow-sm">
+            <CardContent className="pt-6">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
+                W9
+              </h2>
+              {contractor.w9_file_url ? (
+                <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                  <FileText className="h-5 w-5 text-green-600 shrink-0" />
+                  <a
+                    href={contractor.w9_file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex-1 text-sm font-medium text-green-700 underline decoration-green-400 underline-offset-2 hover:text-green-900 truncate"
+                  >
+                    {contractor.w9_file_name || "View W9"}
+                  </a>
+                  <label className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
+                    {w9Uploading ? "Uploading..." : "Replace"}
+                    <input
+                      type="file"
+                      accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                      className="hidden"
+                      disabled={w9Uploading}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        setW9Uploading(true);
+                        try {
+                          const supabase = createClient();
+                          const storagePath = `${contractor.id}/${Date.now()}-${file.name}`;
+                          const { error: uploadError } = await supabase.storage
+                            .from("contractor-w9")
+                            .upload(storagePath, file, { contentType: file.type });
+                          if (uploadError) throw uploadError;
+                          const { data: urlData } = supabase.storage
+                            .from("contractor-w9")
+                            .getPublicUrl(storagePath);
+                          const res = await fetch(`/api/admin/contractors/${contractor.id}`, {
+                            method: "PATCH",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ w9_file_url: urlData.publicUrl, w9_file_name: file.name }),
+                          });
+                          if (!res.ok) throw new Error("Failed to update");
+                          const updated = await res.json();
+                          setContractor(updated);
+                          toast.success("W9 updated");
+                        } catch {
+                          toast.error("Failed to upload W9");
+                        } finally {
+                          setW9Uploading(false);
+                        }
+                      }}
+                    />
+                  </label>
+                </div>
+              ) : (
+                <label className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed ${
+                  w9Uploading ? "border-gray-200 bg-gray-50" : "border-amber-300 bg-amber-50 hover:border-indigo-400 hover:bg-indigo-50"
+                } px-4 py-4 text-sm font-medium transition-colors`}
+                  style={{ minHeight: 44 }}
+                >
+                  {w9Uploading ? (
+                    <>
+                      <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
+                      <span className="text-gray-500">Uploading...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="h-4 w-4 text-amber-600" />
+                      <span className="text-amber-700">Upload W9 (required)</span>
+                    </>
+                  )}
+                  <input
+                    type="file"
+                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
+                    className="hidden"
+                    disabled={w9Uploading}
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      setW9Uploading(true);
+                      try {
+                        const supabase = createClient();
+                        const storagePath = `${contractor.id}/${Date.now()}-${file.name}`;
+                        const { error: uploadError } = await supabase.storage
+                          .from("contractor-w9")
+                          .upload(storagePath, file, { contentType: file.type });
+                        if (uploadError) throw uploadError;
+                        const { data: urlData } = supabase.storage
+                          .from("contractor-w9")
+                          .getPublicUrl(storagePath);
+                        const res = await fetch(`/api/admin/contractors/${contractor.id}`, {
+                          method: "PATCH",
+                          headers: { "Content-Type": "application/json" },
+                          body: JSON.stringify({ w9_file_url: urlData.publicUrl, w9_file_name: file.name }),
+                        });
+                        if (!res.ok) throw new Error("Failed to update");
+                        const updated = await res.json();
+                        setContractor(updated);
+                        toast.success("W9 uploaded");
+                      } catch {
+                        toast.error("Failed to upload W9");
+                      } finally {
+                        setW9Uploading(false);
+                      }
+                    }}
+                  />
+                </label>
+              )}
+            </CardContent>
+          </Card>
+        )}
 
         {/* Notes */}
         <Card className="mb-8 shadow-sm">

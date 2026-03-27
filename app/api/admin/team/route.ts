@@ -1,7 +1,19 @@
 import { NextResponse } from "next/server";
 
+// Map email prefixes to display names for known team members
+const NAME_OVERRIDES: Record<string, string> = {
+  jch: "Blake",
+  office: "Jess",
+};
+
 function nameFromEmail(email: string): string {
   const local = email.split("@")[0];
+
+  // Check for known overrides
+  if (NAME_OVERRIDES[local.toLowerCase()]) {
+    return NAME_OVERRIDES[local.toLowerCase()];
+  }
+
   // Handle formats like "first.last", "first_last", or just "first"
   return local
     .split(/[._]/)

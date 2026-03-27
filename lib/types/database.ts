@@ -16,14 +16,21 @@ export type DrawRequestStatus = "draft" | "submitted" | "approved" | "funded" | 
 export type DocumentCategory = "contract" | "permit" | "invoice" | "photo" | "plan" | "draw_request" | "general";
 export type EstimateStatus = "new" | "reviewed" | "converted" | "declined";
 
+export type ContractorType = "contractor" | "vendor";
+
 export interface Contractor {
   id: string;
+  type: ContractorType;
   name: string;
   company: string | null;
   email: string | null;
   phone: string | null;
   trade: string;
   license_number: string | null;
+  w9_file_url: string | null;
+  w9_file_name: string | null;
+  vendor_category: string | null;
+  account_number: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
@@ -278,6 +285,28 @@ export const TRADES = [
   "Windows/Doors",
   "Siding",
   "Fencing",
+  "Other",
+] as const;
+
+export const DEFAULT_VENDOR_CATEGORIES = [
+  "Lumber & Building Materials",
+  "Hardware & Fasteners",
+  "Plumbing Supply",
+  "Electrical Supply",
+  "HVAC Supply",
+  "Concrete & Masonry",
+  "Roofing Supply",
+  "Paint & Coatings",
+  "Flooring Supply",
+  "Appliances",
+  "Windows & Doors",
+  "Equipment Rental",
+  "Tool Supply",
+  "Landscaping Supply",
+  "Insulation & Drywall",
+  "Cabinetry & Countertops",
+  "Safety & PPE",
+  "Waste & Disposal",
   "Other",
 ] as const;
 

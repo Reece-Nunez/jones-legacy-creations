@@ -12,6 +12,9 @@ import {
   DollarSign,
   FolderOpen,
   AlertCircle,
+  Store,
+  Tag,
+  FileText,
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -48,9 +51,9 @@ const TRADE_COLORS: Record<string, string> = {
 export default async function ContractorsPage({
   searchParams,
 }: {
-  searchParams: Promise<{ q?: string; trade?: string }>;
+  searchParams: Promise<{ q?: string; trade?: string; type?: string }>;
 }) {
-  const { q, trade } = await searchParams;
+  const { q, trade, type } = await searchParams;
   const supabase = await createClient();
 
   // Fetch contractors and payments in parallel
@@ -67,6 +70,10 @@ export default async function ContractorsPage({
 
   if (trade) {
     contractorsQuery = contractorsQuery.eq("trade", trade);
+  }
+
+  if (type) {
+    contractorsQuery = contractorsQuery.eq("type", type);
   }
 
   const [{ data: contractors }, { data: payments }] = await Promise.all([
@@ -94,13 +101,23 @@ export default async function ContractorsPage({
     paymentSummary[p.contractor_id].projectIds.add(p.project_id);
   }
 
+  // Build query string helper
+  function buildUrl(params: Record<string, string | undefined>) {
+    const filtered = Object.entries(params).filter(([, v]) => v);
+    if (filtered.length === 0) return "/admin/contractors";
+    return `/admin/contractors?${filtered.map(([k, v]) => `${k}=${encodeURIComponent(v!)}`).join("&")}`;
+  }
+
+  const showingVendors = type === "vendor";
+  const showingContractors = type === "contractor";
+
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
           <h1 className="text-3xl font-bold text-gray-900">
-            Contractor Directory
+            Contractors & Vendors
           </h1>
           <Link
             href="/admin/contractors/new"
@@ -108,13 +125,14 @@ export default async function ContractorsPage({
             style={{ minHeight: 44 }}
           >
             <Plus className="h-5 w-5" />
-            Add Contractor
+            Add New
           </Link>
         </div>
 
         {/* Search Bar */}
         <form method="GET" className="mb-6">
           {trade && <input type="hidden" name="trade" value={trade} />}
+          {type && <input type="hidden" name="type" value={type} />}
           <div className="relative">
             <Search className="pointer-events-none absolute left-3 top-1/2 h-5 w-5 -translate-y-1/2 text-gray-400" />
             <input
@@ -122,67 +140,108 @@ export default async function ContractorsPage({
               name="q"
               defaultValue={q ?? ""}
               placeholder="Search by name or company..."
-              aria-label="Search contractors by name or company"
+              aria-label="Search contractors and vendors by name or company"
               className="w-full rounded-lg border border-gray-300 bg-white py-3 pl-11 pr-4 text-sm text-gray-900 shadow-sm placeholder:text-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-2 focus:ring-indigo-200"
               style={{ minHeight: 44 }}
             />
           </div>
         </form>
 
-        {/* Trade Filter Pills */}
-        <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filter by trade">
+        {/* Type Filter Tabs */}
+        <div className="mb-4 flex gap-2" role="group" aria-label="Filter by type">
           <Link
-            href={`/admin/contractors${q ? `?q=${encodeURIComponent(q)}` : ""}`}
+            href={buildUrl({ q, trade })}
             className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-              !trade
+              !type
                 ? "bg-gray-900 text-white"
                 : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
             }`}
             style={{ minHeight: 44 }}
-            aria-pressed={!trade}
-            role="button"
           >
             All
           </Link>
-          {TRADES.map((t) => (
+          <Link
+            href={buildUrl({ q, trade, type: "contractor" })}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
+              showingContractors
+                ? "bg-gray-900 text-white"
+                : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
+            }`}
+            style={{ minHeight: 44 }}
+          >
+            <User className="h-3.5 w-3.5" />
+            Contractors
+          </Link>
+          <Link
+            href={buildUrl({ q, type: "vendor" })}
+            className={`inline-flex items-center gap-1.5 rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
+              showingVendors
+                ? "bg-gray-900 text-white"
+                : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
+            }`}
+            style={{ minHeight: 44 }}
+          >
+            <Store className="h-3.5 w-3.5" />
+            Vendors
+          </Link>
+        </div>
+
+        {/* Trade Filter Pills — only show for contractors */}
+        {!showingVendors && (
+          <div className="mb-6 flex flex-wrap gap-2" role="group" aria-label="Filter by trade">
             <Link
-              key={t}
-              href={`/admin/contractors?trade=${encodeURIComponent(t)}${q ? `&q=${encodeURIComponent(q)}` : ""}`}
+              href={buildUrl({ q, type })}
               className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
-                trade === t
+                !trade
                   ? "bg-gray-900 text-white"
                   : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
               }`}
               style={{ minHeight: 44 }}
-              aria-pressed={trade === t}
+              aria-pressed={!trade}
               role="button"
             >
-              {t}
+              All Trades
             </Link>
-          ))}
-        </div>
+            {TRADES.map((t) => (
+              <Link
+                key={t}
+                href={buildUrl({ q, type, trade: t })}
+                className={`inline-flex items-center rounded-full px-4 py-2.5 text-sm font-medium transition-colors ${
+                  trade === t
+                    ? "bg-gray-900 text-white"
+                    : "bg-white text-gray-600 shadow-sm hover:bg-gray-100"
+                }`}
+                style={{ minHeight: 44 }}
+                aria-pressed={trade === t}
+                role="button"
+              >
+                {t}
+              </Link>
+            ))}
+          </div>
+        )}
 
-        {/* Contractor Cards */}
+        {/* Cards */}
         {contractorList.length === 0 ? (
           <Card className="shadow-sm">
             <CardContent className="p-12 text-center">
               <AlertCircle className="mx-auto h-10 w-10 text-gray-300" />
               <p className="mt-4 text-lg font-medium text-gray-500">
-                No contractors found
+                {showingVendors ? "No vendors found" : showingContractors ? "No contractors found" : "No contractors or vendors found"}
               </p>
               <p className="mt-1 text-sm text-gray-400">
-                {q || trade
+                {q || trade || type
                   ? "Try adjusting your search or filters."
-                  : "Add your first contractor to get started."}
+                  : "Add your first contractor or vendor to get started."}
               </p>
-              {!q && !trade && (
+              {!q && !trade && !type && (
                 <Link
                   href="/admin/contractors/new"
                   className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500"
                   style={{ minHeight: 44 }}
                 >
                   <Plus className="h-5 w-5" />
-                  Add Your First Contractor
+                  Add Your First Entry
                 </Link>
               )}
             </CardContent>
@@ -193,6 +252,7 @@ export default async function ContractorsPage({
               const summary = paymentSummary[contractor.id];
               const totalPaid = summary?.totalPaid ?? 0;
               const projectCount = summary?.projectIds.size ?? 0;
+              const isVendor = contractor.type === "vendor";
 
               return (
                 <Link
@@ -203,32 +263,51 @@ export default async function ContractorsPage({
                 >
                 <Card className="cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
                 <CardContent className="pt-6">
-                  {/* Name & Trade */}
+                  {/* Name & Badge */}
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
-                      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
-                        <User className="h-5 w-5" />
+                      <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-full ${
+                        isVendor ? "bg-emerald-50 text-emerald-600" : "bg-indigo-50 text-indigo-600"
+                      }`}>
+                        {isVendor ? <Store className="h-5 w-5" /> : <User className="h-5 w-5" />}
                       </div>
                       <div>
                         <h3 className="font-semibold text-gray-900 group-hover:text-indigo-600">
-                          {contractor.name}
+                          {isVendor ? (contractor.company || contractor.name) : contractor.name}
                         </h3>
-                        {contractor.company && (
-                          <p className="flex items-center gap-1 text-sm text-gray-500">
-                            <Building2 className="h-3.5 w-3.5" />
-                            {contractor.company}
-                          </p>
+                        {isVendor ? (
+                          contractor.company && contractor.name !== contractor.company && (
+                            <p className="text-sm text-gray-500">{contractor.name}</p>
+                          )
+                        ) : (
+                          contractor.company && (
+                            <p className="flex items-center gap-1 text-sm text-gray-500">
+                              <Building2 className="h-3.5 w-3.5" />
+                              {contractor.company}
+                            </p>
+                          )
                         )}
                       </div>
                     </div>
-                    <Badge
-                      variant="outline"
-                      className={`shrink-0 ${
-                        TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other
-                      }`}
-                    >
-                      {contractor.trade}
-                    </Badge>
+                    {isVendor ? (
+                      contractor.vendor_category && (
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 bg-emerald-50 text-emerald-700"
+                        >
+                          {contractor.vendor_category}
+                        </Badge>
+                      )
+                    ) : (
+                      <Badge
+                        variant="outline"
+                        className={`shrink-0 ${
+                          TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other
+                        }`}
+                      >
+                        {contractor.trade}
+                      </Badge>
+                    )}
                   </div>
 
                   {/* Contact Info */}
@@ -269,10 +348,28 @@ export default async function ContractorsPage({
                         </span>
                       </p>
                     )}
-                    {contractor.license_number && (
+                    {!isVendor && contractor.license_number && (
                       <p className="flex items-center gap-2 text-sm text-gray-500">
                         <Wrench className="h-4 w-4 text-gray-400" />
                         Lic# {contractor.license_number}
+                      </p>
+                    )}
+                    {isVendor && contractor.account_number && (
+                      <p className="flex items-center gap-2 text-sm text-gray-500">
+                        <Tag className="h-4 w-4 text-gray-400" />
+                        Acct# {contractor.account_number}
+                      </p>
+                    )}
+                    {!isVendor && contractor.w9_file_url && (
+                      <p className="flex items-center gap-2 text-sm text-green-600">
+                        <FileText className="h-4 w-4 text-green-500" />
+                        W9 on file
+                      </p>
+                    )}
+                    {!isVendor && !contractor.w9_file_url && (
+                      <p className="flex items-center gap-2 text-sm text-amber-600">
+                        <FileText className="h-4 w-4 text-amber-500" />
+                        W9 missing
                       </p>
                     )}
                   </div>

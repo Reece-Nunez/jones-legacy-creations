@@ -10,12 +10,17 @@ create extension if not exists "uuid-ossp";
 -- ============================================
 create table contractors (
   id uuid primary key default uuid_generate_v4(),
+  type text not null default 'contractor' check (type in ('contractor', 'vendor')),
   name text not null,
   company text,
   email text,
   phone text,
   trade text not null,
   license_number text,
+  w9_file_url text,
+  w9_file_name text,
+  vendor_category text,
+  account_number text,
   notes text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
