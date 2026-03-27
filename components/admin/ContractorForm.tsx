@@ -8,6 +8,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { Contractor, TRADES } from "@/lib/types/database";
 import { Save, Loader2 } from "lucide-react";
+import { formatPhoneNumber } from "@/lib/formatters";
 
 const contractorSchema = z.object({
   name: z.string().min(1, "Name is required"),
@@ -41,6 +42,8 @@ export default function ContractorForm({
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ContractorFormData>({
     resolver: zodResolver(contractorSchema),
@@ -48,12 +51,14 @@ export default function ContractorForm({
       name: contractor?.name ?? "",
       company: contractor?.company ?? "",
       email: contractor?.email ?? "",
-      phone: contractor?.phone ?? "",
+      phone: contractor?.phone ? formatPhoneNumber(contractor.phone) : "",
       trade: contractor?.trade ?? "",
       license_number: contractor?.license_number ?? "",
       notes: contractor?.notes ?? "",
     },
   });
+
+  const phoneValue = watch("phone");
 
   async function onSubmit(data: ContractorFormData) {
     setIsSubmitting(true);
@@ -202,13 +207,14 @@ export default function ContractorForm({
           </label>
           <input
             id="phone"
-            type="tel"
+            type="text"
             inputMode="tel"
             autoComplete="tel"
-            placeholder="(801) 555-1234"
+            placeholder="(435) 555-0100"
+            value={phoneValue ?? ""}
+            onChange={(e) => setValue("phone", formatPhoneNumber(e.target.value))}
             className={inputClass}
             style={{ minHeight: 44 }}
-            {...register("phone")}
           />
         </div>
       </div>

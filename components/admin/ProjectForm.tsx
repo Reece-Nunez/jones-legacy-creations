@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
+import { formatPhoneNumber, formatCurrencyInput, unformatCurrency } from "@/lib/formatters";
 import {
   Project,
   ProjectStatus,
@@ -51,6 +52,8 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const {
     register,
     handleSubmit,
+    setValue,
+    watch,
     formState: { errors },
   } = useForm<ProjectFormData>({
     resolver: zodResolver(projectSchema),
@@ -58,7 +61,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       name: project?.name ?? "",
       client_name: project?.client_name ?? "",
       client_email: project?.client_email ?? "",
-      client_phone: project?.client_phone ?? "",
+      client_phone: project?.client_phone ? formatPhoneNumber(project.client_phone) : "",
       address: project?.address ?? "",
       city: project?.city ?? "",
       state: project?.state ?? "UT",
@@ -67,12 +70,16 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       project_type: project?.project_type ?? "residential",
       description: project?.description ?? "",
       notes: project?.notes ?? "",
-      estimated_value: project?.estimated_value?.toString() ?? "",
-      contract_value: project?.contract_value?.toString() ?? "",
+      estimated_value: project?.estimated_value ? formatCurrencyInput(String(project.estimated_value)) : "",
+      contract_value: project?.contract_value ? formatCurrencyInput(String(project.contract_value)) : "",
       start_date: project?.start_date ?? "",
       end_date: project?.end_date ?? "",
     },
   });
+
+  const phone = watch("client_phone");
+  const estimatedValue = watch("estimated_value");
+  const contractValue = watch("contract_value");
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
@@ -89,10 +96,10 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         description: data.description || null,
         notes: data.notes || null,
         estimated_value: data.estimated_value
-          ? parseFloat(data.estimated_value)
+          ? parseFloat(unformatCurrency(data.estimated_value))
           : null,
         contract_value: data.contract_value
-          ? parseFloat(data.contract_value)
+          ? parseFloat(unformatCurrency(data.contract_value))
           : null,
         start_date: data.start_date || null,
         end_date: data.end_date || null,
@@ -198,11 +205,12 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             </label>
             <input
               id="client_phone"
-              type="tel"
+              type="text"
               inputMode="tel"
-              {...register("client_phone")}
+              value={phone || ""}
+              onChange={(e) => setValue("client_phone", formatPhoneNumber(e.target.value))}
               className={inputClassName}
-              placeholder="(555) 123-4567"
+              placeholder="(435) 555-0100"
             />
           </div>
 
@@ -315,13 +323,12 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             </label>
             <input
               id="estimated_value"
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
-              {...register("estimated_value")}
+              value={estimatedValue || ""}
+              onChange={(e) => setValue("estimated_value", formatCurrencyInput(e.target.value))}
               className={inputClassName}
-              placeholder="0.00"
+              placeholder="$0.00"
             />
           </div>
 
@@ -332,13 +339,12 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             </label>
             <input
               id="contract_value"
-              type="number"
+              type="text"
               inputMode="decimal"
-              step="0.01"
-              min="0"
-              {...register("contract_value")}
+              value={contractValue || ""}
+              onChange={(e) => setValue("contract_value", formatCurrencyInput(e.target.value))}
               className={inputClassName}
-              placeholder="0.00"
+              placeholder="$0.00"
             />
           </div>
 

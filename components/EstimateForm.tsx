@@ -23,6 +23,7 @@ import {
   TIMELINE_OPTIONS,
   COST_RANGES,
 } from "@/lib/types/database";
+import { formatPhoneNumber, formatNumber, unformatNumber } from "@/lib/formatters";
 
 // ── Icon map for project types ──────────────────────────────
 const PROJECT_TYPE_ICONS: Record<string, React.ElementType> = {
@@ -114,7 +115,7 @@ export default function EstimateForm() {
   }
 
   // Estimate calculation
-  const sqft = squareFootage ? Number(squareFootage) : null;
+  const sqft = squareFootage ? Number(unformatNumber(squareFootage)) : null;
   const costRange = COST_RANGES[projectType] || COST_RANGES.other;
   const estimatedMin = sqft && sqft > 0 ? costRange.min * sqft : null;
   const estimatedMax = sqft && sqft > 0 ? costRange.max * sqft : null;
@@ -137,7 +138,7 @@ export default function EstimateForm() {
           city: city || null,
           state: state || "UT",
           zip: zip || null,
-          square_footage: sqft,
+          square_footage: squareFootage ? parseInt(unformatNumber(squareFootage)) || null : null,
           budget_range: budgetRange || null,
           timeline: timeline || null,
         }),
@@ -339,11 +340,11 @@ export default function EstimateForm() {
               </label>
               <input
                 id="squareFootage"
-                type="number"
+                type="text"
                 inputMode="numeric"
-                value={squareFootage}
-                onChange={(e) => setSquareFootage(e.target.value)}
-                placeholder="e.g. 2500"
+                value={squareFootage ? formatNumber(squareFootage) : ""}
+                onChange={(e) => setSquareFootage(unformatNumber(e.target.value))}
+                placeholder="e.g. 2,500"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               />
               <p className="mt-1 text-xs text-gray-500">
@@ -560,11 +561,11 @@ export default function EstimateForm() {
               </label>
               <input
                 id="clientPhone"
-                type="tel"
+                type="text"
                 inputMode="tel"
                 value={clientPhone}
-                onChange={(e) => setClientPhone(e.target.value)}
-                placeholder="435-555-0100"
+                onChange={(e) => setClientPhone(formatPhoneNumber(e.target.value))}
+                placeholder="(435) 555-0100"
                 className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
               />
             </div>
