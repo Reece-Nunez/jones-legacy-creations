@@ -45,6 +45,7 @@ import {
   Percent,
   UserCircle,
   FileSpreadsheet,
+  Sparkles,
 } from "lucide-react";
 import type {
   Project,
@@ -1563,6 +1564,22 @@ function DrawsTab({
   const [scanProgress, setScanProgress] = useState<{ done: number; total: number } | null>(null);
   const drawsRouter = useRouter();
 
+  // Post-upload review state
+  interface UploadedDocReview {
+    id: string;
+    originalName: string;
+    suggestedName: string;
+    editedName: string;
+    vendor: string;
+    docType: string;
+    lineItemNumber: string;
+    amount: number | null;
+    editing: boolean;
+  }
+  const [reviewDocs, setReviewDocs] = useState<UploadedDocReview[]>([]);
+  const [reviewDrawId, setReviewDrawId] = useState<string | null>(null);
+  const [savingReview, setSavingReview] = useState(false);
+
   // Auto-expand the latest draw on first render
   useEffect(() => {
     if (draws.length > 0) {
@@ -1760,6 +1777,8 @@ function DrawsTab({
     setUploading(true);
     setUploadProgress({ done: 0, total: uploadFiles.length });
 
+    const uploadedDocs: UploadedDocReview[] = [];
+
     for (let i = 0; i < uploadFiles.length; i++) {
       const file = uploadFiles[i];
       const parsed = parseDrawFilename(file.name);
@@ -1778,14 +1797,88 @@ function DrawsTab({
       if (parsed.docType) {
         fd.append("doc_type", parsed.docType);
       }
-      await mutate(`/api/admin/projects/${projectId}/documents`, "POST", fd);
+
+      const res = await mutate(`/api/admin/projects/${projectId}/documents`, "POST", fd);
       setUploadProgress({ done: i + 1, total: uploadFiles.length });
+
+      // Collect the response for review
+      if (res) {
+        try {
+          const result = await res.clone().json();
+          const ai = result.ai_extracted;
+          const vendor = result.vendor || ai?.vendor_company || ai?.vendor_name || "";
+          const docType = result.doc_type || (ai?.category ? "Invoice" : "");
+          const lineNum = result.line_item_number != null ? String(result.line_item_number) : "";
+          const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+
+          // Build a clean suggested name
+          const nameParts = [
+            lineNum,
+            docType || "Invoice",
+            vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_"),
+          ].filter(Boolean);
+          const suggestedName = `${nameParts.join("_")}.${ext}`;
+
+          uploadedDocs.push({
+            id: result.id,
+            originalName: file.name,
+            suggestedName,
+            editedName: suggestedName,
+            vendor,
+            docType: docType || "Invoice",
+            lineItemNumber: lineNum,
+            amount: ai?.amount || null,
+            editing: false,
+          });
+        } catch {
+          // If we can't parse the response, skip review for this file
+        }
+      }
     }
 
     setUploadFiles([]);
     setUploadingDrawId(null);
     setUploading(false);
     setUploadProgress(null);
+
+    // Show review step if we have docs to review
+    if (uploadedDocs.length > 0) {
+      setReviewDocs(uploadedDocs);
+      setReviewDrawId(drawId);
+    }
+  }
+
+  async function saveReviewNames() {
+    setSavingReview(true);
+    try {
+      for (const doc of reviewDocs) {
+        // Only patch if the name was changed from original
+        if (doc.editedName !== doc.originalName) {
+          await fetch(`/api/admin/projects/${projectId}/documents`, {
+            method: "PATCH",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              id: doc.id,
+              name: doc.editedName,
+            }),
+          });
+        }
+      }
+      toast.success("Document names updated");
+      // Refresh the data
+      drawsRouter.refresh();
+    } catch {
+      toast.error("Failed to update names");
+    } finally {
+      setSavingReview(false);
+      setReviewDocs([]);
+      setReviewDrawId(null);
+    }
+  }
+
+  function dismissReview() {
+    setReviewDocs([]);
+    setReviewDrawId(null);
   }
 
   const sortedDraws = [...draws].sort((a, b) => b.draw_number - a.draw_number);
@@ -1956,6 +2049,153 @@ function DrawsTab({
                   Cancel
                 </button>
               </div>
+            </div>
+          </CardContent>
+        </ShadCard>
+      )}
+
+      {/* AI Rename Review Panel */}
+      {reviewDocs.length > 0 && (
+        <ShadCard className="border-indigo-200 bg-indigo-50/30">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-indigo-800 flex items-center gap-2">
+              <Sparkles className="w-4 h-4" />
+              Review AI-Suggested Names ({reviewDocs.length})
+            </CardTitle>
+            <p className="text-xs text-indigo-600 mt-1">
+              AI analyzed your documents and suggested clean names. Accept, edit, or skip each one.
+            </p>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {reviewDocs.map((doc, idx) => (
+                <div
+                  key={doc.id}
+                  className="rounded-lg border border-indigo-100 bg-white p-3 space-y-2"
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs text-gray-400 truncate">
+                        Original: {doc.originalName}
+                      </p>
+                      {doc.amount && (
+                        <p className="text-xs text-green-600 font-medium">
+                          Amount: ${doc.amount.toLocaleString("en-US", { minimumFractionDigits: 2 })}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+
+                  {doc.editing ? (
+                    <div className="space-y-2">
+                      <div className="grid grid-cols-3 gap-2">
+                        <div>
+                          <label className="text-[10px] font-medium text-gray-500 uppercase">Line #</label>
+                          <input
+                            type="text"
+                            value={doc.lineItemNumber}
+                            onChange={(e) => {
+                              const updated = [...reviewDocs];
+                              updated[idx] = { ...doc, lineItemNumber: e.target.value };
+                              // Rebuild name
+                              const ext = doc.originalName.split(".").pop() || "pdf";
+                              const parts = [e.target.value, updated[idx].docType, updated[idx].vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+                              updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                              setReviewDocs(updated);
+                            }}
+                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            placeholder="#"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-medium text-gray-500 uppercase">Type</label>
+                          <input
+                            type="text"
+                            value={doc.docType}
+                            onChange={(e) => {
+                              const updated = [...reviewDocs];
+                              updated[idx] = { ...doc, docType: e.target.value };
+                              const ext = doc.originalName.split(".").pop() || "pdf";
+                              const parts = [updated[idx].lineItemNumber, e.target.value, updated[idx].vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+                              updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                              setReviewDocs(updated);
+                            }}
+                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            placeholder="Invoice"
+                          />
+                        </div>
+                        <div>
+                          <label className="text-[10px] font-medium text-gray-500 uppercase">Vendor</label>
+                          <input
+                            type="text"
+                            value={doc.vendor}
+                            onChange={(e) => {
+                              const updated = [...reviewDocs];
+                              updated[idx] = { ...doc, vendor: e.target.value };
+                              const ext = doc.originalName.split(".").pop() || "pdf";
+                              const parts = [updated[idx].lineItemNumber, updated[idx].docType, e.target.value.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+                              updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                              setReviewDocs(updated);
+                            }}
+                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            placeholder="Vendor name"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs text-gray-500">Preview:</span>
+                        <span className="text-xs font-medium text-indigo-700">{doc.editedName}</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = [...reviewDocs];
+                          updated[idx] = { ...doc, editing: false };
+                          setReviewDocs(updated);
+                        }}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 font-medium"
+                      >
+                        Done editing
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="flex items-center justify-between gap-2">
+                      <div className="flex items-center gap-2 min-w-0">
+                        <ArrowRightCircle className="w-3.5 h-3.5 text-indigo-400 shrink-0" />
+                        <span className="text-sm font-medium text-gray-900 truncate">
+                          {doc.editedName}
+                        </span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          const updated = [...reviewDocs];
+                          updated[idx] = { ...doc, editing: true };
+                          setReviewDocs(updated);
+                        }}
+                        className="text-xs text-indigo-600 hover:text-indigo-800 shrink-0 min-h-[36px] px-2"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+
+            <div className="flex gap-2 mt-4">
+              <button
+                disabled={savingReview}
+                onClick={saveReviewNames}
+                className="bg-indigo-600 text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm font-semibold hover:bg-indigo-500 disabled:opacity-50 cursor-pointer transition-colors"
+              >
+                {savingReview ? "Saving..." : "Accept & Save Names"}
+              </button>
+              <button
+                disabled={savingReview}
+                onClick={dismissReview}
+                className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                Skip (keep original names)
+              </button>
             </div>
           </CardContent>
         </ShadCard>
