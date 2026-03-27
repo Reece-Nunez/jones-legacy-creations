@@ -713,6 +713,37 @@ function InvoicesTab({
     due_date: "",
   });
 
+  const [editingInvoice, setEditingInvoice] = useState<string | null>(null);
+  const [editInvoiceForm, setEditInvoiceForm] = useState({
+    invoice_number: "",
+    description: "",
+    amount: "",
+    status: "draft" as InvoiceStatus,
+    due_date: "",
+  });
+
+  function startEditInvoice(inv: Invoice) {
+    setEditingInvoice(inv.id);
+    setEditInvoiceForm({
+      invoice_number: inv.invoice_number,
+      description: inv.description || "",
+      amount: formatCurrencyInput(String(inv.amount)),
+      status: inv.status,
+      due_date: inv.due_date ?? "",
+    });
+  }
+
+  async function saveEditInvoice(id: string) {
+    await mutate(`/api/admin/projects/${projectId}/invoices/${id}`, "PATCH", {
+      invoice_number: editInvoiceForm.invoice_number,
+      description: editInvoiceForm.description || null,
+      amount: parseFloat(unformatCurrency(editInvoiceForm.amount)),
+      status: editInvoiceForm.status,
+      due_date: editInvoiceForm.due_date || null,
+    });
+    setEditingInvoice(null);
+  }
+
   async function addInvoice() {
     if (!form.invoice_number || !form.amount) return;
     await mutate(`/api/admin/projects/${projectId}/invoices`, "POST", {
@@ -860,54 +891,133 @@ function InvoicesTab({
 
         <div className="divide-y divide-gray-100">
           {invoices.map((inv) => (
-            <div
-              key={inv.id}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${invoiceLeftBorder(inv.status)}`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm text-gray-900">
-                    {inv.invoice_number}
-                  </span>
-                  <Badge
-                    variant="outline"
-                    className={`inline-flex items-center gap-1 rounded-full ${INVOICE_STATUS_COLORS[inv.status]}`}
-                  >
-                    <Circle className="w-1.5 h-1.5 fill-current" />
-                    {inv.status}
-                  </Badge>
+            <div key={inv.id}>
+              {editingInvoice === inv.id ? (
+                <div className="bg-gray-50 rounded-lg p-3 my-2 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Invoice #</label>
+                      <input
+                        value={editInvoiceForm.invoice_number}
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, invoice_number: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Amount</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editInvoiceForm.amount}
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, amount: formatCurrencyInput(e.target.value) })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Description</label>
+                      <input
+                        value={editInvoiceForm.description}
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, description: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Due Date</label>
+                      <input
+                        type="date"
+                        value={editInvoiceForm.due_date}
+                        onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, due_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
+                    <select
+                      value={editInvoiceForm.status}
+                      onChange={(e) => setEditInvoiceForm({ ...editInvoiceForm, status: e.target.value as InvoiceStatus })}
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                    >
+                      <option value="draft">Draft</option>
+                      <option value="sent">Sent</option>
+                      <option value="paid">Paid</option>
+                      <option value="overdue">Overdue</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={loading}
+                      onClick={() => saveEditInvoice(inv.id)}
+                      className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      onClick={() => setEditingInvoice(null)}
+                      className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                {inv.description && (
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">
-                    {inv.description}
-                  </p>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="font-semibold text-gray-900 tabular-nums">
-                  {fmt(inv.amount)}
-                </span>
-                <span className="text-gray-500 text-xs">
-                  Due {fmtDate(inv.due_date)}
-                </span>
-                {inv.status !== "paid" && (
-                  <button
-                    disabled={loading}
-                    onClick={() => markPaid(inv)}
-                    className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
-                  >
-                    Mark Paid
-                  </button>
-                )}
-                <button
-                  disabled={loading}
-                  aria-label={`Delete invoice ${inv.invoice_number}`}
-                  onClick={() => deleteInvoice(inv.id)}
-                  className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+              ) : (
+                <div
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${invoiceLeftBorder(inv.status)}`}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm text-gray-900">
+                        {inv.invoice_number}
+                      </span>
+                      <Badge
+                        variant="outline"
+                        className={`inline-flex items-center gap-1 rounded-full ${INVOICE_STATUS_COLORS[inv.status]}`}
+                      >
+                        <Circle className="w-1.5 h-1.5 fill-current" />
+                        {inv.status}
+                      </Badge>
+                    </div>
+                    {inv.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        {inv.description}
+                      </p>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="font-semibold text-gray-900 tabular-nums">
+                      {fmt(inv.amount)}
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      Due {fmtDate(inv.due_date)}
+                    </span>
+                    {inv.status !== "paid" && (
+                      <button
+                        disabled={loading}
+                        onClick={() => markPaid(inv)}
+                        className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                    <button
+                      disabled={loading}
+                      aria-label={`Edit invoice ${inv.invoice_number}`}
+                      onClick={() => startEditInvoice(inv)}
+                      className="text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      disabled={loading}
+                      aria-label={`Delete invoice ${inv.invoice_number}`}
+                      onClick={() => deleteInvoice(inv.id)}
+                      className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -1057,6 +1167,37 @@ function PaymentsTab({
     setForm({ contractor_id: "", contractor_name: "", description: "", amount: "", due_date: "" });
     setInvoiceFile(null);
     setShowForm(false);
+  }
+
+  const [editingPayment, setEditingPayment] = useState<string | null>(null);
+  const [editPaymentForm, setEditPaymentForm] = useState({
+    contractor_name: "",
+    description: "",
+    amount: "",
+    status: "pending" as string,
+    due_date: "",
+  });
+
+  function startEditPayment(p: ContractorPayment) {
+    setEditingPayment(p.id);
+    setEditPaymentForm({
+      contractor_name: p.contractor_name,
+      description: p.description || "",
+      amount: formatCurrencyInput(String(p.amount)),
+      status: p.status,
+      due_date: p.due_date ?? "",
+    });
+  }
+
+  async function saveEditPayment(id: string) {
+    await mutate(`/api/admin/projects/${projectId}/payments/${id}`, "PATCH", {
+      contractor_name: editPaymentForm.contractor_name,
+      description: editPaymentForm.description || null,
+      amount: parseFloat(unformatCurrency(editPaymentForm.amount)),
+      status: editPaymentForm.status,
+      due_date: editPaymentForm.due_date || null,
+    });
+    setEditingPayment(null);
   }
 
   async function markPaid(p: ContractorPayment) {
@@ -1332,78 +1473,155 @@ function PaymentsTab({
 
         <div className="divide-y divide-gray-100">
           {payments.map((p) => (
-            <div
-              key={p.id}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${paymentLeftBorder(p.status)}`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  {p.contractor_id ? (
-                    <Link
-                      href={`/admin/contractors/${p.contractor_id}`}
-                      className="font-medium text-sm text-blue-600 hover:underline"
+            <div key={p.id}>
+              {editingPayment === p.id ? (
+                <div className="bg-gray-50 rounded-lg p-3 my-2 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Contractor Name</label>
+                      <input
+                        value={editPaymentForm.contractor_name}
+                        onChange={(e) => setEditPaymentForm({ ...editPaymentForm, contractor_name: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Amount</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editPaymentForm.amount}
+                        onChange={(e) => setEditPaymentForm({ ...editPaymentForm, amount: formatCurrencyInput(e.target.value) })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Description</label>
+                      <input
+                        value={editPaymentForm.description}
+                        onChange={(e) => setEditPaymentForm({ ...editPaymentForm, description: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Due Date</label>
+                      <input
+                        type="date"
+                        value={editPaymentForm.due_date}
+                        onChange={(e) => setEditPaymentForm({ ...editPaymentForm, due_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
+                    <select
+                      value={editPaymentForm.status}
+                      onChange={(e) => setEditPaymentForm({ ...editPaymentForm, status: e.target.value })}
+                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                     >
-                      {p.contractor_name}
-                    </Link>
-                  ) : (
-                    <span className="font-medium text-sm text-gray-900">
-                      {p.contractor_name}
-                    </span>
-                  )}
-                  <Badge
-                    variant="outline"
-                    className={`inline-flex items-center gap-1 rounded-full ${
-                      p.status === "paid"
-                        ? "bg-green-100 text-green-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    <Circle className="w-1.5 h-1.5 fill-current" />
-                    {p.status}
-                  </Badge>
+                      <option value="pending">Pending</option>
+                      <option value="paid">Paid</option>
+                    </select>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={loading}
+                      onClick={() => saveEditPayment(p.id)}
+                      className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      onClick={() => setEditingPayment(null)}
+                      className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                {p.description && (
-                  <p className="text-xs text-gray-500 mt-0.5 truncate">
-                    {p.description}
-                  </p>
-                )}
-                {p.invoice_file_url && (
-                  <a
-                    href={p.invoice_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5"
-                  >
-                    <Paperclip className="w-3 h-3" />
-                    {p.invoice_file_name ?? "Invoice"}
-                  </a>
-                )}
-              </div>
-              <div className="flex items-center gap-3 text-sm">
-                <span className="font-semibold text-gray-900 tabular-nums">
-                  {fmt(p.amount)}
-                </span>
-                <span className="text-gray-500 text-xs">
-                  Due {fmtDate(p.due_date)}
-                </span>
-                {p.status !== "paid" && (
-                  <button
-                    disabled={loading}
-                    onClick={() => markPaid(p)}
-                    className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
-                  >
-                    Mark Paid
-                  </button>
-                )}
-                <button
-                  disabled={loading}
-                  aria-label={`Delete payment to ${p.contractor_name}`}
-                  onClick={() => deletePayment(p.id)}
-                  className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+              ) : (
+                <div
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${paymentLeftBorder(p.status)}`}
                 >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      {p.contractor_id ? (
+                        <Link
+                          href={`/admin/contractors/${p.contractor_id}`}
+                          className="font-medium text-sm text-blue-600 hover:underline"
+                        >
+                          {p.contractor_name}
+                        </Link>
+                      ) : (
+                        <span className="font-medium text-sm text-gray-900">
+                          {p.contractor_name}
+                        </span>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`inline-flex items-center gap-1 rounded-full ${
+                          p.status === "paid"
+                            ? "bg-green-100 text-green-700"
+                            : "bg-yellow-100 text-yellow-700"
+                        }`}
+                      >
+                        <Circle className="w-1.5 h-1.5 fill-current" />
+                        {p.status}
+                      </Badge>
+                    </div>
+                    {p.description && (
+                      <p className="text-xs text-gray-500 mt-0.5 truncate">
+                        {p.description}
+                      </p>
+                    )}
+                    {p.invoice_file_url && (
+                      <a
+                        href={p.invoice_file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5"
+                      >
+                        <Paperclip className="w-3 h-3" />
+                        {p.invoice_file_name ?? "Invoice"}
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-3 text-sm">
+                    <span className="font-semibold text-gray-900 tabular-nums">
+                      {fmt(p.amount)}
+                    </span>
+                    <span className="text-gray-500 text-xs">
+                      Due {fmtDate(p.due_date)}
+                    </span>
+                    {p.status !== "paid" && (
+                      <button
+                        disabled={loading}
+                        onClick={() => markPaid(p)}
+                        className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
+                      >
+                        Mark Paid
+                      </button>
+                    )}
+                    <button
+                      disabled={loading}
+                      aria-label={`Edit payment to ${p.contractor_name}`}
+                      onClick={() => startEditPayment(p)}
+                      className="text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      disabled={loading}
+                      aria-label={`Delete payment to ${p.contractor_name}`}
+                      onClick={() => deletePayment(p.id)}
+                      className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
+                </div>
+              )}
             </div>
           ))}
         </div>
@@ -2349,6 +2567,43 @@ function PermitsTab({
     setShowForm(false);
   }
 
+  const [editingPermit, setEditingPermit] = useState<string | null>(null);
+  const [editPermitForm, setEditPermitForm] = useState({
+    permit_type: "",
+    permit_number: "",
+    status: "not_applied" as PermitStatus,
+    applied_date: "",
+    approved_date: "",
+    expiry_date: "",
+    notes: "",
+  });
+
+  function startEditPermit(permit: Permit) {
+    setEditingPermit(permit.id);
+    setEditPermitForm({
+      permit_type: permit.permit_type,
+      permit_number: permit.permit_number || "",
+      status: permit.status,
+      applied_date: permit.applied_date ?? "",
+      approved_date: permit.approved_date ?? "",
+      expiry_date: permit.expiry_date ?? "",
+      notes: permit.notes || "",
+    });
+  }
+
+  async function saveEditPermit(id: string) {
+    await mutate(`/api/admin/projects/${projectId}/permits/${id}`, "PATCH", {
+      permit_type: editPermitForm.permit_type,
+      permit_number: editPermitForm.permit_number || null,
+      status: editPermitForm.status,
+      applied_date: editPermitForm.applied_date || null,
+      approved_date: editPermitForm.approved_date || null,
+      expiry_date: editPermitForm.expiry_date || null,
+      notes: editPermitForm.notes || null,
+    });
+    setEditingPermit(null);
+  }
+
   async function updatePermitStatus(id: string, status: PermitStatus) {
     await mutate(`/api/admin/projects/${projectId}/permits`, "PATCH", {
       id,
@@ -2497,71 +2752,167 @@ function PermitsTab({
 
         <div className="divide-y divide-gray-100">
           {permits.map((p) => (
-            <div
-              key={p.id}
-              className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${permitLeftBorder(p.status)}`}
-            >
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="font-medium text-sm text-gray-900">
-                    {p.permit_type}
-                  </span>
-                  {p.permit_number && (
-                    <span className="text-xs text-gray-500">
-                      #{p.permit_number}
-                    </span>
-                  )}
-                  <Badge
-                    variant="outline"
-                    className={`inline-flex items-center gap-1 rounded-full ${PERMIT_STATUS_COLORS[p.status]}`}
-                  >
-                    <Circle className="w-1.5 h-1.5 fill-current" />
-                    {p.status.replace("_", " ")}
-                  </Badge>
+            <div key={p.id}>
+              {editingPermit === p.id ? (
+                <div className="bg-gray-50 rounded-lg p-3 my-2 space-y-3">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Permit Type</label>
+                      <input
+                        value={editPermitForm.permit_type}
+                        onChange={(e) => setEditPermitForm({ ...editPermitForm, permit_type: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Permit Number</label>
+                      <input
+                        value={editPermitForm.permit_number}
+                        onChange={(e) => setEditPermitForm({ ...editPermitForm, permit_number: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
+                      <select
+                        value={editPermitForm.status}
+                        onChange={(e) => setEditPermitForm({ ...editPermitForm, status: e.target.value as PermitStatus })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                      >
+                        <option value="not_applied">Not Applied</option>
+                        <option value="applied">Applied</option>
+                        <option value="approved">Approved</option>
+                        <option value="denied">Denied</option>
+                        <option value="expired">Expired</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Applied Date</label>
+                      <input
+                        type="date"
+                        value={editPermitForm.applied_date}
+                        onChange={(e) => setEditPermitForm({ ...editPermitForm, applied_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Approved Date</label>
+                      <input
+                        type="date"
+                        value={editPermitForm.approved_date}
+                        onChange={(e) => setEditPermitForm({ ...editPermitForm, approved_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Expiry Date</label>
+                      <input
+                        type="date"
+                        value={editPermitForm.expiry_date}
+                        onChange={(e) => setEditPermitForm({ ...editPermitForm, expiry_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-600 font-medium mb-1">Notes</label>
+                    <input
+                      value={editPermitForm.notes}
+                      onChange={(e) => setEditPermitForm({ ...editPermitForm, notes: e.target.value })}
+                      className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={loading}
+                      onClick={() => saveEditPermit(p.id)}
+                      className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      onClick={() => setEditingPermit(null)}
+                      className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
                 </div>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {p.applied_date && <>Applied: {fmtDate(p.applied_date)}</>}
-                  {p.approved_date && <> | Approved: {fmtDate(p.approved_date)}</>}
-                  {p.expiry_date && <> | Expires: {fmtDate(p.expiry_date)}</>}
+              ) : (
+                <div
+                  className={`flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2 border-l-4 pl-3 ${permitLeftBorder(p.status)}`}
+                >
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2">
+                      <span className="font-medium text-sm text-gray-900">
+                        {p.permit_type}
+                      </span>
+                      {p.permit_number && (
+                        <span className="text-xs text-gray-500">
+                          #{p.permit_number}
+                        </span>
+                      )}
+                      <Badge
+                        variant="outline"
+                        className={`inline-flex items-center gap-1 rounded-full ${PERMIT_STATUS_COLORS[p.status]}`}
+                      >
+                        <Circle className="w-1.5 h-1.5 fill-current" />
+                        {p.status.replace("_", " ")}
+                      </Badge>
+                    </div>
+                    <div className="text-xs text-gray-500 mt-0.5">
+                      {p.applied_date && <>Applied: {fmtDate(p.applied_date)}</>}
+                      {p.approved_date && <> | Approved: {fmtDate(p.approved_date)}</>}
+                      {p.expiry_date && <> | Expires: {fmtDate(p.expiry_date)}</>}
+                    </div>
+                    {p.file_url && (
+                      <a
+                        href={p.file_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-0.5 transition-colors"
+                        aria-label={`View permit file for ${p.permit_type}`}
+                      >
+                        <Paperclip className="w-3 h-3" />
+                        {p.file_name || "View PDF"}
+                      </a>
+                    )}
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <select
+                      disabled={loading}
+                      value={p.status}
+                      aria-label={`Change status for permit ${p.permit_type}`}
+                      onChange={(e) =>
+                        updatePermitStatus(p.id, e.target.value as PermitStatus)
+                      }
+                      className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
+                    >
+                      <option value="not_applied">Not Applied</option>
+                      <option value="applied">Applied</option>
+                      <option value="approved">Approved</option>
+                      <option value="denied">Denied</option>
+                      <option value="expired">Expired</option>
+                    </select>
+                    <button
+                      disabled={loading}
+                      aria-label={`Edit permit ${p.permit_type}`}
+                      onClick={() => startEditPermit(p)}
+                      className="text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    >
+                      <Edit3 className="w-3.5 h-3.5" />
+                    </button>
+                    <button
+                      disabled={loading}
+                      aria-label={`Delete permit ${p.permit_type}`}
+                      onClick={() => deletePermit(p.id)}
+                      className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                  </div>
                 </div>
-                {p.file_url && (
-                  <a
-                    href={p.file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-0.5 transition-colors"
-                    aria-label={`View permit file for ${p.permit_type}`}
-                  >
-                    <Paperclip className="w-3 h-3" />
-                    {p.file_name || "View PDF"}
-                  </a>
-                )}
-              </div>
-              <div className="flex items-center gap-2">
-                <select
-                  disabled={loading}
-                  value={p.status}
-                  aria-label={`Change status for permit ${p.permit_type}`}
-                  onChange={(e) =>
-                    updatePermitStatus(p.id, e.target.value as PermitStatus)
-                  }
-                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
-                >
-                  <option value="not_applied">Not Applied</option>
-                  <option value="applied">Applied</option>
-                  <option value="approved">Approved</option>
-                  <option value="denied">Denied</option>
-                  <option value="expired">Expired</option>
-                </select>
-                <button
-                  disabled={loading}
-                  aria-label={`Delete permit ${p.permit_type}`}
-                  onClick={() => deletePermit(p.id)}
-                  className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              </div>
+              )}
             </div>
           ))}
         </div>
@@ -2835,6 +3186,28 @@ function TasksTab({
   const [newTitle, setNewTitle] = useState("");
   const [newDueDate, setNewDueDate] = useState("");
 
+  const [editingTask, setEditingTask] = useState<string | null>(null);
+  const [editTaskForm, setEditTaskForm] = useState({
+    title: "",
+    due_date: "",
+  });
+
+  function startEditTask(t: Task) {
+    setEditingTask(t.id);
+    setEditTaskForm({
+      title: t.title,
+      due_date: t.due_date ?? "",
+    });
+  }
+
+  async function saveEditTask(id: string) {
+    await mutate(`/api/admin/projects/${projectId}/tasks/${id}`, "PATCH", {
+      title: editTaskForm.title,
+      due_date: editTaskForm.due_date || null,
+    });
+    setEditingTask(null);
+  }
+
   async function addTask() {
     if (!newTitle.trim()) return;
     await mutate(`/api/admin/projects/${projectId}/tasks`, "POST", {
@@ -2873,28 +3246,74 @@ function TasksTab({
 
         <div className="divide-y divide-gray-100">
           {incomplete.map((t) => (
-            <div
-              key={t.id}
-              className="flex items-center gap-3 py-2.5"
-            >
-              <button
-                disabled={loading}
-                aria-label={`Mark "${t.title}" as complete`}
-                onClick={() => toggleTask(t)}
-                className="w-6 h-6 rounded border-2 border-gray-300 hover:border-black flex-shrink-0 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-              />
-              <span className="flex-1 text-sm text-gray-900">{t.title}</span>
-              {t.due_date && (
-                <span className="text-xs text-gray-500">{fmtDate(t.due_date)}</span>
+            <div key={t.id}>
+              {editingTask === t.id ? (
+                <div className="bg-gray-50 rounded-lg p-3 my-2 space-y-3">
+                  <div className="flex flex-col sm:flex-row gap-3">
+                    <div className="flex-1">
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Title</label>
+                      <input
+                        value={editTaskForm.title}
+                        onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Due Date</label>
+                      <input
+                        type="date"
+                        value={editTaskForm.due_date}
+                        onChange={(e) => setEditTaskForm({ ...editTaskForm, due_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={loading}
+                      onClick={() => saveEditTask(t.id)}
+                      className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                    >
+                      {loading ? "Saving..." : "Save Changes"}
+                    </button>
+                    <button
+                      onClick={() => setEditingTask(null)}
+                      className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 py-2.5">
+                  <button
+                    disabled={loading}
+                    aria-label={`Mark "${t.title}" as complete`}
+                    onClick={() => toggleTask(t)}
+                    className="w-6 h-6 rounded border-2 border-gray-300 hover:border-black flex-shrink-0 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                  />
+                  <span className="flex-1 text-sm text-gray-900">{t.title}</span>
+                  {t.due_date && (
+                    <span className="text-xs text-gray-500">{fmtDate(t.due_date)}</span>
+                  )}
+                  <button
+                    disabled={loading}
+                    aria-label={`Edit task "${t.title}"`}
+                    onClick={() => startEditTask(t)}
+                    className="text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                  </button>
+                  <button
+                    disabled={loading}
+                    aria-label={`Delete task "${t.title}"`}
+                    onClick={() => deleteTask(t.id)}
+                    className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                  >
+                    <X className="w-4 h-4" />
+                  </button>
+                </div>
               )}
-              <button
-                disabled={loading}
-                aria-label={`Delete task "${t.title}"`}
-                onClick={() => deleteTask(t.id)}
-                className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-              >
-                <X className="w-4 h-4" />
-              </button>
             </div>
           ))}
 
@@ -2908,34 +3327,80 @@ function TasksTab({
                 </div>
               )}
               {completed.map((t) => (
-                <div
-                  key={t.id}
-                  className="flex items-center gap-3 py-2.5 border-l-4 border-l-green-400 pl-3"
-                >
-                  <button
-                    disabled={loading}
-                    aria-label={`Mark "${t.title}" as incomplete`}
-                    onClick={() => toggleTask(t)}
-                    className="w-6 h-6 rounded border-2 border-green-500 bg-green-500 flex-shrink-0 flex items-center justify-center cursor-pointer min-h-[44px] min-w-[44px] transition-colors"
-                  >
-                    <Check className="w-3 h-3 text-white" />
-                  </button>
-                  <span className="flex-1 text-sm text-gray-500 line-through">
-                    {t.title}
-                  </span>
-                  {t.due_date && (
-                    <span className="text-xs text-gray-500">
-                      {fmtDate(t.due_date)}
-                    </span>
+                <div key={t.id}>
+                  {editingTask === t.id ? (
+                    <div className="bg-gray-50 rounded-lg p-3 my-2 space-y-3">
+                      <div className="flex flex-col sm:flex-row gap-3">
+                        <div className="flex-1">
+                          <label className="block text-xs text-gray-600 font-medium mb-1">Title</label>
+                          <input
+                            value={editTaskForm.title}
+                            onChange={(e) => setEditTaskForm({ ...editTaskForm, title: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 font-medium mb-1">Due Date</label>
+                          <input
+                            type="date"
+                            value={editTaskForm.due_date}
+                            onChange={(e) => setEditTaskForm({ ...editTaskForm, due_date: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          disabled={loading}
+                          onClick={() => saveEditTask(t.id)}
+                          className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                        >
+                          {loading ? "Saving..." : "Save Changes"}
+                        </button>
+                        <button
+                          onClick={() => setEditingTask(null)}
+                          className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-3 py-2.5 border-l-4 border-l-green-400 pl-3">
+                      <button
+                        disabled={loading}
+                        aria-label={`Mark "${t.title}" as incomplete`}
+                        onClick={() => toggleTask(t)}
+                        className="w-6 h-6 rounded border-2 border-green-500 bg-green-500 flex-shrink-0 flex items-center justify-center cursor-pointer min-h-[44px] min-w-[44px] transition-colors"
+                      >
+                        <Check className="w-3 h-3 text-white" />
+                      </button>
+                      <span className="flex-1 text-sm text-gray-500 line-through">
+                        {t.title}
+                      </span>
+                      {t.due_date && (
+                        <span className="text-xs text-gray-500">
+                          {fmtDate(t.due_date)}
+                        </span>
+                      )}
+                      <button
+                        disabled={loading}
+                        aria-label={`Edit task "${t.title}"`}
+                        onClick={() => startEditTask(t)}
+                        className="text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                      >
+                        <Edit3 className="w-3.5 h-3.5" />
+                      </button>
+                      <button
+                        disabled={loading}
+                        aria-label={`Delete task "${t.title}"`}
+                        onClick={() => deleteTask(t.id)}
+                        className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
+                      >
+                        <X className="w-4 h-4" />
+                      </button>
+                    </div>
                   )}
-                  <button
-                    disabled={loading}
-                    aria-label={`Delete task "${t.title}"`}
-                    onClick={() => deleteTask(t.id)}
-                    className="text-gray-500 hover:text-red-500 disabled:opacity-50 cursor-pointer min-h-[44px] min-w-[44px] flex items-center justify-center transition-colors"
-                  >
-                    <X className="w-4 h-4" />
-                  </button>
                 </div>
               ))}
             </>
