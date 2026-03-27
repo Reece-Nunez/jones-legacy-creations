@@ -60,10 +60,7 @@ function daysUntil(dateStr: string, now: Date): number {
 }
 
 function getGreeting(): string {
-  const hour = new Date().getHours();
-  if (hour < 12) return "Good morning";
-  if (hour < 17) return "Good afternoon";
-  return "Good evening";
+  return "Welcome back";
 }
 
 function endOfWeek(now: Date): Date {

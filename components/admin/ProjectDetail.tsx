@@ -1810,7 +1810,7 @@ function DrawsTab({
 
   async function deleteDoc(id: string) {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
-    await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id });
+    await mutate(`/api/admin/projects/${projectId}/documents/${id}`, "DELETE");
   }
 
   async function rescanDrawDocs(drawId: string, docs: Document[]) {
@@ -3017,7 +3017,7 @@ function DocumentsTab({
   async function bulkDelete() {
     if (!window.confirm(`Delete ${selectedIds.size} documents?`)) return;
     for (const docId of selectedIds) {
-      await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id: docId });
+      await mutate(`/api/admin/projects/${projectId}/documents/${docId}`, "DELETE");
     }
     setSelectedIds(new Set());
     setSelectMode(false);
@@ -3062,7 +3062,7 @@ function DocumentsTab({
 
   async function deleteDoc(id: string) {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
-    await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id });
+    await mutate(`/api/admin/projects/${projectId}/documents/${id}`, "DELETE");
   }
 
   const fmtSize = (bytes: number) => {
