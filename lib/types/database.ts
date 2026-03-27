@@ -134,6 +134,17 @@ export interface ActivityLogEntry {
   created_at: string;
 }
 
+export interface InvoiceUploadToken {
+  id: string;
+  token: string;
+  project_id: string;
+  contractor_id: string;
+  project_name: string;
+  contractor_name: string;
+  active: boolean;
+  created_at: string;
+}
+
 export interface Estimate {
   id: string;
   client_name: string;

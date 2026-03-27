@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -33,6 +33,12 @@ import {
   Receipt,
   Circle,
   Paperclip,
+  LinkIcon,
+  Copy,
+  XCircle,
+  Send,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import type {
   Project,
@@ -49,6 +55,7 @@ import type {
   PermitStatus,
   DrawRequestStatus,
   DocumentCategory,
+  InvoiceUploadToken,
 } from "@/lib/types/database";
 import {
   PROJECT_STATUS_LABELS,
@@ -353,6 +360,7 @@ export default function ProjectDetail({
           <TabsContent value="payments">
             <PaymentsTab
               projectId={project.id}
+              projectName={project.name}
               payments={payments}
               contractors={contractors}
               mutate={mutate}
@@ -912,12 +920,14 @@ function InvoicesTab({
 
 function PaymentsTab({
   projectId,
+  projectName,
   payments,
   contractors,
   mutate,
   loading,
 }: {
   projectId: string;
+  projectName: string;
   payments: ContractorPayment[];
   contractors: Contractor[];
   mutate: (
@@ -936,6 +946,84 @@ function PaymentsTab({
     due_date: "",
   });
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+
+  // --- Upload Links state ---
+  const [uploadLinksOpen, setUploadLinksOpen] = useState(false);
+  const [uploadLinks, setUploadLinks] = useState<InvoiceUploadToken[]>([]);
+  const [uploadLinkContractorId, setUploadLinkContractorId] = useState("");
+  const [uploadLinkLoading, setUploadLinkLoading] = useState(false);
+  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
+
+  const fetchUploadLinks = useCallback(async () => {
+    try {
+      const res = await fetch(`/api/admin/projects/${projectId}/upload-links`);
+      if (res.ok) {
+        const data = await res.json();
+        setUploadLinks(data);
+      }
+    } catch {
+      // silently fail
+    }
+  }, [projectId]);
+
+  useEffect(() => {
+    fetchUploadLinks();
+  }, [fetchUploadLinks]);
+
+  async function generateUploadLink() {
+    if (!uploadLinkContractorId) return;
+    const contractor = contractors.find((c) => c.id === uploadLinkContractorId);
+    if (!contractor) return;
+    setUploadLinkLoading(true);
+    try {
+      const res = await fetch(`/api/admin/projects/${projectId}/upload-links`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contractor_id: contractor.id,
+          contractor_name: contractor.name,
+          project_name: projectName,
+        }),
+      });
+      if (res.ok) {
+        await fetchUploadLinks();
+        setUploadLinkContractorId("");
+      }
+    } finally {
+      setUploadLinkLoading(false);
+    }
+  }
+
+  async function deactivateUploadLink(tokenId: string) {
+    setUploadLinkLoading(true);
+    try {
+      const res = await fetch(
+        `/api/admin/projects/${projectId}/upload-links/${tokenId}`,
+        { method: "DELETE" },
+      );
+      if (res.ok) {
+        await fetchUploadLinks();
+      }
+    } finally {
+      setUploadLinkLoading(false);
+    }
+  }
+
+  function copyUploadLink(token: string, tokenId: string) {
+    const url = `${window.location.origin}/submit-invoice/${token}`;
+    navigator.clipboard.writeText(url);
+    setCopiedTokenId(tokenId);
+    setTimeout(() => setCopiedTokenId(null), 2000);
+  }
+
+  function textUploadLink(token: string, contractorName: string, contractorId: string) {
+    const contractor = contractors.find((c) => c.id === contractorId);
+    if (!contractor?.phone) return;
+    const url = `${window.location.origin}/submit-invoice/${token}`;
+    const firstName = contractorName.split(" ")[0];
+    const message = `Hi ${firstName}, please upload your invoice for ${projectName} here: ${url}`;
+    window.open(`sms:${contractor.phone}?body=${encodeURIComponent(message)}`);
+  }
 
   function handleContractorChange(value: string) {
     if (value === "other") {
@@ -993,6 +1081,127 @@ function PaymentsTab({
         )}
       </CardHeader>
       <CardContent>
+        {/* Contractor Upload Links (collapsible) */}
+        <ShadCard className="mb-4">
+          <button
+            type="button"
+            onClick={() => setUploadLinksOpen(!uploadLinksOpen)}
+            className="w-full flex items-center gap-2 px-4 py-3 text-left cursor-pointer hover:bg-gray-50 transition-colors rounded-t-lg"
+          >
+            {uploadLinksOpen ? (
+              <ChevronDown className="w-4 h-4 text-gray-500" />
+            ) : (
+              <ChevronRight className="w-4 h-4 text-gray-500" />
+            )}
+            <LinkIcon className="w-4 h-4 text-gray-700" />
+            <span className="text-sm font-semibold text-gray-900">Contractor Upload Links</span>
+            {uploadLinks.length > 0 && (
+              <Badge variant="outline" className="ml-auto text-xs bg-blue-50 text-blue-700">
+                {uploadLinks.length} active
+              </Badge>
+            )}
+          </button>
+          {uploadLinksOpen && (
+            <CardContent className="pt-0 pb-4">
+              <p className="text-xs text-gray-500 mb-3">
+                Generate a link to text to a contractor so they can upload their invoice directly.
+              </p>
+              <div className="flex items-end gap-2 mb-4">
+                <div className="flex-1">
+                  <label htmlFor="upload-link-contractor" className="block text-sm text-gray-700 font-medium mb-1">
+                    Contractor
+                  </label>
+                  <select
+                    id="upload-link-contractor"
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white"
+                    value={uploadLinkContractorId}
+                    onChange={(e) => setUploadLinkContractorId(e.target.value)}
+                  >
+                    <option value="">Select contractor...</option>
+                    {contractors.map((c) => (
+                      <option key={c.id} value={c.id}>
+                        {c.name}{c.company ? ` \u2014 ${c.company}` : ""}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <button
+                  disabled={!uploadLinkContractorId || uploadLinkLoading}
+                  onClick={generateUploadLink}
+                  className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors flex items-center gap-1.5 whitespace-nowrap"
+                >
+                  <Send className="w-3.5 h-3.5" />
+                  {uploadLinkLoading ? "Generating..." : "Generate Link"}
+                </button>
+              </div>
+
+              {uploadLinks.length > 0 && (
+                <div className="space-y-2">
+                  <p className="text-xs font-medium text-gray-700">Active Links:</p>
+                  {uploadLinks.map((link) => {
+                    const contractor = contractors.find((c) => c.id === link.contractor_id);
+                    const displayUrl = `${typeof window !== "undefined" ? window.location.host : ""}/.../submit-invoice/${link.token.slice(0, 8)}...`;
+                    return (
+                      <div
+                        key={link.id}
+                        className="border border-gray-200 rounded-lg p-3 bg-gray-50"
+                      >
+                        <div className="flex items-start justify-between gap-2">
+                          <div className="min-w-0">
+                            <p className="text-sm font-medium text-gray-900">
+                              {link.contractor_name}
+                              {contractor?.company && (
+                                <span className="text-gray-500"> &mdash; {contractor.company}</span>
+                              )}
+                            </p>
+                            <p className="text-xs text-gray-400 font-mono truncate mt-0.5">
+                              {displayUrl}
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-2 mt-2">
+                          <button
+                            onClick={() => copyUploadLink(link.token, link.id)}
+                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 min-h-[36px] rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 cursor-pointer transition-colors"
+                          >
+                            <Copy className="w-3 h-3" />
+                            {copiedTokenId === link.id ? "Copied!" : "Copy Link"}
+                          </button>
+                          {contractor?.phone && (
+                            <button
+                              onClick={() =>
+                                textUploadLink(link.token, link.contractor_name, link.contractor_id)
+                              }
+                              className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 min-h-[36px] rounded-md border border-gray-300 bg-white text-blue-600 hover:bg-blue-50 cursor-pointer transition-colors"
+                            >
+                              <MessageSquare className="w-3 h-3" />
+                              Text Link
+                            </button>
+                          )}
+                          <button
+                            disabled={uploadLinkLoading}
+                            onClick={() => deactivateUploadLink(link.id)}
+                            className="inline-flex items-center gap-1 text-xs px-2.5 py-1.5 min-h-[36px] rounded-md border border-red-200 bg-white text-red-600 hover:bg-red-50 disabled:opacity-50 cursor-pointer transition-colors ml-auto"
+                          >
+                            <XCircle className="w-3 h-3" />
+                            Deactivate
+                          </button>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {uploadLinks.length === 0 && (
+                <p className="text-xs text-gray-400 text-center py-2">
+                  No active upload links. Select a contractor and generate one above.
+                </p>
+              )}
+            </CardContent>
+          )}
+        </ShadCard>
+
         {showForm && (
           <ShadCard className="mb-4 bg-gray-50 border-dashed">
             <CardContent className="pt-4">
