@@ -130,7 +130,7 @@ export interface Document {
   file_size: number | null;
   category: DocumentCategory;
   draw_request_id: string | null;
-  line_item_number: number | null;
+  line_item_number: string | null;
   vendor: string | null;
   doc_type: string | null;
   created_at: string;
@@ -139,7 +139,7 @@ export interface Document {
 export interface BudgetLineItem {
   id: string;
   project_id: string;
-  line_number: number;
+  line_number: string;
   description: string;
   budgeted_amount: number;
   notes: string | null;
@@ -148,35 +148,39 @@ export interface BudgetLineItem {
 }
 
 export const DEFAULT_BUDGET_LINE_ITEMS = [
-  { line_number: 1, description: "LAND" },
-  { line_number: 2, description: "PLANS" },
-  { line_number: 3, description: "ENGINEERING" },
-  { line_number: 4, description: "PERMITTING" },
-  { line_number: 5, description: "SLAB/DRIVEWAY" },
-  { line_number: 6, description: "PLUMBING" },
-  { line_number: 7, description: "LUMBER" },
-  { line_number: 8, description: "FRAMING LABOR" },
-  { line_number: 9, description: "TRUSSES" },
-  { line_number: 10, description: "ROOFING" },
-  { line_number: 11, description: "STUCCO" },
-  { line_number: 12, description: "STONE" },
-  { line_number: 13, description: "WINDOWS" },
-  { line_number: 14, description: "DOORS/TRIM" },
-  { line_number: 15, description: "INSULATION" },
-  { line_number: 16, description: "ELECTRICAL" },
-  { line_number: 17, description: "HVAC" },
-  { line_number: 18, description: "SHEETROCK" },
-  { line_number: 19, description: "PAINT" },
-  { line_number: 20, description: "FLOORING" },
-  { line_number: 21, description: "CABINETS" },
-  { line_number: 22, description: "COUNTERTOPS" },
-  { line_number: 23, description: "LANDSCAPING" },
-  { line_number: 24, description: "APPLIANCES" },
-  { line_number: 25, description: "METAL STAIRCASE" },
-  { line_number: 26, description: "PORTA POTTY" },
-  { line_number: 27, description: "DUMPSTER" },
-  { line_number: 28, description: "GARAGE DOOR" },
-  { line_number: 29, description: "CONTINGENCY" },
+  { line_number: "1", description: "LAND" },
+  { line_number: "2", description: "PLANS" },
+  { line_number: "3", description: "ENGINEERING" },
+  { line_number: "4", description: "PERMITTING" },
+  { line_number: "5a", description: "SLAB" },
+  { line_number: "5b", description: "FINISH CONCRETE/DRIVEWAY" },
+  { line_number: "6a", description: "PLUMBING (ROUGH-IN)" },
+  { line_number: "6b", description: "PLUMBING (FINISH)" },
+  { line_number: "7", description: "LUMBER" },
+  { line_number: "8", description: "FRAMING LABOR" },
+  { line_number: "9", description: "TRUSSES" },
+  { line_number: "10", description: "ROOFING" },
+  { line_number: "11", description: "STUCCO" },
+  { line_number: "12", description: "STONE" },
+  { line_number: "13", description: "WINDOWS" },
+  { line_number: "14", description: "DOORS/TRIM" },
+  { line_number: "15", description: "INSULATION" },
+  { line_number: "16a", description: "ELECTRICAL (ROUGH-IN)" },
+  { line_number: "16b", description: "ELECTRICAL (FINISH)" },
+  { line_number: "17a", description: "HVAC (ROUGH-IN)" },
+  { line_number: "17b", description: "HVAC (FINISH)" },
+  { line_number: "18", description: "SHEETROCK" },
+  { line_number: "19", description: "PAINT" },
+  { line_number: "20", description: "FLOORING" },
+  { line_number: "21", description: "CABINETS" },
+  { line_number: "22", description: "COUNTERTOPS" },
+  { line_number: "23", description: "LANDSCAPING" },
+  { line_number: "24", description: "APPLIANCES" },
+  { line_number: "25", description: "METAL STAIRCASE" },
+  { line_number: "26", description: "PORTA POTTY" },
+  { line_number: "27", description: "DUMPSTER" },
+  { line_number: "28", description: "GARAGE DOOR" },
+  { line_number: "29", description: "CONTINGENCY" },
 ] as const;
 
 export interface Task {

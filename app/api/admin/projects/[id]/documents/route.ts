@@ -83,7 +83,7 @@ export async function POST(
       file_size: file.size,
       category: finalCategory,
       draw_request_id: drawRequestId || null,
-      line_item_number: lineItemNumber ? parseInt(lineItemNumber) : null,
+      line_item_number: lineItemNumber || null,
       vendor: finalVendor,
       doc_type: finalDocType,
     })

@@ -25,7 +25,7 @@ export async function exportDrawRequestXlsx(
 
   const drawDocs = documents
     .filter((d) => d.draw_request_id === draw.id)
-    .sort((a, b) => (a.line_item_number ?? 999) - (b.line_item_number ?? 999));
+    .sort((a, b) => (a.line_item_number ?? "zzz").localeCompare(b.line_item_number ?? "zzz", undefined, { numeric: true }));
 
   // Match documents to contractor payments
   const docPayments = new Map<string, ContractorPayment>();

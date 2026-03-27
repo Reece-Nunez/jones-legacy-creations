@@ -1621,7 +1621,7 @@ function DrawsTab({
   const docsByDraw = draws.reduce<Record<string, Document[]>>((acc, draw) => {
     acc[draw.id] = documents
       .filter((d) => d.draw_request_id === draw.id)
-      .sort((a, b) => (a.line_item_number ?? 999) - (b.line_item_number ?? 999));
+      .sort((a, b) => (a.line_item_number ?? "zzz").localeCompare(b.line_item_number ?? "zzz", undefined, { numeric: true }));
     return acc;
   }, {});
 
@@ -1893,7 +1893,7 @@ function DrawsTab({
         // Also update vendor, doc_type, and line_item_number if edited
         if (doc.vendor) updates.vendor = doc.vendor;
         if (doc.docType) updates.doc_type = doc.docType;
-        if (doc.lineItemNumber) updates.line_item_number = parseInt(doc.lineItemNumber) || null;
+        if (doc.lineItemNumber) updates.line_item_number = doc.lineItemNumber;
 
         await fetch(`/api/admin/projects/${projectId}/documents`, {
           method: "PATCH",
@@ -3898,13 +3898,13 @@ function BudgetTab({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [editAmounts, setEditAmounts] = useState<Record<number, string>>({});
+  const [editAmounts, setEditAmounts] = useState<Record<string, string>>({});
   const [saving, setSaving] = useState(false);
 
   const hasBudget = budgetLineItems.length > 0;
 
   // Build actual spent per line item from documents + payments
-  const spentByLine = new Map<number, number>();
+  const spentByLine = new Map<string, number>();
   for (const doc of documents) {
     if (doc.line_item_number == null) continue;
     const payment = payments.find((p) => p.invoice_file_url === doc.file_url);
@@ -3944,7 +3944,7 @@ function BudgetTab({
   }
 
   function startEditing() {
-    const amounts: Record<number, string> = {};
+    const amounts: Record<string, string> = {};
     for (const item of lineItems) {
       amounts[item.line_number] = item.budgeted_amount ? String(item.budgeted_amount) : "";
     }

@@ -165,7 +165,7 @@ create table tasks (
 create table budget_line_items (
   id uuid primary key default uuid_generate_v4(),
   project_id uuid not null references projects(id) on delete cascade,
-  line_number integer not null,
+  line_number text not null,
   description text not null,
   budgeted_amount numeric(12,2) not null default 0,
   notes text,

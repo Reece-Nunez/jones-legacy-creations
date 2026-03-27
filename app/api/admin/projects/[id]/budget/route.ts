@@ -33,7 +33,7 @@ export async function POST(
 
   // If body is an array, it's a bulk upsert
   if (Array.isArray(body)) {
-    const rows = body.map((item: { line_number: number; description: string; budgeted_amount: number; notes?: string }) => ({
+    const rows = body.map((item: { line_number: string; description: string; budgeted_amount: number; notes?: string }) => ({
       project_id: id,
       line_number: item.line_number,
       description: item.description,
