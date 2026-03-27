@@ -1558,6 +1558,7 @@ function DrawsTab({
   const [expandedDraws, setExpandedDraws] = useState<Set<string>>(new Set());
   const [uploadingDrawId, setUploadingDrawId] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
+  const [uploadLineItems, setUploadLineItems] = useState<Record<number, string>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [scanningDrawId, setScanningDrawId] = useState<string | null>(null);
@@ -1782,13 +1783,17 @@ function DrawsTab({
     for (let i = 0; i < uploadFiles.length; i++) {
       const file = uploadFiles[i];
       const parsed = parseDrawFilename(file.name);
+      const userLineItem = uploadLineItems[i];
       const fd = new FormData();
       fd.append("file", file);
       fd.append("category", "draw_request");
       fd.append("draw_request_id", drawId);
       fd.append("auto_create_payment", "true");
       fd.append("use_ai", "true");
-      if (parsed.lineItemNumber !== null) {
+      // User-specified line item # takes priority, then parsed from filename
+      if (userLineItem) {
+        fd.append("line_item_number", userLineItem);
+      } else if (parsed.lineItemNumber !== null) {
         fd.append("line_item_number", String(parsed.lineItemNumber));
       }
       if (parsed.vendor) {
@@ -1837,6 +1842,7 @@ function DrawsTab({
     }
 
     setUploadFiles([]);
+    setUploadLineItems({});
     setUploadingDrawId(null);
     setUploading(false);
     setUploadProgress(null);
@@ -1852,20 +1858,22 @@ function DrawsTab({
     setSavingReview(true);
     try {
       for (const doc of reviewDocs) {
-        // Only patch if the name was changed from original
-        if (doc.editedName !== doc.originalName) {
-          await fetch(`/api/admin/projects/${projectId}/documents`, {
-            method: "PATCH",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              id: doc.id,
-              name: doc.editedName,
-            }),
-          });
-        }
+        const updates: Record<string, unknown> = {
+          id: doc.id,
+          name: doc.editedName,
+        };
+        // Also update vendor, doc_type, and line_item_number if edited
+        if (doc.vendor) updates.vendor = doc.vendor;
+        if (doc.docType) updates.doc_type = doc.docType;
+        if (doc.lineItemNumber) updates.line_item_number = parseInt(doc.lineItemNumber) || null;
+
+        await fetch(`/api/admin/projects/${projectId}/documents`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(updates),
+        });
       }
       toast.success("Document names updated");
-      // Refresh the data
       drawsRouter.refresh();
     } catch {
       toast.error("Failed to update names");
@@ -2369,27 +2377,30 @@ function DrawsTab({
                         <p className="text-xs font-medium text-gray-500">
                           {uploadFiles.length} file{uploadFiles.length !== 1 ? "s" : ""} selected
                         </p>
-                        <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
+                        <div className="max-h-60 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
                           {uploadFiles.map((f, i) => {
-                            const parsed = parseDrawFilename(f.name);
                             return (
                               <div
                                 key={`${f.name}-${i}`}
-                                className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50"
+                                className="flex items-center gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50"
                               >
+                                <div className="shrink-0 w-16">
+                                  <input
+                                    type="text"
+                                    inputMode="numeric"
+                                    placeholder="Line #"
+                                    value={uploadLineItems[i] || ""}
+                                    onChange={(e) => setUploadLineItems((prev) => ({ ...prev, [i]: e.target.value }))}
+                                    className="w-full rounded border border-gray-300 px-2 py-1 text-xs text-center focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                                  />
+                                </div>
                                 <div className="flex-1 min-w-0">
                                   <p className="truncate text-gray-900 text-xs">{f.name}</p>
-                                  <p className="text-xs text-gray-400">
-                                    {parsed.lineItemNumber !== null && `#${parsed.lineItemNumber} `}
-                                    {parsed.category && `${parsed.category} `}
-                                    {parsed.docType && `/ ${parsed.docType} `}
-                                    {parsed.vendor && `- ${parsed.vendor}`}
-                                  </p>
                                 </div>
                                 <button
                                   onClick={() => removeUploadFile(i)}
                                   aria-label={`Remove ${f.name}`}
-                                  className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
+                                  className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors shrink-0"
                                 >
                                   <X className="w-3.5 h-3.5" />
                                 </button>

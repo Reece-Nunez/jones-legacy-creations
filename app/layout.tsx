@@ -25,6 +25,8 @@ const playfair = Playfair_Display({
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
+  viewportFit: "cover",
+  themeColor: "#0f172a",
 };
 
 const BASE_URL = "https://www.joneslegacycreations.com";
@@ -52,6 +54,11 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "Jones Legacy Creations",
     description: "Custom home construction, real estate services, and interior design in Southern Utah.",
+  },
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "default",
+    title: "JLC Admin",
   },
   robots: {
     index: true,
