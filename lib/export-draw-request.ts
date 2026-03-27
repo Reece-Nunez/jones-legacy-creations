@@ -70,13 +70,16 @@ export async function exportDrawRequestXlsx(
   // ── Row 5: blank ──
   sheet.addRow([]);
 
-  // ── Row 6: Borrower ──
-  const r6 = sheet.addRow(["", "", `Borrowers Name:  ${project.client_name}`, "", ""]);
+  // ── Row 6: Borrower (always Blake Jones — he's the borrower on the loan) ──
+  const r6 = sheet.addRow(["", "", "Borrowers Name:  Blake Jones", "", ""]);
   sheet.mergeCells("C6:E6");
   r6.getCell(3).font = normalFont;
 
-  // ── Row 7: Address ──
-  const r7 = sheet.addRow(["", "", `Property Address: ${address || project.name}`, "", ""]);
+  // ── Row 7: Address with project name ──
+  const addressWithProject = address
+    ? `${address} (${project.name})`
+    : project.name;
+  const r7 = sheet.addRow(["", "", `Property Address: ${addressWithProject}`, "", ""]);
   sheet.mergeCells("C7:E7");
   r7.getCell(3).font = normalFont;
 
@@ -165,7 +168,7 @@ export async function exportDrawRequestXlsx(
   const contactRow = sheet.addRow([
     "",
     "",
-    `Contact Person for questions on Draw:  ${project.client_name}  Telephone:  ${project.client_phone || ""}`,
+    "Contact Person for questions on Draw:  Blake Jones  Telephone:  907 741.9073",
     "",
     "",
   ]);
