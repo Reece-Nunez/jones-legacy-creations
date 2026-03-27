@@ -1549,6 +1549,29 @@ function DrawsTab({
     );
   }
 
+  const [editingDraw, setEditingDraw] = useState<string | null>(null);
+  const [editDrawForm, setEditDrawForm] = useState({ draw_number: "", amount: "", description: "", notes: "" });
+
+  function startEditDraw(draw: DrawRequest) {
+    setEditingDraw(draw.id);
+    setEditDrawForm({
+      draw_number: String(draw.draw_number),
+      amount: formatCurrencyInput(String(draw.amount)),
+      description: draw.description || "",
+      notes: draw.notes || "",
+    });
+  }
+
+  async function saveEditDraw(drawId: string) {
+    await mutate(`/api/admin/projects/${projectId}/draws/${drawId}`, "PATCH", {
+      draw_number: parseInt(editDrawForm.draw_number),
+      amount: parseFloat(unformatCurrency(editDrawForm.amount)),
+      description: editDrawForm.description || null,
+      notes: editDrawForm.notes || null,
+    });
+    setEditingDraw(null);
+  }
+
   async function deleteDraw(id: string) {
     if (!window.confirm("Are you sure you want to delete this draw request?")) return;
     await mutate(`/api/admin/projects/${projectId}/draws/${id}`, "DELETE");
@@ -2138,6 +2161,70 @@ function DrawsTab({
                   </>
                 )}
 
+                {/* Edit Draw Form */}
+                {editingDraw === draw.id && (
+                  <>
+                    <Separator className="my-3" />
+                    <div className="space-y-3 bg-gray-50 rounded-lg p-3">
+                      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 font-medium mb-1">Draw #</label>
+                          <input
+                            type="number"
+                            inputMode="numeric"
+                            value={editDrawForm.draw_number}
+                            onChange={(e) => setEditDrawForm({ ...editDrawForm, draw_number: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 font-medium mb-1">Amount</label>
+                          <input
+                            type="text"
+                            inputMode="decimal"
+                            value={editDrawForm.amount}
+                            onChange={(e) => setEditDrawForm({ ...editDrawForm, amount: formatCurrencyInput(e.target.value) })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 font-medium mb-1">Description</label>
+                          <input
+                            type="text"
+                            value={editDrawForm.description}
+                            onChange={(e) => setEditDrawForm({ ...editDrawForm, description: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                      </div>
+                      <div>
+                        <label className="block text-xs text-gray-600 font-medium mb-1">Notes</label>
+                        <textarea
+                          value={editDrawForm.notes}
+                          onChange={(e) => setEditDrawForm({ ...editDrawForm, notes: e.target.value })}
+                          rows={2}
+                          className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black resize-none"
+                        />
+                      </div>
+                      <div className="flex gap-2">
+                        <button
+                          disabled={loading}
+                          onClick={() => saveEditDraw(draw.id)}
+                          className="bg-black text-white px-3 py-2 min-h-[36px] rounded-lg text-xs hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+                        >
+                          {loading ? "Saving..." : "Save Changes"}
+                        </button>
+                        <button
+                          onClick={() => setEditingDraw(null)}
+                          className="text-xs text-gray-600 px-3 py-2 min-h-[36px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    </div>
+                  </>
+                )}
+
                 {/* Draw Actions */}
                 <Separator className="my-3" />
                 <div className="flex flex-wrap items-center gap-2">
@@ -2157,6 +2244,17 @@ function DrawsTab({
                     <option value="funded">Funded</option>
                     <option value="denied">Denied</option>
                   </select>
+                  <button
+                    disabled={loading}
+                    aria-label={`Edit Draw #${draw.draw_number}`}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      startEditDraw(draw);
+                    }}
+                    className="text-xs text-gray-500 hover:text-blue-600 disabled:opacity-50 cursor-pointer min-h-[36px] px-2 flex items-center gap-1 transition-colors"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" /> Edit
+                  </button>
                   <button
                     disabled={loading}
                     aria-label={`Delete Draw #${draw.draw_number}`}
@@ -2193,7 +2291,7 @@ function PermitsTab({
   mutate: (
     url: string,
     method: string,
-    body?: Record<string, unknown>,
+    body?: Record<string, unknown> | FormData,
   ) => Promise<Response | undefined>;
   loading: boolean;
 }) {
@@ -2205,15 +2303,40 @@ function PermitsTab({
     applied_date: "",
     notes: "",
   });
+  const [permitFile, setPermitFile] = useState<File | null>(null);
 
   async function addPermit() {
     if (!form.permit_type) return;
+
+    // If there's a file, upload it first
+    let file_url: string | null = null;
+    let file_name: string | null = null;
+    if (permitFile) {
+      const uploadFd = new FormData();
+      uploadFd.append("file", permitFile);
+      uploadFd.append("category", "permit");
+      const uploadRes = await mutate(
+        `/api/admin/projects/${projectId}/documents`,
+        "POST",
+        uploadFd,
+      );
+      if (uploadRes) {
+        const uploadData = await uploadRes.json().catch(() => null);
+        if (uploadData) {
+          file_url = uploadData.file_url;
+          file_name = permitFile.name;
+        }
+      }
+    }
+
     await mutate(`/api/admin/projects/${projectId}/permits`, "POST", {
       permit_type: form.permit_type,
       permit_number: form.permit_number || null,
       status: form.status,
       applied_date: form.applied_date || null,
       notes: form.notes || null,
+      file_url,
+      file_name,
     });
     setForm({
       permit_type: "",
@@ -2222,6 +2345,7 @@ function PermitsTab({
       applied_date: "",
       notes: "",
     });
+    setPermitFile(null);
     setShowForm(false);
   }
 
@@ -2330,6 +2454,23 @@ function PermitsTab({
                     onChange={(e) => setForm({ ...form, notes: e.target.value })}
                   />
                 </div>
+                <div>
+                  <label className="block text-sm text-gray-700 font-medium mb-1">
+                    Attach Permit PDF
+                  </label>
+                  <label className="flex items-center gap-2 border border-gray-300 rounded-lg px-3 py-2.5 text-sm cursor-pointer hover:border-gray-400 transition-colors">
+                    <Upload className="w-4 h-4 text-gray-500" />
+                    <span className="text-gray-600 truncate">
+                      {permitFile ? permitFile.name : "Choose file..."}
+                    </span>
+                    <input
+                      type="file"
+                      className="hidden"
+                      accept=".pdf,.png,.jpg,.jpeg,.doc,.docx"
+                      onChange={(e) => setPermitFile(e.target.files?.[0] ?? null)}
+                    />
+                  </label>
+                </div>
                 <div className="flex gap-2">
                   <button
                     disabled={loading}
@@ -2383,6 +2524,18 @@ function PermitsTab({
                   {p.approved_date && <> | Approved: {fmtDate(p.approved_date)}</>}
                   {p.expiry_date && <> | Expires: {fmtDate(p.expiry_date)}</>}
                 </div>
+                {p.file_url && (
+                  <a
+                    href={p.file_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-0.5 transition-colors"
+                    aria-label={`View permit file for ${p.permit_type}`}
+                  >
+                    <Paperclip className="w-3 h-3" />
+                    {p.file_name || "View PDF"}
+                  </a>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <select

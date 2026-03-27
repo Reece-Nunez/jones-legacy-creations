@@ -101,6 +101,8 @@ export interface Permit {
   approved_date: string | null;
   expiry_date: string | null;
   notes: string | null;
+  file_url: string | null;
+  file_name: string | null;
   created_at: string;
 }
 
