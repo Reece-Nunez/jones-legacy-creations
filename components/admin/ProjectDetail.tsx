@@ -1735,6 +1735,7 @@ function DrawsTab({
           fd.append("file", file);
           fd.append("category", "draw_request");
           fd.append("draw_request_id", drawId);
+          fd.append("auto_create_payment", "true");
           if (parsed.lineItemNumber != null) fd.append("line_item_number", String(parsed.lineItemNumber));
           if (parsed.vendor) fd.append("vendor", parsed.vendor);
           if (parsed.docType) fd.append("doc_type", parsed.docType);
@@ -1829,6 +1830,7 @@ function DrawsTab({
       fd.append("file", file);
       fd.append("category", "draw_request");
       fd.append("draw_request_id", drawId);
+      fd.append("auto_create_payment", "true");
       if (parsed.lineItemNumber !== null) {
         fd.append("line_item_number", String(parsed.lineItemNumber));
       }
