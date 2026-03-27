@@ -16,12 +16,13 @@ import {
   ArrowRight,
   CheckCircle2,
   Loader2,
+  ChevronDown,
+  ChevronUp,
 } from "lucide-react";
 import {
   PROJECT_TYPE_OPTIONS,
   BUDGET_RANGES,
   TIMELINE_OPTIONS,
-  COST_RANGES,
 } from "@/lib/types/database";
 import { formatPhoneNumber, formatNumber, unformatNumber } from "@/lib/formatters";
 
@@ -40,6 +41,22 @@ const PROJECT_TYPE_ICONS: Record<string, React.ElementType> = {
 };
 
 const STEP_LABELS = ["Project Type", "Details", "Contact", "Your Estimate"];
+
+const BEDROOM_OPTIONS = ["1", "2", "3", "4", "5+"];
+const BATHROOM_OPTIONS = ["1", "1.5", "2", "2.5", "3", "3.5", "4+"];
+
+const FINISH_LEVELS = [
+  { value: "Budget", description: "Basic materials, cost-effective" },
+  { value: "Standard", description: "Quality materials, typical finishes" },
+  { value: "Mid-Range", description: "Upgraded materials, nicer finishes" },
+  { value: "High-End", description: "Premium materials, custom details" },
+];
+
+const FLOORING_OPTIONS = ["No preference", "Carpet", "LVP/Vinyl", "Tile", "Hardwood"];
+const COUNTERTOP_OPTIONS = ["No preference", "Laminate", "Quartz", "Granite", "Marble"];
+const CABINET_OPTIONS = ["No preference", "Stock", "Semi-Custom", "Custom"];
+
+const SHOWS_BEDROOMS_BATHROOMS = ["new_home", "addition", "whole_home_renovation"];
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -68,10 +85,26 @@ export default function EstimateForm() {
   const [timeline, setTimeline] = useState("");
   const [description, setDescription] = useState("");
 
+  // Step 2 — new fields
+  const [bedrooms, setBedrooms] = useState("");
+  const [bathrooms, setBathrooms] = useState("");
+  const [finishLevel, setFinishLevel] = useState("");
+  const [flooringPref, setFlooringPref] = useState("");
+  const [countertopPref, setCountertopPref] = useState("");
+  const [cabinetPref, setCabinetPref] = useState("");
+  const [showMaterials, setShowMaterials] = useState(false);
+
   // Step 3
   const [clientName, setClientName] = useState("");
   const [clientEmail, setClientEmail] = useState("");
   const [clientPhone, setClientPhone] = useState("");
+
+  // AI estimate results
+  const [aiEstimate, setAiEstimate] = useState<{
+    min: number;
+    max: number;
+    breakdown: string;
+  } | null>(null);
 
   // Validation
   const [stepErrors, setStepErrors] = useState<Record<string, string>>({});
@@ -114,12 +147,6 @@ export default function EstimateForm() {
     setStepErrors({});
   }
 
-  // Estimate calculation
-  const sqft = squareFootage ? Number(unformatNumber(squareFootage)) : null;
-  const costRange = COST_RANGES[projectType] || COST_RANGES.other;
-  const estimatedMin = sqft && sqft > 0 ? costRange.min * sqft : null;
-  const estimatedMax = sqft && sqft > 0 ? costRange.max * sqft : null;
-
   async function handleSubmit() {
     setSubmitting(true);
     setError(null);
@@ -141,6 +168,12 @@ export default function EstimateForm() {
           square_footage: squareFootage ? parseInt(unformatNumber(squareFootage)) || null : null,
           budget_range: budgetRange || null,
           timeline: timeline || null,
+          bedrooms: bedrooms || null,
+          bathrooms: bathrooms || null,
+          finish_level: finishLevel || null,
+          flooring_preference: flooringPref || null,
+          countertop_preference: countertopPref || null,
+          cabinet_preference: cabinetPref || null,
         }),
       });
 
@@ -151,6 +184,11 @@ export default function EstimateForm() {
         return;
       }
 
+      setAiEstimate({
+        min: data.ai_estimate_min || data.estimated_min,
+        max: data.ai_estimate_max || data.estimated_max,
+        breakdown: data.ai_breakdown || "",
+      });
       setSubmitted(true);
     } catch {
       setError("Unable to submit. Please check your connection and try again.");
@@ -188,15 +226,27 @@ export default function EstimateForm() {
           Thank you, {clientName}. We&apos;ve received your estimate request and
           will follow up within 1-2 business days with a detailed quote.
         </p>
-        {(estimatedMin != null && estimatedMax != null) && (
-          <div className="rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 border border-blue-200 p-8 mb-8 shadow-lg">
-            <p className="text-sm font-medium text-blue-700 uppercase tracking-wide mb-2">
-              Your Estimated Range
-            </p>
-            <p className="text-4xl font-bold text-gray-900">
-              {fmt(estimatedMin)} &mdash; {fmt(estimatedMax)}
-            </p>
-          </div>
+        {aiEstimate && aiEstimate.min > 0 && aiEstimate.max > 0 && (
+          <>
+            <div className="rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 border border-blue-200 p-8 mb-6 shadow-lg">
+              <p className="text-sm font-medium text-blue-700 uppercase tracking-wide mb-2">
+                AI-Powered Estimated Range
+              </p>
+              <p className="text-4xl font-bold text-gray-900">
+                {fmt(aiEstimate.min)} &mdash; {fmt(aiEstimate.max)}
+              </p>
+            </div>
+            {aiEstimate.breakdown && (
+              <div className="rounded-xl bg-white border border-gray-200 p-6 mb-8 shadow-sm text-left">
+                <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-3">
+                  Estimate Breakdown
+                </h3>
+                <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
+                  {aiEstimate.breakdown}
+                </p>
+              </div>
+            )}
+          </>
         )}
         <a
           href="/"
@@ -352,6 +402,103 @@ export default function EstimateForm() {
               </p>
             </div>
 
+            {/* Bedrooms & Bathrooms — only for applicable project types */}
+            {SHOWS_BEDROOMS_BATHROOMS.includes(projectType) && (
+              <>
+                <div>
+                  <label id="bedroomsLabel" className="block text-sm font-medium text-gray-700 mb-3">
+                    Bedrooms
+                  </label>
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="radiogroup"
+                    aria-labelledby="bedroomsLabel"
+                  >
+                    {BEDROOM_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        role="radio"
+                        aria-checked={bedrooms === opt}
+                        onClick={() => setBedrooms(opt)}
+                        className={`rounded-lg border min-h-[44px] min-w-[52px] px-4 py-3 text-sm font-medium transition-all ${
+                          bedrooms === opt
+                            ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+
+                <div>
+                  <label id="bathroomsLabel" className="block text-sm font-medium text-gray-700 mb-3">
+                    Bathrooms
+                  </label>
+                  <div
+                    className="flex flex-wrap gap-2"
+                    role="radiogroup"
+                    aria-labelledby="bathroomsLabel"
+                  >
+                    {BATHROOM_OPTIONS.map((opt) => (
+                      <button
+                        key={opt}
+                        type="button"
+                        role="radio"
+                        aria-checked={bathrooms === opt}
+                        onClick={() => setBathrooms(opt)}
+                        className={`rounded-lg border min-h-[44px] min-w-[52px] px-4 py-3 text-sm font-medium transition-all ${
+                          bathrooms === opt
+                            ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
+                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                        }`}
+                      >
+                        {opt}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* Finish Level */}
+            <div>
+              <label id="finishLevelLabel" className="block text-sm font-medium text-gray-700 mb-3">
+                Finish Level
+              </label>
+              <div
+                className="grid grid-cols-2 gap-2 sm:grid-cols-4"
+                role="radiogroup"
+                aria-labelledby="finishLevelLabel"
+              >
+                {FINISH_LEVELS.map((level) => (
+                  <button
+                    key={level.value}
+                    type="button"
+                    role="radio"
+                    aria-checked={finishLevel === level.value}
+                    onClick={() => setFinishLevel(level.value)}
+                    className={`rounded-lg border min-h-[44px] px-4 py-3 text-left transition-all ${
+                      finishLevel === level.value
+                        ? "border-2 border-blue-600 bg-blue-50"
+                        : "border-gray-200 bg-white hover:border-gray-400"
+                    }`}
+                  >
+                    <span className={`block text-sm font-medium ${
+                      finishLevel === level.value ? "text-gray-900" : "text-gray-700"
+                    }`}>
+                      {level.value}
+                    </span>
+                    <span className="block text-xs text-gray-500 mt-0.5">
+                      {level.description}
+                    </span>
+                  </button>
+                ))}
+              </div>
+            </div>
+
             {/* Address */}
             <div>
               <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -459,6 +606,77 @@ export default function EstimateForm() {
                   </button>
                 ))}
               </div>
+            </div>
+
+            {/* Material Preferences — collapsible */}
+            <div>
+              <button
+                type="button"
+                onClick={() => setShowMaterials(!showMaterials)}
+                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
+              >
+                {showMaterials ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+                Customize Materials (optional)
+              </button>
+
+              {showMaterials && (
+                <div className="mt-4 space-y-4 rounded-xl border border-gray-200 bg-gray-50 p-5">
+                  <div>
+                    <label htmlFor="flooringPref" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Flooring
+                    </label>
+                    <select
+                      id="flooringPref"
+                      value={flooringPref}
+                      onChange={(e) => setFlooringPref(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                    >
+                      <option value="">Select...</option>
+                      {FLOORING_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="countertopPref" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Countertops
+                    </label>
+                    <select
+                      id="countertopPref"
+                      value={countertopPref}
+                      onChange={(e) => setCountertopPref(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                    >
+                      <option value="">Select...</option>
+                      {COUNTERTOP_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="cabinetPref" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Cabinets
+                    </label>
+                    <select
+                      id="cabinetPref"
+                      value={cabinetPref}
+                      onChange={(e) => setCabinetPref(e.target.value)}
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 bg-white focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                    >
+                      <option value="">Select...</option>
+                      {CABINET_OPTIONS.map((opt) => (
+                        <option key={opt} value={opt}>{opt}</option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -577,43 +795,11 @@ export default function EstimateForm() {
       {step === 4 && (
         <div>
           <h2 className="text-2xl font-bold text-gray-900 mb-2">
-            Here&apos;s what your project could cost!
+            Ready to get your AI-powered estimate!
           </h2>
           <p className="text-gray-600 mb-8">
-            Based on the details you provided, here&apos;s a preliminary estimate.
+            Review your details below, then submit to receive an instant estimate powered by AI.
           </p>
-
-          <div className="rounded-2xl bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 border border-blue-200 p-8 sm:p-10 text-center mb-8 shadow-lg">
-            <p className="text-sm font-medium text-blue-700 uppercase tracking-wide mb-3">
-              Estimated Project Cost
-            </p>
-            {estimatedMin != null && estimatedMax != null ? (
-              <p className="text-4xl sm:text-5xl font-bold text-gray-900">
-                {fmt(estimatedMin)} &mdash; {fmt(estimatedMax)}
-              </p>
-            ) : budgetRange ? (
-              <p className="text-4xl sm:text-5xl font-bold text-gray-900">
-                {budgetRange}
-              </p>
-            ) : (
-              <p className="text-2xl font-semibold text-gray-700">
-                We&apos;ll provide a custom quote
-              </p>
-            )}
-            {sqft && sqft > 0 && (
-              <p className="mt-3 text-sm text-blue-600">
-                Based on {Number(squareFootage).toLocaleString()} sq ft at ${costRange.min}&ndash;${costRange.max}/sq ft
-              </p>
-            )}
-          </div>
-
-          <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 mb-8">
-            <p className="text-sm text-amber-800">
-              <strong>Please note:</strong> This is a rough estimate. Actual costs
-              depend on materials, scope, and site conditions. We&apos;ll follow up
-              with a detailed quote.
-            </p>
-          </div>
 
           {/* Summary */}
           <div className="rounded-xl bg-white border border-gray-200 p-6 mb-8 shadow-sm">
@@ -633,6 +819,24 @@ export default function EstimateForm() {
                   <dd className="font-medium text-gray-900">
                     {Number(squareFootage).toLocaleString()} sq ft
                   </dd>
+                </div>
+              )}
+              {bedrooms && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Bedrooms</dt>
+                  <dd className="font-medium text-gray-900">{bedrooms}</dd>
+                </div>
+              )}
+              {bathrooms && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Bathrooms</dt>
+                  <dd className="font-medium text-gray-900">{bathrooms}</dd>
+                </div>
+              )}
+              {finishLevel && (
+                <div className="flex justify-between">
+                  <dt className="text-gray-600">Finish Level</dt>
+                  <dd className="font-medium text-gray-900">{finishLevel}</dd>
                 </div>
               )}
               {budgetRange && (
@@ -664,6 +868,14 @@ export default function EstimateForm() {
             </dl>
           </div>
 
+          <div className="rounded-xl bg-amber-50 border border-amber-200 p-5 mb-8">
+            <p className="text-sm text-amber-800">
+              <strong>Please note:</strong> Our AI will generate an estimated cost range based on
+              current Southern Utah market conditions. Actual costs depend on materials, scope, and
+              site conditions. We&apos;ll follow up with a detailed quote.
+            </p>
+          </div>
+
           {error && (
             <div className="rounded-lg bg-red-50 border border-red-200 p-4 mb-6" role="alert">
               <p className="text-sm text-red-700">{error}</p>
@@ -679,10 +891,10 @@ export default function EstimateForm() {
             {submitting ? (
               <>
                 <Loader2 className="h-5 w-5 animate-spin" />
-                Submitting...
+                Our AI is analyzing your project...
               </>
             ) : (
-              "Submit Estimate Request"
+              "Get My AI Estimate"
             )}
           </button>
         </div>

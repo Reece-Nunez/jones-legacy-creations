@@ -175,6 +175,15 @@ export interface Estimate {
   timeline: string | null;
   estimated_min: number | null;
   estimated_max: number | null;
+  bedrooms: string | null;
+  bathrooms: string | null;
+  finish_level: string | null;
+  flooring_preference: string | null;
+  countertop_preference: string | null;
+  cabinet_preference: string | null;
+  ai_estimate_min: number | null;
+  ai_estimate_max: number | null;
+  ai_breakdown: string | null;
   status: EstimateStatus;
   project_id: string | null;
   notes: string | null;
