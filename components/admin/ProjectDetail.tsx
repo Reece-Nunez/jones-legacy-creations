@@ -39,6 +39,7 @@ import {
   Send,
   ChevronDown,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import type {
   Project,
@@ -1662,6 +1663,9 @@ function DrawsTab({
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [scanningDrawId, setScanningDrawId] = useState<string | null>(null);
+  const [scanProgress, setScanProgress] = useState<{ done: number; total: number } | null>(null);
+  const drawsRouter = useRouter();
 
   // Auto-expand the latest draw on first render
   useEffect(() => {
@@ -1807,6 +1811,31 @@ function DrawsTab({
   async function deleteDoc(id: string) {
     if (!window.confirm("Are you sure you want to delete this document?")) return;
     await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id });
+  }
+
+  async function rescanDrawDocs(drawId: string, docs: Document[]) {
+    if (docs.length === 0) return;
+    setScanningDrawId(drawId);
+    setScanProgress({ done: 0, total: docs.length });
+
+    // Process in batches of 3 to avoid overwhelming the API
+    const batchSize = 3;
+    let done = 0;
+    for (let i = 0; i < docs.length; i += batchSize) {
+      const batch = docs.slice(i, i + batchSize);
+      const batchIds = batch.map((d) => d.id);
+      await fetch(`/api/admin/projects/${projectId}/documents/rescan`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ document_ids: batchIds }),
+      });
+      done += batch.length;
+      setScanProgress({ done, total: docs.length });
+    }
+
+    setScanningDrawId(null);
+    setScanProgress(null);
+    drawsRouter.refresh();
   }
 
   function handleUploadFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
@@ -2466,6 +2495,22 @@ function DrawsTab({
                     <option value="funded">Funded</option>
                     <option value="denied">Denied</option>
                   </select>
+                  {drawDocs.length > 0 && (
+                    <button
+                      disabled={loading || scanningDrawId === draw.id}
+                      aria-label={`Re-scan all documents in Draw #${draw.draw_number}`}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        rescanDrawDocs(draw.id, drawDocs);
+                      }}
+                      className="text-xs text-blue-600 hover:text-blue-800 disabled:opacity-50 cursor-pointer min-h-[36px] px-2 flex items-center gap-1 transition-colors"
+                    >
+                      <RefreshCw className={`w-3.5 h-3.5 ${scanningDrawId === draw.id ? "animate-spin" : ""}`} />
+                      {scanningDrawId === draw.id && scanProgress
+                        ? `Scanning ${scanProgress.done} of ${scanProgress.total}...`
+                        : "Re-scan All"}
+                    </button>
+                  )}
                   <button
                     disabled={loading}
                     aria-label={`Edit Draw #${draw.draw_number}`}
@@ -2949,6 +2994,34 @@ function DocumentsTab({
   const [category, setCategory] = useState<DocumentCategory>("general");
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  function toggleSelect(id: string) {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
+  function toggleSelectAll() {
+    if (selectedIds.size === documents.length) {
+      setSelectedIds(new Set());
+    } else {
+      setSelectedIds(new Set(documents.map((d) => d.id)));
+    }
+  }
+
+  async function bulkDelete() {
+    if (!window.confirm(`Delete ${selectedIds.size} documents?`)) return;
+    for (const docId of selectedIds) {
+      await mutate(`/api/admin/projects/${projectId}/documents`, "DELETE", { id: docId });
+    }
+    setSelectedIds(new Set());
+    setSelectMode(false);
+  }
 
   function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const selected = e.target.files;
@@ -3004,7 +3077,22 @@ function DocumentsTab({
         <CardTitle>Documents</CardTitle>
         {!showForm && (
           <CardAction>
-            <AddButton label="Upload Files" onClick={() => setShowForm(true)} />
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => {
+                  setSelectMode(!selectMode);
+                  setSelectedIds(new Set());
+                }}
+                className={`text-xs px-3 py-1.5 min-h-[36px] rounded-lg border cursor-pointer transition-colors ${
+                  selectMode
+                    ? "border-blue-300 bg-blue-50 text-blue-700"
+                    : "border-gray-300 text-gray-600 hover:bg-gray-50"
+                }`}
+              >
+                {selectMode ? "Cancel Select" : "Select"}
+              </button>
+              <AddButton label="Upload Files" onClick={() => setShowForm(true)} />
+            </div>
           </CardAction>
         )}
       </CardHeader>
@@ -3129,19 +3217,47 @@ function DocumentsTab({
           <EmptyState label="No documents yet" />
         )}
 
+        {/* Select All header */}
+        {selectMode && documents.length > 0 && (
+          <div className="flex items-center gap-3 py-2 border-b border-gray-200 mb-1">
+            <input
+              type="checkbox"
+              checked={selectedIds.size === documents.length}
+              onChange={toggleSelectAll}
+              className="accent-blue-600 w-4 h-4 min-h-[44px] cursor-pointer"
+              aria-label="Select all documents"
+            />
+            <span className="text-xs text-gray-500 font-medium">
+              {selectedIds.size === documents.length ? "Deselect All" : "Select All"}
+            </span>
+          </div>
+        )}
+
         <div className="divide-y divide-gray-100">
           {documents.map((doc) => (
             <div
               key={doc.id}
               className="flex flex-col sm:flex-row sm:items-center justify-between py-3 gap-2"
             >
-              <div className="flex-1 min-w-0">
-                <span className="font-medium text-sm text-gray-900">
-                  {doc.name}
-                </span>
-                <div className="text-xs text-gray-500 mt-0.5">
-                  {doc.category} | {fmtFileSize(doc.file_size)} |{" "}
-                  {fmtDate(doc.created_at)}
+              <div className="flex items-center gap-3 flex-1 min-w-0">
+                {selectMode && (
+                  <input
+                    type="checkbox"
+                    checked={selectedIds.has(doc.id)}
+                    onChange={() => toggleSelect(doc.id)}
+                    className="accent-blue-600 w-4 h-4 shrink-0 cursor-pointer"
+                    style={{ minHeight: 44, minWidth: 44 }}
+                    aria-label={`Select ${doc.name}`}
+                  />
+                )}
+                <div className="min-w-0">
+                  <span className="font-medium text-sm text-gray-900">
+                    {doc.name}
+                  </span>
+                  <div className="text-xs text-gray-500 mt-0.5">
+                    {doc.category} | {fmtFileSize(doc.file_size)} |{" "}
+                    {fmtDate(doc.created_at)}
+                  </div>
                 </div>
               </div>
               <div className="flex items-center gap-2">
@@ -3166,6 +3282,33 @@ function DocumentsTab({
             </div>
           ))}
         </div>
+
+        {/* Floating action bar for bulk delete */}
+        {selectMode && selectedIds.size > 0 && (
+          <div className="fixed bottom-0 left-0 right-0 bg-white shadow-lg border-t border-gray-200 z-50">
+            <div className="max-w-6xl mx-auto px-4 sm:px-6 py-3 flex items-center justify-center gap-4">
+              <span className="text-sm text-gray-700 font-medium">
+                {selectedIds.size} selected
+              </span>
+              <button
+                disabled={loading}
+                onClick={bulkDelete}
+                className="bg-red-600 text-white px-4 py-2 min-h-[44px] rounded-lg text-sm hover:bg-red-700 disabled:opacity-50 cursor-pointer transition-colors"
+              >
+                Delete Selected
+              </button>
+              <button
+                onClick={() => {
+                  setSelectedIds(new Set());
+                  setSelectMode(false);
+                }}
+                className="text-sm text-gray-600 px-4 py-2 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
       </CardContent>
     </ShadCard>
   );
