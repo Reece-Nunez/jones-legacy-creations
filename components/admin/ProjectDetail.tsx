@@ -1485,17 +1485,50 @@ function DrawsTab({
     });
   }
 
+  const [newDrawFiles, setNewDrawFiles] = useState<File[]>([]);
+  const [newDrawUploading, setNewDrawUploading] = useState(false);
+  const [newDrawProgress, setNewDrawProgress] = useState<{ done: number; total: number } | null>(null);
+
   async function addDraw() {
     const drawNum = form.draw_number ? parseInt(form.draw_number) : nextDrawNumber;
     const amount = form.amount ? parseFloat(unformatCurrency(form.amount)) : 0;
-    if (!amount) return;
-    await mutate(`/api/admin/projects/${projectId}/draws`, "POST", {
+    if (!amount && newDrawFiles.length === 0) return;
+
+    // Create the draw first
+    const res = await mutate(`/api/admin/projects/${projectId}/draws`, "POST", {
       draw_number: drawNum,
       description: form.description || null,
       amount,
       status: "draft",
       notes: null,
     });
+
+    // Upload files to the new draw if any were selected
+    if (res && newDrawFiles.length > 0) {
+      const drawData = await res.json().catch(() => null);
+      const drawId = drawData?.id;
+      if (drawId) {
+        setNewDrawUploading(true);
+        setNewDrawProgress({ done: 0, total: newDrawFiles.length });
+        for (let i = 0; i < newDrawFiles.length; i++) {
+          const file = newDrawFiles[i];
+          const parsed = parseDrawFilename(file.name);
+          const fd = new FormData();
+          fd.append("file", file);
+          fd.append("category", "draw_request");
+          fd.append("draw_request_id", drawId);
+          if (parsed.lineItemNumber != null) fd.append("line_item_number", String(parsed.lineItemNumber));
+          if (parsed.vendor) fd.append("vendor", parsed.vendor);
+          if (parsed.docType) fd.append("doc_type", parsed.docType);
+          await mutate(`/api/admin/projects/${projectId}/documents`, "POST", fd);
+          setNewDrawProgress({ done: i + 1, total: newDrawFiles.length });
+        }
+        setNewDrawUploading(false);
+        setNewDrawProgress(null);
+      }
+    }
+
+    setNewDrawFiles([]);
     setForm({ draw_number: "", description: "", amount: "" });
     setShowForm(false);
   }
@@ -1655,17 +1688,89 @@ function DrawsTab({
                   />
                 </div>
               </div>
+              {/* File upload */}
+              <div>
+                <label className="block text-sm text-gray-700 font-medium mb-1">
+                  Supporting Documents
+                </label>
+                <label className="flex flex-col items-center gap-2 border-2 border-dashed border-gray-300 rounded-lg px-4 py-5 text-sm cursor-pointer hover:border-gray-400 hover:bg-gray-100/50 transition-colors">
+                  <Upload className="w-5 h-5 text-gray-400" />
+                  <span className="text-gray-600">Click to select invoices, receipts, and permits</span>
+                  <span className="text-xs text-gray-400">Select multiple files — filenames are auto-parsed</span>
+                  <input
+                    type="file"
+                    multiple
+                    className="hidden"
+                    accept=".pdf,.png,.jpg,.jpeg,.doc,.docx,.xls,.xlsx"
+                    onChange={(e) => {
+                      if (e.target.files) setNewDrawFiles(prev => [...prev, ...Array.from(e.target.files!)]);
+                    }}
+                  />
+                </label>
+              </div>
+
+              {/* Selected files preview */}
+              {newDrawFiles.length > 0 && (
+                <div className="space-y-1.5">
+                  <p className="text-xs font-medium text-gray-500">{newDrawFiles.length} file{newDrawFiles.length !== 1 ? "s" : ""} ready to upload</p>
+                  <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
+                    {newDrawFiles.map((f, i) => {
+                      const parsed = parseDrawFilename(f.name);
+                      return (
+                        <div key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50">
+                          <div className="flex-1 min-w-0">
+                            <p className="truncate text-gray-900">
+                              {parsed.lineItemNumber != null && <span className="text-gray-400 mr-1">#{parsed.lineItemNumber}</span>}
+                              {parsed.category || f.name}
+                              {parsed.vendor && <span className="text-gray-500"> — {parsed.vendor}</span>}
+                            </p>
+                            <p className="text-xs text-gray-400">{parsed.docType || "Document"}</p>
+                          </div>
+                          <button
+                            onClick={() => setNewDrawFiles(prev => prev.filter((_, idx) => idx !== i))}
+                            aria-label={`Remove ${f.name}`}
+                            className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+
+              {/* Upload progress */}
+              {newDrawProgress && (
+                <div className="space-y-1.5">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-600">Uploading {newDrawProgress.done} of {newDrawProgress.total}...</span>
+                    <span className="text-gray-500 tabular-nums">{Math.round((newDrawProgress.done / newDrawProgress.total) * 100)}%</span>
+                  </div>
+                  <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
+                    <div className="h-full rounded-full bg-sky-600 transition-all duration-300" style={{ width: `${(newDrawProgress.done / newDrawProgress.total) * 100}%` }} />
+                  </div>
+                </div>
+              )}
+
               <div className="flex gap-2">
                 <button
-                  disabled={loading}
+                  disabled={loading || newDrawUploading}
                   onClick={addDraw}
                   className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
                 >
-                  {loading ? "Saving..." : "Create Draw"}
+                  {newDrawUploading
+                    ? `Uploading ${newDrawProgress?.done ?? 0}/${newDrawProgress?.total ?? 0}...`
+                    : loading
+                      ? "Saving..."
+                      : newDrawFiles.length > 0
+                        ? `Create Draw & Upload ${newDrawFiles.length} File${newDrawFiles.length !== 1 ? "s" : ""}`
+                        : "Create Draw"}
                 </button>
                 <button
-                  onClick={() => setShowForm(false)}
-                  className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+                  disabled={newDrawUploading}
+                  onClick={() => { setShowForm(false); setNewDrawFiles([]); }}
+                  className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
