@@ -414,17 +414,22 @@ export default function ProjectDetail({
           onValueChange={(value) => setActiveTab(value as TabKey)}
           className="mt-6"
         >
-          <TabsList variant="line" className="w-full justify-start overflow-x-auto">
-            {TABS.map((t) => {
-              const Icon = t.icon;
-              return (
-                <TabsTrigger key={t.key} value={t.key}>
-                  <Icon className="w-4 h-4" />
-                  {t.label}
-                </TabsTrigger>
-              );
-            })}
-          </TabsList>
+          <div className="relative">
+            <TabsList variant="line" className="w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap !h-auto border-b border-gray-200 pb-0">
+              {TABS.map((t) => {
+                const Icon = t.icon;
+                return (
+                  <TabsTrigger key={t.key} value={t.key} className="flex-shrink-0 flex-grow-0 px-3 py-2">
+                    <Icon className="w-4 h-4" />
+                    <span className="hidden sm:inline">{t.label}</span>
+                    <span className="sm:hidden">{t.label}</span>
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+            {/* Fade indicator on right edge */}
+            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none sm:hidden" />
+          </div>
 
           <TabsContent value="overview">
             <OverviewTab project={project} mutate={mutate} />
