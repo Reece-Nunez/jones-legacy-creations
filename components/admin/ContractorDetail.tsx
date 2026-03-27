@@ -22,6 +22,9 @@ import {
   Loader2,
   AlertTriangle,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -172,7 +175,8 @@ export default function ContractorDetail({
         </Link>
 
         {/* Header */}
-        <div className="mb-8 rounded-xl bg-white p-6 shadow-sm">
+        <Card className="mb-8 shadow-sm">
+        <CardContent className="pt-6">
           <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
             <div className="flex items-start gap-4">
               <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-indigo-50 text-indigo-600">
@@ -185,13 +189,14 @@ export default function ContractorDetail({
                 {contractor.company && (
                   <p className="mt-0.5 text-gray-500">{contractor.company}</p>
                 )}
-                <span
-                  className={`mt-2 inline-block rounded-full px-3 py-1 text-xs font-medium ${
+                <Badge
+                  variant="outline"
+                  className={`mt-2 ${
                     TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other
                   }`}
                 >
                   {contractor.trade}
-                </span>
+                </Badge>
               </div>
             </div>
 
@@ -216,11 +221,13 @@ export default function ContractorDetail({
               </button>
             </div>
           </div>
-        </div>
+        </CardContent>
+        </Card>
 
         {/* Delete Confirmation Dialog */}
         {showDeleteConfirm && (
-          <div className="mb-8 rounded-xl border border-red-200 bg-red-50 p-6 shadow-sm">
+          <Card className="mb-8 border-red-200 bg-red-50 shadow-sm">
+          <CardContent className="pt-6">
             <div className="flex items-start gap-3">
               <AlertTriangle className="mt-0.5 h-5 w-5 shrink-0 text-red-600" />
               <div className="flex-1">
@@ -254,16 +261,20 @@ export default function ContractorDetail({
                 </div>
               </div>
             </div>
-          </div>
+          </CardContent>
+          </Card>
         )}
 
         {/* Contact & Stats */}
         <div className="mb-8 grid gap-4 sm:grid-cols-2">
           {/* Contact Info */}
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
-              Contact Info
-            </h2>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                Contact Info
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
             <div className="space-y-3">
               {contractor.phone && (
                 <a
@@ -310,13 +321,17 @@ export default function ContractorDetail({
                 <p className="text-sm text-gray-400">No contact info on file</p>
               )}
             </div>
-          </div>
+            </CardContent>
+          </Card>
 
           {/* Payment Summary */}
-          <div className="rounded-xl bg-white p-6 shadow-sm">
-            <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
-              Payment Summary
-            </h2>
+          <Card className="shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                Payment Summary
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
             <div className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="rounded-lg bg-green-50 p-2">
@@ -341,11 +356,13 @@ export default function ContractorDetail({
                 </div>
               </div>
             </div>
-          </div>
+            </CardContent>
+          </Card>
         </div>
 
         {/* Notes */}
-        <div className="mb-8 rounded-xl bg-white p-6 shadow-sm">
+        <Card className="mb-8 shadow-sm">
+          <CardContent className="pt-6">
           <div className="mb-4 flex items-center justify-between">
             <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
               Notes
@@ -409,13 +426,17 @@ export default function ContractorDetail({
               {contractor.notes || "No notes yet."}
             </p>
           )}
-        </div>
+          </CardContent>
+        </Card>
 
         {/* Payment History */}
-        <div className="rounded-xl bg-white p-6 shadow-sm">
-          <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
-            Payment History
-          </h2>
+        <Card className="shadow-sm">
+          <CardHeader>
+            <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+              Payment History
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
 
           {payments.length === 0 ? (
             <p className="text-sm text-gray-400">
@@ -533,7 +554,8 @@ export default function ContractorDetail({
               </table>
             </div>
           )}
-        </div>
+        </CardContent>
+        </Card>
       </div>
     </div>
   );

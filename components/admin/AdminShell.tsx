@@ -18,6 +18,8 @@ import {
   LogOut,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
+import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
 
 const navLinks = [
@@ -123,7 +125,7 @@ export default function AdminShell({
         })}
 
         {/* Divider */}
-        <div className="my-4 border-t border-slate-700" />
+        <Separator className="my-4 bg-slate-700" />
 
         {/* Quick Links */}
         <p className="px-3 pb-1 text-xs font-semibold uppercase tracking-wider text-slate-400">
@@ -160,7 +162,7 @@ export default function AdminShell({
 
       {/* Footer */}
       <div className="px-3 py-4 space-y-3">
-        <div className="border-t border-slate-700" />
+        <Separator className="bg-slate-700" />
         <button
           onClick={handleSignOut}
           aria-label="Sign out"
@@ -178,30 +180,6 @@ export default function AdminShell({
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Mobile backdrop */}
-      {sidebarOpen && (
-        <div
-          className="fixed inset-0 z-40 bg-black/50 transition-opacity duration-300 ease-in-out lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
-      )}
-
-      {/* Mobile sidebar */}
-      <aside
-        className={`fixed inset-y-0 left-0 z-50 flex w-64 flex-col bg-slate-900 transition-transform duration-300 ease-in-out lg:hidden ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        }`}
-      >
-        {/* Close button */}
-        <button
-          onClick={() => setSidebarOpen(false)}
-          className="absolute right-3 top-4 flex h-11 w-11 items-center justify-center rounded-md text-slate-400 hover:text-white"
-        >
-          <X className="h-5 w-5" />
-        </button>
-        {sidebarContent}
-      </aside>
-
       {/* Desktop sidebar */}
       <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-slate-900 lg:flex">
         {sidebarContent}
@@ -212,15 +190,30 @@ export default function AdminShell({
         {/* Mobile top bar */}
         <div className="sticky top-0 z-20 bg-white shadow-sm lg:hidden">
           <div className="flex h-14 items-center px-4">
-            <button
-              onClick={() => setSidebarOpen(true)}
-              aria-expanded={sidebarOpen}
-              aria-controls="mobile-sidebar"
-              className="flex h-11 w-11 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
-            >
-              <Menu className="h-6 w-6" />
-              <span className="sr-only">Open menu</span>
-            </button>
+            <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
+              <SheetTrigger
+                render={
+                  <button
+                    aria-expanded={sidebarOpen}
+                    aria-controls="mobile-sidebar"
+                    className="flex h-11 w-11 items-center justify-center rounded-md text-slate-600 hover:bg-slate-100"
+                  />
+                }
+              >
+                <Menu className="h-6 w-6" />
+                <span className="sr-only">Open menu</span>
+              </SheetTrigger>
+              <SheetContent side="left" className="w-64 bg-slate-900 p-0" showCloseButton={false}>
+                {/* Close button */}
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="absolute right-3 top-4 flex h-11 w-11 items-center justify-center rounded-md text-slate-400 hover:text-white"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+                {sidebarContent}
+              </SheetContent>
+            </Sheet>
             <Image
               src="/logo-transparent.png"
               alt="Jones Legacy Creations"

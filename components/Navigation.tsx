@@ -48,7 +48,7 @@ export function Navigation() {
               alt="Jones Legacy Creations"
               width={152}
               height={152}
-              className="h-24 w-24 object-contain"
+              className="h-48 w-40 object-contain"
               priority
             />
           </Link>
@@ -72,23 +72,28 @@ export function Navigation() {
               onMouseLeave={() => setServicesOpen(false)}
             >
               <button
-                className={`text-sm font-medium transition-colors duration-150 flex items-center gap-1 ${
+                className={`text-sm font-medium transition-colors duration-150 flex items-center gap-1 py-2 ${
                   isServiceActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
                 }`}
                 aria-expanded={servicesOpen}
                 aria-haspopup="true"
+                onClick={() => setServicesOpen(!servicesOpen)}
               >
                 Services
                 <ChevronDown className="w-4 h-4" />
               </button>
 
+              {/* Invisible bridge to prevent gap-induced mouseLeave */}
+              <div className="absolute top-full left-0 h-2 w-64" />
+
               <div
                 role="menu"
                 aria-label="Services"
-                className={`absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 shadow-xl rounded-lg overflow-hidden transition-all duration-200 ${
+                className={`absolute top-full left-0 pt-2 transition-all duration-200 ${
                   servicesOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
                 }`}
               >
+              <div className="w-64 bg-white border border-gray-200 shadow-xl rounded-lg overflow-hidden">
                 {services.map((service) => (
                   <Link
                     key={service.href}
@@ -103,6 +108,7 @@ export function Navigation() {
                   </Link>
                 ))}
               </div>
+              </div>
             </div>
 
             <Link
@@ -116,7 +122,7 @@ export function Navigation() {
             </Link>
             <Link
               href="/estimate"
-              className="px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors duration-150"
+              className="px-6 py-3 bg-sky-700 text-white text-sm font-medium rounded-full hover:bg-sky-800 transition-colors duration-150"
               {...(isActive("/estimate") ? { "aria-current": "page" as const } : {})}
             >
               Free Estimate
@@ -204,7 +210,7 @@ export function Navigation() {
           </Link>
           <Link
             href="/estimate"
-            className="block w-full text-center px-6 py-3 bg-blue-600 text-white text-base font-medium rounded-full hover:bg-blue-700 transition-colors duration-150"
+            className="block w-full text-center px-6 py-3 bg-sky-700 text-white text-base font-medium rounded-full hover:bg-sky-800 transition-colors duration-150"
             onClick={() => setIsOpen(false)}
             {...(isActive("/estimate") ? { "aria-current": "page" as const } : {})}
           >

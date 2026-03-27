@@ -29,6 +29,9 @@ import {
   TrendingUp,
   Users,
 } from "lucide-react";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -436,69 +439,77 @@ export default async function AdminDashboard({
 
         {/* Quick Stats Bar */}
         <div className="mb-8 grid grid-cols-2 gap-3 sm:gap-4 lg:grid-cols-4">
-          <div className="rounded-xl bg-gradient-to-br from-white to-indigo-50/40 p-4 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
-                <FolderKanban className="h-5 w-5 text-indigo-600" aria-hidden="true" />
+          <Card className="bg-gradient-to-br from-white to-indigo-50/40 shadow-sm">
+            <CardContent className="pt-6 p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-indigo-50">
+                  <FolderKanban className="h-5 w-5 text-indigo-600" aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium text-gray-600">
+                  Active Projects
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-600">
-                Active Projects
-              </span>
-            </div>
-            <p className="mt-3 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
-              {activeProjects.length}
-            </p>
-          </div>
+              <p className="mt-3 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
+                {activeProjects.length}
+              </p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-xl bg-gradient-to-br from-white to-amber-50/40 p-4 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50">
-                <CalendarClock className="h-5 w-5 text-amber-600" aria-hidden="true" />
+          <Card className="bg-gradient-to-br from-white to-amber-50/40 shadow-sm">
+            <CardContent className="pt-6 p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-amber-50">
+                  <CalendarClock className="h-5 w-5 text-amber-600" aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium text-gray-600">
+                  Due This Week
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-600">
-                Due This Week
-              </span>
-            </div>
-            <p className="mt-3 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
-              {tasksDueThisWeek.length}
-            </p>
-          </div>
+              <p className="mt-3 text-2xl font-bold tabular-nums text-gray-900 sm:text-3xl">
+                {tasksDueThisWeek.length}
+              </p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-xl bg-gradient-to-br from-white to-red-50/40 p-4 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50">
-                <AlertTriangle className="h-5 w-5 text-red-600" aria-hidden="true" />
+          <Card className="bg-gradient-to-br from-white to-red-50/40 shadow-sm">
+            <CardContent className="pt-6 p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-red-50">
+                  <AlertTriangle className="h-5 w-5 text-red-600" aria-hidden="true" />
+                </div>
+                <span className="text-sm font-medium text-gray-600">
+                  Overdue Items
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-600">
-                Overdue Items
-              </span>
-            </div>
-            <p
-              className={`mt-3 text-2xl font-bold tabular-nums sm:text-3xl ${overdueCount > 0 ? "text-red-600" : "text-gray-900"}`}
-              role={overdueCount > 0 ? "alert" : undefined}
-            >
-              {overdueCount}
-            </p>
-          </div>
+              <p
+                className={`mt-3 text-2xl font-bold tabular-nums sm:text-3xl ${overdueCount > 0 ? "text-red-600" : "text-gray-900"}`}
+                role={overdueCount > 0 ? "alert" : undefined}
+              >
+                {overdueCount}
+              </p>
+            </CardContent>
+          </Card>
 
-          <div className="rounded-xl bg-gradient-to-br from-white to-emerald-50/40 p-4 shadow-sm sm:p-6">
-            <div className="flex items-center gap-3">
-              <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${cashFlow >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
-                {cashFlow >= 0 ? (
-                  <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
-                ) : (
-                  <TrendingDown className="h-5 w-5 text-red-600" aria-hidden="true" />
-                )}
+          <Card className="bg-gradient-to-br from-white to-emerald-50/40 shadow-sm">
+            <CardContent className="pt-6 p-4 sm:p-6">
+              <div className="flex items-center gap-3">
+                <div className={`flex h-10 w-10 shrink-0 items-center justify-center rounded-lg ${cashFlow >= 0 ? "bg-emerald-50" : "bg-red-50"}`}>
+                  {cashFlow >= 0 ? (
+                    <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+                  ) : (
+                    <TrendingDown className="h-5 w-5 text-red-600" aria-hidden="true" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-600">
+                  Cash Flow
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-600">
-                Cash Flow
-              </span>
-            </div>
-            <p className={`mt-3 text-2xl font-semibold tabular-nums sm:text-3xl ${cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
-              {fmt(cashFlow)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">This month</p>
-          </div>
+              <p className={`mt-3 text-2xl font-semibold tabular-nums sm:text-3xl ${cashFlow >= 0 ? "text-emerald-600" : "text-red-600"}`}>
+                {fmt(cashFlow)}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">This month</p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* ────────────────────────────────────────────────── */}
@@ -509,37 +520,36 @@ export default async function AdminDashboard({
             <Inbox className="h-6 w-6 text-gray-800" aria-hidden="true" />
             <h2 className="text-xl font-extrabold text-gray-900">Needs Attention</h2>
             {actionItems.length > 0 && (
-              <span
-                className="inline-flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full bg-red-100 px-2.5 text-sm font-bold tabular-nums text-red-700"
-                aria-label={`${actionItems.length} items need attention`}
-              >
+              <Badge variant="destructive" className="px-2.5 py-0.5 text-sm font-bold tabular-nums">
                 {actionItems.length}
-              </span>
+              </Badge>
             )}
           </div>
 
           {actionItems.length === 0 ? (
-            <div className="flex flex-col items-center gap-4 rounded-xl border border-emerald-200 bg-emerald-50 p-8 text-center sm:flex-row sm:text-left">
-              <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-100">
-                <CheckCircle2 className="h-7 w-7 text-emerald-600" aria-hidden="true" />
-              </div>
-              <div className="flex-1">
-                <p className="font-semibold text-emerald-800">
-                  You&apos;re all caught up!
-                </p>
-                <p className="mt-1 text-sm text-emerald-700">
-                  No overdue items or pending actions right now.
-                </p>
-              </div>
-              <Link
-                href="/admin/projects"
-                className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-emerald-700"
-                aria-label="View all projects"
-              >
-                <FolderKanban className="h-4 w-4" aria-hidden="true" />
-                View Projects
-              </Link>
-            </div>
+            <Card className="border-emerald-200 bg-emerald-50 shadow-sm">
+              <CardContent className="flex flex-col items-center gap-4 p-8 text-center sm:flex-row sm:text-left">
+                <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-full bg-emerald-100">
+                  <CheckCircle2 className="h-7 w-7 text-emerald-600" aria-hidden="true" />
+                </div>
+                <div className="flex-1">
+                  <p className="font-semibold text-emerald-800">
+                    You&apos;re all caught up!
+                  </p>
+                  <p className="mt-1 text-sm text-emerald-700">
+                    No overdue items or pending actions right now.
+                  </p>
+                </div>
+                <Link
+                  href="/admin/projects"
+                  className="inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-emerald-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-emerald-700"
+                  aria-label="View all projects"
+                >
+                  <FolderKanban className="h-4 w-4" aria-hidden="true" />
+                  View Projects
+                </Link>
+              </CardContent>
+            </Card>
           ) : (
             <div className="space-y-4" role="alert" aria-live="polite">
               {groupedActions.map((group) => (
@@ -562,35 +572,39 @@ export default async function AdminDashboard({
                         <Link
                           key={item.id}
                           href={item.href}
-                          className={`group flex min-h-[44px] items-center gap-4 rounded-xl border-l-4 bg-white p-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${PRIORITY_BORDER[item.priority]}`}
+                          className="block"
                           aria-label={`${item.label} - ${item.sublabel} - ${item.detail}`}
                         >
-                          <PriorityIcon
-                            className={`h-4 w-4 shrink-0 ${
-                              item.priority === "red"
-                                ? "text-red-500"
-                                : item.priority === "orange"
-                                  ? "text-orange-500"
-                                  : item.priority === "yellow"
-                                    ? "text-yellow-500"
-                                    : "text-blue-500"
-                            }`}
-                            aria-hidden="true"
-                          />
-                          <div className="min-w-0 flex-1">
-                            <p className="font-medium text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
-                              {item.label}
-                            </p>
-                            <p className="text-sm text-gray-600">
-                              {item.sublabel}
-                            </p>
-                          </div>
-                          <div className="hidden shrink-0 text-right sm:block">
-                            <p className="text-sm font-semibold tabular-nums text-gray-700">
-                              {item.detail}
-                            </p>
-                          </div>
-                          <ArrowRight className="h-4 w-4 shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-indigo-500" aria-hidden="true" />
+                          <Card className={`group border-l-4 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md ${PRIORITY_BORDER[item.priority]}`}>
+                            <CardContent className="flex min-h-[44px] items-center gap-4 py-3 px-4">
+                              <PriorityIcon
+                                className={`h-4 w-4 shrink-0 ${
+                                  item.priority === "red"
+                                    ? "text-red-500"
+                                    : item.priority === "orange"
+                                      ? "text-orange-500"
+                                      : item.priority === "yellow"
+                                        ? "text-yellow-500"
+                                        : "text-blue-500"
+                                }`}
+                                aria-hidden="true"
+                              />
+                              <div className="min-w-0 flex-1">
+                                <p className="font-medium text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
+                                  {item.label}
+                                </p>
+                                <p className="text-sm text-gray-600">
+                                  {item.sublabel}
+                                </p>
+                              </div>
+                              <div className="hidden shrink-0 text-right sm:block">
+                                <p className="text-sm font-semibold tabular-nums text-gray-700">
+                                  {item.detail}
+                                </p>
+                              </div>
+                              <ArrowRight className="h-4 w-4 shrink-0 text-gray-400 transition-colors duration-200 group-hover:text-indigo-500" aria-hidden="true" />
+                            </CardContent>
+                          </Card>
                         </Link>
                       );
                     })}
@@ -610,52 +624,59 @@ export default async function AdminDashboard({
           </h2>
           <div className="grid gap-4 sm:grid-cols-2">
             {/* Money Coming In */}
-            <div className="rounded-xl bg-gradient-to-br from-white to-emerald-50/30 p-5 shadow-sm sm:p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
-                  <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+            <Card className="bg-gradient-to-br from-white to-emerald-50/30 shadow-sm">
+              <CardContent className="p-5 sm:p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-emerald-50">
+                    <TrendingUp className="h-5 w-5 text-emerald-600" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Money Coming In</h3>
                 </div>
-                <h3 className="font-semibold text-gray-900">Money Coming In</h3>
-              </div>
-              <p className="text-2xl font-bold tabular-nums text-emerald-600 sm:text-3xl">
-                {fmt(unpaidTotal)}
-              </p>
-              <p className="mt-1 text-sm text-gray-600">
-                {unpaidInvoices.length} unpaid invoice{unpaidInvoices.length !== 1 ? "s" : ""} outstanding
-              </p>
-              {overdueInvoices.length > 0 && (
-                <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-red-600" role="alert">
-                  <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
-                  {overdueInvoices.length} overdue
+                <p className="text-2xl font-bold tabular-nums text-emerald-600 sm:text-3xl">
+                  {fmt(unpaidTotal)}
                 </p>
-              )}
-            </div>
+                <p className="mt-1 text-sm text-gray-600">
+                  {unpaidInvoices.length} unpaid invoice{unpaidInvoices.length !== 1 ? "s" : ""} outstanding
+                </p>
+                {overdueInvoices.length > 0 && (
+                  <p className="mt-2 flex items-center gap-1.5 text-sm font-medium text-red-600" role="alert">
+                    <AlertTriangle className="h-3.5 w-3.5" aria-hidden="true" />
+                    {overdueInvoices.length} overdue
+                  </p>
+                )}
+              </CardContent>
+            </Card>
 
             {/* Money Going Out */}
-            <div className="rounded-xl bg-gradient-to-br from-white to-orange-50/30 p-5 shadow-sm sm:p-6">
-              <div className="mb-4 flex items-center gap-3">
-                <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
-                  <TrendingDown className="h-5 w-5 text-orange-600" aria-hidden="true" />
+            <Card className="bg-gradient-to-br from-white to-orange-50/30 shadow-sm">
+              <CardContent className="p-5 sm:p-6">
+                <div className="mb-4 flex items-center gap-3">
+                  <div className="flex h-10 w-10 items-center justify-center rounded-lg bg-orange-50">
+                    <TrendingDown className="h-5 w-5 text-orange-600" aria-hidden="true" />
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Money Going Out</h3>
                 </div>
-                <h3 className="font-semibold text-gray-900">Money Going Out</h3>
-              </div>
-              <div className="flex items-baseline gap-4">
-                <div>
-                  <p className="text-2xl font-bold tabular-nums text-orange-600 sm:text-3xl">
-                    {fmt(pendingPaymentsTotal)}
-                  </p>
-                  <p className="mt-1 text-sm text-gray-600">
-                    {pendingPaymentsAll.length} pending payment{pendingPaymentsAll.length !== 1 ? "s" : ""}
-                  </p>
+                <div className="flex items-baseline gap-4">
+                  <div>
+                    <p className="text-2xl font-bold tabular-nums text-orange-600 sm:text-3xl">
+                      {fmt(pendingPaymentsTotal)}
+                    </p>
+                    <p className="mt-1 text-sm text-gray-600">
+                      {pendingPaymentsAll.length} pending payment{pendingPaymentsAll.length !== 1 ? "s" : ""}
+                    </p>
+                  </div>
                 </div>
-              </div>
-              {pendingDrawsTotal > 0 && (
-                <p className="mt-3 border-t border-gray-100 pt-3 text-sm text-gray-600">
-                  <span className="font-semibold tabular-nums text-gray-700">{fmt(pendingDrawsTotal)}</span>{" "}
-                  in pending draw requests
-                </p>
-              )}
-            </div>
+                {pendingDrawsTotal > 0 && (
+                  <>
+                    <Separator className="my-3" />
+                    <p className="text-sm text-gray-600">
+                      <span className="font-semibold tabular-nums text-gray-700">{fmt(pendingDrawsTotal)}</span>{" "}
+                      in pending draw requests
+                    </p>
+                  </>
+                )}
+              </CardContent>
+            </Card>
           </div>
         </section>
 
@@ -700,35 +721,37 @@ export default async function AdminDashboard({
 
           {/* Grid */}
           {filteredProjects.length === 0 ? (
-            <div className="rounded-xl bg-white p-12 text-center shadow-sm">
-              <FolderKanban className="mx-auto h-10 w-10 text-gray-400" aria-hidden="true" />
-              <p className="mt-4 text-lg font-medium text-gray-700">
-                No projects found
-              </p>
-              <p className="mt-1 text-sm text-gray-500">
-                {statusFilter
-                  ? "Try adjusting your filters."
-                  : "Create your first project to get started."}
-              </p>
-              {statusFilter ? (
-                <Link
-                  href={filterUrl({})}
-                  className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-gray-800"
-                  aria-label="Clear filters and show all projects"
-                >
-                  Clear Filters
-                </Link>
-              ) : (
-                <Link
-                  href="/admin/projects/new"
-                  className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-700"
-                  aria-label="Create a new project"
-                >
-                  <Plus className="h-4 w-4" aria-hidden="true" />
-                  New Project
-                </Link>
-              )}
-            </div>
+            <Card className="shadow-sm">
+              <CardContent className="p-12 text-center">
+                <FolderKanban className="mx-auto h-10 w-10 text-gray-400" aria-hidden="true" />
+                <p className="mt-4 text-lg font-medium text-gray-700">
+                  No projects found
+                </p>
+                <p className="mt-1 text-sm text-gray-500">
+                  {statusFilter
+                    ? "Try adjusting your filters."
+                    : "Create your first project to get started."}
+                </p>
+                {statusFilter ? (
+                  <Link
+                    href={filterUrl({})}
+                    className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-gray-900 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-gray-800"
+                    aria-label="Clear filters and show all projects"
+                  >
+                    Clear Filters
+                  </Link>
+                ) : (
+                  <Link
+                    href="/admin/projects/new"
+                    className="mt-4 inline-flex min-h-[44px] items-center gap-2 rounded-lg bg-indigo-600 px-5 py-2.5 text-sm font-semibold text-white transition-all duration-200 hover:bg-indigo-700"
+                    aria-label="Create a new project"
+                  >
+                    <Plus className="h-4 w-4" aria-hidden="true" />
+                    New Project
+                  </Link>
+                )}
+              </CardContent>
+            </Card>
           ) : (
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {filteredProjects.map((project) => {
@@ -746,79 +769,81 @@ export default async function AdminDashboard({
                   <Link
                     key={project.id}
                     href={`/admin/projects/${project.id}`}
-                    className={`group cursor-pointer rounded-xl border-l-4 bg-white p-5 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md sm:p-6 ${STATUS_LEFT_BORDER[project.status]}`}
+                    className="block"
                     aria-label={`${project.name} - ${PROJECT_STATUS_LABELS[project.status]} - ${project.client_name}`}
                   >
-                    {/* Header */}
-                    <div className="mb-3 flex items-start justify-between gap-2">
-                      <h3 className="font-semibold text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
-                        {project.name}
-                      </h3>
-                      <span
-                        className={`shrink-0 rounded-full px-3 py-1 text-sm font-semibold ${
-                          PROJECT_STATUS_COLORS[project.status]
-                        }`}
-                      >
-                        {PROJECT_STATUS_LABELS[project.status]}
-                      </span>
-                    </div>
-
-                    {/* Client + Location */}
-                    <div className="flex items-center gap-1.5 text-sm text-gray-600">
-                      <Users className="h-3.5 w-3.5" aria-hidden="true" />
-                      <span>{project.client_name}</span>
-                    </div>
-
-                    {(project.city || project.state) && (
-                      <p className="mt-1 text-sm text-gray-500">
-                        {[project.city, project.state]
-                          .filter(Boolean)
-                          .join(", ")}
-                      </p>
-                    )}
-
-                    {/* Value */}
-                    {project.estimated_value != null && (
-                      <p className="mt-2 text-lg font-bold tabular-nums text-gray-900">
-                        {fmt(project.estimated_value)}
-                      </p>
-                    )}
-
-                    {/* Task Progress */}
-                    {taskTotal > 0 && (
-                      <div className="mt-3">
-                        <div className="mb-1 flex items-center justify-between text-sm text-gray-600">
-                          <span>
-                            {taskCompleted}/{taskTotal} tasks
-                          </span>
-                          <span className="font-semibold tabular-nums">{taskPercent}%</span>
+                    <Card className={`group cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border-l-4 ${STATUS_LEFT_BORDER[project.status]}`}>
+                      <CardHeader className="pb-2">
+                        <div className="flex items-start justify-between gap-2">
+                          <CardTitle className="text-base font-semibold text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
+                            {project.name}
+                          </CardTitle>
+                          <Badge variant="outline" className={`px-2.5 py-0.5 shrink-0 text-sm font-semibold ${PROJECT_STATUS_COLORS[project.status]}`}>
+                            {PROJECT_STATUS_LABELS[project.status]}
+                          </Badge>
                         </div>
-                        <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
-                          <div
-                            className="h-full rounded-full bg-indigo-500 transition-all duration-200"
-                            style={{ width: `${taskPercent}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
+                        <CardDescription className="flex items-center gap-1.5 text-sm text-gray-600">
+                          <Users className="h-3.5 w-3.5" aria-hidden="true" />
+                          <span>{project.client_name}</span>
+                        </CardDescription>
+                      </CardHeader>
 
-                    {/* Indicators */}
-                    {(unpaidCount > 0 || pendingPayCount > 0) && (
-                      <div className="mt-3 flex flex-wrap items-center gap-3 border-t border-gray-100 pt-3">
-                        {unpaidCount > 0 && (
-                          <span className="flex items-center gap-1.5 text-sm font-medium text-orange-600">
-                            <FileText className="h-3.5 w-3.5" aria-hidden="true" />
-                            {unpaidCount} unpaid
-                          </span>
+                      <CardContent className="pt-0">
+                        {(project.city || project.state) && (
+                          <p className="text-sm text-gray-500">
+                            {[project.city, project.state]
+                              .filter(Boolean)
+                              .join(", ")}
+                          </p>
                         )}
-                        {pendingPayCount > 0 && (
-                          <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
-                            <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
-                            {pendingPayCount} pending
-                          </span>
+
+                        {/* Value */}
+                        {project.estimated_value != null && (
+                          <p className="mt-2 text-lg font-bold tabular-nums text-gray-900">
+                            {fmt(project.estimated_value)}
+                          </p>
                         )}
-                      </div>
-                    )}
+
+                        {/* Task Progress */}
+                        {taskTotal > 0 && (
+                          <div className="mt-3">
+                            <div className="mb-1 flex items-center justify-between text-sm text-gray-600">
+                              <span>
+                                {taskCompleted}/{taskTotal} tasks
+                              </span>
+                              <span className="font-semibold tabular-nums">{taskPercent}%</span>
+                            </div>
+                            <div className="h-1.5 overflow-hidden rounded-full bg-gray-100">
+                              <div
+                                className="h-full rounded-full bg-indigo-500 transition-all duration-200"
+                                style={{ width: `${taskPercent}%` }}
+                              />
+                            </div>
+                          </div>
+                        )}
+
+                        {/* Indicators */}
+                        {(unpaidCount > 0 || pendingPayCount > 0) && (
+                          <>
+                            <Separator className="my-3" />
+                            <div className="flex flex-wrap items-center gap-3">
+                              {unpaidCount > 0 && (
+                                <span className="flex items-center gap-1.5 text-sm font-medium text-orange-600">
+                                  <FileText className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {unpaidCount} unpaid
+                                </span>
+                              )}
+                              {pendingPayCount > 0 && (
+                                <span className="flex items-center gap-1.5 text-sm font-medium text-red-600">
+                                  <CreditCard className="h-3.5 w-3.5" aria-hidden="true" />
+                                  {pendingPayCount} pending
+                                </span>
+                              )}
+                            </div>
+                          </>
+                        )}
+                      </CardContent>
+                    </Card>
                   </Link>
                 );
               })}
@@ -836,63 +861,66 @@ export default async function AdminDashboard({
               <h2 className="text-lg font-bold text-gray-900">
                 Recent Estimates
               </h2>
-              <span className="inline-flex min-h-[28px] min-w-[28px] items-center justify-center rounded-full bg-blue-100 px-2.5 text-sm font-semibold tabular-nums text-blue-700">
+              <Badge variant="secondary" className="px-2.5 py-0.5 text-sm font-semibold tabular-nums">
                 {estimates.length}
-              </span>
+              </Badge>
             </div>
 
             <div className="space-y-2">
               {estimates.map((est) => (
-                <div
+                <Card
                   key={est.id}
-                  className="flex min-h-[44px] items-center gap-4 rounded-xl bg-white p-4 shadow-sm transition-all duration-200 hover:shadow-md"
+                  className="shadow-sm transition-all duration-200 hover:shadow-md"
                 >
-                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50">
-                    <ClipboardCheck className="h-5 w-5 text-blue-600" aria-hidden="true" />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="font-medium text-gray-900">
-                      {est.client_name}
-                    </p>
-                    <p className="text-sm text-gray-600">{est.project_type}</p>
-                  </div>
-                  <div className="hidden text-right sm:block">
-                    {est.estimated_min != null && est.estimated_max != null ? (
-                      <p className="text-sm font-semibold tabular-nums text-gray-700">
-                        {fmt(est.estimated_min)} &ndash; {fmt(est.estimated_max)}
+                  <CardContent className="flex min-h-[44px] items-center gap-4 p-4">
+                    <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-blue-50">
+                      <ClipboardCheck className="h-5 w-5 text-blue-600" aria-hidden="true" />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="font-medium text-gray-900">
+                        {est.client_name}
                       </p>
-                    ) : est.budget_range ? (
-                      <p className="text-sm font-semibold tabular-nums text-gray-700">
-                        {est.budget_range}
+                      <p className="text-sm text-gray-600">{est.project_type}</p>
+                    </div>
+                    <div className="hidden text-right sm:block">
+                      {est.estimated_min != null && est.estimated_max != null ? (
+                        <p className="text-sm font-semibold tabular-nums text-gray-700">
+                          {fmt(est.estimated_min)} &ndash; {fmt(est.estimated_max)}
+                        </p>
+                      ) : est.budget_range ? (
+                        <p className="text-sm font-semibold tabular-nums text-gray-700">
+                          {est.budget_range}
+                        </p>
+                      ) : null}
+                      <p className="text-sm text-gray-500">
+                        {new Date(est.created_at).toLocaleDateString("en-US", {
+                          month: "short",
+                          day: "numeric",
+                        })}
                       </p>
-                    ) : null}
-                    <p className="text-sm text-gray-500">
-                      {new Date(est.created_at).toLocaleDateString("en-US", {
-                        month: "short",
-                        day: "numeric",
-                      })}
-                    </p>
-                  </div>
-                  <span
-                    className={`flex shrink-0 items-center gap-1.5 rounded-full px-3 py-1 text-sm font-semibold ${
-                      est.status === "new"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-yellow-100 text-yellow-700"
-                    }`}
-                  >
-                    {est.status === "new" ? (
-                      <>
-                        <Inbox className="h-3.5 w-3.5" aria-hidden="true" />
-                        New
-                      </>
-                    ) : (
-                      <>
-                        <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
-                        Reviewed
-                      </>
-                    )}
-                  </span>
-                </div>
+                    </div>
+                    <Badge
+                      variant="outline"
+                      className={`px-2.5 py-0.5 shrink-0 text-sm font-semibold ${
+                        est.status === "new"
+                          ? "bg-blue-100 text-blue-700 border-blue-200"
+                          : "bg-yellow-100 text-yellow-700 border-yellow-200"
+                      }`}
+                    >
+                      {est.status === "new" ? (
+                        <span className="flex items-center gap-1.5">
+                          <Inbox className="h-3.5 w-3.5" aria-hidden="true" />
+                          New
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5">
+                          <CheckCircle2 className="h-3.5 w-3.5" aria-hidden="true" />
+                          Reviewed
+                        </span>
+                      )}
+                    </Badge>
+                  </CardContent>
+                </Card>
               ))}
             </div>
           </section>

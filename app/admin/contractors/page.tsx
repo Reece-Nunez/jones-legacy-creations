@@ -13,6 +13,8 @@ import {
   FolderOpen,
   AlertCircle,
 } from "lucide-react";
+import { Card, CardContent } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -162,27 +164,29 @@ export default async function ContractorsPage({
 
         {/* Contractor Cards */}
         {contractorList.length === 0 ? (
-          <div className="rounded-xl bg-white p-12 text-center shadow-sm">
-            <AlertCircle className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-4 text-lg font-medium text-gray-500">
-              No contractors found
-            </p>
-            <p className="mt-1 text-sm text-gray-400">
-              {q || trade
-                ? "Try adjusting your search or filters."
-                : "Add your first contractor to get started."}
-            </p>
-            {!q && !trade && (
-              <Link
-                href="/admin/contractors/new"
-                className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500"
-                style={{ minHeight: 44 }}
-              >
-                <Plus className="h-5 w-5" />
-                Add Your First Contractor
-              </Link>
-            )}
-          </div>
+          <Card className="shadow-sm">
+            <CardContent className="p-12 text-center">
+              <AlertCircle className="mx-auto h-10 w-10 text-gray-300" />
+              <p className="mt-4 text-lg font-medium text-gray-500">
+                No contractors found
+              </p>
+              <p className="mt-1 text-sm text-gray-400">
+                {q || trade
+                  ? "Try adjusting your search or filters."
+                  : "Add your first contractor to get started."}
+              </p>
+              {!q && !trade && (
+                <Link
+                  href="/admin/contractors/new"
+                  className="mt-6 inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-indigo-500"
+                  style={{ minHeight: 44 }}
+                >
+                  <Plus className="h-5 w-5" />
+                  Add Your First Contractor
+                </Link>
+              )}
+            </CardContent>
+          </Card>
         ) : (
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {contractorList.map((contractor) => {
@@ -195,8 +199,10 @@ export default async function ContractorsPage({
                   key={contractor.id}
                   href={`/admin/contractors/${contractor.id}`}
                   aria-label={`View details for ${contractor.name}${contractor.company ? `, ${contractor.company}` : ""}`}
-                  className="group cursor-pointer rounded-xl bg-white p-6 shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md"
+                  className="group block"
                 >
+                <Card className="cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
+                <CardContent className="pt-6">
                   {/* Name & Trade */}
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
@@ -215,13 +221,14 @@ export default async function ContractorsPage({
                         )}
                       </div>
                     </div>
-                    <span
-                      className={`shrink-0 rounded-full px-2.5 py-0.5 text-xs font-medium ${
+                    <Badge
+                      variant="outline"
+                      className={`shrink-0 ${
                         TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other
                       }`}
                     >
                       {contractor.trade}
-                    </span>
+                    </Badge>
                   </div>
 
                   {/* Contact Info */}
@@ -288,6 +295,8 @@ export default async function ContractorsPage({
                       {contractor.notes}
                     </p>
                   )}
+                </CardContent>
+                </Card>
                 </Link>
               );
             })}

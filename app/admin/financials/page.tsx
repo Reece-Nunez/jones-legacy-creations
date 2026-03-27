@@ -21,6 +21,9 @@ import {
   ExternalLink,
   Inbox,
 } from "lucide-react";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Separator } from "@/components/ui/separator";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
@@ -265,121 +268,130 @@ export default async function FinancialsPage({
         {/* ── A. Summary Cards ──────────────────────────────────── */}
         <div className="mb-8 grid grid-cols-2 gap-4 lg:grid-cols-4">
           {/* Total Revenue */}
-          <div className="rounded-xl border-t-4 border-green-500 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-green-50 p-2">
-                <DollarSign className="h-5 w-5 text-green-600" />
+          <Card className="border-t-4 border-green-500 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-green-50 p-2">
+                  <DollarSign className="h-5 w-5 text-green-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Total Revenue
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-700">
-                Total Revenue
-              </span>
-            </div>
-            <p
-              className="mt-3 text-3xl font-bold tabular-nums text-green-700"
-              aria-label={spokenDollars(totalRevenue)}
-            >
-              {fmt(totalRevenue)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              {paidInvoices.length} paid invoice
-              {paidInvoices.length !== 1 && "s"}
-            </p>
-          </div>
+              <p
+                className="mt-3 text-3xl font-bold tabular-nums text-green-700"
+                aria-label={spokenDollars(totalRevenue)}
+              >
+                {fmt(totalRevenue)}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                {paidInvoices.length} paid invoice
+                {paidInvoices.length !== 1 && "s"}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Outstanding */}
-          <div className="rounded-xl border-t-4 border-blue-500 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-blue-50 p-2">
-                <FileText className="h-5 w-5 text-blue-600" />
-              </div>
-              <span className="text-sm font-medium text-gray-700">
-                Outstanding
-              </span>
-            </div>
-            <p
-              className="mt-3 text-3xl font-bold tabular-nums text-blue-700"
-              aria-label={spokenDollars(outstandingTotal)}
-            >
-              {fmt(outstandingTotal)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              {unpaidInvoices.length} unpaid invoice
-              {unpaidInvoices.length !== 1 && "s"}
-              {overdueInvoices.length > 0 && (
-                <span className="ml-1 font-medium text-red-500">
-                  ({overdueInvoices.length} overdue)
+          <Card className="border-t-4 border-blue-500 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-blue-50 p-2">
+                  <FileText className="h-5 w-5 text-blue-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Outstanding
                 </span>
-              )}
-            </p>
-          </div>
+              </div>
+              <p
+                className="mt-3 text-3xl font-bold tabular-nums text-blue-700"
+                aria-label={spokenDollars(outstandingTotal)}
+              >
+                {fmt(outstandingTotal)}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                {unpaidInvoices.length} unpaid invoice
+                {unpaidInvoices.length !== 1 && "s"}
+                {overdueInvoices.length > 0 && (
+                  <span className="ml-1 font-medium text-red-500">
+                    ({overdueInvoices.length} overdue)
+                  </span>
+                )}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Owed to Contractors */}
-          <div className="rounded-xl border-t-4 border-orange-500 bg-white p-6 shadow-sm">
-            <div className="flex items-center gap-3">
-              <div className="rounded-lg bg-orange-50 p-2">
-                <CreditCard className="h-5 w-5 text-orange-600" />
+          <Card className="border-t-4 border-orange-500 shadow-sm">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div className="rounded-lg bg-orange-50 p-2">
+                  <CreditCard className="h-5 w-5 text-orange-600" />
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Owed to Contractors
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-700">
-                Owed to Contractors
-              </span>
-            </div>
-            <p
-              className="mt-3 text-3xl font-bold tabular-nums text-orange-700"
-              aria-label={spokenDollars(owedToContractors)}
-            >
-              {fmt(owedToContractors)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              {pendingPayments.length} pending payment
-              {pendingPayments.length !== 1 && "s"}
-            </p>
-          </div>
+              <p
+                className="mt-3 text-3xl font-bold tabular-nums text-orange-700"
+                aria-label={spokenDollars(owedToContractors)}
+              >
+                {fmt(owedToContractors)}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                {pendingPayments.length} pending payment
+                {pendingPayments.length !== 1 && "s"}
+              </p>
+            </CardContent>
+          </Card>
 
           {/* Net Position */}
-          <div
-            className={`rounded-xl border-t-4 bg-white p-6 shadow-sm ${
+          <Card
+            className={`border-t-4 shadow-sm ${
               netPosition >= 0 ? "border-green-500" : "border-red-500"
             }`}
           >
-            <div className="flex items-center gap-3">
-              <div
-                className={`rounded-lg p-2 ${
-                  netPosition >= 0 ? "bg-green-50" : "bg-red-50"
-                }`}
-              >
-                {netPosition >= 0 ? (
-                  <TrendingUp className="h-5 w-5 text-green-600" />
-                ) : (
-                  <TrendingDown className="h-5 w-5 text-red-600" />
-                )}
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-3">
+                <div
+                  className={`rounded-lg p-2 ${
+                    netPosition >= 0 ? "bg-green-50" : "bg-red-50"
+                  }`}
+                >
+                  {netPosition >= 0 ? (
+                    <TrendingUp className="h-5 w-5 text-green-600" />
+                  ) : (
+                    <TrendingDown className="h-5 w-5 text-red-600" />
+                  )}
+                </div>
+                <span className="text-sm font-medium text-gray-700">
+                  Net Position
+                </span>
               </div>
-              <span className="text-sm font-medium text-gray-700">
-                Net Position
-              </span>
-            </div>
-            <p
-              className={`mt-3 text-3xl font-bold tabular-nums ${
-                netPosition >= 0 ? "text-green-700" : "text-red-700"
-              }`}
-              aria-label={spokenDollars(netPosition)}
-            >
-              {fmt(netPosition)}
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Revenue minus paid costs
-            </p>
-          </div>
+              <p
+                className={`mt-3 text-3xl font-bold tabular-nums ${
+                  netPosition >= 0 ? "text-green-700" : "text-red-700"
+                }`}
+                aria-label={spokenDollars(netPosition)}
+              >
+                {fmt(netPosition)}
+              </p>
+              <p className="mt-1 text-sm text-gray-500">
+                Revenue minus paid costs
+              </p>
+            </CardContent>
+          </Card>
         </div>
 
         {/* ── Section Divider ─────────────────────────────────────── */}
-        <hr className="mb-8 border-gray-200" />
+        <Separator className="mb-8" />
 
         {/* ── B. Overdue Invoices Alert ──────────────────────────── */}
         {overdueInvoices.length > 0 && (
-          <div
+          <Card
             role="alert"
-            className="mb-8 rounded-xl border border-red-200 bg-gradient-to-br from-red-50 via-red-50 to-orange-50 p-6 shadow-sm"
+            className="mb-8 border-red-200 bg-gradient-to-br from-red-50 via-red-50 to-orange-50 shadow-sm"
           >
+            <CardContent className="pt-6">
             <div className="mb-4 flex items-center gap-2">
               <AlertTriangle className="h-5 w-5 text-red-600" />
               <h2 className="text-lg font-semibold text-red-800">
@@ -429,9 +441,9 @@ export default async function FinancialsPage({
                           {fmt(inv.amount)}
                         </td>
                         <td className="py-3 pr-4 text-right tabular-nums">
-                          <span className="inline-flex items-center rounded-full bg-red-200 px-2 py-0.5 text-xs font-bold text-red-800">
+                          <Badge variant="outline" className="bg-red-200 text-red-800 font-bold">
                             {days} day{days !== 1 && "s"}
-                          </span>
+                          </Badge>
                         </td>
                         <td className="py-3">
                           {proj && (
@@ -466,9 +478,9 @@ export default async function FinancialsPage({
                       <span className="font-medium text-red-900">
                         {proj?.client_name ?? "Unknown"}
                       </span>
-                      <span className="inline-flex items-center rounded-full bg-red-200 px-2 py-0.5 text-xs font-bold text-red-800">
+                      <Badge variant="outline" className="bg-red-200 text-red-800 font-bold">
                         {days} day{days !== 1 && "s"} overdue
-                      </span>
+                      </Badge>
                     </div>
                     <p className="text-sm text-gray-700">{proj?.name ?? "Unknown"}</p>
                     <p className="text-xs tabular-nums text-gray-500">Invoice {inv.invoice_number}</p>
@@ -494,11 +506,12 @@ export default async function FinancialsPage({
                 );
               })}
             </div>
-          </div>
+            </CardContent>
+          </Card>
         )}
 
         {/* ── Section Divider ─────────────────────────────────────── */}
-        <hr className="mb-8 border-gray-200" />
+        <Separator className="mb-8" />
 
         {/* ── C. Project Financial Breakdown ─────────────────────── */}
         <div className="mb-8">
@@ -507,16 +520,18 @@ export default async function FinancialsPage({
           </h2>
 
           {projectFinancials.length === 0 ? (
-            <div className="rounded-xl bg-white p-12 text-center shadow-sm">
-              <Inbox className="mx-auto h-10 w-10 text-gray-300" />
-              <p className="mt-3 text-sm text-gray-500">
-                No active projects with financial data
-              </p>
-            </div>
+            <Card className="shadow-sm">
+              <CardContent className="p-12 text-center">
+                <Inbox className="mx-auto h-10 w-10 text-gray-300" />
+                <p className="mt-3 text-sm text-gray-500">
+                  No active projects with financial data
+                </p>
+              </CardContent>
+            </Card>
           ) : (
             <>
               {/* Desktop table */}
-              <div className="relative hidden overflow-x-auto rounded-xl bg-white shadow-sm md:block">
+              <Card className="relative hidden overflow-x-auto shadow-sm md:block">
                 {/* Scroll indicator gradient on right edge */}
                 <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/80 to-transparent lg:hidden" />
                 <div className="max-h-[600px] overflow-y-auto">
@@ -637,15 +652,16 @@ export default async function FinancialsPage({
                             </td>
                             <td className="px-4 py-3 text-right tabular-nums">
                               {pf.totalCollected > 0 ? (
-                                <span
-                                  className={`inline-flex rounded-full px-2 py-0.5 text-xs font-semibold ${
+                                <Badge
+                                  variant="outline"
+                                  className={
                                     profitable
                                       ? "bg-green-50 text-green-700"
                                       : "bg-red-50 text-red-700"
-                                  }`}
+                                  }
                                 >
                                   {pct(marginPct)}
-                                </span>
+                                </Badge>
                               ) : (
                                 <span className="text-xs text-gray-500">--</span>
                               )}
@@ -656,7 +672,7 @@ export default async function FinancialsPage({
                     </tbody>
                   </table>
                 </div>
-              </div>
+              </Card>
 
               {/* Mobile card layout */}
               <div className="space-y-3 md:hidden">
@@ -668,10 +684,11 @@ export default async function FinancialsPage({
                   const profitable = pf.profitMargin >= 0;
 
                   return (
-                    <div
+                    <Card
                       key={pf.project.id}
-                      className="rounded-xl bg-white p-4 shadow-sm"
+                      className="shadow-sm"
                     >
+                    <CardContent className="p-4">
                       <div className="mb-3 flex items-center justify-between">
                         <div>
                           <Link
@@ -731,7 +748,8 @@ export default async function FinancialsPage({
                           </p>
                         </div>
                       </div>
-                    </div>
+                    </CardContent>
+                    </Card>
                   );
                 })}
               </div>
@@ -740,7 +758,7 @@ export default async function FinancialsPage({
         </div>
 
         {/* ── Section Divider ─────────────────────────────────────── */}
-        <hr className="mb-8 border-gray-200" />
+        <Separator className="mb-8" />
 
         {/* ── D. Upcoming Payments Due ───────────────────────────── */}
         <div className="mb-8">
@@ -753,7 +771,7 @@ export default async function FinancialsPage({
           {upcomingItems.length > 0 ? (
             <>
               {/* Desktop table */}
-              <div className="relative hidden overflow-x-auto rounded-xl bg-white shadow-sm md:block">
+              <Card className="relative hidden overflow-x-auto shadow-sm md:block">
                 <div className="pointer-events-none absolute right-0 top-0 bottom-0 w-6 bg-gradient-to-l from-white/80 to-transparent lg:hidden" />
                 <table className="w-full text-sm">
                   <thead>
@@ -795,15 +813,15 @@ export default async function FinancialsPage({
                           </td>
                           <td className="px-4 py-3">
                             {item.type === "invoice" ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-700">
+                              <Badge variant="outline" className="bg-blue-50 text-blue-700">
                                 <FileText className="h-3 w-3" />
                                 Invoice
-                              </span>
+                              </Badge>
                             ) : (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-orange-50 px-2 py-0.5 text-xs font-medium text-orange-700">
+                              <Badge variant="outline" className="bg-orange-50 text-orange-700">
                                 <CreditCard className="h-3 w-3" />
                                 Payment
-                              </span>
+                              </Badge>
                             )}
                           </td>
                           <td className="px-4 py-3">
@@ -826,17 +844,17 @@ export default async function FinancialsPage({
                           </td>
                           <td className="px-4 py-3 text-right tabular-nums">
                             {isOverdue ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                              <Badge variant="outline" className="bg-red-100 text-red-700 font-bold">
                                 <Clock className="h-3 w-3" />
                                 {Math.abs(item.daysAway)}d overdue
-                              </span>
+                              </Badge>
                             ) : isDueSoon ? (
-                              <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-bold text-yellow-700">
+                              <Badge variant="outline" className="bg-yellow-100 text-yellow-700 font-bold">
                                 <Clock className="h-3 w-3" />
                                 {item.daysAway === 0
                                   ? "Today"
                                   : `${item.daysAway}d`}
-                              </span>
+                              </Badge>
                             ) : (
                               <span className="text-xs text-gray-500">
                                 {item.daysAway}d
@@ -848,7 +866,7 @@ export default async function FinancialsPage({
                     })}
                   </tbody>
                 </table>
-              </div>
+              </Card>
 
               {/* Mobile timeline layout */}
               <div className="space-y-0 md:hidden">
@@ -890,14 +908,14 @@ export default async function FinancialsPage({
                             {formatDate(item.date)}
                           </span>
                           {isOverdue ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-red-100 px-2 py-0.5 text-xs font-bold text-red-700">
+                            <Badge variant="outline" className="bg-red-100 text-red-700 font-bold">
                               <Clock className="h-3 w-3" />
                               {Math.abs(item.daysAway)}d overdue
-                            </span>
+                            </Badge>
                           ) : isDueSoon ? (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-yellow-100 px-2 py-0.5 text-xs font-bold text-yellow-700">
+                            <Badge variant="outline" className="bg-yellow-100 text-yellow-700 font-bold">
                               {item.daysAway === 0 ? "Today" : `${item.daysAway}d`}
-                            </span>
+                            </Badge>
                           ) : (
                             <span className="text-xs text-gray-500">{item.daysAway}d</span>
                           )}
@@ -940,17 +958,19 @@ export default async function FinancialsPage({
               </div>
             </>
           ) : (
-            <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-              <Calendar className="mx-auto h-8 w-8 text-gray-300" />
-              <p className="mt-3 text-sm text-gray-500">
-                No upcoming payments due in the next 30 days
-              </p>
-            </div>
+            <Card className="shadow-sm">
+              <CardContent className="p-8 text-center">
+                <Calendar className="mx-auto h-8 w-8 text-gray-300" />
+                <p className="mt-3 text-sm text-gray-500">
+                  No upcoming payments due in the next 30 days
+                </p>
+              </CardContent>
+            </Card>
           )}
         </div>
 
         {/* ── Section Divider ─────────────────────────────────────── */}
-        <hr className="mb-8 border-gray-200" />
+        <Separator className="mb-8" />
 
         {/* ── E. Draw Request Summary ────────────────────────────── */}
         {draws.length > 0 ? (
@@ -971,10 +991,11 @@ export default async function FinancialsPage({
                     .reduce((s, d) => s + d.amount, 0);
 
                   return (
-                    <div
+                    <Card
                       key={project.id}
-                      className="rounded-xl bg-white p-5 shadow-sm"
+                      className="shadow-sm"
                     >
+                    <CardContent className="p-5">
                       <div className="mb-3 flex items-center justify-between">
                         <Link
                           href={`/admin/projects/${project.id}`}
@@ -1017,15 +1038,16 @@ export default async function FinancialsPage({
                             className="flex items-center justify-between text-xs"
                           >
                             <div className="flex items-center gap-2">
-                              <span
-                                className={`rounded-full px-2 py-0.5 font-medium ${
+                              <Badge
+                                variant="outline"
+                                className={
                                   DRAW_STATUS_COLORS[
                                     d.status as DrawRequestStatus
                                   ]
-                                }`}
+                                }
                               >
                                 {d.status}
-                              </span>
+                              </Badge>
                               <span className="text-gray-700">
                                 Draw #{d.draw_number}
                               </span>
@@ -1039,7 +1061,8 @@ export default async function FinancialsPage({
                           </div>
                         ))}
                       </div>
-                    </div>
+                    </CardContent>
+                    </Card>
                   );
                 }
               )}
@@ -1050,12 +1073,14 @@ export default async function FinancialsPage({
             <h2 className="mb-4 text-xl font-semibold text-gray-900">
               Draw Request Summary
             </h2>
-            <div className="rounded-xl bg-white p-8 text-center shadow-sm">
-              <FileText className="mx-auto h-8 w-8 text-gray-300" />
-              <p className="mt-3 text-sm text-gray-500">
-                No draw requests yet
-              </p>
-            </div>
+            <Card className="shadow-sm">
+              <CardContent className="p-8 text-center">
+                <FileText className="mx-auto h-8 w-8 text-gray-300" />
+                <p className="mt-3 text-sm text-gray-500">
+                  No draw requests yet
+                </p>
+              </CardContent>
+            </Card>
           </div>
         )}
 

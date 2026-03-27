@@ -17,7 +17,7 @@ export function Footer() {
                 alt="Jones Legacy Creations logo"
                 width={504}
                 height={360}
-                className="h-32 w-auto brightness-0 invert"
+                className="h-16 w-auto brightness-0 invert"
               />
             </Link>
             <p className="text-gray-400 mb-6 leading-relaxed">
