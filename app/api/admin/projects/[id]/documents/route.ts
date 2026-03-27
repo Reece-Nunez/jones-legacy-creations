@@ -136,6 +136,30 @@ export async function POST(
     });
   }
 
+  // Update draw total — sum all contractor payments linked to this draw's documents
+  if (drawRequestId && aiData?.amount) {
+    const { data: drawPayments } = await supabase
+      .from("contractor_payments")
+      .select("amount")
+      .eq("project_id", id)
+      .in(
+        "invoice_file_url",
+        (await supabase
+          .from("documents")
+          .select("file_url")
+          .eq("draw_request_id", drawRequestId)
+        ).data?.map((d) => d.file_url) || []
+      );
+
+    if (drawPayments) {
+      const drawTotal = drawPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+      await supabase
+        .from("draw_requests")
+        .update({ amount: drawTotal })
+        .eq("id", drawRequestId);
+    }
+  }
+
   return NextResponse.json(
     {
       ...data,

@@ -149,6 +149,40 @@ export async function POST(
     }
   }
 
+  // Recalculate draw totals for any affected draws
+  const affectedDrawIds = new Set<string>();
+  for (const docId of document_ids) {
+    const { data: doc } = await supabase
+      .from("documents")
+      .select("draw_request_id")
+      .eq("id", docId)
+      .single();
+    if (doc?.draw_request_id) affectedDrawIds.add(doc.draw_request_id);
+  }
+
+  for (const drawId of affectedDrawIds) {
+    const { data: drawDocs } = await supabase
+      .from("documents")
+      .select("file_url")
+      .eq("draw_request_id", drawId);
+
+    if (drawDocs && drawDocs.length > 0) {
+      const { data: drawPayments } = await supabase
+        .from("contractor_payments")
+        .select("amount")
+        .eq("project_id", id)
+        .in("invoice_file_url", drawDocs.map((d) => d.file_url));
+
+      if (drawPayments) {
+        const drawTotal = drawPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
+        await supabase
+          .from("draw_requests")
+          .update({ amount: drawTotal })
+          .eq("id", drawId);
+      }
+    }
+  }
+
   return NextResponse.json({
     processed: results.length,
     results,
