@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Home, Bed, Car, CheckCircle, Phone, ChevronDown, DollarSign } from "lucide-react";
+import { Home, Bed, Car, CheckCircle, Check, Phone, ChevronDown, DollarSign } from "lucide-react";
 import Image from "next/image";
 
 // Southern Utah cities with zip codes
@@ -109,7 +109,7 @@ export default function RealEstatePage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
+      <section aria-label="Real estate services overview" className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -120,16 +120,16 @@ export default function RealEstatePage() {
             <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
               <Image
                 src="/JONES REALTY ICON (2).svg"
-                alt="Blake Jones Realty"
+                alt="Blake Jones Realty logo"
                 width={120}
                 height={120}
                 className="object-contain"
               />
             </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
               Real Estate Services
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Whether you&apos;re buying your dream home or selling your property, we provide expert guidance every step of the way.
             </p>
           </motion.div>
@@ -142,10 +142,10 @@ export default function RealEstatePage() {
               className="text-center"
             >
               <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <DollarSign className="w-8 h-8 text-white" />
+                <DollarSign aria-hidden="true" className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">Creative Financing</h3>
-              <p className="text-gray-600">Access to financing options that open doors to homes you thought were out of reach.</p>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Creative Financing</h2>
+              <p className="text-gray-700 leading-relaxed">Access to financing options that open doors to homes you thought were out of reach.</p>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -154,10 +154,10 @@ export default function RealEstatePage() {
               className="text-center"
             >
               <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <Home className="w-8 h-8 text-white" />
+                <Home aria-hidden="true" className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">Builder Experience</h3>
-              <p className="text-gray-600">Deep construction knowledge helps us evaluate properties and see their true potential.</p>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Builder Experience</h2>
+              <p className="text-gray-700 leading-relaxed">Deep construction knowledge helps us evaluate properties and see their true potential.</p>
             </motion.div>
             <motion.div
               initial={{ opacity: 0, y: 20 }}
@@ -166,17 +166,17 @@ export default function RealEstatePage() {
               className="text-center"
             >
               <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle className="w-8 h-8 text-white" />
+                <CheckCircle aria-hidden="true" className="w-8 h-8 text-white" />
               </div>
-              <h3 className="text-lg font-bold mb-2">Industry Connections</h3>
-              <p className="text-gray-600">Reliable network of lenders, contractors, and service providers to support your journey.</p>
+              <h2 className="text-lg font-bold text-gray-900 mb-2">Industry Connections</h2>
+              <p className="text-gray-700 leading-relaxed">Reliable network of lenders, contractors, and service providers to support your journey.</p>
             </motion.div>
           </div>
         </div>
       </section>
 
       {/* Our Process Section */}
-      <section className="py-20 bg-gray-50">
+      <section aria-label="Our realtor process" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -185,10 +185,10 @@ export default function RealEstatePage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Our Realtor Process
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               From first consultation to closing day and beyond, we guide you through every step
             </p>
           </motion.div>
@@ -237,8 +237,8 @@ export default function RealEstatePage() {
                 <div className="text-6xl font-serif font-bold text-gray-200 mb-4">
                   {step.number}
                 </div>
-                <h3 className="text-xl font-bold mb-3">{step.title}</h3>
-                <p className="text-gray-600">{step.description}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
+                <p className="text-gray-700 leading-relaxed">{step.description}</p>
               </motion.div>
             ))}
           </div>
@@ -246,7 +246,7 @@ export default function RealEstatePage() {
       </section>
 
       {/* Why Choose Us Section */}
-      <section className="py-20 bg-black text-white">
+      <section aria-label="Why choose Blake Jones Realty" className="py-20 bg-black text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -258,7 +258,7 @@ export default function RealEstatePage() {
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
               Why Choose Blake Jones Realty?
             </h2>
-            <p className="text-xl text-gray-300 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
               We make it easier to discover home options that may not have seemed within reach, combining creative financing solutions with solid builder experience. With reliable industry connections and a keen eye for a property&apos;s potential, let our team help turn your dream into a reality.
             </p>
           </motion.div>
@@ -266,7 +266,7 @@ export default function RealEstatePage() {
       </section>
 
       {/* Form Section */}
-      <section id="contact-form" className="py-20 bg-white">
+      <section id="contact-form" aria-label="Dream home contact form" className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -275,10 +275,10 @@ export default function RealEstatePage() {
             viewport={{ once: true }}
             className="mb-12 text-center"
           >
-            <h2 className="text-4xl font-serif font-bold mb-4">
+            <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
               Tell Us About Your Dream Home
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
               Fill out this form to help us understand exactly what you&apos;re looking for. The more details you provide, the better we can serve you.
             </p>
 
@@ -315,21 +315,23 @@ export default function RealEstatePage() {
                 className="overflow-hidden"
               >
                 <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
-                  <Phone className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold mb-4">Contact Us Directly</h3>
+                  <Phone aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-gray-700" />
+                  <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4">Contact Us Directly</h3>
                   <a
                     href="tel:+14352889807"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4"
+                    aria-label="Call us at (435) 288-9807"
+                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4 min-h-[44px]"
                   >
                     (435) 288-9807
                   </a>
                   <a
                     href="mailto:blakerealty@joneslegacycreations.com"
-                    className="text-xl text-black hover:text-gray-700 transition-colors"
+                    aria-label="Email us at blakerealty@joneslegacycreations.com"
+                    className="text-xl text-black hover:text-gray-700 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     blakerealty@joneslegacycreations.com
                   </a>
-                  <p className="text-gray-600 mt-4">
+                  <p className="text-gray-700 mt-4 leading-relaxed">
                     We&apos;re available to discuss your real estate needs and answer any questions.
                   </p>
                 </div>
@@ -473,8 +475,8 @@ export default function RealEstatePage() {
 
             {/* Property Size & Layout */}
             <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6 flex items-center gap-2">
-                <Bed className="w-6 h-6" />
+              <h3 className="text-2xl font-serif font-bold text-gray-900 mb-6 flex items-center gap-2">
+                <Bed aria-hidden="true" className="w-6 h-6" />
                 Property Size & Layout
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -548,11 +550,11 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("garage")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold flex items-center gap-2">
-                  <Car className="w-6 h-6" />
+                <h3 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
+                  <Car aria-hidden="true" className="w-6 h-6" />
                   Garage & Parking
                 </h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("garage") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("garage") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("garage") && (
@@ -603,7 +605,7 @@ export default function RealEstatePage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Architectural Style</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("style") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("style") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("style") && (
@@ -647,7 +649,7 @@ export default function RealEstatePage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Interior Features</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("interior") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("interior") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("interior") && (
@@ -733,7 +735,7 @@ export default function RealEstatePage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Exterior Features</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("exterior") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("exterior") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("exterior") && (
@@ -816,7 +818,7 @@ export default function RealEstatePage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Systems & Utilities</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("systems") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("systems") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("systems") && (
@@ -886,7 +888,7 @@ export default function RealEstatePage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Additional Requirements</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("requirements") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("requirements") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("requirements") && (

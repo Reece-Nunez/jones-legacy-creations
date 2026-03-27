@@ -167,21 +167,21 @@ function GalleryContent() {
       <Navigation />
 
       {/* Header Section */}
-      <section className="pt-32 pb-12 bg-gradient-to-br from-gray-50 to-white">
+      <section aria-label="Gallery header" className="pt-32 pb-12 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <Link href="/services/interior-design" className="inline-flex items-center text-gray-600 hover:text-black transition-colors mb-8">
-              <ArrowLeft className="w-5 h-5 mr-2" />
+            <Link href="/services/interior-design" className="inline-flex items-center text-gray-700 hover:text-black transition-colors mb-8 min-h-[44px]">
+              <ArrowLeft aria-hidden="true" className="w-5 h-5 mr-2" />
               Back to Interior Design
             </Link>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
               Full Gallery
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl">
+            <p className="text-xl text-gray-700 max-w-3xl leading-relaxed">
               Explore our complete collection of interior designs and staging projects
             </p>
           </motion.div>
@@ -189,7 +189,7 @@ function GalleryContent() {
       </section>
 
       {/* Gallery Section */}
-      <section className="py-12 bg-white">
+      <section aria-label="Interior design photo gallery" className="py-12 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           {/* Category Filter Tabs */}
           <motion.div
@@ -197,12 +197,16 @@ function GalleryContent() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.5, delay: 0.2 }}
             className="flex flex-wrap justify-center gap-3 mb-12"
+            role="tablist"
+            aria-label="Filter gallery by room category"
           >
             {categories.map((category) => (
               <button
                 key={category}
+                role="tab"
+                aria-selected={activeCategory === category}
                 onClick={() => setActiveCategory(category)}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 ${
+                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 min-h-[44px] ${
                   activeCategory === category
                     ? "bg-black text-white shadow-lg"
                     : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-200"
@@ -217,7 +221,7 @@ function GalleryContent() {
           <motion.p
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="text-center text-gray-500 mb-8"
+            className="text-center text-gray-600 mb-8"
           >
             Showing {filteredImages.length} {filteredImages.length === 1 ? 'image' : 'images'}
           </motion.p>
@@ -230,35 +234,40 @@ function GalleryContent() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
               transition={{ duration: 0.5 }}
-              className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+              className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
             >
               {filteredImages.map((image, index) => (
                 <motion.div
                   key={image.filename}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.05 }}
+                  transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.5) }}
                   className="group"
                 >
                   <div
-                    className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer"
+                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer"
                     onClick={() => setLightboxImage(image)}
+                    role="button"
+                    tabIndex={0}
+                    aria-label={`View ${image.description || image.category + ' design'} in full size`}
+                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLightboxImage(image); }}}
                   >
                     <div className="aspect-[4/3] relative overflow-hidden">
                       <Image
                         src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
-                        alt={image.description || `${image.category} design`}
+                        alt={image.description || `${image.category} interior design project`}
                         fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
                         style={image.rotate ? { transform: `rotate(${image.rotate}deg)` } : undefined}
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
                     </div>
                     <div className="p-6">
-                      <div className="text-sm text-gray-500 mb-2">
+                      <div className="text-sm text-gray-600 mb-2">
                         {image.category}
-                        {image.project && <span className="ml-2 text-gray-400">· {image.project}</span>}
+                        {image.project && <span className="ml-2 text-gray-600">· {image.project}</span>}
                       </div>
                       <p className="text-gray-700">{image.description}</p>
                     </div>
@@ -270,7 +279,7 @@ function GalleryContent() {
 
           {filteredImages.length === 0 && (
             <div className="text-center py-12">
-              <p className="text-gray-500 text-lg">No images in this category yet.</p>
+              <p className="text-gray-600 text-lg">No images in this category yet.</p>
             </div>
           )}
 
@@ -284,7 +293,7 @@ function GalleryContent() {
           >
             <Link href="/services/interior-design">
               <Button size="lg" variant="outline">
-                <ArrowLeft className="w-5 h-5 mr-2" />
+                <ArrowLeft aria-hidden="true" className="w-5 h-5 mr-2" />
                 Back to Interior Design
               </Button>
             </Link>
@@ -301,6 +310,9 @@ function GalleryContent() {
             exit={{ opacity: 0 }}
             transition={{ duration: 0.3 }}
             className="fixed inset-0 z-50 flex items-center justify-center bg-black/95 p-4"
+            role="dialog"
+            aria-modal="true"
+            aria-label={`Viewing ${lightboxImage.description || lightboxImage.category + ' design'} - ${currentImageIndex + 1} of ${filteredImages.length}`}
             onClick={() => setLightboxImage(null)}
             onKeyDown={handleKeyDown}
             tabIndex={0}
@@ -308,10 +320,10 @@ function GalleryContent() {
             {/* Close Button */}
             <button
               onClick={() => setLightboxImage(null)}
-              className="absolute top-4 right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+              className="absolute top-4 right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors min-h-[44px] min-w-[44px]"
               aria-label="Close lightbox"
             >
-              <X className="w-6 h-6 text-white" />
+              <X aria-hidden="true" className="w-6 h-6 text-white" />
             </button>
 
             {/* Previous Button */}
@@ -321,10 +333,10 @@ function GalleryContent() {
                   e.stopPropagation();
                   goToPrevImage();
                 }}
-                className="absolute left-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                className="absolute left-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors min-h-[44px] min-w-[44px]"
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-6 h-6 text-white" />
+                <ChevronLeft aria-hidden="true" className="w-6 h-6 text-white" />
               </button>
             )}
 
@@ -335,10 +347,10 @@ function GalleryContent() {
                   e.stopPropagation();
                   goToNextImage();
                 }}
-                className="absolute right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+                className="absolute right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors min-h-[44px] min-w-[44px]"
                 aria-label="Next image"
               >
-                <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight aria-hidden="true" className="w-6 h-6 text-white" />
               </button>
             )}
 
@@ -350,7 +362,7 @@ function GalleryContent() {
               <div className="relative w-full h-full">
                 <Image
                   src={`${S3_BASE_URL}${lightboxImage.filename}.${lightboxImage.ext || "webp"}`}
-                  alt={lightboxImage.description || `${lightboxImage.category} design`}
+                  alt={lightboxImage.description || `${lightboxImage.category} interior design project`}
                   fill
                   className="object-contain"
                   style={lightboxImage.rotate ? { transform: `rotate(${lightboxImage.rotate}deg)` } : undefined}

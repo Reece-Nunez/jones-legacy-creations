@@ -1,9 +1,12 @@
 import type { Metadata, Viewport } from "next";
-import { Open_Sans, Playfair_Display } from "next/font/google";
+import { Open_Sans, Playfair_Display, Geist } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/Toaster";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { OrganizationJsonLd } from "@/components/JsonLd";
+import { cn } from "@/lib/utils";
+
+const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
 const openSans = Open_Sans({
   variable: "--font-open-sans",
@@ -72,7 +75,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className="scroll-smooth">
+    <html lang="en" className={cn("scroll-smooth", "font-sans", geist.variable)}>
       <body
         className={`${openSans.variable} ${playfair.variable} font-sans antialiased bg-white text-black`}
       >

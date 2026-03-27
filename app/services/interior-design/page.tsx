@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Palette, Home, Sparkles, Eye, Ruler, PaintBucket, ArrowRight, Instagram, Facebook, Phone } from "lucide-react";
+import { Palette, Home, Sparkles, Eye, Ruler, PaintBucket, ArrowRight, Instagram, Facebook, Phone, Check } from "lucide-react";
 
 // Extended type for form with honeypot field
 type InteriorDesignFormWithHoneypot = InteriorDesignFormData & { honeypot?: string };
@@ -156,7 +156,7 @@ export default function InteriorDesignPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-20 bg-gradient-to-br from-gray-50 to-white">
+      <section aria-label="Interior design and home staging overview" className="pt-32 pb-20 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -167,16 +167,16 @@ export default function InteriorDesignPage() {
             <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
               <Image
                 src="/JONES Interior Design & Staging ICON (2).svg"
-                alt="Interiors By Jones Custom Homes"
+                alt="Interiors By Jones Custom Homes logo"
                 width={120}
                 height={120}
                 className="object-contain"
               />
             </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
               Interior Design & Home Staging
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto mb-12">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed">
               Transform your space with professional interior design and staging services led by our talented designer.
             </p>
 
@@ -184,7 +184,7 @@ export default function InteriorDesignPage() {
               <Link href="/contact">
                 <Button size="lg">
                   Schedule Consultation
-                  <ArrowRight className="w-5 h-5 ml-2" />
+                  <ArrowRight aria-hidden="true" className="w-5 h-5 ml-2" />
                 </Button>
               </Link>
             </div>
@@ -193,7 +193,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Why Choose Section */}
-      <section className="py-20 bg-white">
+      <section aria-label="Why choose Interiors by Jones Custom Homes" className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -202,10 +202,10 @@ export default function InteriorDesignPage() {
             viewport={{ once: true }}
             className="text-center"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-6">
               Why Choose Interiors by Jones Custom Homes?
             </h2>
-            <p className="text-xl text-gray-600 leading-relaxed">
+            <p className="text-xl text-gray-700 leading-relaxed max-w-2xl mx-auto">
               We transform even the most unique or challenging layouts into beautiful, functional spaces. With creative space solutions, a sharp eye for potential, and trusted industry experience, we highlight every home&apos;s best features—whether you&apos;re preparing to sell or elevating the place you live.
             </p>
           </motion.div>
@@ -213,7 +213,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Benefits Bar */}
-      <section className="py-12 bg-gray-900 text-white">
+      <section aria-label="Key benefits of our design services" className="py-12 bg-gray-900 text-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
             {benefits.map((benefit, index) => (
@@ -226,7 +226,7 @@ export default function InteriorDesignPage() {
                 className="flex flex-col items-center text-center"
               >
                 <div className="w-16 h-16 bg-white text-gray-900 rounded-full flex items-center justify-center mb-4">
-                  <benefit.icon className="w-8 h-8" />
+                  <benefit.icon aria-hidden="true" className="w-8 h-8" />
                 </div>
                 <p className="font-medium">{benefit.text}</p>
               </motion.div>
@@ -236,7 +236,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Services Section */}
-      <section className="py-20 bg-gray-50">
+      <section aria-label="Our design and staging services" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -245,10 +245,10 @@ export default function InteriorDesignPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Our Services
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Comprehensive design and staging solutions tailored to your needs
             </p>
           </motion.div>
@@ -265,15 +265,15 @@ export default function InteriorDesignPage() {
               >
                 <div className="flex items-center gap-4 mb-6">
                   <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <service.icon className="w-8 h-8" />
+                    <service.icon aria-hidden="true" className="w-8 h-8" />
                   </div>
-                  <h3 className="text-3xl font-serif font-bold">{service.title}</h3>
+                  <h3 className="text-3xl font-serif font-bold text-gray-900">{service.title}</h3>
                 </div>
-                <p className="text-gray-600 mb-6">{service.description}</p>
+                <p className="text-gray-700 mb-6 leading-relaxed">{service.description}</p>
                 <ul className="space-y-3">
                   {service.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
-                      <div className="w-1.5 h-1.5 bg-black rounded-full mt-2 flex-shrink-0" />
+                      <Check aria-hidden="true" className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
                       <span className="text-gray-700">{feature}</span>
                     </li>
                   ))}
@@ -285,7 +285,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Process Section */}
-      <section className="py-20 bg-white">
+      <section aria-label="Our design process" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -294,10 +294,10 @@ export default function InteriorDesignPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Our Process
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               From concept to completion, we guide you through every step
             </p>
           </motion.div>
@@ -315,8 +315,8 @@ export default function InteriorDesignPage() {
                 <div className="text-6xl font-serif font-bold text-gray-200 mb-4">
                   {step.number}
                 </div>
-                <h3 className="text-xl font-bold mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-600">{step.description}</p>
+                <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
+                <p className="text-sm text-gray-700 leading-relaxed">{step.description}</p>
 
                 {index < process.length - 1 && (
                   <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gray-200 -z-10" />
@@ -328,7 +328,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Portfolio Section */}
-      <section className="py-20 bg-gray-50">
+      <section aria-label="Interior design portfolio" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -337,10 +337,10 @@ export default function InteriorDesignPage() {
             viewport={{ once: true }}
             className="text-center mb-12"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Our Portfolio
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Browse our collection of beautiful interior designs and staging projects
             </p>
           </motion.div>
@@ -363,19 +363,20 @@ export default function InteriorDesignPage() {
                 className="group"
               >
                 <Link href={`/services/interior-design/gallery?category=${encodeURIComponent(image.category)}`}>
-                  <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer">
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer">
                     <div className="aspect-[4/3] relative overflow-hidden">
                       <Image
                         src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
-                        alt={image.description || `${image.category} design`}
+                        alt={image.description || `${image.category} interior design project`}
                         fill
                         sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
                       <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
                     </div>
                     <div className="p-6">
-                      <div className="text-sm text-gray-500 mb-2">{image.category}</div>
+                      <div className="text-sm text-gray-600 mb-2">{image.category}</div>
                       <p className="text-gray-700">{image.description}</p>
                     </div>
                   </div>
@@ -395,7 +396,7 @@ export default function InteriorDesignPage() {
             <Link href="/services/interior-design/gallery">
               <Button size="lg" variant="outline">
                 View Full Gallery
-                <ArrowRight className="w-5 h-5 ml-2" />
+                <ArrowRight aria-hidden="true" className="w-5 h-5 ml-2" />
               </Button>
             </Link>
           </motion.div>
@@ -403,7 +404,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Form Section */}
-      <section id="contact-form" className="py-20 bg-white">
+      <section id="contact-form" aria-label="Interior design contact form" className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -412,10 +413,10 @@ export default function InteriorDesignPage() {
             viewport={{ once: true }}
             className="mb-12 text-center"
           >
-            <h2 className="text-4xl font-serif font-bold mb-4">
+            <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
               Start Your Design Journey
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
               Tell us about your project so we can create the perfect design solution for you.
             </p>
 
@@ -452,21 +453,23 @@ export default function InteriorDesignPage() {
                 className="overflow-hidden"
               >
                 <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
-                  <Phone className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold mb-4">Contact Hilari Jones</h3>
+                  <Phone aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-gray-700" />
+                  <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4">Contact Hilari Jones</h3>
                   <a
                     href="tel:+18017357089"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4"
+                    aria-label="Call Hilari Jones at (801) 735-7089"
+                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4 min-h-[44px]"
                   >
                     (801) 735-7089
                   </a>
                   <a
                     href="mailto:interiors@joneslegacycreations.com"
-                    className="text-xl text-black hover:text-gray-700 transition-colors"
+                    aria-label="Email interiors@joneslegacycreations.com"
+                    className="text-xl text-black hover:text-gray-700 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     interiors@joneslegacycreations.com
                   </a>
-                  <p className="text-gray-600 mt-4">
+                  <p className="text-gray-700 mt-4 leading-relaxed">
                     We&apos;re available to discuss your interior design and staging needs.
                   </p>
                 </div>
@@ -695,7 +698,7 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Social Media Section */}
-      <section className="py-16 bg-gray-50">
+      <section aria-label="Social media links" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -703,25 +706,25 @@ export default function InteriorDesignPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl font-serif font-bold mb-6">Follow Us On Social Media</h2>
+            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">Follow Us On Social Media</h2>
             <div className="flex items-center justify-center gap-6">
               <a
                 href="https://www.instagram.com/interiors.by.jch/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-gray-700 hover:text-black transition-colors"
-                title="Follow us on Instagram"
+                className="inline-flex items-center text-gray-700 hover:text-black transition-colors min-h-[44px] min-w-[44px] justify-center"
+                aria-label="Follow Interiors by Jones Custom Homes on Instagram"
               >
-                <Instagram className="w-8 h-8" />
+                <Instagram aria-hidden="true" className="w-8 h-8" />
               </a>
               <a
                 href="https://www.facebook.com/profile.php?id=61575767564467"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-gray-700 hover:text-black transition-colors"
-                title="Follow us on Facebook"
+                className="inline-flex items-center text-gray-700 hover:text-black transition-colors min-h-[44px] min-w-[44px] justify-center"
+                aria-label="Follow Interiors by Jones Custom Homes on Facebook"
               >
-                <Facebook className="w-8 h-8" />
+                <Facebook aria-hidden="true" className="w-8 h-8" />
               </a>
             </div>
           </motion.div>

@@ -3,18 +3,21 @@
 import { useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { usePathname } from "next/navigation";
 import { Menu, X, ChevronDown, Settings } from "lucide-react";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isScrolled, setIsScrolled] = useState(false);
+  const [isVisible, setIsVisible] = useState(false);
   const [servicesOpen, setServicesOpen] = useState(false);
+  const pathname = usePathname();
 
+  // Hide navbar at top, show after scrolling past the hero area
   useEffect(() => {
     const handleScroll = () => {
-      setIsScrolled(window.scrollY > 20);
+      setIsVisible(window.scrollY > 100);
     };
-    window.addEventListener("scroll", handleScroll);
+    window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -24,23 +27,27 @@ export function Navigation() {
     { name: "Interior Design & Staging", href: "/services/interior-design" },
   ];
 
+  const isActive = (href: string) => pathname === href;
+  const isServiceActive = services.some((s) => pathname === s.href);
+
   return (
     <nav
-      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-        isScrolled ? "bg-white backdrop-blur-md shadow-md" : "bg-white"
+      aria-label="Main navigation"
+      className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
+        isVisible
+          ? "translate-y-0 bg-white/95 backdrop-blur-md shadow-lg"
+          : "-translate-y-full"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-28">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            <Image
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
               src="/jones-legacy-creations-logo-new.svg"
               alt="Jones Legacy Creations"
-              width={240}
-              height={72}
-              className="h-28 w-auto"
-              priority
+              className="h-38 w-38"
             />
           </Link>
 
@@ -48,7 +55,10 @@ export function Navigation() {
           <div className="hidden md:flex items-center space-x-8">
             <Link
               href="/"
-              className="text-sm font-medium hover:text-gray-600 transition-colors"
+              className={`text-sm font-medium transition-colors duration-150 ${
+                isActive("/") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+              }`}
+              {...(isActive("/") ? { "aria-current": "page" as const } : {})}
             >
               Home
             </Link>
@@ -59,13 +69,21 @@ export function Navigation() {
               onMouseEnter={() => setServicesOpen(true)}
               onMouseLeave={() => setServicesOpen(false)}
             >
-              <button className="text-sm font-medium hover:text-gray-600 transition-colors flex items-center gap-1">
+              <button
+                className={`text-sm font-medium transition-colors duration-150 flex items-center gap-1 ${
+                  isServiceActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+                }`}
+                aria-expanded={servicesOpen}
+                aria-haspopup="true"
+              >
                 Services
                 <ChevronDown className="w-4 h-4" />
               </button>
 
               <div
-                className={`absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 shadow-lg rounded-lg overflow-hidden transition-all duration-200 ${
+                role="menu"
+                aria-label="Services"
+                className={`absolute top-full left-0 mt-2 w-64 bg-white border border-gray-200 shadow-xl rounded-lg overflow-hidden transition-all duration-200 ${
                   servicesOpen ? "opacity-100 translate-y-0 pointer-events-auto" : "opacity-0 -translate-y-2 pointer-events-none"
                 }`}
               >
@@ -73,7 +91,11 @@ export function Navigation() {
                   <Link
                     key={service.href}
                     href={service.href}
-                    className="block px-4 py-3 text-sm hover:bg-gray-50 transition-colors"
+                    role="menuitem"
+                    className={`block px-4 py-3 text-sm hover:bg-gray-50 transition-colors duration-150 ${
+                      isActive(service.href) ? "text-gray-900 bg-gray-50" : "text-gray-700"
+                    }`}
+                    {...(isActive(service.href) ? { "aria-current": "page" as const } : {})}
                   >
                     {service.name}
                   </Link>
@@ -83,26 +105,33 @@ export function Navigation() {
 
             <Link
               href="/about"
-              className="text-sm font-medium hover:text-gray-600 transition-colors"
+              className={`text-sm font-medium transition-colors duration-150 ${
+                isActive("/about") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+              }`}
+              {...(isActive("/about") ? { "aria-current": "page" as const } : {})}
             >
               About
             </Link>
             <Link
               href="/estimate"
-              className="px-6 py-2 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors"
+              className="px-6 py-3 bg-blue-600 text-white text-sm font-medium rounded-full hover:bg-blue-700 transition-colors duration-150"
+              {...(isActive("/estimate") ? { "aria-current": "page" as const } : {})}
             >
               Free Estimate
             </Link>
             <Link
               href="/contact"
-              className="px-6 py-2 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors"
+              className="px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors duration-150"
+              {...(isActive("/contact") ? { "aria-current": "page" as const } : {})}
             >
               Contact
             </Link>
             <Link
               href="/admin"
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors"
+              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors duration-150"
               title="Admin"
+              aria-label="Admin panel"
+              {...(isActive("/admin") ? { "aria-current": "page" as const } : {})}
             >
               <Settings className="w-4 h-4" />
               Admin
@@ -112,8 +141,10 @@ export function Navigation() {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors"
+            className="md:hidden h-11 w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors duration-150"
             aria-label="Toggle menu"
+            aria-expanded={isOpen}
+            aria-controls="mobile-menu"
           >
             {isOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
           </button>
@@ -122,28 +153,36 @@ export function Navigation() {
 
       {/* Mobile Navigation */}
       <div
+        id="mobile-menu"
         className={`md:hidden bg-white border-t border-gray-200 overflow-hidden transition-all duration-300 ${
-          isOpen ? "max-h-96 opacity-100" : "max-h-0 opacity-0"
+          isOpen ? "max-h-[32rem] opacity-100" : "max-h-0 opacity-0"
         }`}
+        style={{ overscrollBehavior: "contain" }}
       >
         <div className="px-4 py-6 space-y-4">
           <Link
             href="/"
-            className="block text-base font-medium hover:text-gray-600 transition-colors"
+            className={`block w-full py-3 text-base font-medium transition-colors duration-150 ${
+              isActive("/") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+            }`}
             onClick={() => setIsOpen(false)}
+            {...(isActive("/") ? { "aria-current": "page" as const } : {})}
           >
             Home
           </Link>
 
           <div className="space-y-2">
-            <div className="text-base font-medium text-gray-900">Services</div>
+            <div className="text-base font-medium text-gray-900 py-3">Services</div>
             <div className="pl-4 space-y-2">
               {services.map((service) => (
                 <Link
                   key={service.href}
                   href={service.href}
-                  className="block text-sm text-gray-600 hover:text-gray-900 transition-colors"
+                  className={`block w-full py-3 text-sm transition-colors duration-150 ${
+                    isActive(service.href) ? "text-gray-900" : "text-gray-600 hover:text-gray-900"
+                  }`}
                   onClick={() => setIsOpen(false)}
+                  {...(isActive(service.href) ? { "aria-current": "page" as const } : {})}
                 >
                   {service.name}
                 </Link>
@@ -153,29 +192,36 @@ export function Navigation() {
 
           <Link
             href="/about"
-            className="block text-base font-medium hover:text-gray-600 transition-colors"
+            className={`block w-full py-3 text-base font-medium transition-colors duration-150 ${
+              isActive("/about") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+            }`}
             onClick={() => setIsOpen(false)}
+            {...(isActive("/about") ? { "aria-current": "page" as const } : {})}
           >
             About
           </Link>
           <Link
             href="/estimate"
-            className="block w-full text-center px-6 py-3 bg-blue-600 text-white text-base font-medium rounded-full hover:bg-blue-700 transition-colors"
+            className="block w-full text-center px-6 py-3 bg-blue-600 text-white text-base font-medium rounded-full hover:bg-blue-700 transition-colors duration-150"
             onClick={() => setIsOpen(false)}
+            {...(isActive("/estimate") ? { "aria-current": "page" as const } : {})}
           >
             Free Estimate
           </Link>
           <Link
             href="/contact"
-            className="block w-full text-center px-6 py-3 bg-black text-white text-base font-medium rounded-full hover:bg-gray-800 transition-colors"
+            className="block w-full text-center px-6 py-3 bg-black text-white text-base font-medium rounded-full hover:bg-gray-800 transition-colors duration-150"
             onClick={() => setIsOpen(false)}
+            {...(isActive("/contact") ? { "aria-current": "page" as const } : {})}
           >
             Contact
           </Link>
           <Link
             href="/admin"
-            className="flex items-center justify-center gap-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-colors"
+            className="flex items-center justify-center gap-2 w-full py-3 text-base font-medium text-gray-500 hover:text-gray-900 transition-colors duration-150"
             onClick={() => setIsOpen(false)}
+            aria-label="Admin panel"
+            {...(isActive("/admin") ? { "aria-current": "page" as const } : {})}
           >
             <Settings className="w-4 h-4" />
             Admin

@@ -14,7 +14,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle, Building2, X, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle, Check, Building2, X, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -172,7 +172,7 @@ export default function ConstructionPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
+      <section aria-label="Construction services overview" className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -183,16 +183,16 @@ export default function ConstructionPage() {
             <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
               <Image
                 src="/JONES CUSTOM HOMES ICON (2).svg"
-                alt="Jones Custom Homes"
+                alt="Jones Custom Homes logo"
                 width={120}
                 height={120}
                 className="object-contain"
               />
             </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
+            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
               Construction Services
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               From new builds to renovations, we deliver exceptional construction projects with precision and care.
             </p>
           </motion.div>
@@ -206,8 +206,8 @@ export default function ConstructionPage() {
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 className="flex flex-col items-center text-center p-4"
               >
-                <feature.icon className="w-8 h-8 mb-2" />
-                <p className="text-sm font-medium">{feature.text}</p>
+                <feature.icon aria-hidden="true" className="w-8 h-8 mb-2" />
+                <p className="text-sm font-medium text-gray-900">{feature.text}</p>
               </motion.div>
             ))}
           </div>
@@ -215,7 +215,7 @@ export default function ConstructionPage() {
       </section>
 
       {/* Current Projects Section */}
-      <section className="py-20 bg-white">
+      <section aria-label="Current construction projects" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -224,10 +224,10 @@ export default function ConstructionPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Current Projects
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               See what we&apos;re building right now
             </p>
           </motion.div>
@@ -240,17 +240,17 @@ export default function ConstructionPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gray-50 rounded-xl overflow-hidden"
+                className="bg-gray-50 rounded-2xl overflow-hidden"
               >
                 <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative">
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Building2 className="w-16 h-16 text-gray-400 mb-4" />
-                    <span className="text-2xl font-serif font-bold text-gray-500">Photos Coming Soon</span>
+                    <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-4" />
+                    <span className="text-2xl font-serif font-bold text-gray-600">Photos Coming Soon</span>
                   </div>
                 </div>
                 <div className="p-6 text-center">
-                  <div className="text-sm text-gray-500 mb-2">{project.location}</div>
-                  <h3 className="text-xl font-bold mb-3">{project.title}</h3>
+                  <div className="text-sm text-gray-600 mb-2">{project.location}</div>
+                  <h3 className="text-xl font-bold text-gray-900 mb-3">{project.title}</h3>
                   <div className="inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded-full">
                     {project.status}
                   </div>
@@ -262,7 +262,7 @@ export default function ConstructionPage() {
       </section>
 
       {/* Most Recent Builds Section */}
-      <section className="py-20 bg-gray-50">
+      <section aria-label="Most recent construction builds" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -271,10 +271,10 @@ export default function ConstructionPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Most Recent Builds
             </h2>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Quality craftsmanship delivered with care and attention to detail
             </p>
           </motion.div>
@@ -290,19 +290,21 @@ export default function ConstructionPage() {
                 className="group cursor-pointer"
                 onClick={() => setSelectedProject(project)}
               >
-                <div className="bg-white rounded-xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
+                <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
                   <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
                     {project.coverImage ? (
                       <Image
                         src={project.coverImage}
-                        alt={project.title}
+                        alt={`${project.title} custom home build in ${project.location}`}
                         fill
+                        sizes="(max-width: 768px) 100vw, 50vw"
                         className="object-cover group-hover:scale-105 transition-transform duration-500"
+                        loading="lazy"
                       />
                     ) : (
                       <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <Building2 className="w-16 h-16 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-500">Photos Coming Soon</span>
+                        <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-2" />
+                        <span className="text-sm text-gray-600">Photos Coming Soon</span>
                       </div>
                     )}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
@@ -311,9 +313,9 @@ export default function ConstructionPage() {
                     </div>
                   </div>
                   <div className="p-6">
-                    <div className="text-sm text-gray-500 mb-2">{project.location}</div>
-                    <h3 className="text-2xl font-serif font-bold mb-2">{project.title}</h3>
-                    <p className="text-gray-600 text-sm line-clamp-2">{project.description}</p>
+                    <div className="text-sm text-gray-600 mb-2">{project.location}</div>
+                    <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">{project.title}</h3>
+                    <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">{project.description}</p>
                   </div>
                 </div>
               </motion.div>
@@ -347,7 +349,7 @@ export default function ConstructionPage() {
                 className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
                 aria-label="Close"
               >
-                <X className="w-5 h-5" />
+                <X aria-hidden="true" className="w-5 h-5" />
               </button>
 
               {/* Cover Image */}
@@ -355,23 +357,24 @@ export default function ConstructionPage() {
                 {selectedProject.coverImage ? (
                   <Image
                     src={selectedProject.coverImage}
-                    alt={selectedProject.title}
+                    alt={`${selectedProject.title} cover photo - custom home in ${selectedProject.location}`}
                     fill
+                    sizes="(max-width: 768px) 100vw, 896px"
                     className="object-cover"
                   />
                 ) : (
                   <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Building2 className="w-20 h-20 text-gray-400 mb-4" />
-                    <span className="text-xl text-gray-500">Photos Coming Soon</span>
+                    <Building2 aria-hidden="true" className="w-20 h-20 text-gray-400 mb-4" />
+                    <span className="text-xl text-gray-600">Photos Coming Soon</span>
                   </div>
                 )}
               </div>
 
               {/* Content */}
               <div className="p-8">
-                <div className="text-sm text-gray-500 mb-2">{selectedProject.location}</div>
-                <h2 className="text-3xl md:text-4xl font-serif font-bold mb-4">{selectedProject.title}</h2>
-                <p className="text-lg text-gray-600 mb-6 leading-relaxed">{selectedProject.description}</p>
+                <div className="text-sm text-gray-600 mb-2">{selectedProject.location}</div>
+                <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">{selectedProject.title}</h2>
+                <p className="text-lg text-gray-700 mb-6 leading-relaxed">{selectedProject.description}</p>
 
                 {/* Features */}
                 {selectedProject.features && selectedProject.features.length > 0 && (
@@ -398,14 +401,16 @@ export default function ConstructionPage() {
                       {selectedProject.images.map((image, index) => (
                         <div
                           key={index}
-                          className="aspect-[4/3] relative rounded-lg overflow-hidden cursor-pointer hover:opacity-90 transition-opacity"
+                          className="aspect-[4/3] relative rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
                           onClick={() => setLightboxImageIndex(index)}
                         >
                           <Image
                             src={image.src}
                             alt={image.alt}
                             fill
+                            sizes="(max-width: 768px) 50vw, 33vw"
                             className="object-cover"
+                            loading="lazy"
                           />
                         </div>
                       ))}
@@ -415,14 +420,14 @@ export default function ConstructionPage() {
 
                 {/* Interest CTA */}
                 <div className="bg-gray-50 rounded-xl p-6 text-center">
-                  <h3 className="text-xl font-serif font-bold mb-2">Interested in a Similar Build?</h3>
-                  <p className="text-gray-600 mb-4">
+                  <h3 className="text-xl font-serif font-bold text-gray-900 mb-2">Interested in a Similar Build?</h3>
+                  <p className="text-gray-700 mb-4 leading-relaxed">
                     Love this layout? Let us know and we can discuss how to customize it for your needs.
                   </p>
                   <Link href="#contact-form" onClick={() => setSelectedProject(null)}>
                     <Button size="lg">
                       Request This Layout
-                      <ArrowRight className="w-5 h-5 ml-2" />
+                      <ArrowRight aria-hidden="true" className="w-5 h-5 ml-2" />
                     </Button>
                   </Link>
                 </div>
@@ -448,7 +453,7 @@ export default function ConstructionPage() {
               className="absolute top-4 right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
               aria-label="Close lightbox"
             >
-              <X className="w-6 h-6 text-white" />
+              <X aria-hidden="true" className="w-6 h-6 text-white" />
             </button>
 
             {lightboxImageIndex > 0 && (
@@ -460,7 +465,7 @@ export default function ConstructionPage() {
                 className="absolute left-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
                 aria-label="Previous image"
               >
-                <ChevronLeft className="w-6 h-6 text-white" />
+                <ChevronLeft aria-hidden="true" className="w-6 h-6 text-white" />
               </button>
             )}
 
@@ -473,7 +478,7 @@ export default function ConstructionPage() {
                 className="absolute right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
                 aria-label="Next image"
               >
-                <ChevronRight className="w-6 h-6 text-white" />
+                <ChevronRight aria-hidden="true" className="w-6 h-6 text-white" />
               </button>
             )}
 
@@ -503,7 +508,7 @@ export default function ConstructionPage() {
       </AnimatePresence>
 
       {/* Why Choose Us Section */}
-      <section className="py-24 bg-gradient-to-br from-gray-900 to-black text-white">
+      <section aria-label="Why choose Jones Custom Homes" className="py-24 bg-gradient-to-br from-gray-900 to-black text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -515,7 +520,7 @@ export default function ConstructionPage() {
             <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
               Why Choose Jones Custom Homes?
             </h2>
-            <p className="text-xl text-gray-300 leading-relaxed">
+            <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
               We make building feel simple and personal. With a patient, approachable team and creative financing options, we help make custom homes more achievable. Our streamlined process allows for a faster build without compromising quality—so you can enjoy a well-crafted home, sooner and with confidence.
             </p>
           </motion.div>
@@ -523,7 +528,7 @@ export default function ConstructionPage() {
       </section>
 
       {/* FAQ Section */}
-      <section className="py-20 bg-gray-50">
+      <section aria-label="Frequently asked questions" className="py-20 bg-gray-50">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -532,10 +537,10 @@ export default function ConstructionPage() {
             viewport={{ once: true }}
             className="text-center mb-16"
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-4">
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
               Frequently Asked Questions
             </h2>
-            <p className="text-xl text-gray-600">
+            <p className="text-xl text-gray-700 leading-relaxed">
               Common questions about our construction services
             </p>
           </motion.div>
@@ -583,8 +588,8 @@ export default function ConstructionPage() {
                 viewport={{ once: true }}
                 className="bg-white p-6 rounded-xl"
               >
-                <h3 className="text-lg font-bold mb-3">{faq.question}</h3>
-                <p className="text-gray-600">{faq.answer}</p>
+                <h3 className="text-lg font-bold text-gray-900 mb-3">{faq.question}</h3>
+                <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
               </motion.div>
             ))}
           </div>
@@ -592,7 +597,7 @@ export default function ConstructionPage() {
       </section>
 
       {/* Form Section */}
-      <section id="contact-form" className="py-20 bg-white">
+      <section id="contact-form" aria-label="Construction project contact form" className="py-20 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -601,10 +606,10 @@ export default function ConstructionPage() {
             viewport={{ once: true }}
             className="mb-12 text-center"
           >
-            <h2 className="text-4xl font-serif font-bold mb-4">
+            <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
               Tell Us About Your Construction Project
             </h2>
-            <p className="text-lg text-gray-600 mb-8">
+            <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
               Provide detailed information about your project so we can give you an accurate quote and timeline.
             </p>
 
@@ -641,21 +646,23 @@ export default function ConstructionPage() {
                 className="overflow-hidden"
               >
                 <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
-                  <Phone className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold mb-4">Contact Us Directly</h3>
+                  <Phone aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-gray-700" />
+                  <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4">Contact Us Directly</h3>
                   <a
                     href="tel:+14354148701"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4"
+                    aria-label="Call us at (435) 414-8701"
+                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4 min-h-[44px]"
                   >
                     (435) 414-8701
                   </a>
                   <a
                     href="mailto:jch@joneslegacycreations.com"
-                    className="text-xl text-black hover:text-gray-700 transition-colors"
+                    aria-label="Email us at jch@joneslegacycreations.com"
+                    className="text-xl text-black hover:text-gray-700 transition-colors min-h-[44px] inline-flex items-center"
                   >
                     jch@joneslegacycreations.com
                   </a>
-                  <p className="text-gray-600 mt-4">
+                  <p className="text-gray-700 mt-4 leading-relaxed">
                     We&apos;re available to discuss your project and answer any questions.
                   </p>
                 </div>
@@ -880,7 +887,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Permits & Compliance</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("permits") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("permits") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("permits") && (
@@ -939,7 +946,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Materials & Quality Preferences</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("materials") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("materials") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("materials") && (
@@ -1116,7 +1123,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Demolition Requirements</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("demolition") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("demolition") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("demolition") && (
@@ -1160,7 +1167,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Special Features & Requirements</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("features") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("features") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("features") && (
@@ -1219,7 +1226,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Site Conditions</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("site") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("site") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("site") && (
@@ -1278,7 +1285,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Additional Services Needed</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("services") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("services") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("services") && (
@@ -1337,7 +1344,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Insurance & Financing</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("insurance") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("insurance") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("insurance") && (
@@ -1384,7 +1391,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
               >
                 <h3 className="text-2xl font-serif font-bold">Additional Information</h3>
-                <ChevronDown className={`w-6 h-6 transition-transform ${expandedSections.includes("additional") ? "rotate-180" : ""}`} />
+                <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("additional") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
                 {expandedSections.includes("additional") && (
@@ -1459,7 +1466,7 @@ export default function ConstructionPage() {
       </section>
 
       {/* Social Media Section */}
-      <section className="py-16 bg-gray-50">
+      <section aria-label="Social media links" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -1467,15 +1474,15 @@ export default function ConstructionPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-2xl font-serif font-bold mb-6">Follow Us On Social Media</h2>
+            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">Follow Us On Social Media</h2>
             <a
               href="https://www.instagram.com/jonescustomhomes/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center text-gray-700 hover:text-black transition-colors"
-              title="Follow us on Instagram"
+              className="inline-flex items-center justify-center text-gray-700 hover:text-black transition-colors min-h-[44px] min-w-[44px]"
+              aria-label="Follow Jones Custom Homes on Instagram"
             >
-              <Instagram className="w-8 h-8" />
+              <Instagram aria-hidden="true" className="w-8 h-8" />
             </a>
           </motion.div>
         </div>

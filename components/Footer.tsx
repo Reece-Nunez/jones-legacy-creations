@@ -11,29 +11,29 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
           {/* Company Info */}
           <div>
-            <Link href="/" className="inline-block mb-4">
+            <Link href="/" className="inline-block mb-4" aria-label="Jones Legacy Creations home page">
               <Image
                 src="/jones-legacy-creations-logo-black.svg"
-                alt="Jones Legacy Creations"
+                alt="Jones Legacy Creations logo"
                 width={504}
                 height={360}
                 className="h-32 w-auto"
               />
             </Link>
-            <p className="text-gray-400 mb-6">
+            <p className="text-gray-400 mb-6 leading-relaxed">
               Building legacies through exceptional construction, real estate, and interior design services.
             </p>
             <div className="flex flex-col space-y-3 text-sm text-gray-400">
-              <a href="tel:+14352889807" className="flex items-center gap-2 hover:text-white transition-colors">
-                <Phone className="w-4 h-4" />
+              <a href="tel:+14352889807" className="flex items-center gap-2 hover:text-white transition-colors" aria-label="Call us at (435) 288-9807">
+                <Phone className="w-4 h-4" aria-hidden="true" />
                 <span>(435) 288-9807</span>
               </a>
-              <a href="mailto:office@joneslegacycreations.com" className="flex items-center gap-2 hover:text-white transition-colors">
-                <Mail className="w-4 h-4" />
+              <a href="mailto:office@joneslegacycreations.com" className="flex items-center gap-2 hover:text-white transition-colors" aria-label="Email us at office@joneslegacycreations.com">
+                <Mail className="w-4 h-4" aria-hidden="true" />
                 <span>office@joneslegacycreations.com</span>
               </a>
               <div className="flex items-center gap-2">
-                <MapPin className="w-4 h-4 flex-shrink-0" />
+                <MapPin className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                 <span>Hurricane, Utah</span>
               </div>
               <p className="text-xs text-gray-500 mt-1 ml-6">Serving all of Southern Utah</p>
@@ -46,8 +46,9 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Follow Jones Custom Homes on Instagram"
                 >
-                  <Instagram className="w-4 h-4" />
+                  <Instagram className="w-4 h-4" aria-hidden="true" />
                   <span>Custom Homes</span>
                 </a>
                 <a
@@ -55,8 +56,9 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Follow Interior Design by JCH on Instagram"
                 >
-                  <Instagram className="w-4 h-4" />
+                  <Instagram className="w-4 h-4" aria-hidden="true" />
                   <span>Interior Design</span>
                 </a>
                 <a
@@ -64,8 +66,9 @@ export function Footer() {
                   target="_blank"
                   rel="noopener noreferrer"
                   className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors"
+                  aria-label="Follow Interior Design on Facebook"
                 >
-                  <Facebook className="w-4 h-4" />
+                  <Facebook className="w-4 h-4" aria-hidden="true" />
                   <span>Interior Design</span>
                 </a>
               </div>
@@ -73,7 +76,7 @@ export function Footer() {
           </div>
 
           {/* Services */}
-          <div>
+          <nav aria-label="Footer services navigation">
             <h4 className="text-lg font-semibold mb-4">Services</h4>
             <ul className="space-y-3">
               <li>
@@ -81,7 +84,7 @@ export function Footer() {
                   href="/services/real-estate"
                   className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
                 >
-                  <Home className="w-4 h-4" />
+                  <Home className="w-4 h-4" aria-hidden="true" />
                   Real Estate
                 </Link>
               </li>
@@ -90,7 +93,7 @@ export function Footer() {
                   href="/services/construction"
                   className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
                 >
-                  <Building2 className="w-4 h-4" />
+                  <Building2 className="w-4 h-4" aria-hidden="true" />
                   Construction
                 </Link>
               </li>
@@ -99,15 +102,15 @@ export function Footer() {
                   href="/services/interior-design"
                   className="text-gray-400 hover:text-white transition-colors flex items-center gap-2"
                 >
-                  <Palette className="w-4 h-4" />
+                  <Palette className="w-4 h-4" aria-hidden="true" />
                   Interior Design & Staging
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Company */}
-          <div>
+          <nav aria-label="Footer company navigation">
             <h4 className="text-lg font-semibold mb-4">Company</h4>
             <ul className="space-y-3">
               <li>
@@ -127,17 +130,17 @@ export function Footer() {
                 </Link>
               </li>
             </ul>
-          </div>
+          </nav>
 
           {/* Get Started */}
           <div>
             <h4 className="text-lg font-semibold mb-4">Get Started</h4>
-            <p className="text-gray-400 text-sm mb-4">
+            <p className="text-gray-400 text-sm mb-4 leading-relaxed">
               Ready to begin your next project? Let us know what you need.
             </p>
             <Link
               href="/contact"
-              className="inline-block px-6 py-3 bg-white text-black text-sm font-medium rounded-full hover:bg-gray-200 transition-colors"
+              className="inline-block px-6 py-3 min-h-[44px] bg-white text-black text-sm font-medium rounded-full hover:bg-gray-200 transition-colors"
             >
               Start a Project
             </Link>
@@ -149,14 +152,14 @@ export function Footer() {
             <p className="text-gray-400 text-sm">
               &copy; {currentYear} Jones Legacy Creations. All rights reserved.
             </p>
-            <div className="flex gap-6 text-sm">
+            <nav aria-label="Footer legal navigation" className="flex gap-6 text-sm">
               <Link href="/privacy" className="text-gray-400 hover:text-white transition-colors">
                 Privacy Policy
               </Link>
               <Link href="/terms" className="text-gray-400 hover:text-white transition-colors">
                 Terms of Service
               </Link>
-            </div>
+            </nav>
           </div>
         </div>
       </div>

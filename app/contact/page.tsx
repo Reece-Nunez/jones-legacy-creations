@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useId } from "react";
 import { motion } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -22,6 +22,7 @@ type ContactFormWithHoneypot = ContactFormData & { honeypot?: string };
 export default function ContactPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const { executeRecaptcha } = useRecaptcha();
+  const formId = useId();
 
   const {
     register,
@@ -90,7 +91,7 @@ export default function ContactPage() {
       <Navigation />
 
       {/* Hero Section */}
-      <section className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
+      <section aria-label="Contact page hero" className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -101,7 +102,7 @@ export default function ContactPage() {
             <h1 className="text-5xl md:text-6xl font-serif font-bold mb-6">
               Get In Touch
             </h1>
-            <p className="text-xl text-gray-600 max-w-3xl mx-auto">
+            <p className="text-xl text-gray-600 max-w-3xl mx-auto leading-relaxed">
               Ready to start your next project? Have questions? We&apos;d love to hear from you.
             </p>
           </motion.div>
@@ -109,7 +110,7 @@ export default function ContactPage() {
       </section>
 
       {/* Department Contacts Section */}
-      <section className="py-20 bg-gray-50">
+      <section aria-label="Department contacts" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -121,7 +122,7 @@ export default function ContactPage() {
             <h2 className="text-4xl font-serif font-bold mb-4">
               Contact Our Team Directly
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 leading-relaxed">
               Reach out to the specific department for your needs
             </p>
           </motion.div>
@@ -137,22 +138,24 @@ export default function ContactPage() {
               <h3 className="text-2xl font-serif font-bold mb-3">
                 Real Estate
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4 leading-relaxed">
                 Blake Realty - Buying, selling, and property inquiries
               </p>
               <div className="space-y-2">
                 <a
                   href="tel:+14352889807"
-                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
+                  className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors"
+                  aria-label="Call Real Estate at (435) 288-9807"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-4 h-4" aria-hidden="true" />
                   <span>(435) 288-9807</span>
                 </a>
                 <a
                   href="mailto:blakerealty@joneslegacycreations.com"
-                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors text-sm"
+                  className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors text-sm"
+                  aria-label="Email Real Estate at blakerealty@joneslegacycreations.com"
                 >
-                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   <span>blakerealty@joneslegacycreations.com</span>
                 </a>
               </div>
@@ -168,22 +171,24 @@ export default function ContactPage() {
               <h3 className="text-2xl font-serif font-bold mb-3">
                 Construction
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4 leading-relaxed">
                 Jones Custom Homes - New builds and renovations
               </p>
               <div className="space-y-2">
                 <a
                   href="tel:+14354148701"
-                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
+                  className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors"
+                  aria-label="Call Construction at (435) 414-8701"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-4 h-4" aria-hidden="true" />
                   <span>(435) 414-8701</span>
                 </a>
                 <a
                   href="mailto:jch@joneslegacycreations.com"
-                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors text-sm"
+                  className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors text-sm"
+                  aria-label="Email Construction at jch@joneslegacycreations.com"
                 >
-                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   <span>jch@joneslegacycreations.com</span>
                 </a>
               </div>
@@ -199,22 +204,24 @@ export default function ContactPage() {
               <h3 className="text-2xl font-serif font-bold mb-3">
                 Interior Design
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4 leading-relaxed">
                 Design consultations and home staging services
               </p>
               <div className="space-y-2">
                 <a
                   href="tel:+18017357089"
-                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors"
+                  className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors"
+                  aria-label="Call Interior Design at (801) 735-7089"
                 >
-                  <Phone className="w-4 h-4" />
+                  <Phone className="w-4 h-4" aria-hidden="true" />
                   <span>(801) 735-7089</span>
                 </a>
                 <a
                   href="mailto:interiors@joneslegacycreations.com"
-                  className="flex items-center gap-2 text-gray-600 hover:text-black transition-colors text-sm"
+                  className="flex items-center gap-2 text-gray-700 hover:text-black transition-colors text-sm"
+                  aria-label="Email Interior Design at interiors@joneslegacycreations.com"
                 >
-                  <Mail className="w-4 h-4 flex-shrink-0" />
+                  <Mail className="w-4 h-4 flex-shrink-0" aria-hidden="true" />
                   <span>interiors@joneslegacycreations.com</span>
                 </a>
               </div>
@@ -224,7 +231,7 @@ export default function ContactPage() {
       </section>
 
       {/* Contact Form */}
-      <section className="py-20 bg-white">
+      <section aria-label="Contact form" className="py-20 bg-gray-50">
         <div className="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -236,7 +243,7 @@ export default function ContactPage() {
             <h2 className="text-4xl font-serif font-bold mb-4">
               Send Us a Message
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 leading-relaxed">
               Fill out the form below and we&apos;ll get back to you as soon as possible.
             </p>
           </motion.div>
@@ -247,7 +254,8 @@ export default function ContactPage() {
             transition={{ duration: 0.8 }}
             viewport={{ once: true }}
             onSubmit={handleSubmit(onSubmit)}
-            className="space-y-6"
+            className="bg-white rounded-2xl shadow-lg p-6 sm:p-10 space-y-6"
+            noValidate
           >
             {/* Honeypot field - hidden from users, catches bots */}
             <HoneypotField register={register} />
@@ -255,16 +263,21 @@ export default function ContactPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <Input
                 label="Full Name"
+                id={`${formId}-fullName`}
                 {...register("fullName")}
                 error={errors.fullName?.message}
                 required
+                autoComplete="name"
               />
               <Input
                 label="Email Address"
                 type="email"
+                id={`${formId}-email`}
+                inputMode="email"
                 {...register("email")}
                 error={errors.email?.message}
                 required
+                autoComplete="email"
               />
             </div>
 
@@ -272,12 +285,16 @@ export default function ContactPage() {
               <Input
                 label="Phone Number"
                 type="tel"
+                id={`${formId}-phone`}
+                inputMode="tel"
                 {...register("phone")}
                 error={errors.phone?.message}
                 required
+                autoComplete="tel"
               />
               <Select
                 label="Subject"
+                id={`${formId}-subject`}
                 {...register("subject")}
                 error={errors.subject?.message}
                 options={[
@@ -294,6 +311,7 @@ export default function ContactPage() {
 
             <Textarea
               label="Message"
+              id={`${formId}-message`}
               placeholder="Tell us about your project or question..."
               {...register("message")}
               error={errors.message?.message}
@@ -302,7 +320,12 @@ export default function ContactPage() {
             />
 
             <div className="flex justify-center pt-4">
-              <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-64">
+              <Button
+                type="submit"
+                size="lg"
+                isLoading={isSubmitting}
+                className="min-w-64 w-full sm:w-auto"
+              >
                 Send Message
               </Button>
             </div>
@@ -311,7 +334,7 @@ export default function ContactPage() {
       </section>
 
       {/* Quick Links Section */}
-      <section className="py-20 bg-white">
+      <section aria-label="Service intake forms" className="py-20 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -323,7 +346,7 @@ export default function ContactPage() {
             <h2 className="text-4xl font-serif font-bold mb-4">
               Or Get Started Directly
             </h2>
-            <p className="text-lg text-gray-600">
+            <p className="text-lg text-gray-600 leading-relaxed">
               Jump straight to the service you need
             </p>
           </motion.div>
@@ -336,11 +359,12 @@ export default function ContactPage() {
               transition={{ duration: 0.5, delay: 0.1 }}
               viewport={{ once: true }}
               className="group bg-gray-50 p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
+              aria-label="Go to Real Estate intake form"
             >
               <h3 className="text-2xl font-serif font-bold mb-3 group-hover:text-gray-700">
                 Real Estate Intake
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4 leading-relaxed">
                 Tell us about your dream home or property needs
               </p>
               <span className="text-sm font-medium group-hover:underline">
@@ -355,11 +379,12 @@ export default function ContactPage() {
               transition={{ duration: 0.5, delay: 0.2 }}
               viewport={{ once: true }}
               className="group bg-gray-50 p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
+              aria-label="Go to Construction intake form"
             >
               <h3 className="text-2xl font-serif font-bold mb-3 group-hover:text-gray-700">
                 Construction Intake
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4 leading-relaxed">
                 Describe your construction or renovation project
               </p>
               <span className="text-sm font-medium group-hover:underline">
@@ -374,11 +399,12 @@ export default function ContactPage() {
               transition={{ duration: 0.5, delay: 0.3 }}
               viewport={{ once: true }}
               className="group bg-gray-50 p-8 rounded-xl border-2 border-gray-200 hover:border-black transition-all hover:shadow-lg"
+              aria-label="Go to Interior Design consultation form"
             >
               <h3 className="text-2xl font-serif font-bold mb-3 group-hover:text-gray-700">
                 Design Consultation
               </h3>
-              <p className="text-gray-600 mb-4">
+              <p className="text-gray-700 mb-4 leading-relaxed">
                 Explore interior design and home staging services
               </p>
               <span className="text-sm font-medium group-hover:underline">
@@ -390,7 +416,7 @@ export default function ContactPage() {
       </section>
 
       {/* Office Info Section */}
-      <section className="py-16 bg-gray-50">
+      <section aria-label="Office information" className="py-16 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -412,21 +438,21 @@ export default function ContactPage() {
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-white p-6 rounded-xl text-center"
+                className="bg-white p-6 rounded-xl text-center shadow-sm"
               >
                 <div className="inline-flex items-center justify-center w-12 h-12 bg-black text-white rounded-full mb-4">
-                  <info.icon className="w-6 h-6" />
+                  <info.icon className="w-6 h-6" aria-hidden="true" />
                 </div>
                 <h3 className="font-bold mb-2">{info.title}</h3>
                 {info.link ? (
                   <a
                     href={info.link}
-                    className="text-gray-600 hover:text-black transition-colors text-xs"
+                    className="text-gray-700 hover:text-black transition-colors text-sm"
                   >
                     {info.content}
                   </a>
                 ) : (
-                  <p className="text-gray-600 text-sm whitespace-pre-line">{info.content}</p>
+                  <p className="text-gray-700 text-sm whitespace-pre-line leading-relaxed">{info.content}</p>
                 )}
               </motion.div>
             ))}
