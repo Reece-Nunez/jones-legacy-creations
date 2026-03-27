@@ -2,7 +2,7 @@
 
 import { useState, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { ClipboardCheck, Inbox } from "lucide-react";
+import { ClipboardCheck, Inbox, Phone } from "lucide-react";
 import {
   type Estimate,
   type EstimateStatus,
@@ -12,8 +12,8 @@ import EstimateCard from "@/components/admin/EstimateCard";
 
 const STATUS_FILTERS: { value: EstimateStatus | "all"; label: string }[] = [
   { value: "all", label: "All" },
-  { value: "new", label: "New" },
-  { value: "reviewed", label: "Reviewed" },
+  { value: "new", label: "New Leads" },
+  { value: "reviewed", label: "Contacted" },
   { value: "converted", label: "Converted" },
   { value: "declined", label: "Declined" },
 ];
@@ -26,15 +26,22 @@ export default function EstimatesClient({ initialEstimates }: Props) {
   const router = useRouter();
   const [filter, setFilter] = useState<EstimateStatus | "all">("all");
 
+  // Sort newest first
+  const sorted = [...initialEstimates].sort(
+    (a, b) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+  );
+
   const filtered =
     filter === "all"
-      ? initialEstimates
-      : initialEstimates.filter((e) => e.status === filter);
+      ? sorted
+      : sorted.filter((e) => e.status === filter);
 
   const statusCounts: Record<string, number> = { all: initialEstimates.length };
   for (const e of initialEstimates) {
     statusCounts[e.status] = (statusCounts[e.status] || 0) + 1;
   }
+
+  const phoneLeadCount = initialEstimates.filter((e) => e.client_phone && e.status === "new").length;
 
   const handleUpdate = useCallback(() => {
     router.refresh();
@@ -54,6 +61,12 @@ export default function EstimatesClient({ initialEstimates }: Props) {
               <p className="text-sm text-gray-500">
                 {initialEstimates.length} total estimate
                 {initialEstimates.length !== 1 ? "s" : ""}
+                {phoneLeadCount > 0 && (
+                  <span className="ml-2 inline-flex items-center gap-1 text-green-700 font-medium">
+                    <Phone className="h-3 w-3" />
+                    {phoneLeadCount} with phone
+                  </span>
+                )}
               </p>
             </div>
           </div>

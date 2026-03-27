@@ -57,9 +57,9 @@ const fmt = (amount: number) =>
   }).format(amount);
 
 const STATUS_LABELS: Record<EstimateStatus, string> = {
-  new: "New",
-  reviewed: "Reviewed",
-  converted: "Converted",
+  new: "New Lead",
+  reviewed: "Contacted",
+  converted: "Converted to Project",
   declined: "Declined",
 };
 
@@ -114,6 +114,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   const [saving, setSaving] = useState(false);
   const [actionLoading, setActionLoading] = useState<string | null>(null);
   const [convertedSuccess, setConvertedSuccess] = useState(false);
+  const [convertedProjectId, setConvertedProjectId] = useState<string | null>(null);
 
   const projectTypeLabel =
     PROJECT_TYPE_OPTIONS.find((o) => o.value === estimate.project_type)?.label ||
@@ -157,7 +158,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   async function handleConvert() {
     setActionLoading("convert");
     try {
-      // Create a project from the estimate data
+      // Create a project from the estimate data — pre-fill as many fields as possible
       const projectData = {
         name: `${projectTypeLabel} - ${estimate.client_name}`,
         client_name: estimate.client_name,
@@ -170,7 +171,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
         status: "lead",
         project_type: mapEstimateToProjectType(estimate.project_type),
         description: estimate.description,
-        estimated_value: estimate.estimated_max || null,
+        estimated_value: estimate.ai_estimate_max || estimate.estimated_max || null,
       };
 
       const projectRes = await fetch("/api/admin/projects", {
@@ -188,8 +189,18 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
         status: "converted",
       });
 
+      setConvertedProjectId(project.id);
       setConvertedSuccess(true);
-      setTimeout(() => setConvertedSuccess(false), 3000);
+      toast.success(
+        <span>
+          Converted to project!{" "}
+          <a href={`/admin/projects/${project.id}`} className="underline font-semibold">
+            View Project
+          </a>
+        </span>,
+        { duration: 6000 }
+      );
+      setTimeout(() => setConvertedSuccess(false), 6000);
       onUpdate();
     } catch {
       toast.error("Failed to convert estimate to project");
@@ -228,13 +239,55 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   const hasAddress = estimate.address || estimate.city || estimate.state;
   const notesId = `notes-${estimate.id}`;
 
+  // Extract the last line of notes as a preview
+  const lastNote = estimate.notes
+    ? estimate.notes.trim().split("\n").filter(Boolean).pop() || ""
+    : "";
+
   return (
     <div className={`rounded-xl bg-white shadow-sm border border-gray-100 border-l-4 ${STATUS_BORDER_COLORS[estimate.status]} overflow-hidden`}>
       {/* Converted success toast */}
-      {convertedSuccess && (
+      {convertedSuccess && convertedProjectId && (
+        <div role="status" className="flex items-center gap-2 bg-green-50 px-5 py-3 text-sm font-medium text-green-700">
+          <CheckCircle2 className="h-4 w-4" />
+          Successfully converted to project!{" "}
+          <a
+            href={`/admin/projects/${convertedProjectId}`}
+            className="underline font-semibold hover:text-green-800"
+          >
+            View Project
+          </a>
+        </div>
+      )}
+      {convertedSuccess && !convertedProjectId && (
         <div role="status" className="flex items-center gap-2 bg-green-50 px-5 py-3 text-sm font-medium text-green-700">
           <CheckCircle2 className="h-4 w-4" />
           Successfully converted to project!
+        </div>
+      )}
+
+      {/* Quick Contact Bar - always visible */}
+      {estimate.status !== "converted" && estimate.status !== "declined" && (
+        <div className="flex items-center gap-2 px-5 pt-4 sm:px-6">
+          {estimate.client_phone && (
+            <a
+              href={`tel:${estimate.client_phone}`}
+              className="inline-flex items-center gap-2 rounded-lg bg-green-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-green-700 transition-colors"
+            >
+              <Phone className="h-4 w-4" />
+              Call {estimate.client_name.split(" ")[0]}
+            </a>
+          )}
+          <a
+            href={`mailto:${estimate.client_email}`}
+            className="inline-flex items-center gap-2 rounded-lg bg-blue-50 px-4 py-2.5 text-sm font-semibold text-blue-700 hover:bg-blue-100 transition-colors"
+          >
+            <Mail className="h-4 w-4" />
+            Email
+          </a>
+          {estimate.client_phone && (
+            <span className="ml-auto text-sm text-gray-500">{estimate.client_phone}</span>
+          )}
         </div>
       )}
 
@@ -328,8 +381,15 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
           </div>
         </div>
 
+        {/* Last note preview (collapsed) */}
+        {!expanded && lastNote && (
+          <p className="mt-2 text-sm text-amber-700 bg-amber-50 rounded-md px-3 py-1.5 line-clamp-1">
+            <span className="font-medium">Note:</span> {lastNote}
+          </p>
+        )}
+
         {/* Description preview (collapsed) */}
-        {!expanded && estimate.description && (
+        {!expanded && estimate.description && !lastNote && (
           <p className="mt-3 text-sm text-gray-500 line-clamp-2">
             {estimate.description}
           </p>
@@ -377,7 +437,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
               rows={3}
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
-              placeholder="Add internal notes about this estimate..."
+              placeholder="Add notes... e.g. &quot;Called 3/27, scheduling site visit Friday&quot;"
               className="w-full rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:border-indigo-500 focus:outline-none focus:ring-1 focus:ring-indigo-500"
             />
             <button
@@ -415,7 +475,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
                     type="button"
                     onClick={handleMarkReviewed}
                     disabled={actionLoading !== null}
-                    aria-label="Mark estimate as reviewed"
+                    aria-label="Mark estimate as contacted"
                     className="flex min-h-[44px] items-center gap-2 rounded-lg bg-yellow-100 px-4 py-2.5 text-sm font-semibold text-yellow-800 hover:bg-yellow-200 transition-colors disabled:opacity-50"
                   >
                     {actionLoading === "reviewed" ? (
@@ -423,7 +483,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
                     ) : (
                       <CheckCircle2 className="h-4 w-4" />
                     )}
-                    Mark Reviewed
+                    Mark Contacted
                   </button>
                 )}
 

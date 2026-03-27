@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
-import { COST_RANGES } from "@/lib/types/database";
+import { COST_RANGES, PROJECT_TYPE_OPTIONS } from "@/lib/types/database";
 import Anthropic from "@anthropic-ai/sdk";
+import { Resend } from "resend";
 
 export async function POST(request: NextRequest) {
   try {
@@ -217,6 +218,48 @@ Return ONLY valid JSON.`,
         estimated_max: aiEstimateMax,
       })
       .eq("id", estimateRecord.id);
+
+    // Send admin notification email
+    if (process.env.RESEND_API_KEY) {
+      try {
+        const resend = new Resend(process.env.RESEND_API_KEY);
+        const notifyEmails = (process.env.ADMIN_ALLOWED_EMAILS || "")
+          .split(",")
+          .map((e) => e.trim())
+          .filter(Boolean);
+        if (notifyEmails.length > 0) {
+          const projectLabel =
+            PROJECT_TYPE_OPTIONS.find((o) => o.value === project_type)?.label ||
+            project_type;
+          await resend.emails.send({
+            from: "Jones Legacy Creations <noreply@joneslegacycreations.com>",
+            to: notifyEmails,
+            subject: `New Estimate Request from ${client_name}`,
+            html: `
+              <h2>New Estimate Request</h2>
+              <p><strong>${client_name}</strong> submitted an estimate request.</p>
+              <table style="border-collapse:collapse;width:100%;max-width:500px;">
+                <tr><td style="padding:8px;color:#666;">Project Type</td><td style="padding:8px;font-weight:600;">${projectLabel}</td></tr>
+                <tr><td style="padding:8px;color:#666;">Location</td><td style="padding:8px;">${city || "Southern Utah"}, ${state || "UT"}</td></tr>
+                ${sqft ? `<tr><td style="padding:8px;color:#666;">Square Footage</td><td style="padding:8px;">${sqft.toLocaleString()} sq ft</td></tr>` : ""}
+                ${bedrooms ? `<tr><td style="padding:8px;color:#666;">Bedrooms</td><td style="padding:8px;">${bedrooms}</td></tr>` : ""}
+                ${bathrooms ? `<tr><td style="padding:8px;color:#666;">Bathrooms</td><td style="padding:8px;">${bathrooms}</td></tr>` : ""}
+                ${finish_level ? `<tr><td style="padding:8px;color:#666;">Finish Level</td><td style="padding:8px;">${finish_level}</td></tr>` : ""}
+                <tr><td style="padding:8px;color:#666;">AI Estimate</td><td style="padding:8px;font-weight:600;">${aiEstimateMin ? `$${aiEstimateMin.toLocaleString()} — $${aiEstimateMax?.toLocaleString()}` : "Pending"}</td></tr>
+                <tr><td style="padding:8px;color:#666;">Phone</td><td style="padding:8px;">${body.client_phone || "Not provided"}</td></tr>
+                <tr><td style="padding:8px;color:#666;">Email</td><td style="padding:8px;">${client_email}</td></tr>
+              </table>
+              <p style="margin-top:16px;color:#666;">${description}</p>
+              <p style="margin-top:24px;">
+                <a href="https://www.joneslegacycreations.com/admin/estimates" style="background:#0369A1;color:white;padding:12px 24px;border-radius:8px;text-decoration:none;font-weight:600;">View in Admin</a>
+              </p>
+            `,
+          });
+        }
+      } catch (emailErr) {
+        console.error("Failed to send notification email:", emailErr);
+      }
+    }
 
     return NextResponse.json(
       {
