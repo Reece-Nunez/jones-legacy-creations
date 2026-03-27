@@ -43,11 +43,13 @@ export function Navigation() {
         <div className="flex justify-between items-center h-28">
           {/* Logo */}
           <Link href="/" className="flex items-center">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              src="/jones-legacy-creations-logo-new.svg"
+            <Image
+              src="/logo-transparent.png"
               alt="Jones Legacy Creations"
-              className="h-38 w-38"
+              width={152}
+              height={152}
+              className="h-24 w-24 object-contain"
+              priority
             />
           </Link>
 

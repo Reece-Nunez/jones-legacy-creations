@@ -83,7 +83,7 @@ export default function AdminShell({
           className="transition-opacity duration-150 hover:opacity-80"
         >
           <Image
-            src="/jones-legacy-creations-logo-new.svg"
+            src="/logo-transparent.png"
             alt="Jones Legacy Creations"
             width={180}
             height={54}
@@ -222,7 +222,7 @@ export default function AdminShell({
               <span className="sr-only">Open menu</span>
             </button>
             <Image
-              src="/jones-legacy-creations-logo-new.svg"
+              src="/logo-transparent.png"
               alt="Jones Legacy Creations"
               width={140}
               height={42}

@@ -13,11 +13,11 @@ export function Footer() {
           <div>
             <Link href="/" className="inline-block mb-4" aria-label="Jones Legacy Creations home page">
               <Image
-                src="/jones-legacy-creations-logo-black.svg"
+                src="/logo-transparent.png"
                 alt="Jones Legacy Creations logo"
                 width={504}
                 height={360}
-                className="h-32 w-auto"
+                className="h-32 w-auto brightness-0 invert"
               />
             </Link>
             <p className="text-gray-400 mb-6 leading-relaxed">

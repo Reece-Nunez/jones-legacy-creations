@@ -40,7 +40,7 @@ export default function LoginForm({
           {/* Logo */}
           <div className="mb-8 flex justify-center">
             <Image
-              src="/jones-legacy-creations-logo-new.svg"
+              src="/logo-transparent.png"
               alt="Jones Legacy Creations"
               width={200}
               height={60}
