@@ -12,14 +12,18 @@ export async function GET(
   const { data, error } = await supabase
     .from("budget_line_items")
     .select("*")
-    .eq("project_id", id)
-    .order("line_number", { ascending: true });
+    .eq("project_id", id);
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
 
-  return NextResponse.json(data);
+  // Natural sort: "1", "2", ... "9", "10", "10a", "10b", "11", ...
+  const sorted = (data ?? []).sort((a, b) =>
+    a.line_number.localeCompare(b.line_number, undefined, { numeric: true })
+  );
+
+  return NextResponse.json(sorted);
 }
 
 // Initialize budget with default line items or update existing
@@ -88,8 +92,7 @@ export async function PUT(
   const { data, error } = await supabase
     .from("budget_line_items")
     .upsert(rows, { onConflict: "project_id,line_number" })
-    .select()
-    .order("line_number", { ascending: true });
+    .select();
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
