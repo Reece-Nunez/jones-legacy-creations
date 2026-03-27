@@ -1709,81 +1709,15 @@ function DrawsTab({
     await mutate(`/api/admin/projects/${projectId}/documents/${id}`, "DELETE");
   }
 
-  function exportDrawRequest(draw: DrawRequest) {
-    const drawDocs = documents
-      .filter((d) => d.draw_request_id === draw.id)
-      .sort((a, b) => (a.line_item_number ?? 999) - (b.line_item_number ?? 999));
-
-    // Match documents to contractor payments by invoice_file_url
-    const docPayments = new Map<string, ContractorPayment>();
-    for (const doc of drawDocs) {
-      const payment = payments.find((p) => p.invoice_file_url === doc.file_url);
-      if (payment) docPayments.set(doc.id, payment);
+  async function exportDrawRequest(draw: DrawRequest) {
+    try {
+      const { exportDrawRequestXlsx } = await import("@/lib/export-draw-request");
+      await exportDrawRequestXlsx(draw, project, payments, documents);
+      toast.success("Draw request exported");
+    } catch (err) {
+      console.error("Export error:", err);
+      toast.error("Failed to export draw request");
     }
-
-    const today = new Date().toLocaleDateString("en-US", { month: "2-digit", day: "2-digit", year: "numeric" });
-    const address = [project.address, project.city, project.state].filter(Boolean).join(" ");
-
-    // Build CSV rows matching the lender's template
-    const rows: string[][] = [];
-    rows.push(["", "ALF Holdings Utah, LLC", "", ""]);
-    rows.push(["", "Draw Request Summary Sheet", "", ""]);
-    rows.push(["", "", "", ""]);
-    rows.push(["", `Date Draw Request Submitted: ${today}`, "", ""]);
-    rows.push(["", "", "", ""]);
-    rows.push(["", "", `Borrowers Name:  ${project.client_name}`, ""]);
-    rows.push(["", "", `Property Address: ${address || project.name}`, ""]);
-    rows.push(["", "", "", ""]);
-    rows.push(["", "Budget Line Item Number", "Budget Line Item Description", "Amount Currently Requested", "Payee - MUST ATTACH ALL W-9's AND INVOICES"]);
-
-    // Line items from documents
-    for (const doc of drawDocs) {
-      const payment = docPayments.get(doc.id);
-      const lineNum = doc.line_item_number ?? "";
-      const description = payment?.description || doc.vendor || doc.name;
-      const amount = payment?.amount ? payment.amount.toFixed(2) : "";
-      const payee = doc.vendor || payment?.contractor_name || "";
-      rows.push(["", String(lineNum), description, amount, payee]);
-    }
-
-    // Pad to at least 10 line item rows
-    const minRows = 10;
-    while (rows.length < 9 + minRows) {
-      rows.push(["", "", "", "", ""]);
-    }
-
-    // Total
-    const total = drawDocs.reduce((sum, doc) => {
-      const payment = docPayments.get(doc.id);
-      return sum + (payment?.amount || 0);
-    }, 0);
-    rows.push(["", "", "", ""]);
-    rows.push(["", "", `Total Amount Currently Requested:  $ ${total.toLocaleString("en-US", { minimumFractionDigits: 2 })}`, ""]);
-    rows.push(["", "", "", ""]);
-    rows.push(["", "", `Contact Person for questions on Draw:  ${project.client_name}  Telephone:  ${project.client_phone || ""}`, ""]);
-    rows.push(["", "", "", ""]);
-    rows.push(["", "", "Borrowers signature for approval/authorization:__________________________________________________________________________", ""]);
-
-    // Convert to CSV
-    const csvContent = rows
-      .map((row) =>
-        row.map((cell) => {
-          const escaped = String(cell).replace(/"/g, '""');
-          return escaped.includes(",") || escaped.includes('"') || escaped.includes("\n")
-            ? `"${escaped}"`
-            : escaped;
-        }).join(",")
-      )
-      .join("\n");
-
-    // Download
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = `Draw_Request_${draw.draw_number}_${project.name.replace(/\s+/g, "_")}.csv`;
-    a.click();
-    URL.revokeObjectURL(url);
   }
 
   async function rescanDrawDocs(drawId: string, docs: Document[]) {
