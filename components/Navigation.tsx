@@ -8,18 +8,24 @@ import { Menu, X, ChevronDown, Settings } from "lucide-react";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
   const [servicesOpen, setServicesOpen] = useState(false);
   const pathname = usePathname();
+  const isHomepage = pathname === "/";
 
-  // Hide navbar at top, show after scrolling past the hero area
+  // Only hide-until-scroll on the homepage
   useEffect(() => {
+    if (!isHomepage) {
+      setIsVisible(true);
+      return;
+    }
+    setIsVisible(window.scrollY > 100);
     const handleScroll = () => {
       setIsVisible(window.scrollY > 100);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, []);
+  }, [isHomepage]);
 
   const services = [
     { name: "Real Estate", href: "/services/real-estate" },
