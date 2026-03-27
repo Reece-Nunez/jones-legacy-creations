@@ -134,15 +134,16 @@ export async function POST(request: NextRequest) {
 
         let referenceData = "";
         if (realProjects && realProjects.length > 0) {
-          referenceData = `\n\nREAL PROJECT DATA FROM THIS BUILDER (use these as primary reference for pricing):\n`;
+          referenceData = `\n\nREAL SALE PRICES FROM THIS BUILDER (use these as primary reference):\n`;
           for (const p of realProjects) {
-            const actualCost = costByProject[p.name] || p.contract_value || p.estimated_value;
-            referenceData += `- ${p.name} (${p.project_type}): Build cost $${actualCost?.toLocaleString() || "unknown"}`;
-            if (p.sale_price) referenceData += `, Sale price $${p.sale_price.toLocaleString()}`;
+            referenceData += `- ${p.name} (${p.project_type})`;
+            if (p.sale_price) referenceData += `: Sold for $${p.sale_price.toLocaleString()}`;
+            else if (p.contract_value) referenceData += `: Contract value $${p.contract_value.toLocaleString()}`;
+            else if (p.estimated_value) referenceData += `: Estimated at $${p.estimated_value.toLocaleString()}`;
             if (p.description) referenceData += ` — ${p.description}`;
             referenceData += `\n`;
           }
-          referenceData += `\nIMPORTANT: Base your estimates primarily on this builder's actual project costs above. These are REAL numbers from their business in Southern Utah. New home construction for this builder runs approximately $160-180/sq ft for standard finishes.\n`;
+          referenceData += `\nIMPORTANT: The estimate you provide is what the CLIENT would pay — the sale price, NOT the builder's internal cost. This builder's new homes in Southern Utah sell for $200-220+/sq ft. A 2,500 sq ft home sells for around $500,000-$550,000+. Base your estimates on these real sale prices.\n`;
         }
 
         const client = new Anthropic({ apiKey });
@@ -152,29 +153,32 @@ export async function POST(request: NextRequest) {
           messages: [
             {
               role: "user",
-              content: `You are a construction cost estimator for Jones Legacy Creations, a builder in Southern Utah (Hurricane, St. George area). Give a realistic cost estimate for this project.
+              content: `You are providing a project cost estimate for a potential client of Jones Legacy Creations, a custom home builder in Southern Utah (Hurricane, St. George area).
 
-Project Type: ${project_type}
-Description: ${description}
-Square Footage: ${sqft || "Not specified"}
-Bedrooms: ${bedrooms || "N/A"}
-Bathrooms: ${bathrooms || "N/A"}
-Finish Level: ${finish_level || "Standard"}
-Flooring: ${flooring_preference || "No preference"}
-Countertops: ${countertop_preference || "No preference"}
-Cabinets: ${cabinet_preference || "No preference"}
-Budget Range: ${budget_range || "Not specified"}
-Timeline: ${timeline || "Not specified"}
-Location: ${city || "Southern Utah"}, ${state || "UT"}
+IMPORTANT: You are estimating what the CLIENT will pay for the project — this is the SALE PRICE, not the builder's internal cost. This includes the builder's materials, labor, overhead, and profit margin.
+
+Project Details:
+- Type: ${project_type}
+- Description: ${description}
+- Square Footage: ${sqft || "Not specified"}
+- Bedrooms: ${bedrooms || "N/A"}
+- Bathrooms: ${bathrooms || "N/A"}
+- Finish Level: ${finish_level || "Standard"}
+- Flooring: ${flooring_preference || "No preference"}
+- Countertops: ${countertop_preference || "No preference"}
+- Cabinets: ${cabinet_preference || "No preference"}
+- Client's Budget: ${budget_range || "Not specified"}
+- Timeline: ${timeline || "Not specified"}
+- Location: ${city || "Southern Utah"}, ${state || "UT"}
 ${referenceData}
 Return ONLY a JSON object:
 {
-  "min": 150000,
-  "max": 200000,
-  "breakdown": "A brief 3-5 line breakdown explaining the estimate. Include major cost categories and why the range exists. Keep it friendly and professional. Reference Southern Utah market conditions."
+  "min": 500000,
+  "max": 575000,
+  "breakdown": "A brief 3-5 line breakdown explaining the estimate to the client. Be friendly and professional. Mention what drives the price range (finish level, materials, site conditions). Reference Southern Utah market if relevant. Don't mention builder costs or margins — this is what the client pays."
 }
 
-Be realistic based on this builder's actual costs. Do NOT underestimate. Construction costs in Southern Utah in 2026 are higher than national averages. For new homes, this builder's costs run $160-180+/sq ft depending on finish level.
+Southern Utah new home construction in 2026 sells at $200-250+/sq ft depending on finish level and features. Renovations and remodels are typically $150-300/sq ft. Do NOT lowball — these are premium custom builds, not tract homes.
 
 Return ONLY valid JSON.`,
             },
