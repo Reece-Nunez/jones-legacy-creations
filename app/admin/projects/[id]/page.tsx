@@ -45,8 +45,7 @@ export default async function ProjectDetailPage({
     supabase
       .from("budget_line_items")
       .select("*")
-      .eq("project_id", id)
-      .order("line_number", { ascending: true }),
+      .eq("project_id", id),
     supabase
       .from("draw_requests")
       .select("*")
@@ -72,7 +71,7 @@ export default async function ProjectDetailPage({
       permits={permits ?? []}
       documents={documents ?? []}
       tasks={tasks ?? []}
-      budgetLineItems={budgetLineItems ?? []}
+      budgetLineItems={[...(budgetLineItems ?? [])].sort((a, b) => a.line_number.localeCompare(b.line_number, undefined, { numeric: true }))}
       drawRequests={drawRequests ?? []}
       activityLog={activityLog ?? []}
       contractors={contractors ?? []}
