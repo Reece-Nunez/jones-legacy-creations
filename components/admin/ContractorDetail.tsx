@@ -37,6 +37,10 @@ const formatCurrency = (amount: number) =>
     currency: "USD",
   }).format(amount);
 
+/** Sanitize filename for Supabase Storage (strip brackets and special chars) */
+const sanitizeFilename = (name: string) =>
+  name.replace(/[\[\](){}#%&]/g, "").replace(/\s+/g, "_");
+
 const formatDate = (dateStr: string | null) => {
   if (!dateStr) return "-";
   return new Date(dateStr).toLocaleDateString("en-US", {
@@ -434,7 +438,7 @@ export default function ContractorDetail({
                         setW9Uploading(true);
                         try {
                           const supabase = createClient();
-                          const storagePath = `${contractor.id}/${Date.now()}-${file.name}`;
+                          const storagePath = `${contractor.id}/${Date.now()}-${sanitizeFilename(file.name)}`;
                           const { error: uploadError } = await supabase.storage
                             .from("contractor-w9")
                             .upload(storagePath, file, { contentType: file.type });
@@ -488,7 +492,7 @@ export default function ContractorDetail({
                       setW9Uploading(true);
                       try {
                         const supabase = createClient();
-                        const storagePath = `${contractor.id}/${Date.now()}-${file.name}`;
+                        const storagePath = `${contractor.id}/${Date.now()}-${sanitizeFilename(file.name)}`;
                         const { error: uploadError } = await supabase.storage
                           .from("contractor-w9")
                           .upload(storagePath, file, { contentType: file.type });

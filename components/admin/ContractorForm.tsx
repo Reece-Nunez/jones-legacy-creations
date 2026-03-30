@@ -107,7 +107,8 @@ export default function ContractorForm({
     setW9Uploading(true);
     try {
       const supabase = createClient();
-      const storagePath = `${contractorId}/${Date.now()}-${w9File.name}`;
+      const safeName = w9File.name.replace(/[\[\](){}#%&]/g, "").replace(/\s+/g, "_");
+      const storagePath = `${contractorId}/${Date.now()}-${safeName}`;
       const { error: uploadError } = await supabase.storage
         .from("contractor-w9")
         .upload(storagePath, w9File, { contentType: w9File.type });
