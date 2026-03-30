@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { ClickStop } from "@/components/ui/click-stop";
 
 const formatCurrency = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -321,10 +322,7 @@ export default async function ContractorsPage({
                     {contractor.phone && (
                       <p className="flex items-center gap-2 text-sm text-gray-600">
                         <Phone className="h-4 w-4 text-gray-400" />
-                        <span
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline"
-                        >
+                        <ClickStop className="inline">
                           <a
                             href={`tel:${contractor.phone}`}
                             aria-label={`Call ${contractor.name} at ${contractor.phone}`}
@@ -333,16 +331,13 @@ export default async function ContractorsPage({
                           >
                             {contractor.phone}
                           </a>
-                        </span>
+                        </ClickStop>
                       </p>
                     )}
                     {contractor.email && (
                       <p className="flex items-center gap-2 text-sm text-gray-600">
                         <Mail className="h-4 w-4 text-gray-400" />
-                        <span
-                          onClick={(e) => e.stopPropagation()}
-                          className="inline"
-                        >
+                        <ClickStop className="inline">
                           <a
                             href={`mailto:${contractor.email}`}
                             aria-label={`Email ${contractor.name} at ${contractor.email}`}
@@ -351,7 +346,7 @@ export default async function ContractorsPage({
                           >
                             {contractor.email}
                           </a>
-                        </span>
+                        </ClickStop>
                       </p>
                     )}
                     {!isVendor && contractor.license_number && (
