@@ -301,7 +301,7 @@ export default async function ContractorsPage({
                       )
                     ) : (
                       <div className="flex flex-wrap gap-1">
-                        {contractor.trade.split(", ").filter(Boolean).map((t) => (
+                        {(contractor.trade ?? "").split(", ").filter(Boolean).map((t) => (
                           <Badge
                             key={t}
                             variant="outline"
