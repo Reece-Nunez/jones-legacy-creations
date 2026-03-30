@@ -70,7 +70,7 @@ export default async function ContractorsPage({
   }
 
   if (trade) {
-    contractorsQuery = contractorsQuery.eq("trade", trade);
+    contractorsQuery = contractorsQuery.ilike("trade", `%${trade}%`);
   }
 
   if (type) {
@@ -299,14 +299,19 @@ export default async function ContractorsPage({
                         </Badge>
                       )
                     ) : (
-                      <Badge
-                        variant="outline"
-                        className={`shrink-0 ${
-                          TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other
-                        }`}
-                      >
-                        {contractor.trade}
-                      </Badge>
+                      <div className="flex flex-wrap gap-1">
+                        {contractor.trade.split(", ").filter(Boolean).map((t) => (
+                          <Badge
+                            key={t}
+                            variant="outline"
+                            className={`shrink-0 ${
+                              TRADE_COLORS[t] ?? TRADE_COLORS.Other
+                            }`}
+                          >
+                            {t}
+                          </Badge>
+                        ))}
+                      </div>
                     )}
                   </div>
 

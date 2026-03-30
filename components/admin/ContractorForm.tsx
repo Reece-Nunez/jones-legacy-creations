@@ -275,28 +275,57 @@ export default function ContractorForm({
         />
       </div>
 
-      {/* Contractor-specific: Trade */}
+      {/* Contractor-specific: Trade(s) */}
       {entityType === "contractor" && (
         <div>
-          <label htmlFor="trade" className={labelClass}>
-            Trade <span className="text-red-500">*</span>
+          <label className={labelClass}>
+            Trade(s) <span className="text-red-500">*</span>
           </label>
-          <select
-            id="trade"
-            aria-required="true"
-            aria-invalid={!!errors.trade}
-            aria-describedby={errors.trade ? "trade-error" : undefined}
-            className={selectClass}
-            style={{ minHeight: 44 }}
-            {...register("trade")}
+          <p className="text-xs text-gray-500 mb-2">Select all that apply</p>
+          <div
+            className="grid grid-cols-2 sm:grid-cols-3 gap-2"
+            role="group"
+            aria-label="Trades"
           >
-            <option value="">Select a trade...</option>
-            {TRADES.map((t) => (
-              <option key={t} value={t}>
-                {t}
-              </option>
-            ))}
-          </select>
+            {TRADES.map((t) => {
+              const currentTrades = (watch("trade") || "").split(", ").filter(Boolean);
+              const isSelected = currentTrades.includes(t);
+              return (
+                <label
+                  key={t}
+                  className={`flex items-center gap-2 rounded-lg border px-3 py-2.5 text-sm cursor-pointer transition-colors ${
+                    isSelected
+                      ? "border-indigo-300 bg-indigo-50 text-indigo-700 font-medium"
+                      : "border-gray-200 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                  style={{ minHeight: 44 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={isSelected}
+                    onChange={() => {
+                      const trades = (watch("trade") || "").split(", ").filter(Boolean);
+                      const updated = isSelected
+                        ? trades.filter((tr) => tr !== t)
+                        : [...trades, t];
+                      setValue("trade", updated.join(", "), { shouldValidate: true });
+                    }}
+                    className="sr-only"
+                  />
+                  <div className={`h-4 w-4 rounded border flex items-center justify-center shrink-0 ${
+                    isSelected ? "bg-indigo-600 border-indigo-600" : "border-gray-300"
+                  }`}>
+                    {isSelected && (
+                      <svg className="h-3 w-3 text-white" viewBox="0 0 12 12" fill="none">
+                        <path d="M2 6l3 3 5-5" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                      </svg>
+                    )}
+                  </div>
+                  {t}
+                </label>
+              );
+            })}
+          </div>
           {errors.trade && (
             <p
               id="trade-error"

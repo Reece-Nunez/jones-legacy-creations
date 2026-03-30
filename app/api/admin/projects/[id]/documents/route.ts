@@ -37,6 +37,7 @@ export async function POST(
   const lineItemNumber = formData.get("line_item_number") as string | null;
   const vendor = formData.get("vendor") as string | null;
   const docType = formData.get("doc_type") as string | null;
+  const contractorId = formData.get("contractor_id") as string | null;
   const autoCreatePayment = formData.get("auto_create_payment") as string | null;
   const useAi = formData.get("use_ai") as string | null;
 
@@ -72,6 +73,17 @@ export async function POST(
   const finalDocType = docType || (aiData?.category ? "Invoice" : null);
   const finalCategory = category || (drawRequestId ? "draw_request" : "general");
 
+  // Resolve contractor_id: use explicit ID, or try to match by vendor name
+  let resolvedContractorId = contractorId || null;
+  if (!resolvedContractorId && finalVendor) {
+    const { data: matched } = await supabase
+      .from("contractors")
+      .select("id")
+      .or(`name.ilike.%${finalVendor}%,company.ilike.%${finalVendor}%`)
+      .limit(1);
+    resolvedContractorId = matched?.[0]?.id || null;
+  }
+
   // Create document record
   const { data, error } = await supabase
     .from("documents")
@@ -86,6 +98,7 @@ export async function POST(
       line_item_number: lineItemNumber || null,
       vendor: finalVendor,
       doc_type: finalDocType,
+      contractor_id: resolvedContractorId,
     })
     .select()
     .single();
@@ -101,15 +114,16 @@ export async function POST(
     finalVendor &&
     (finalDocType?.toLowerCase() === "invoice" || finalDocType?.toLowerCase() === "receipt" || aiData?.amount)
   ) {
-    // Try to match vendor to a contractor in the directory
-    const searchName = finalVendor;
-    const { data: contractors } = await supabase
-      .from("contractors")
-      .select("id, name, company")
-      .or(`name.ilike.%${searchName}%,company.ilike.%${searchName}%`)
-      .limit(1);
-
-    const matchedContractor = contractors?.[0] || null;
+    // Use the already-resolved contractor, or fetch details if we have an ID
+    let matchedContractor: { id: string; name: string; company: string } | null = null;
+    if (resolvedContractorId) {
+      const { data: cData } = await supabase
+        .from("contractors")
+        .select("id, name, company")
+        .eq("id", resolvedContractorId)
+        .single();
+      matchedContractor = cData;
+    }
 
     const { data: payment } = await supabase
       .from("contractor_payments")

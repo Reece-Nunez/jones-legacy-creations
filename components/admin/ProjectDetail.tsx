@@ -461,6 +461,7 @@ export default function ProjectDetail({
               payments={payments}
               draws={drawRequests}
               documents={documents}
+              contractors={contractors}
               mutate={mutate}
               loading={loading}
             />
@@ -1560,6 +1561,7 @@ function DrawsTab({
   payments,
   draws,
   documents,
+  contractors,
   mutate,
   loading,
 }: {
@@ -1568,6 +1570,7 @@ function DrawsTab({
   payments: ContractorPayment[];
   draws: DrawRequest[];
   documents: Document[];
+  contractors: Contractor[];
   mutate: (
     url: string,
     method: string,
@@ -1585,6 +1588,7 @@ function DrawsTab({
   const [uploadingDrawId, setUploadingDrawId] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadLineItems, setUploadLineItems] = useState<Record<number, string>>({});
+  const [uploadContractors, setUploadContractors] = useState<Record<number, string>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [scanningDrawId, setScanningDrawId] = useState<string | null>(null);
@@ -1599,6 +1603,7 @@ function DrawsTab({
     suggestedName: string;
     editedName: string;
     vendor: string;
+    contractorId: string;
     docType: string;
     lineItemNumber: string;
     amount: number | null;
@@ -1811,6 +1816,7 @@ function DrawsTab({
       const file = uploadFiles[i];
       const parsed = parseDrawFilename(file.name);
       const userLineItem = uploadLineItems[i];
+      const userContractor = uploadContractors[i];
       const fd = new FormData();
       fd.append("file", file);
       fd.append("category", "draw_request");
@@ -1823,7 +1829,12 @@ function DrawsTab({
       } else if (parsed.lineItemNumber !== null) {
         fd.append("line_item_number", String(parsed.lineItemNumber));
       }
-      if (parsed.vendor) {
+      if (userContractor) {
+        fd.append("contractor_id", userContractor);
+        // Also send the contractor name as vendor for filename/display
+        const c = contractors.find((ct) => ct.id === userContractor);
+        if (c) fd.append("vendor", c.company || c.name);
+      } else if (parsed.vendor) {
         fd.append("vendor", parsed.vendor);
       }
       if (parsed.docType) {
@@ -1858,6 +1869,7 @@ function DrawsTab({
             suggestedName,
             editedName: suggestedName,
             vendor,
+            contractorId: result.contractor_id || "",
             docType: docType || "Invoice",
             lineItemNumber: lineNum,
             amount: ai?.amount || null,
@@ -1871,6 +1883,7 @@ function DrawsTab({
 
     setUploadFiles([]);
     setUploadLineItems({});
+    setUploadContractors({});
     setUploadingDrawId(null);
     setUploading(false);
     setUploadProgress(null);
@@ -1890,10 +1903,11 @@ function DrawsTab({
           id: doc.id,
           name: doc.editedName,
         };
-        // Also update vendor, doc_type, and line_item_number if edited
+        // Also update vendor, doc_type, line_item_number, and contractor_id if edited
         if (doc.vendor) updates.vendor = doc.vendor;
         if (doc.docType) updates.doc_type = doc.docType;
         if (doc.lineItemNumber) updates.line_item_number = doc.lineItemNumber;
+        if (doc.contractorId) updates.contractor_id = doc.contractorId;
 
         await fetch(`/api/admin/projects/${projectId}/documents`, {
           method: "PATCH",
@@ -2180,21 +2194,45 @@ function DrawsTab({
                           />
                         </div>
                         <div>
-                          <label className="text-[10px] font-medium text-gray-500 uppercase">Vendor</label>
-                          <input
-                            type="text"
-                            value={doc.vendor}
+                          <label className="text-[10px] font-medium text-gray-500 uppercase">Contractor / Vendor</label>
+                          <select
+                            value={doc.contractorId}
                             onChange={(e) => {
                               const updated = [...reviewDocs];
-                              updated[idx] = { ...doc, vendor: e.target.value };
+                              const selectedId = e.target.value;
+                              const selectedContractor = contractors.find((c) => c.id === selectedId);
+                              const vendorName = selectedContractor ? (selectedContractor.company || selectedContractor.name) : doc.vendor;
+                              updated[idx] = { ...doc, contractorId: selectedId, vendor: vendorName };
                               const ext = doc.originalName.split(".").pop() || "pdf";
-                              const parts = [updated[idx].lineItemNumber, updated[idx].docType, e.target.value.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+                              const parts = [updated[idx].lineItemNumber, updated[idx].docType, vendorName.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
                               updated[idx].editedName = `${parts.join("_")}.${ext}`;
                               setReviewDocs(updated);
                             }}
-                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                            placeholder="Vendor name"
-                          />
+                            className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
+                          >
+                            <option value="">Select contractor/vendor...</option>
+                            {contractors.map((c) => (
+                              <option key={c.id} value={c.id}>
+                                {c.company || c.name}{c.type === "vendor" ? " (Vendor)" : ""}
+                              </option>
+                            ))}
+                          </select>
+                          {!doc.contractorId && (
+                            <input
+                              type="text"
+                              value={doc.vendor}
+                              onChange={(e) => {
+                                const updated = [...reviewDocs];
+                                updated[idx] = { ...doc, vendor: e.target.value };
+                                const ext = doc.originalName.split(".").pop() || "pdf";
+                                const parts = [updated[idx].lineItemNumber, updated[idx].docType, e.target.value.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+                                updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                                setReviewDocs(updated);
+                              }}
+                              className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 mt-1"
+                              placeholder="Or type vendor name..."
+                            />
+                          )}
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
@@ -2446,6 +2484,21 @@ function DrawsTab({
                                     ))}
                                   </select>
                                 </div>
+                                <div className="shrink-0 sm:w-44">
+                                  <select
+                                    value={uploadContractors[i] || ""}
+                                    onChange={(e) => setUploadContractors((prev) => ({ ...prev, [i]: e.target.value }))}
+                                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 appearance-none bg-white"
+                                    aria-label={`Contractor/Vendor for ${f.name}`}
+                                  >
+                                    <option value="">Select contractor/vendor...</option>
+                                    {contractors.map((c) => (
+                                      <option key={c.id} value={c.id}>
+                                        {c.company || c.name}{c.type === "vendor" ? " (Vendor)" : ""}
+                                      </option>
+                                    ))}
+                                  </select>
+                                </div>
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <p className="truncate text-gray-900 text-xs flex-1">{f.name}</p>
                                   <button
@@ -2544,7 +2597,16 @@ function DrawsTab({
                                 {doc.doc_type ?? "--"}
                               </td>
                               <td className="py-2 pr-3 text-xs text-gray-700">
-                                {doc.vendor ?? "--"}
+                                {doc.contractor_id ? (
+                                  <a
+                                    href={`/admin/contractors/${doc.contractor_id}`}
+                                    className="text-blue-600 hover:text-blue-800 transition-colors"
+                                  >
+                                    {doc.vendor ?? contractors.find((c) => c.id === doc.contractor_id)?.company ?? contractors.find((c) => c.id === doc.contractor_id)?.name ?? "--"}
+                                  </a>
+                                ) : (
+                                  doc.vendor ?? "--"
+                                )}
                               </td>
                               <td className="py-2 pr-3 text-xs min-w-0">
                                 <a

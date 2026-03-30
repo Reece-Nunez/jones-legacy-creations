@@ -142,6 +142,7 @@ create table documents (
   category text default 'general' check (category in (
     'contract', 'permit', 'invoice', 'photo', 'plan', 'draw_request', 'general'
   )),
+  contractor_id uuid references contractors(id) on delete set null,
   created_at timestamptz default now()
 );
 

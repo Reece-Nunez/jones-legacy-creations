@@ -206,13 +206,25 @@ export default function ContractorDetail({
                     <p className="mt-0.5 text-gray-500">{contractor.company}</p>
                   )
                 )}
-                <div className="mt-2 flex items-center gap-2">
-                  <Badge
-                    variant="outline"
-                    className={isVendor ? "bg-emerald-50 text-emerald-700" : TRADE_COLORS[contractor.trade] ?? TRADE_COLORS.Other}
-                  >
-                    {isVendor ? (contractor.vendor_category || "Vendor") : contractor.trade}
-                  </Badge>
+                <div className="mt-2 flex flex-wrap items-center gap-2">
+                  {isVendor ? (
+                    <Badge
+                      variant="outline"
+                      className="bg-emerald-50 text-emerald-700"
+                    >
+                      {contractor.vendor_category || "Vendor"}
+                    </Badge>
+                  ) : (
+                    contractor.trade.split(", ").filter(Boolean).map((t) => (
+                      <Badge
+                        key={t}
+                        variant="outline"
+                        className={TRADE_COLORS[t] ?? TRADE_COLORS.Other}
+                      >
+                        {t}
+                      </Badge>
+                    ))
+                  )}
                   <Badge variant="outline" className="bg-gray-50 text-gray-600">
                     {entityLabel}
                   </Badge>
@@ -574,6 +586,72 @@ export default function ContractorDetail({
           )}
           </CardContent>
         </Card>
+
+        {/* Associated Projects */}
+        {(() => {
+          // Derive projects from payments — if a contractor has a payment on a project, they're linked
+          const projectMap = new Map<string, { id: string; name: string; totalPaid: number; totalPending: number; paymentCount: number }>();
+          for (const p of payments) {
+            if (!p.projects) continue;
+            const existing = projectMap.get(p.projects.id);
+            if (existing) {
+              existing.paymentCount++;
+              if (p.status === "paid") existing.totalPaid += p.amount || 0;
+              else existing.totalPending += p.amount || 0;
+            } else {
+              projectMap.set(p.projects.id, {
+                id: p.projects.id,
+                name: p.projects.name,
+                totalPaid: p.status === "paid" ? (p.amount || 0) : 0,
+                totalPending: p.status !== "paid" ? (p.amount || 0) : 0,
+                paymentCount: 1,
+              });
+            }
+          }
+          const projects = Array.from(projectMap.values());
+
+          return projects.length > 0 ? (
+            <Card className="mb-8 shadow-sm">
+              <CardHeader>
+                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                  Projects ({projects.length})
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-3">
+                  {projects.map((proj) => (
+                    <Link
+                      key={proj.id}
+                      href={`/admin/projects/${proj.id}`}
+                      className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
+                    >
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium text-indigo-600 truncate">
+                          {proj.name}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          {proj.paymentCount} payment{proj.paymentCount !== 1 ? "s" : ""}
+                        </p>
+                      </div>
+                      <div className="text-right shrink-0">
+                        {proj.totalPaid > 0 && (
+                          <p className="text-sm font-medium tabular-nums text-green-600">
+                            {formatCurrency(proj.totalPaid)} paid
+                          </p>
+                        )}
+                        {proj.totalPending > 0 && (
+                          <p className="text-xs tabular-nums text-gray-500">
+                            {formatCurrency(proj.totalPending)} pending
+                          </p>
+                        )}
+                      </div>
+                    </Link>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ) : null;
+        })()}
 
         {/* Payment History */}
         <Card className="shadow-sm">

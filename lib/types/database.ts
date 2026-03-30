@@ -133,6 +133,7 @@ export interface Document {
   line_item_number: string | null;
   vendor: string | null;
   doc_type: string | null;
+  contractor_id: string | null;
   created_at: string;
 }
 
