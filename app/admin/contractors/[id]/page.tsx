@@ -10,7 +10,7 @@ export default async function ContractorDetailPage({
   const { id } = await params;
   const supabase = await createClient();
 
-  const [{ data: contractor }, { data: payments }, { data: projects }] = await Promise.all([
+  const [{ data: contractor }, { data: payments }, { data: projects }, { data: assignments }] = await Promise.all([
     supabase.from("contractors").select("*").eq("id", id).single(),
     supabase
       .from("contractor_payments")
@@ -21,6 +21,10 @@ export default async function ContractorDetailPage({
       .from("projects")
       .select("id, name")
       .order("name"),
+    supabase
+      .from("project_contractors")
+      .select("project_id, projects:project_id(id, name)")
+      .eq("contractor_id", id),
   ]);
 
   if (!contractor) {
@@ -32,6 +36,7 @@ export default async function ContractorDetailPage({
       contractor={contractor}
       payments={payments ?? []}
       allProjects={projects ?? []}
+      projectAssignments={assignments ?? []}
     />
   );
 }

@@ -94,6 +94,17 @@ create table contractor_payments (
 );
 
 -- ============================================
+-- PROJECT ↔ CONTRACTOR ASSIGNMENTS
+-- ============================================
+create table project_contractors (
+  id uuid primary key default uuid_generate_v4(),
+  project_id uuid not null references projects(id) on delete cascade,
+  contractor_id uuid not null references contractors(id) on delete cascade,
+  created_at timestamptz default now(),
+  unique(project_id, contractor_id)
+);
+
+-- ============================================
 -- DRAW REQUESTS (investor financing)
 -- ============================================
 create table draw_requests (

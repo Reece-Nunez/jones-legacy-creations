@@ -13,6 +13,13 @@ export async function POST(
     return NextResponse.json({ error: "project_id is required" }, { status: 400 });
   }
 
+  // Remove the assignment from the junction table
+  await supabase
+    .from("project_contractors")
+    .delete()
+    .eq("contractor_id", contractorId)
+    .eq("project_id", project_id);
+
   // Remove contractor_id from payments on this project
   await supabase
     .from("contractor_payments")
@@ -26,15 +33,6 @@ export async function POST(
     .update({ contractor_id: null })
     .eq("contractor_id", contractorId)
     .eq("project_id", project_id);
-
-  // Delete any $0 "Assigned to project" placeholder payments
-  await supabase
-    .from("contractor_payments")
-    .delete()
-    .eq("contractor_id", contractorId)
-    .eq("project_id", project_id)
-    .eq("amount", 0)
-    .ilike("description", "%Assigned to project%");
 
   return NextResponse.json({ success: true });
 }

@@ -79,16 +79,23 @@ interface PaymentWithProject extends ContractorPayment {
   projects?: { id: string; name: string } | null;
 }
 
+interface ProjectAssignment {
+  project_id: string;
+  projects?: { id: string; name: string } | { id: string; name: string }[] | null;
+}
+
 interface ContractorDetailProps {
   contractor: Contractor;
   payments: PaymentWithProject[];
   allProjects: { id: string; name: string }[];
+  projectAssignments: ProjectAssignment[];
 }
 
 export default function ContractorDetail({
   contractor: initialContractor,
   payments,
   allProjects,
+  projectAssignments,
 }: ContractorDetailProps) {
   const router = useRouter();
   const [contractor, setContractor] = useState(initialContractor);
@@ -599,8 +606,24 @@ export default function ContractorDetail({
 
         {/* Associated Projects */}
         {(() => {
-          // Derive projects from payments — if a contractor has a payment on a project, they're linked
-          const projectMap = new Map<string, { id: string; name: string; totalPaid: number; totalPending: number; paymentCount: number }>();
+          // Combine explicit assignments + payment-derived relationships
+          const projectMap = new Map<string, { id: string; name: string; totalPaid: number; totalPending: number; paymentCount: number; assigned: boolean }>();
+
+          // Add explicit assignments first
+          for (const a of projectAssignments) {
+            const proj = Array.isArray(a.projects) ? a.projects[0] : a.projects;
+            if (!proj) continue;
+            projectMap.set(proj.id, {
+              id: proj.id,
+              name: proj.name,
+              totalPaid: 0,
+              totalPending: 0,
+              paymentCount: 0,
+              assigned: true,
+            });
+          }
+
+          // Add/merge payment-derived data
           for (const p of payments) {
             if (!p.projects) continue;
             const existing = projectMap.get(p.projects.id);
@@ -615,6 +638,7 @@ export default function ContractorDetail({
                 totalPaid: p.status === "paid" ? (p.amount || 0) : 0,
                 totalPending: p.status !== "paid" ? (p.amount || 0) : 0,
                 paymentCount: 1,
+                assigned: false,
               });
             }
           }
@@ -712,29 +736,13 @@ export default function ContractorDetail({
                       onClick={async () => {
                         if (!selectedProjectId) return;
                         try {
-                          // First try fuzzy matching existing payments/documents
-                          const linkRes = await fetch(`/api/admin/contractors/${contractor.id}/link-project`, {
+                          // Create the assignment in the junction table
+                          const res = await fetch(`/api/admin/contractors/${contractor.id}/link-project`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ project_id: selectedProjectId }),
                           });
-                          const linkResult = await linkRes.json().catch(() => ({ linked_payments: 0 }));
-
-                          // Only create a $0 placeholder if no existing payments were matched
-                          if (!linkResult.linked_payments) {
-                            const res = await fetch(`/api/admin/projects/${selectedProjectId}/payments`, {
-                              method: "POST",
-                              headers: { "Content-Type": "application/json" },
-                              body: JSON.stringify({
-                                contractor_id: contractor.id,
-                                contractor_name: contractor.company || contractor.name,
-                                description: `Assigned to project`,
-                                amount: 0,
-                                status: "pending",
-                              }),
-                            });
-                            if (!res.ok) throw new Error("Failed to link");
-                          }
+                          if (!res.ok) throw new Error("Failed to link");
 
                           toast.success("Project linked");
                           setLinkingProject(false);
