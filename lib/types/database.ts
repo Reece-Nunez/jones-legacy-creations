@@ -326,6 +326,7 @@ export const TRADES = [
   "Flooring",
   "Landscaping",
   "Excavation",
+  "Engineering",
   "Steel/Welding",
   "Cabinetry",
   "Tile",

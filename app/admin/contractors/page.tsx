@@ -39,6 +39,7 @@ const TRADE_COLORS: Record<string, string> = {
   Flooring: "bg-orange-100 text-orange-700",
   Landscaping: "bg-green-100 text-green-700",
   Excavation: "bg-amber-200 text-amber-900",
+  Engineering: "bg-violet-100 text-violet-700",
   "Steel/Welding": "bg-zinc-200 text-zinc-700",
   Cabinetry: "bg-rose-100 text-rose-700",
   Tile: "bg-teal-100 text-teal-700",

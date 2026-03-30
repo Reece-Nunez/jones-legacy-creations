@@ -1613,6 +1613,14 @@ function DrawsTab({
   const [reviewDrawId, setReviewDrawId] = useState<string | null>(null);
   const [savingReview, setSavingReview] = useState(false);
 
+  /** Build filename: #_Category_DocType_VendorName.ext */
+  function buildDocFilename(lineNum: string, docType: string, vendor: string, ext: string) {
+    const category = DEFAULT_BUDGET_LINE_ITEMS.find((b) => String(b.line_number) === lineNum)?.description || "";
+    const cleanVendor = vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_");
+    const parts = [lineNum, category.replace(/\s+/g, "_"), docType || "Invoice", cleanVendor].filter(Boolean);
+    return `${parts.join("_")}.${ext}`;
+  }
+
   // Auto-expand the latest draw on first render
   useEffect(() => {
     if (draws.length > 0) {
@@ -1718,8 +1726,7 @@ function DrawsTab({
               const docType = result.doc_type || (ai?.category ? "Invoice" : "");
               const lineNum = result.line_item_number != null ? String(result.line_item_number) : "";
               const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
-              const nameParts = [lineNum, docType || "Invoice", vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
-              const suggestedName = `${nameParts.join("_")}.${ext}`;
+              const suggestedName = buildDocFilename(lineNum, docType || "Invoice", vendor, ext);
 
               uploadedDocs.push({
                 id: result.id,
@@ -1909,12 +1916,7 @@ function DrawsTab({
           const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
 
           // Build a clean suggested name
-          const nameParts = [
-            lineNum,
-            docType || "Invoice",
-            vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_"),
-          ].filter(Boolean);
-          const suggestedName = `${nameParts.join("_")}.${ext}`;
+          const suggestedName = buildDocFilename(lineNum, docType || "Invoice", vendor, ext);
 
           uploadedDocs.push({
             id: result.id,
@@ -2241,11 +2243,9 @@ function DrawsTab({
                             onChange={(e) => {
                               const updated = [...reviewDocs];
                               const lineNum = e.target.value;
-                              const categoryName = DEFAULT_BUDGET_LINE_ITEMS.find((b) => String(b.line_number) === lineNum)?.description || "";
                               updated[idx] = { ...doc, lineItemNumber: lineNum };
                               const ext = doc.originalName.split(".").pop() || "pdf";
-                              const parts = [lineNum, updated[idx].docType, updated[idx].vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
-                              updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                              updated[idx].editedName = buildDocFilename(lineNum, updated[idx].docType, updated[idx].vendor, ext);
                               setReviewDocs(updated);
                             }}
                             className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
@@ -2267,8 +2267,7 @@ function DrawsTab({
                               const updated = [...reviewDocs];
                               updated[idx] = { ...doc, docType: e.target.value };
                               const ext = doc.originalName.split(".").pop() || "pdf";
-                              const parts = [updated[idx].lineItemNumber, e.target.value, updated[idx].vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
-                              updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                              updated[idx].editedName = buildDocFilename(updated[idx].lineItemNumber, e.target.value, updated[idx].vendor, ext);
                               setReviewDocs(updated);
                             }}
                             className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
@@ -2286,8 +2285,7 @@ function DrawsTab({
                               const vendorName = selectedContractor ? (selectedContractor.company || selectedContractor.name) : doc.vendor;
                               updated[idx] = { ...doc, contractorId: selectedId, vendor: vendorName };
                               const ext = doc.originalName.split(".").pop() || "pdf";
-                              const parts = [updated[idx].lineItemNumber, updated[idx].docType, vendorName.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
-                              updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                              updated[idx].editedName = buildDocFilename(updated[idx].lineItemNumber, updated[idx].docType, vendorName, ext);
                               setReviewDocs(updated);
                             }}
                             className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
@@ -2307,8 +2305,7 @@ function DrawsTab({
                                 const updated = [...reviewDocs];
                                 updated[idx] = { ...doc, vendor: e.target.value };
                                 const ext = doc.originalName.split(".").pop() || "pdf";
-                                const parts = [updated[idx].lineItemNumber, updated[idx].docType, e.target.value.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
-                                updated[idx].editedName = `${parts.join("_")}.${ext}`;
+                                updated[idx].editedName = buildDocFilename(updated[idx].lineItemNumber, updated[idx].docType, e.target.value, ext);
                                 setReviewDocs(updated);
                               }}
                               className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 mt-1"

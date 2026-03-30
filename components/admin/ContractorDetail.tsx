@@ -25,6 +25,7 @@ import {
   Store,
   Tag,
   Upload,
+  Plus,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -63,6 +64,7 @@ const TRADE_COLORS: Record<string, string> = {
   Flooring: "bg-orange-100 text-orange-700",
   Landscaping: "bg-green-100 text-green-700",
   Excavation: "bg-amber-200 text-amber-900",
+  Engineering: "bg-violet-100 text-violet-700",
   "Steel/Welding": "bg-zinc-200 text-zinc-700",
   Cabinetry: "bg-rose-100 text-rose-700",
   Tile: "bg-teal-100 text-teal-700",
@@ -80,11 +82,13 @@ interface PaymentWithProject extends ContractorPayment {
 interface ContractorDetailProps {
   contractor: Contractor;
   payments: PaymentWithProject[];
+  allProjects: { id: string; name: string }[];
 }
 
 export default function ContractorDetail({
   contractor: initialContractor,
   payments,
+  allProjects,
 }: ContractorDetailProps) {
   const router = useRouter();
   const [contractor, setContractor] = useState(initialContractor);
@@ -95,6 +99,8 @@ export default function ContractorDetail({
   const [notes, setNotes] = useState(contractor.notes ?? "");
   const [savingNotes, setSavingNotes] = useState(false);
   const [w9Uploading, setW9Uploading] = useState(false);
+  const [linkingProject, setLinkingProject] = useState(false);
+  const [selectedProjectId, setSelectedProjectId] = useState("");
 
   const isVendor = contractor.type === "vendor";
   const entityLabel = isVendor ? "Vendor" : "Contractor";
@@ -612,49 +618,129 @@ export default function ContractorDetail({
               });
             }
           }
-          const projects = Array.from(projectMap.values());
+          const linkedProjects = Array.from(projectMap.values());
+          const linkedProjectIds = new Set(linkedProjects.map((p) => p.id));
+          const unlinkableProjects = allProjects.filter((p) => !linkedProjectIds.has(p.id));
 
-          return projects.length > 0 ? (
+          return (
             <Card className="mb-8 shadow-sm">
               <CardHeader>
-                <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-400">
-                  Projects ({projects.length})
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                    Projects ({linkedProjects.length})
+                  </CardTitle>
+                </div>
               </CardHeader>
               <CardContent>
-                <div className="space-y-3">
-                  {projects.map((proj) => (
-                    <Link
-                      key={proj.id}
-                      href={`/admin/projects/${proj.id}`}
-                      className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
+                {linkedProjects.length > 0 && (
+                  <div className="space-y-3 mb-4">
+                    {linkedProjects.map((proj) => (
+                      <Link
+                        key={proj.id}
+                        href={`/admin/projects/${proj.id}`}
+                        className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
+                      >
+                        <div className="min-w-0">
+                          <p className="text-sm font-medium text-indigo-600 truncate">
+                            {proj.name}
+                          </p>
+                          <p className="text-xs text-gray-500 mt-0.5">
+                            {proj.paymentCount} payment{proj.paymentCount !== 1 ? "s" : ""}
+                          </p>
+                        </div>
+                        <div className="text-right shrink-0">
+                          {proj.totalPaid > 0 && (
+                            <p className="text-sm font-medium tabular-nums text-green-600">
+                              {formatCurrency(proj.totalPaid)} paid
+                            </p>
+                          )}
+                          {proj.totalPending > 0 && (
+                            <p className="text-xs tabular-nums text-gray-500">
+                              {formatCurrency(proj.totalPending)} pending
+                            </p>
+                          )}
+                        </div>
+                      </Link>
+                    ))}
+                  </div>
+                )}
+                {linkedProjects.length === 0 && (
+                  <p className="text-sm text-gray-400 mb-4">No projects linked yet.</p>
+                )}
+                {/* Manual link project */}
+                {linkingProject ? (
+                  <div className="flex items-center gap-2">
+                    <select
+                      value={selectedProjectId}
+                      onChange={(e) => setSelectedProjectId(e.target.value)}
+                      className="flex-1 rounded-lg border border-gray-300 px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-200 bg-white"
+                      style={{ minHeight: 44 }}
                     >
-                      <div className="min-w-0">
-                        <p className="text-sm font-medium text-indigo-600 truncate">
-                          {proj.name}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {proj.paymentCount} payment{proj.paymentCount !== 1 ? "s" : ""}
-                        </p>
-                      </div>
-                      <div className="text-right shrink-0">
-                        {proj.totalPaid > 0 && (
-                          <p className="text-sm font-medium tabular-nums text-green-600">
-                            {formatCurrency(proj.totalPaid)} paid
-                          </p>
-                        )}
-                        {proj.totalPending > 0 && (
-                          <p className="text-xs tabular-nums text-gray-500">
-                            {formatCurrency(proj.totalPending)} pending
-                          </p>
-                        )}
-                      </div>
-                    </Link>
-                  ))}
-                </div>
+                      <option value="">Select a project...</option>
+                      {unlinkableProjects.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </select>
+                    <button
+                      disabled={!selectedProjectId}
+                      onClick={async () => {
+                        if (!selectedProjectId) return;
+                        try {
+                          // Create a $0 payment record to establish the link
+                          const res = await fetch(`/api/admin/projects/${selectedProjectId}/payments`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({
+                              contractor_id: contractor.id,
+                              contractor_name: contractor.company || contractor.name,
+                              description: `Assigned to project`,
+                              amount: 0,
+                              status: "pending",
+                            }),
+                          });
+                          if (!res.ok) throw new Error("Failed to link");
+
+                          // Also update any unlinked payments/documents on this project that match by name
+                          await fetch(`/api/admin/contractors/${contractor.id}/link-project`, {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ project_id: selectedProjectId }),
+                          }).catch(() => {});
+
+                          toast.success("Project linked");
+                          setLinkingProject(false);
+                          setSelectedProjectId("");
+                          router.refresh();
+                        } catch {
+                          toast.error("Failed to link project");
+                        }
+                      }}
+                      className="inline-flex items-center gap-1 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+                      style={{ minHeight: 44 }}
+                    >
+                      Link
+                    </button>
+                    <button
+                      onClick={() => { setLinkingProject(false); setSelectedProjectId(""); }}
+                      className="inline-flex items-center rounded-lg border border-gray-300 px-3 py-2.5 text-sm text-gray-700 hover:bg-gray-50"
+                      style={{ minHeight: 44 }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                ) : (
+                  <button
+                    onClick={() => setLinkingProject(true)}
+                    className="inline-flex items-center gap-1.5 text-sm font-medium text-indigo-600 hover:text-indigo-800"
+                    style={{ minHeight: 44 }}
+                  >
+                    <Plus className="h-4 w-4" />
+                    Link to Project
+                  </button>
+                )}
               </CardContent>
             </Card>
-          ) : null;
+          );
         })()}
 
         {/* Payment History */}
