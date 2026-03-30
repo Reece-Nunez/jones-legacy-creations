@@ -712,26 +712,29 @@ export default function ContractorDetail({
                       onClick={async () => {
                         if (!selectedProjectId) return;
                         try {
-                          // Create a $0 payment record to establish the link
-                          const res = await fetch(`/api/admin/projects/${selectedProjectId}/payments`, {
-                            method: "POST",
-                            headers: { "Content-Type": "application/json" },
-                            body: JSON.stringify({
-                              contractor_id: contractor.id,
-                              contractor_name: contractor.company || contractor.name,
-                              description: `Assigned to project`,
-                              amount: 0,
-                              status: "pending",
-                            }),
-                          });
-                          if (!res.ok) throw new Error("Failed to link");
-
-                          // Also update any unlinked payments/documents on this project that match by name
-                          await fetch(`/api/admin/contractors/${contractor.id}/link-project`, {
+                          // First try fuzzy matching existing payments/documents
+                          const linkRes = await fetch(`/api/admin/contractors/${contractor.id}/link-project`, {
                             method: "POST",
                             headers: { "Content-Type": "application/json" },
                             body: JSON.stringify({ project_id: selectedProjectId }),
-                          }).catch(() => {});
+                          });
+                          const linkResult = await linkRes.json().catch(() => ({ linked_payments: 0 }));
+
+                          // Only create a $0 placeholder if no existing payments were matched
+                          if (!linkResult.linked_payments) {
+                            const res = await fetch(`/api/admin/projects/${selectedProjectId}/payments`, {
+                              method: "POST",
+                              headers: { "Content-Type": "application/json" },
+                              body: JSON.stringify({
+                                contractor_id: contractor.id,
+                                contractor_name: contractor.company || contractor.name,
+                                description: `Assigned to project`,
+                                amount: 0,
+                                status: "pending",
+                              }),
+                            });
+                            if (!res.ok) throw new Error("Failed to link");
+                          }
 
                           toast.success("Project linked");
                           setLinkingProject(false);
