@@ -116,9 +116,12 @@ export default function AdminShell({
   function renderBadge(badgeKey?: string) {
     if (badgeKey === "estimates" && newEstimateCount > 0) {
       return (
-        <span className="ml-auto flex h-2 w-2">
-          <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-red-400 opacity-75" />
-          <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+        <span className="ml-auto flex items-center gap-1.5">
+          <span className="flex h-2 w-2">
+            <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-red-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-red-500" />
+          </span>
+          <span className="text-xs text-red-400">{newEstimateCount}</span>
         </span>
       );
     }

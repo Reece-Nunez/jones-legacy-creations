@@ -1654,13 +1654,14 @@ function DrawsTab({
   }
 
   const [newDrawFiles, setNewDrawFiles] = useState<File[]>([]);
+  const [newDrawLineItems, setNewDrawLineItems] = useState<Record<number, string>>({});
+  const [newDrawContractors, setNewDrawContractors] = useState<Record<number, string>>({});
   const [newDrawUploading, setNewDrawUploading] = useState(false);
   const [newDrawProgress, setNewDrawProgress] = useState<{ done: number; total: number } | null>(null);
 
   async function addDraw() {
     const drawNum = form.draw_number ? parseInt(form.draw_number) : nextDrawNumber;
     const amount = form.amount ? parseFloat(unformatCurrency(form.amount)) : 0;
-    if (!amount && newDrawFiles.length === 0) return;
 
     // Create the draw first
     const res = await mutate(`/api/admin/projects/${projectId}/draws`, "POST", {
@@ -1672,6 +1673,7 @@ function DrawsTab({
     });
 
     // Upload files to the new draw if any were selected
+    const uploadedDocs: UploadedDocReview[] = [];
     if (res && newDrawFiles.length > 0) {
       const drawData = await res.json().catch(() => null);
       const drawId = drawData?.id;
@@ -1681,24 +1683,76 @@ function DrawsTab({
         for (let i = 0; i < newDrawFiles.length; i++) {
           const file = newDrawFiles[i];
           const parsed = parseDrawFilename(file.name);
+          const userLineItem = newDrawLineItems[i];
+          const userContractor = newDrawContractors[i];
           const fd = new FormData();
           fd.append("file", file);
           fd.append("category", "draw_request");
           fd.append("draw_request_id", drawId);
           fd.append("auto_create_payment", "true");
           fd.append("use_ai", "true");
-          if (parsed.lineItemNumber != null) fd.append("line_item_number", String(parsed.lineItemNumber));
-          if (parsed.vendor) fd.append("vendor", parsed.vendor);
+          // User-specified line item # takes priority, then parsed from filename
+          if (userLineItem) {
+            fd.append("line_item_number", userLineItem);
+          } else if (parsed.lineItemNumber != null) {
+            fd.append("line_item_number", String(parsed.lineItemNumber));
+          }
+          if (userContractor) {
+            fd.append("contractor_id", userContractor);
+            const c = contractors.find((ct) => ct.id === userContractor);
+            if (c) fd.append("vendor", c.company || c.name);
+          } else if (parsed.vendor) {
+            fd.append("vendor", parsed.vendor);
+          }
           if (parsed.docType) fd.append("doc_type", parsed.docType);
-          await mutate(`/api/admin/projects/${projectId}/documents`, "POST", fd);
+
+          const docRes = await mutate(`/api/admin/projects/${projectId}/documents`, "POST", fd);
           setNewDrawProgress({ done: i + 1, total: newDrawFiles.length });
+
+          // Collect for review
+          if (docRes) {
+            try {
+              const result = await docRes.clone().json();
+              const ai = result.ai_extracted;
+              const vendor = result.vendor || ai?.vendor_company || ai?.vendor_name || "";
+              const docType = result.doc_type || (ai?.category ? "Invoice" : "");
+              const lineNum = result.line_item_number != null ? String(result.line_item_number) : "";
+              const ext = file.name.split(".").pop()?.toLowerCase() || "pdf";
+              const nameParts = [lineNum, docType || "Invoice", vendor.replace(/[^a-zA-Z0-9\s&-]/g, "").replace(/\s+/g, "_")].filter(Boolean);
+              const suggestedName = `${nameParts.join("_")}.${ext}`;
+
+              uploadedDocs.push({
+                id: result.id,
+                fileUrl: result.file_url,
+                originalName: file.name,
+                suggestedName,
+                editedName: suggestedName,
+                vendor,
+                contractorId: result.contractor_id || "",
+                docType: docType || "Invoice",
+                lineItemNumber: lineNum,
+                amount: ai?.amount || null,
+                editing: false,
+              });
+            } catch {
+              // skip review for this file
+            }
+          }
         }
         setNewDrawUploading(false);
         setNewDrawProgress(null);
+
+        // Show review step
+        if (uploadedDocs.length > 0) {
+          setReviewDocs(uploadedDocs);
+          setReviewDrawId(drawId);
+        }
       }
     }
 
     setNewDrawFiles([]);
+    setNewDrawLineItems({});
+    setNewDrawContractors({});
     setForm({ draw_number: "", description: "", amount: "" });
     setShowForm(false);
   }
@@ -2000,7 +2054,7 @@ function DrawsTab({
                 </div>
                 <div>
                   <label htmlFor="draw-amount" className="block text-sm text-gray-700 font-medium mb-1">
-                    Amount <span className="text-red-500">*</span>
+                    Amount
                   </label>
                   <input
                     id="draw-amount"
@@ -2052,24 +2106,52 @@ function DrawsTab({
                   <p className="text-xs font-medium text-gray-500">{newDrawFiles.length} file{newDrawFiles.length !== 1 ? "s" : ""} ready to upload</p>
                   <div className="max-h-40 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
                     {newDrawFiles.map((f, i) => {
-                      const parsed = parseDrawFilename(f.name);
                       return (
-                        <div key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50">
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate text-gray-900">
-                              {parsed.lineItemNumber != null && <span className="text-gray-400 mr-1">#{parsed.lineItemNumber}</span>}
-                              {parsed.category || f.name}
-                              {parsed.vendor && <span className="text-gray-500"> — {parsed.vendor}</span>}
-                            </p>
-                            <p className="text-xs text-gray-400">{parsed.docType || "Document"}</p>
+                        <div key={`${f.name}-${i}`} className="flex flex-col sm:flex-row sm:items-center gap-2 rounded px-2 py-2 text-sm hover:bg-gray-50">
+                          <div className="shrink-0 sm:w-44">
+                            <select
+                              value={newDrawLineItems[i] || ""}
+                              onChange={(e) => setNewDrawLineItems((prev) => ({ ...prev, [i]: e.target.value }))}
+                              className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 appearance-none bg-white"
+                              aria-label={`Category for ${f.name}`}
+                            >
+                              <option value="">Select category...</option>
+                              {DEFAULT_BUDGET_LINE_ITEMS.map((item) => (
+                                <option key={item.line_number} value={String(item.line_number)}>
+                                  {item.line_number}. {item.description}
+                                </option>
+                              ))}
+                            </select>
                           </div>
-                          <button
-                            onClick={() => setNewDrawFiles(prev => prev.filter((_, idx) => idx !== i))}
-                            aria-label={`Remove ${f.name}`}
-                            className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
+                          <div className="shrink-0 sm:w-44">
+                            <select
+                              value={newDrawContractors[i] || ""}
+                              onChange={(e) => setNewDrawContractors((prev) => ({ ...prev, [i]: e.target.value }))}
+                              className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 appearance-none bg-white"
+                              aria-label={`Contractor/Vendor for ${f.name}`}
+                            >
+                              <option value="">Select contractor/vendor...</option>
+                              {contractors.map((c) => (
+                                <option key={c.id} value={c.id}>
+                                  {c.company || c.name}{c.type === "vendor" ? " (Vendor)" : ""}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <p className="truncate text-gray-900 text-xs flex-1">{f.name}</p>
+                            <button
+                              onClick={() => {
+                                setNewDrawFiles(prev => prev.filter((_, idx) => idx !== i));
+                                setNewDrawLineItems((prev) => { const next = { ...prev }; delete next[i]; return next; });
+                                setNewDrawContractors((prev) => { const next = { ...prev }; delete next[i]; return next; });
+                              }}
+                              aria-label={`Remove ${f.name}`}
+                              className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors shrink-0"
+                            >
+                              <X className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
                         </div>
                       );
                     })}

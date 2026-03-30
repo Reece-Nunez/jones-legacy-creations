@@ -74,7 +74,7 @@ function endOfWeek(now: Date): Date {
 // ── Types for action items ──────────────────────────────────
 
 type ActionPriority = "red" | "orange" | "yellow" | "blue";
-type ActionCategory = "overdue" | "task" | "permit" | "draw" | "w9";
+type ActionCategory = "overdue" | "task" | "permit" | "draw" | "w9" | "estimate";
 
 interface ActionItem {
   id: string;
@@ -103,6 +103,7 @@ const PRIORITY_ICON: Record<ActionPriority, typeof AlertTriangle> = {
 
 const CATEGORY_LABELS: Record<ActionCategory, string> = {
   overdue: "Overdue",
+  estimate: "New Estimates",
   w9: "Missing W9s",
   task: "Tasks",
   permit: "Permits",
@@ -226,6 +227,21 @@ export default async function AdminDashboard({
 
   // ── Build Action Items ────────────────────────────────────
   const actionItems: ActionItem[] = [];
+
+  // New estimates needing review
+  const newEstimates = estimates.filter((e) => e.status === "new");
+  for (const est of newEstimates) {
+    const daysAgo = daysBetween(est.created_at, now);
+    actionItems.push({
+      id: `estimate-${est.id}`,
+      priority: daysAgo > 2 ? "orange" : "yellow",
+      category: "estimate",
+      label: `New estimate: ${est.client_name}`,
+      sublabel: est.project_type.replace(/_/g, " ").replace(/\b\w/g, (c) => c.toUpperCase()),
+      detail: daysAgo === 0 ? "Submitted today" : `${daysAgo} day${daysAgo !== 1 ? "s" : ""} ago`,
+      href: "/admin/estimates",
+    });
+  }
 
   // Tasks due this week
   for (const task of tasksDueThisWeek) {
