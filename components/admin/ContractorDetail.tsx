@@ -635,32 +635,58 @@ export default function ContractorDetail({
                 {linkedProjects.length > 0 && (
                   <div className="space-y-3 mb-4">
                     {linkedProjects.map((proj) => (
-                      <Link
+                      <div
                         key={proj.id}
-                        href={`/admin/projects/${proj.id}`}
-                        className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-4 transition-colors hover:bg-gray-50"
+                        className="flex items-center justify-between gap-4 rounded-lg border border-gray-100 p-4"
                       >
-                        <div className="min-w-0">
+                        <Link
+                          href={`/admin/projects/${proj.id}`}
+                          className="min-w-0 flex-1 transition-colors hover:opacity-80"
+                        >
                           <p className="text-sm font-medium text-indigo-600 truncate">
                             {proj.name}
                           </p>
                           <p className="text-xs text-gray-500 mt-0.5">
                             {proj.paymentCount} payment{proj.paymentCount !== 1 ? "s" : ""}
                           </p>
+                        </Link>
+                        <div className="flex items-center gap-3 shrink-0">
+                          <div className="text-right">
+                            {proj.totalPaid > 0 && (
+                              <p className="text-sm font-medium tabular-nums text-green-600">
+                                {formatCurrency(proj.totalPaid)} paid
+                              </p>
+                            )}
+                            {proj.totalPending > 0 && (
+                              <p className="text-xs tabular-nums text-gray-500">
+                                {formatCurrency(proj.totalPending)} pending
+                              </p>
+                            )}
+                          </div>
+                          <button
+                            onClick={async () => {
+                              if (!confirm(`Unlink ${proj.name} from this contractor?`)) return;
+                              try {
+                                const res = await fetch(`/api/admin/contractors/${contractor.id}/unlink-project`, {
+                                  method: "POST",
+                                  headers: { "Content-Type": "application/json" },
+                                  body: JSON.stringify({ project_id: proj.id }),
+                                });
+                                if (!res.ok) throw new Error("Failed");
+                                toast.success("Project unlinked");
+                                router.refresh();
+                              } catch {
+                                toast.error("Failed to unlink project");
+                              }
+                            }}
+                            className="text-gray-400 hover:text-red-500 p-1 transition-colors"
+                            aria-label={`Unlink ${proj.name}`}
+                            title="Unlink project"
+                          >
+                            <X className="h-4 w-4" />
+                          </button>
                         </div>
-                        <div className="text-right shrink-0">
-                          {proj.totalPaid > 0 && (
-                            <p className="text-sm font-medium tabular-nums text-green-600">
-                              {formatCurrency(proj.totalPaid)} paid
-                            </p>
-                          )}
-                          {proj.totalPending > 0 && (
-                            <p className="text-xs tabular-nums text-gray-500">
-                              {formatCurrency(proj.totalPending)} pending
-                            </p>
-                          )}
-                        </div>
-                      </Link>
+                      </div>
                     ))}
                   </div>
                 )}
