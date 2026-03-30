@@ -25,7 +25,7 @@ import SearchBar from "./SearchBar";
 
 const navLinks = [
   { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
-  { label: "Projects", href: "/admin/projects", icon: FolderOpen },
+  { label: "Projects", href: "/admin/projects", icon: FolderOpen, badgeKey: "details" },
   { label: "Contractors & Vendors", href: "/admin/contractors", icon: Users, badgeKey: "w9" },
   { label: "Financials", href: "/admin/financials", icon: DollarSign },
   {
@@ -39,7 +39,7 @@ const navLinks = [
 // Bottom tab bar items for mobile (max 5 for thumb-friendly sizing)
 const mobileTabLinks = [
   { label: "Home", href: "/admin", icon: LayoutDashboard, exact: true },
-  { label: "Projects", href: "/admin/projects", icon: FolderOpen },
+  { label: "Projects", href: "/admin/projects", icon: FolderOpen, badgeKey: "details" },
   { label: "Contacts", href: "/admin/contractors", icon: Users, badgeKey: "w9" },
   { label: "Money", href: "/admin/financials", icon: DollarSign },
   { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
@@ -74,12 +74,13 @@ export default function AdminShell({
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newEstimateCount, setNewEstimateCount] = useState(0);
   const [missingW9Count, setMissingW9Count] = useState(0);
+  const [missingDetailsCount, setMissingDetailsCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
 
     async function fetchBadgeCounts() {
-      const [{ count: estimateCount }, { count: w9Count }] = await Promise.all([
+      const [{ count: estimateCount }, { count: w9Count }, { count: detailsCount }] = await Promise.all([
         supabase
           .from("estimates")
           .select("*", { count: "exact", head: true })
@@ -89,9 +90,15 @@ export default function AdminShell({
           .select("*", { count: "exact", head: true })
           .eq("type", "contractor")
           .is("w9_file_url", null),
+        supabase
+          .from("projects")
+          .select("*", { count: "exact", head: true })
+          .is("square_footage", null)
+          .not("status", "in", '("completed","archived")'),
       ]);
       setNewEstimateCount(estimateCount ?? 0);
       setMissingW9Count(w9Count ?? 0);
+      setMissingDetailsCount(detailsCount ?? 0);
     }
 
     fetchBadgeCounts();
@@ -136,6 +143,17 @@ export default function AdminShell({
         </span>
       );
     }
+    if (badgeKey === "details" && missingDetailsCount > 0) {
+      return (
+        <span className="ml-auto flex items-center gap-1.5">
+          <span className="flex h-2 w-2">
+            <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-yellow-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500" />
+          </span>
+          <span className="text-xs text-yellow-400">{missingDetailsCount}</span>
+        </span>
+      );
+    }
     return null;
   }
 
@@ -153,6 +171,14 @@ export default function AdminShell({
         <span className="absolute -top-0.5 -right-1 flex h-2 w-2">
           <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-amber-400 opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-amber-500" />
+        </span>
+      );
+    }
+    if (badgeKey === "details" && missingDetailsCount > 0) {
+      return (
+        <span className="absolute -top-0.5 -right-1 flex h-2 w-2">
+          <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-yellow-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500" />
         </span>
       );
     }

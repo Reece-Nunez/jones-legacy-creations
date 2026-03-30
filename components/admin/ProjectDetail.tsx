@@ -69,9 +69,12 @@ import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
+  PROJECT_TYPE_LABELS,
   PERMIT_STATUS_COLORS,
   DRAW_STATUS_COLORS,
+  FINISH_LEVEL_LABELS,
 } from "@/lib/types/database";
+import type { FinishLevel } from "@/lib/types/database";
 import toast from "react-hot-toast";
 import { formatCurrencyInput, unformatCurrency } from "@/lib/formatters";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
@@ -469,6 +472,7 @@ export default function ProjectDetail({
           <TabsContent value="permits">
             <PermitsTab
               projectId={project.id}
+              project={project}
               permits={permits}
               mutate={mutate}
               loading={loading}
@@ -944,7 +948,182 @@ function OverviewTab({
           )}
         </CardContent>
       </ShadCard>
+
+      {/* Property Details card */}
+      <PropertyDetailsCard project={project} mutate={mutate} />
     </div>
+  );
+}
+
+// ===========================================================================
+// Property Details Card (Overview Tab)
+// ===========================================================================
+
+const PROPERTY_FIELD_LABELS: Record<string, string> = {
+  square_footage: "Square Footage",
+  stories: "Stories",
+  bedrooms: "Bedrooms",
+  bathrooms: "Bathrooms",
+  garage_spaces: "Garage Spaces",
+  finish_level: "Finish Level",
+  lot_size: "Lot Size",
+  flooring_preference: "Flooring",
+  countertop_preference: "Countertops",
+  cabinet_preference: "Cabinets",
+  project_type: "Project Type",
+};
+
+const PROPERTY_FIELDS = Object.keys(PROPERTY_FIELD_LABELS) as (keyof typeof PROPERTY_FIELD_LABELS)[];
+
+function PropertyDetailsCard({
+  project,
+  mutate,
+}: {
+  project: Project;
+  mutate: (
+    url: string,
+    method: string,
+    body?: Record<string, unknown>,
+  ) => Promise<Response | undefined>;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState(() => ({
+    square_footage: project.square_footage != null ? String(project.square_footage) : "",
+    stories: project.stories != null ? String(project.stories) : "",
+    bedrooms: project.bedrooms != null ? String(project.bedrooms) : "",
+    bathrooms: project.bathrooms != null ? String(project.bathrooms) : "",
+    garage_spaces: project.garage_spaces != null ? String(project.garage_spaces) : "",
+    finish_level: project.finish_level ?? "",
+    lot_size: project.lot_size ?? "",
+    flooring_preference: project.flooring_preference ?? "",
+    countertop_preference: project.countertop_preference ?? "",
+    cabinet_preference: project.cabinet_preference ?? "",
+  }));
+
+  function startEditing() {
+    setForm({
+      square_footage: project.square_footage != null ? String(project.square_footage) : "",
+      stories: project.stories != null ? String(project.stories) : "",
+      bedrooms: project.bedrooms != null ? String(project.bedrooms) : "",
+      bathrooms: project.bathrooms != null ? String(project.bathrooms) : "",
+      garage_spaces: project.garage_spaces != null ? String(project.garage_spaces) : "",
+      finish_level: project.finish_level ?? "",
+      lot_size: project.lot_size ?? "",
+      flooring_preference: project.flooring_preference ?? "",
+      countertop_preference: project.countertop_preference ?? "",
+      cabinet_preference: project.cabinet_preference ?? "",
+    });
+    setEditing(true);
+  }
+
+  async function save() {
+    await mutate(`/api/admin/projects/${project.id}`, "PATCH", {
+      square_footage: form.square_footage ? parseInt(form.square_footage) : null,
+      stories: form.stories ? parseInt(form.stories) : null,
+      bedrooms: form.bedrooms ? parseInt(form.bedrooms) : null,
+      bathrooms: form.bathrooms ? parseFloat(form.bathrooms) : null,
+      garage_spaces: form.garage_spaces ? parseInt(form.garage_spaces) : null,
+      finish_level: form.finish_level || null,
+      lot_size: form.lot_size || null,
+      flooring_preference: form.flooring_preference || null,
+      countertop_preference: form.countertop_preference || null,
+      cabinet_preference: form.cabinet_preference || null,
+    });
+    setEditing(false);
+  }
+
+  function displayValue(key: string): string {
+    const val = project[key as keyof Project];
+    if (val == null || val === "") return "—";
+    if (key === "finish_level") return FINISH_LEVEL_LABELS[val as FinishLevel] ?? String(val);
+    return String(val);
+  }
+
+  return (
+    <ShadCard className="lg:col-span-2">
+      <CardHeader>
+        <CardTitle>Property Details</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {editing ? (
+          <div className="space-y-4">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Square Footage</label>
+                <input type="number" min="0" value={form.square_footage} onChange={(e) => setForm({ ...form, square_footage: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2400" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Stories</label>
+                <input type="number" min="1" value={form.stories} onChange={(e) => setForm({ ...form, stories: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Bedrooms</label>
+                <input type="number" min="0" value={form.bedrooms} onChange={(e) => setForm({ ...form, bedrooms: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="4" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Bathrooms</label>
+                <input type="number" min="0" step="0.5" value={form.bathrooms} onChange={(e) => setForm({ ...form, bathrooms: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2.5" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Garage Spaces</label>
+                <input type="number" min="0" value={form.garage_spaces} onChange={(e) => setForm({ ...form, garage_spaces: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="2" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Finish Level</label>
+                <select value={form.finish_level} onChange={(e) => setForm({ ...form, finish_level: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black">
+                  <option value="">Select...</option>
+                  {Object.entries(FINISH_LEVEL_LABELS).map(([v, l]) => (
+                    <option key={v} value={v}>{l}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Lot Size</label>
+                <input type="text" value={form.lot_size} onChange={(e) => setForm({ ...form, lot_size: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="0.25 acres" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Flooring</label>
+                <input type="text" value={form.flooring_preference} onChange={(e) => setForm({ ...form, flooring_preference: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="Hardwood" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Countertops</label>
+                <input type="text" value={form.countertop_preference} onChange={(e) => setForm({ ...form, countertop_preference: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="Granite" />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Cabinets</label>
+                <input type="text" value={form.cabinet_preference} onChange={(e) => setForm({ ...form, cabinet_preference: e.target.value })} className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black" placeholder="Custom" />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button onClick={save} className="inline-flex items-center gap-1 text-sm bg-black text-white px-3 py-1.5 min-h-[44px] rounded-lg hover:bg-gray-800 cursor-pointer transition-colors">
+                <Check className="w-3.5 h-3.5" /> Save
+              </button>
+              <button onClick={() => setEditing(false)} className="text-sm text-gray-600 px-3 py-1.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+                Cancel
+              </button>
+            </div>
+          </div>
+        ) : (
+          <div className="group relative">
+            <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+              {PROPERTY_FIELDS.map((key) => (
+                <div key={key}>
+                  <p className="text-xs font-medium text-gray-500">{PROPERTY_FIELD_LABELS[key]}</p>
+                  <p className="text-sm text-gray-900 mt-0.5">{displayValue(key)}</p>
+                </div>
+              ))}
+            </div>
+            <button
+              onClick={startEditing}
+              aria-label="Edit property details"
+              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
+            >
+              <Edit3 className="w-4 h-4" />
+            </button>
+          </div>
+        )}
+      </CardContent>
+    </ShadCard>
   );
 }
 
@@ -2911,11 +3090,13 @@ function DrawsTab({
 
 function PermitsTab({
   projectId,
+  project,
   permits,
   mutate,
   loading,
 }: {
   projectId: string;
+  project: Project;
   permits: Permit[];
   mutate: (
     url: string,
@@ -2933,6 +3114,9 @@ function PermitsTab({
     notes: "",
   });
   const [permitFile, setPermitFile] = useState<File | null>(null);
+  const [extracting, setExtracting] = useState(false);
+  const [extractedData, setExtractedData] = useState<Record<string, unknown> | null>(null);
+  const [showExtractionModal, setShowExtractionModal] = useState(false);
 
   async function addPermit() {
     if (!form.permit_type) return;
@@ -2976,6 +3160,62 @@ function PermitsTab({
     });
     setPermitFile(null);
     setShowForm(false);
+
+    // If a file was uploaded, trigger AI extraction
+    if (file_url) {
+      setExtracting(true);
+      try {
+        const extractRes = await fetch(
+          `/api/admin/projects/${projectId}/permits/extract`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ file_url }),
+          }
+        );
+        if (extractRes.ok) {
+          const { extracted, current } = await extractRes.json();
+          // Only suggest fields that have extracted values AND the project currently lacks
+          const suggestions: Record<string, unknown> = {};
+          const fieldKeys = [
+            "square_footage", "stories", "bedrooms", "bathrooms",
+            "garage_spaces", "finish_level", "lot_size", "project_type",
+          ];
+          for (const key of fieldKeys) {
+            if (extracted[key] != null && (current?.[key] == null || current?.[key] === "")) {
+              suggestions[key] = extracted[key];
+            }
+          }
+          // Also fill permit_number if extracted and the permit we just created lacks it
+          if (extracted.permit_number && !form.permit_number) {
+            // Update the permit record with the extracted permit number
+            const latestPermit = permits[0]; // permits are ordered desc
+            if (latestPermit) {
+              await mutate(
+                `/api/admin/projects/${projectId}/permits/${latestPermit.id}`,
+                "PATCH",
+                { permit_number: extracted.permit_number }
+              );
+            }
+          }
+          if (Object.keys(suggestions).length > 0) {
+            setExtractedData(suggestions);
+            setShowExtractionModal(true);
+          }
+        }
+      } catch (e) {
+        console.error("Permit extraction failed:", e);
+      } finally {
+        setExtracting(false);
+      }
+    }
+  }
+
+  async function applyExtractedData(selectedFields: Record<string, unknown>) {
+    await mutate(`/api/admin/projects/${projectId}`, "PATCH", selectedFields);
+    setShowExtractionModal(false);
+    setExtractedData(null);
+    toast.success("Property details updated from permit");
   }
 
   const [editingPermit, setEditingPermit] = useState<string | null>(null);
@@ -3030,6 +3270,7 @@ function PermitsTab({
   }
 
   return (
+    <>
     <ShadCard>
       <CardHeader>
         <CardTitle>Permits</CardTitle>
@@ -3328,6 +3569,123 @@ function PermitsTab({
         </div>
       </CardContent>
     </ShadCard>
+
+    {/* AI Extraction loading banner */}
+    {extracting && (
+      <div className="mt-4 flex items-center gap-3 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3">
+        <RefreshCw className="h-4 w-4 animate-spin text-indigo-600" />
+        <span className="text-sm font-medium text-indigo-700">
+          Analyzing permit with AI...
+        </span>
+      </div>
+    )}
+
+    {/* AI Extraction confirmation modal */}
+    {showExtractionModal && extractedData && (
+      <PermitExtractionModal
+        extractedData={extractedData}
+        onConfirm={applyExtractedData}
+        onCancel={() => {
+          setShowExtractionModal(false);
+          setExtractedData(null);
+        }}
+      />
+    )}
+    </>
+  );
+}
+
+// ===========================================================================
+// Permit Extraction Confirmation Modal
+// ===========================================================================
+
+function PermitExtractionModal({
+  extractedData,
+  onConfirm,
+  onCancel,
+}: {
+  extractedData: Record<string, unknown>;
+  onConfirm: (selected: Record<string, unknown>) => void;
+  onCancel: () => void;
+}) {
+  const [selected, setSelected] = useState<Record<string, boolean>>(() => {
+    const initial: Record<string, boolean> = {};
+    for (const key of Object.keys(extractedData)) {
+      initial[key] = true;
+    }
+    return initial;
+  });
+
+  function handleConfirm() {
+    const result: Record<string, unknown> = {};
+    for (const [key, checked] of Object.entries(selected)) {
+      if (checked) {
+        result[key] = extractedData[key];
+      }
+    }
+    onConfirm(result);
+  }
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <div className="w-full max-w-lg rounded-xl bg-white shadow-xl">
+        <div className="border-b border-gray-200 px-6 py-4">
+          <div className="flex items-center gap-2">
+            <Sparkles className="h-5 w-5 text-indigo-600" />
+            <h3 className="text-lg font-semibold text-gray-900">
+              AI Extracted Property Details
+            </h3>
+          </div>
+          <p className="mt-1 text-sm text-gray-500">
+            The following details were extracted from the permit. Uncheck any you don&apos;t want to save.
+          </p>
+        </div>
+        <div className="px-6 py-4 space-y-3 max-h-[60vh] overflow-y-auto">
+          {Object.entries(extractedData).map(([key, value]) => (
+            <label
+              key={key}
+              className="flex items-center gap-3 rounded-lg border border-gray-200 px-4 py-3 cursor-pointer hover:bg-gray-50 transition-colors"
+            >
+              <input
+                type="checkbox"
+                checked={selected[key] ?? true}
+                onChange={(e) =>
+                  setSelected({ ...selected, [key]: e.target.checked })
+                }
+                className="h-4 w-4 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+              />
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900">
+                  {PROPERTY_FIELD_LABELS[key] || key}
+                </p>
+                <p className="text-sm text-gray-600">
+                  {key === "finish_level"
+                    ? FINISH_LEVEL_LABELS[value as FinishLevel] ?? String(value)
+                    : key === "project_type"
+                      ? PROJECT_TYPE_LABELS[value as keyof typeof PROJECT_TYPE_LABELS] ?? String(value)
+                      : String(value)}
+                </p>
+              </div>
+            </label>
+          ))}
+        </div>
+        <div className="flex justify-end gap-2 border-t border-gray-200 px-6 py-4">
+          <button
+            onClick={onCancel}
+            className="text-sm text-gray-600 px-4 py-2 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={handleConfirm}
+            className="inline-flex items-center gap-1.5 text-sm bg-indigo-600 text-white px-4 py-2 min-h-[44px] rounded-lg hover:bg-indigo-500 cursor-pointer transition-colors"
+          >
+            <Check className="w-3.5 h-3.5" />
+            Save Selected
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
 

@@ -8,7 +8,8 @@ export type ProjectStatus =
   | "completed"
   | "archived";
 
-export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "other";
+export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "new_home" | "addition" | "garage" | "deck_patio" | "other";
+export type FinishLevel = "budget" | "standard" | "mid_range" | "high_end";
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
 export type PaymentStatus = "pending" | "paid";
 export type PermitStatus = "not_applied" | "applied" | "approved" | "denied" | "expired";
@@ -62,6 +63,16 @@ export interface Project {
   loan_start_date: string | null;
   start_date: string | null;
   end_date: string | null;
+  square_footage: number | null;
+  stories: number | null;
+  bedrooms: number | null;
+  bathrooms: number | null;
+  garage_spaces: number | null;
+  finish_level: FinishLevel | null;
+  lot_size: string | null;
+  flooring_preference: string | null;
+  countertop_preference: string | null;
+  cabinet_preference: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -280,7 +291,18 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   commercial: "Commercial",
   renovation: "Renovation",
   interior_design: "Interior Design",
+  new_home: "New Custom Home",
+  addition: "Home Addition",
+  garage: "Garage",
+  deck_patio: "Deck / Patio",
   other: "Other",
+};
+
+export const FINISH_LEVEL_LABELS: Record<FinishLevel, string> = {
+  budget: "Budget",
+  standard: "Standard",
+  mid_range: "Mid-Range",
+  high_end: "High-End",
 };
 
 export const INVOICE_STATUS_COLORS: Record<InvoiceStatus, string> = {

@@ -59,6 +59,10 @@ const PROJECT_TYPE_COLORS: Record<ProjectType, string> = {
   commercial: "bg-purple-100 text-purple-700",
   renovation: "bg-amber-100 text-amber-700",
   interior_design: "bg-pink-100 text-pink-700",
+  new_home: "bg-emerald-100 text-emerald-700",
+  addition: "bg-teal-100 text-teal-700",
+  garage: "bg-slate-100 text-slate-700",
+  deck_patio: "bg-lime-100 text-lime-700",
   other: "bg-gray-100 text-gray-700",
 };
 

@@ -17,6 +17,7 @@ import {
   CalendarClock,
   CheckCircle2,
   ClipboardCheck,
+  ClipboardList,
   Clock,
   FileText,
   FolderKanban,
@@ -74,7 +75,7 @@ function endOfWeek(now: Date): Date {
 // ── Types for action items ──────────────────────────────────
 
 type ActionPriority = "red" | "orange" | "yellow" | "blue";
-type ActionCategory = "overdue" | "task" | "permit" | "draw" | "w9" | "estimate";
+type ActionCategory = "overdue" | "task" | "permit" | "draw" | "w9" | "estimate" | "project_details";
 
 interface ActionItem {
   id: string;
@@ -108,6 +109,7 @@ const CATEGORY_LABELS: Record<ActionCategory, string> = {
   task: "Tasks",
   permit: "Permits",
   draw: "Draw Requests",
+  project_details: "Missing Project Details",
 };
 
 // Status-based left-border colors for project cards
@@ -281,6 +283,23 @@ export default async function AdminDashboard({
       sublabel: c.company || "No company",
       detail: "Lender requires W9 before payout",
       href: `/admin/contractors/${c.id}`,
+    });
+  }
+
+  // Projects missing property details (for accurate estimates)
+  const activeStatuses = ["lead", "estimate_sent", "approved", "waiting_on_permit", "in_progress", "waiting_on_payment"];
+  const projectsMissingDetails = projects.filter(
+    (p) => activeStatuses.includes(p.status) && p.square_footage == null
+  );
+  for (const p of projectsMissingDetails) {
+    actionItems.push({
+      id: `details-${p.id}`,
+      priority: "yellow",
+      category: "project_details",
+      label: `${p.name} needs property details`,
+      sublabel: p.client_name,
+      detail: "Missing details for accurate estimates",
+      href: `/admin/projects/${p.id}`,
     });
   }
 
@@ -530,6 +549,7 @@ export default async function AdminDashboard({
                     {group.category === "task" && <CalendarClock className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
                     {group.category === "permit" && <FileText className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
                     {group.category === "draw" && <ReceiptText className="h-4 w-4 text-blue-500" aria-hidden="true" />}
+                    {group.category === "project_details" && <ClipboardList className="h-4 w-4 text-yellow-500" aria-hidden="true" />}
                     {CATEGORY_LABELS[group.category]}
                     <span className="text-sm font-medium tabular-nums text-gray-400">
                       ({group.items.length})

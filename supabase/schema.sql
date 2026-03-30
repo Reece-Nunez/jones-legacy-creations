@@ -44,7 +44,8 @@ create table projects (
     'in_progress', 'waiting_on_payment', 'completed', 'archived'
   )),
   project_type text default 'residential' check (project_type in (
-    'residential', 'commercial', 'renovation', 'interior_design', 'other'
+    'residential', 'commercial', 'renovation', 'interior_design',
+    'new_home', 'addition', 'garage', 'deck_patio', 'other'
   )),
   description text,
   notes text,
@@ -52,6 +53,16 @@ create table projects (
   contract_value numeric(12,2),
   start_date date,
   end_date date,
+  square_footage integer,
+  stories integer,
+  bedrooms integer,
+  bathrooms numeric(3,1),
+  garage_spaces integer,
+  finish_level text check (finish_level in ('budget','standard','mid_range','high_end')),
+  lot_size text,
+  flooring_preference text,
+  countertop_preference text,
+  cabinet_preference text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
