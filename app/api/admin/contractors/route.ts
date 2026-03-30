@@ -45,38 +45,36 @@ export async function POST(request: NextRequest) {
   }
 
   // Auto-link existing payments and documents that match by name/company
+  // Uses word-based fuzzy matching so "Peak" matches "Peak Air HVAC"
+  const SKIP_WORDS = new Set(["the", "and", "inc", "llc", "co", "corp", "ltd", "of", "for", "a", "an"]);
+  function getSearchWords(text: string): string[] {
+    return text.split(/[\s,.\-/&]+/).filter((w) => w.length >= 3 && !SKIP_WORDS.has(w.toLowerCase()));
+  }
+
   if (data) {
     const contractors = Array.isArray(data) ? data : [data];
     for (const contractor of contractors) {
-      const searchTerms = [contractor.name, contractor.company].filter(Boolean);
-      if (searchTerms.length === 0) continue;
+      const fullTerms = [contractor.name, contractor.company].filter(Boolean) as string[];
+      const words = [...new Set(fullTerms.flatMap(getSearchWords).map((w: string) => w.toLowerCase()))];
+      if (words.length === 0) continue;
 
-      // Build OR conditions for matching
-      const orConditions = searchTerms
-        .flatMap((term: string) => [
-          `contractor_name.ilike.%${term}%`,
-        ])
-        .join(",");
-
-      const docOrConditions = searchTerms
-        .flatMap((term: string) => [
-          `vendor.ilike.%${term}%`,
-        ])
-        .join(",");
+      // Build OR conditions using individual words for broader matching
+      const paymentConditions = words.map((w: string) => `contractor_name.ilike.%${w}%`).join(",");
+      const docConditions = words.map((w: string) => `vendor.ilike.%${w}%`).join(",");
 
       // Link unlinked contractor_payments
       await supabase
         .from("contractor_payments")
         .update({ contractor_id: contractor.id })
         .is("contractor_id", null)
-        .or(orConditions);
+        .or(paymentConditions);
 
       // Link unlinked documents
       await supabase
         .from("documents")
         .update({ contractor_id: contractor.id })
         .is("contractor_id", null)
-        .or(docOrConditions);
+        .or(docConditions);
     }
   }
 
