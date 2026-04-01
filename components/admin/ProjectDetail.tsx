@@ -1768,7 +1768,7 @@ function DrawsTab({
   const [uploadingDrawId, setUploadingDrawId] = useState<string | null>(null);
   const [uploadFiles, setUploadFiles] = useState<File[]>([]);
   const [uploadLineItems, setUploadLineItems] = useState<Record<number, string>>({});
-  const [uploadContractors, setUploadContractors] = useState<Record<number, string>>({});
+  const [uploadContractors, setUploadContractors] = useState<Record<number, { id?: string; name: string }>>({});
   const [uploading, setUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [scanningDrawId, setScanningDrawId] = useState<string | null>(null);
@@ -2070,11 +2070,27 @@ function DrawsTab({
       } else if (parsed.lineItemNumber !== null) {
         fd.append("line_item_number", String(parsed.lineItemNumber));
       }
-      if (userContractor) {
-        fd.append("contractor_id", userContractor);
-        // Also send the contractor name as vendor for filename/display
-        const c = contractors.find((ct) => ct.id === userContractor);
-        if (c) fd.append("vendor", c.company || c.name);
+      if (userContractor?.id) {
+        fd.append("contractor_id", userContractor.id);
+        fd.append("vendor", userContractor.name);
+      } else if (userContractor?.name) {
+        // New contractor name typed — auto-create a minimal contractor record
+        try {
+          const createRes = await fetch("/api/admin/contractors", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ type: "contractor", name: userContractor.name, trade: "General" }),
+          });
+          if (createRes.ok) {
+            const newContractor = await createRes.json();
+            fd.append("contractor_id", newContractor.id);
+            fd.append("vendor", userContractor.name);
+          } else {
+            fd.append("vendor", userContractor.name);
+          }
+        } catch {
+          fd.append("vendor", userContractor.name);
+        }
       } else if (parsed.vendor) {
         fd.append("vendor", parsed.vendor);
       }
@@ -2743,20 +2759,31 @@ function DrawsTab({
                                     ))}
                                   </select>
                                 </div>
-                                <div className="shrink-0 sm:w-44">
-                                  <select
-                                    value={uploadContractors[i] || ""}
-                                    onChange={(e) => setUploadContractors((prev) => ({ ...prev, [i]: e.target.value }))}
-                                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 appearance-none bg-white"
+                                <div className="shrink-0 sm:w-44 relative">
+                                  <input
+                                    type="text"
+                                    value={uploadContractors[i]?.name || ""}
+                                    onChange={(e) => {
+                                      const typed = e.target.value;
+                                      // Check if it matches an existing contractor
+                                      const match = contractors.find(
+                                        (c) => (c.company || c.name).toLowerCase() === typed.toLowerCase()
+                                      );
+                                      setUploadContractors((prev) => ({
+                                        ...prev,
+                                        [i]: match ? { id: match.id, name: match.company || match.name } : { name: typed },
+                                      }));
+                                    }}
+                                    list={`contractor-list-${i}`}
+                                    placeholder="Type or select contractor..."
+                                    className="w-full rounded border border-gray-300 px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
                                     aria-label={`Contractor/Vendor for ${f.name}`}
-                                  >
-                                    <option value="">Select contractor/vendor...</option>
+                                  />
+                                  <datalist id={`contractor-list-${i}`}>
                                     {contractors.map((c) => (
-                                      <option key={c.id} value={c.id}>
-                                        {c.company || c.name}{c.type === "vendor" ? " (Vendor)" : ""}
-                                      </option>
+                                      <option key={c.id} value={c.company || c.name} />
                                     ))}
-                                  </select>
+                                  </datalist>
                                 </div>
                                 <div className="flex items-center gap-2 flex-1 min-w-0">
                                   <p className="truncate text-gray-900 text-xs flex-1">{f.name}</p>
