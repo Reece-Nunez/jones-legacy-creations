@@ -106,16 +106,34 @@ export async function POST(
         }
       } else if (finalVendor && aiData.amount) {
         // 6. Create new payment if AI found amount and vendor
-        // Try to match vendor to a contractor
-        const { data: contractors } = await supabase
-          .from("contractors")
-          .select("id, name, company")
-          .or(
-            `name.ilike.%${finalVendor}%,company.ilike.%${finalVendor}%`
-          )
-          .limit(1);
+        // Try to match vendor to a contractor (exact match only, not substring)
+        // First check project contractors, then all contractors
+        let matchedContractor: { id: string; name: string; company: string | null } | null = null;
 
-        const matchedContractor = contractors?.[0] || null;
+        const { data: projectContractors } = await supabase
+          .from("project_contractors")
+          .select("contractor_id, contractors(id, name, company)")
+          .eq("project_id", id);
+
+        if (projectContractors) {
+          const vendorLower = finalVendor.trim().toLowerCase();
+          const pc = projectContractors.find((p) => {
+            const c = p.contractors as unknown as { id: string; name: string; company: string | null };
+            return c?.name?.toLowerCase() === vendorLower || c?.company?.toLowerCase() === vendorLower;
+          });
+          if (pc) {
+            matchedContractor = pc.contractors as unknown as { id: string; name: string; company: string | null };
+          }
+        }
+
+        if (!matchedContractor) {
+          const { data: exactMatch } = await supabase
+            .from("contractors")
+            .select("id, name, company")
+            .or(`name.ilike.${finalVendor},company.ilike.${finalVendor}`)
+            .limit(1);
+          matchedContractor = exactMatch?.[0] || null;
+        }
 
         await supabase.from("contractor_payments").insert({
           project_id: id,

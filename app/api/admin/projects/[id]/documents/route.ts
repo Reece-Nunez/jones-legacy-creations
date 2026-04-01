@@ -94,15 +94,41 @@ export async function POST(
   const finalDocType = docType || (aiData?.category ? "Invoice" : null);
   const finalCategory = category || (drawRequestId ? "draw_request" : "general");
 
-  // Resolve contractor_id: use explicit ID, or try to match by vendor name
+  // Resolve contractor_id: use explicit ID, or try to match by vendor name.
+  // Priority: 1) explicit ID, 2) exact match on project contractors, 3) exact match globally.
+  // We use exact case-insensitive matching (not substring) to avoid false positives
+  // like "Jones" matching "Blake Jones" when the contractor is someone else named Jones.
   let resolvedContractorId = contractorId || null;
   if (!resolvedContractorId && finalVendor) {
-    const { data: matched } = await supabase
-      .from("contractors")
-      .select("id")
-      .or(`name.ilike.%${finalVendor}%,company.ilike.%${finalVendor}%`)
-      .limit(1);
-    resolvedContractorId = matched?.[0]?.id || null;
+    const vendorLower = finalVendor.trim().toLowerCase();
+
+    // First: try contractors already assigned to this project (most likely match)
+    const { data: projectContractors } = await supabase
+      .from("project_contractors")
+      .select("contractor_id, contractors(id, name, company)")
+      .eq("project_id", id);
+
+    if (projectContractors) {
+      const projectMatch = projectContractors.find((pc) => {
+        const c = pc.contractors as unknown as { id: string; name: string; company: string | null };
+        if (!c) return false;
+        return c.name?.toLowerCase() === vendorLower
+          || c.company?.toLowerCase() === vendorLower;
+      });
+      if (projectMatch) {
+        resolvedContractorId = projectMatch.contractor_id;
+      }
+    }
+
+    // Fallback: exact match in all contractors (not substring)
+    if (!resolvedContractorId) {
+      const { data: exactMatch } = await supabase
+        .from("contractors")
+        .select("id")
+        .or(`name.ilike.${finalVendor},company.ilike.${finalVendor}`)
+        .limit(1);
+      resolvedContractorId = exactMatch?.[0]?.id || null;
+    }
   }
 
   // Create document record
