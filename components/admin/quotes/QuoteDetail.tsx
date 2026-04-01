@@ -22,6 +22,7 @@ import {
   Tag,
   FileText,
   Printer,
+  FolderPlus,
 } from "lucide-react";
 import type {
   Quote,
@@ -143,6 +144,9 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
   // Revision form
   const [revisionSummary, setRevisionSummary] = useState("");
   const [creatingRevision, setCreatingRevision] = useState(false);
+
+  // Convert to project
+  const [convertingToProject, setConvertingToProject] = useState(false);
 
   // Delete confirmation
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
@@ -336,6 +340,30 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
     }
   };
 
+  // Convert quote to project
+  const convertToProject = async () => {
+    if (!confirm("Create a new project from this quote? This will set the quote status to Accepted and generate budget line items from the cost breakdown.")) {
+      return;
+    }
+    setConvertingToProject(true);
+    try {
+      const res = await fetch(`/api/admin/quotes/${quoteId}/convert-to-project`, {
+        method: "POST",
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => null);
+        throw new Error(err?.error ?? "Failed to create project");
+      }
+      const project = await res.json();
+      toast.success("Project created successfully");
+      window.location.href = `/admin/projects/${project.id}`;
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : "Failed to create project");
+    } finally {
+      setConvertingToProject(false);
+    }
+  };
+
   // ── Helpers ──────────────────────────────────────────────────────────────
 
   const toggleSection = (id: string) => {
@@ -444,6 +472,24 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
               Proposal
             </Button>
           </Link>
+          {!quote.project_id ? (
+            <Button
+              size="sm"
+              onClick={convertToProject}
+              isLoading={convertingToProject}
+              className="!bg-green-700 hover:!bg-green-800"
+            >
+              <FolderPlus className="w-4 h-4 mr-1" />
+              Create Project
+            </Button>
+          ) : (
+            <Link href={`/admin/projects/${quote.project_id}`}>
+              <Button variant="outline" size="sm">
+                <FileText className="w-4 h-4 mr-1" />
+                View Project
+              </Button>
+            </Link>
+          )}
         </div>
       </div>
 
