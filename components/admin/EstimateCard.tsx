@@ -268,7 +268,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
 
       {/* Quick Contact Bar - always visible */}
       {estimate.status !== "converted" && estimate.status !== "declined" && (
-        <div className="flex items-center gap-2 px-5 pt-4 sm:px-6">
+        <div className="flex flex-wrap items-center gap-2 px-5 pt-4 sm:px-6">
           {estimate.client_phone && (
             <a
               href={`tel:${estimate.client_phone}`}
@@ -301,7 +301,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
         <div className="flex items-start justify-between gap-4">
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h3 className="text-base font-semibold text-gray-900">
+              <h3 className="text-base font-semibold text-gray-900 break-words">
                 {estimate.client_name}
               </h3>
               <span
@@ -359,7 +359,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
 
           <div className="flex flex-col items-end gap-2 shrink-0">
             {estimate.estimated_min != null && estimate.estimated_max != null ? (
-              <p className="text-lg font-bold text-gray-900">
+              <p className="text-lg sm:text-xl font-bold text-gray-900">
                 {fmt(estimate.estimated_min)} &ndash; {fmt(estimate.estimated_max)}
               </p>
             ) : estimate.budget_range ? (

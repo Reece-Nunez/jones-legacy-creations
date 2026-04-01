@@ -153,7 +153,7 @@ export function AiReviewModal({
         if (e.target === e.currentTarget) onClose();
       }}
     >
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full mx-4 max-h-[90vh] flex flex-col">
+      <div className="bg-white rounded-xl shadow-2xl max-w-sm sm:max-w-lg w-full mx-2 sm:mx-4 max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="flex items-start justify-between p-5 border-b border-gray-200 shrink-0">
           <div className="flex-1 min-w-0">
@@ -333,6 +333,8 @@ export function AiReviewModal({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Line Items
               </label>
+              <div className="overflow-x-auto -mx-2 px-2">
+                <div className="min-w-[400px]">
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 {/* Table Header */}
                 <div className="grid grid-cols-[1fr_60px_80px_80px_32px] gap-1 px-2 py-1.5 bg-gray-50 text-xs font-medium text-gray-500 uppercase tracking-wide">
@@ -404,6 +406,8 @@ export function AiReviewModal({
                     </button>
                   </div>
                 ))}
+              </div>
+                </div>
               </div>
             </div>
           )}

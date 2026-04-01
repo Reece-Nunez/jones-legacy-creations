@@ -187,8 +187,8 @@ export function EstimateWizard() {
   return (
     <div className="space-y-6">
       {/* Progress indicator */}
-      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
-        <div className="flex items-center justify-between">
+      <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4 overflow-x-auto">
+        <div className="flex items-center justify-between min-w-[280px]">
           {STEPS.map((step, index) => (
             <div key={step.number} className="flex items-center">
               <div className="flex items-center gap-2">
@@ -222,7 +222,7 @@ export function EstimateWizard() {
               {index < STEPS.length - 1 && (
                 <div
                   className={cn(
-                    "w-8 lg:w-16 h-px mx-2",
+                    "w-4 sm:w-8 lg:w-16 h-px mx-1 sm:mx-2",
                     currentStep > step.number ? "bg-green-300" : "bg-gray-200"
                   )}
                 />

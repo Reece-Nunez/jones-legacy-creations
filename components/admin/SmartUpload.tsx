@@ -358,7 +358,7 @@ export default function SmartUpload({
       />
 
       {/* Input mode button group */}
-      <div className="flex gap-2 mb-4">
+      <div className="flex flex-col sm:flex-row gap-2 mb-4">
         <button
           type="button"
           onClick={() => handleModeClick("camera")}
@@ -371,7 +371,7 @@ export default function SmartUpload({
           )}
         >
           <Camera className="w-4 h-4" />
-          <span>Take Photo</span>
+          <span className="text-xs sm:text-sm">Take Photo</span>
         </button>
         <button
           type="button"
@@ -385,7 +385,7 @@ export default function SmartUpload({
           )}
         >
           <ImageIcon className="w-4 h-4" />
-          <span>Photo Library</span>
+          <span className="text-xs sm:text-sm">Photo Library</span>
         </button>
         <button
           type="button"
@@ -399,7 +399,7 @@ export default function SmartUpload({
           )}
         >
           <FolderOpen className="w-4 h-4" />
-          <span>Browse Files</span>
+          <span className="text-xs sm:text-sm">Browse Files</span>
         </button>
       </div>
 

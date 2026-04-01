@@ -185,7 +185,7 @@ export function Navigation() {
         className={`md:hidden bg-white border-t border-gray-200 overflow-hidden transition-all duration-300 ${
           isOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
         }`}
-        style={{ overscrollBehavior: "contain" }}
+        style={{ overscrollBehavior: "contain", paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
         <div className="px-4 py-6 space-y-4">
           <Link

@@ -790,7 +790,7 @@ function CostBreakdownTab({
               <div className="border-t border-gray-200">
                 {section.items.length > 0 ? (
                   <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                    <table className="w-full text-sm min-w-[700px]">
                       <thead>
                         <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                           <th className="px-3 py-2">Description</th>
