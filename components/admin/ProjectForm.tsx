@@ -116,6 +116,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   });
 
   const phone = watch("client_phone");
+  const projectType = watch("project_type");
   const estimatedValue = watch("estimated_value");
   const contractValue = watch("contract_value");
   const salePrice = watch("sale_price");
@@ -511,161 +512,175 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             Property Details
           </h2>
           <p className="text-sm text-gray-500 mt-1">
-            These details help the AI estimator provide accurate estimates.
+            Fields shown based on project type. These help the AI estimator provide accurate estimates.
           </p>
         </div>
 
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          {/* Square Footage */}
-          <div>
-            <label htmlFor="square_footage" className={labelClassName}>
-              Square Footage
-            </label>
-            <input
-              id="square_footage"
-              type="number"
-              min="0"
-              {...register("square_footage")}
-              className={inputClassName}
-              placeholder="2400"
-            />
-          </div>
+          {/* Square Footage — all types except other */}
+          {projectType !== "other" && (
+            <div>
+              <label htmlFor="square_footage" className={labelClassName}>
+                Square Footage
+              </label>
+              <input
+                id="square_footage"
+                type="number"
+                min="0"
+                {...register("square_footage")}
+                className={inputClassName}
+                placeholder="2400"
+              />
+            </div>
+          )}
 
-          {/* Stories */}
-          <div>
-            <label htmlFor="stories" className={labelClassName}>
-              Stories
-            </label>
-            <input
-              id="stories"
-              type="number"
-              min="1"
-              {...register("stories")}
-              className={inputClassName}
-              placeholder="2"
-            />
-          </div>
+          {/* Stories — residential, new_home, addition */}
+          {["residential", "new_home", "addition", "commercial"].includes(projectType) && (
+            <div>
+              <label htmlFor="stories" className={labelClassName}>
+                Stories
+              </label>
+              <input
+                id="stories"
+                type="number"
+                min="1"
+                {...register("stories")}
+                className={inputClassName}
+                placeholder="2"
+              />
+            </div>
+          )}
 
-          {/* Bedrooms */}
-          <div>
-            <label htmlFor="bedrooms" className={labelClassName}>
-              Bedrooms
-            </label>
-            <input
-              id="bedrooms"
-              type="number"
-              min="0"
-              {...register("bedrooms")}
-              className={inputClassName}
-              placeholder="4"
-            />
-          </div>
+          {/* Bedrooms — residential, new_home, addition */}
+          {["residential", "new_home", "addition"].includes(projectType) && (
+            <div>
+              <label htmlFor="bedrooms" className={labelClassName}>
+                Bedrooms
+              </label>
+              <input
+                id="bedrooms"
+                type="number"
+                min="0"
+                {...register("bedrooms")}
+                className={inputClassName}
+                placeholder="4"
+              />
+            </div>
+          )}
 
-          {/* Bathrooms */}
-          <div>
-            <label htmlFor="bathrooms" className={labelClassName}>
-              Bathrooms
-            </label>
-            <input
-              id="bathrooms"
-              type="number"
-              min="0"
-              step="0.5"
-              {...register("bathrooms")}
-              className={inputClassName}
-              placeholder="2.5"
-            />
-          </div>
+          {/* Bathrooms — residential, new_home, addition, renovation */}
+          {["residential", "new_home", "addition", "renovation"].includes(projectType) && (
+            <div>
+              <label htmlFor="bathrooms" className={labelClassName}>
+                Bathrooms
+              </label>
+              <input
+                id="bathrooms"
+                type="number"
+                min="0"
+                step="0.5"
+                {...register("bathrooms")}
+                className={inputClassName}
+                placeholder="2.5"
+              />
+            </div>
+          )}
 
-          {/* Garage Spaces */}
-          <div>
-            <label htmlFor="garage_spaces" className={labelClassName}>
-              Garage Spaces
-            </label>
-            <input
-              id="garage_spaces"
-              type="number"
-              min="0"
-              {...register("garage_spaces")}
-              className={inputClassName}
-              placeholder="2"
-            />
-          </div>
+          {/* Garage Spaces — residential, new_home, garage */}
+          {["residential", "new_home", "garage"].includes(projectType) && (
+            <div>
+              <label htmlFor="garage_spaces" className={labelClassName}>
+                Garage Spaces
+              </label>
+              <input
+                id="garage_spaces"
+                type="number"
+                min="0"
+                {...register("garage_spaces")}
+                className={inputClassName}
+                placeholder="2"
+              />
+            </div>
+          )}
 
-          {/* Finish Level */}
-          <div>
-            <label htmlFor="finish_level" className={labelClassName}>
-              Finish Level
-            </label>
-            <select
-              id="finish_level"
-              {...register("finish_level")}
-              className={inputClassName}
-            >
-              <option value="">Select...</option>
-              {Object.entries(FINISH_LEVEL_LABELS).map(([value, label]) => (
-                <option key={value} value={value}>
-                  {label}
-                </option>
-              ))}
-            </select>
-          </div>
+          {/* Finish Level — residential, new_home, addition, renovation */}
+          {["residential", "new_home", "addition", "renovation", "interior_design"].includes(projectType) && (
+            <div>
+              <label htmlFor="finish_level" className={labelClassName}>
+                Finish Level
+              </label>
+              <select
+                id="finish_level"
+                {...register("finish_level")}
+                className={inputClassName}
+              >
+                <option value="">Select...</option>
+                {Object.entries(FINISH_LEVEL_LABELS).map(([value, label]) => (
+                  <option key={value} value={value}>
+                    {label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          )}
 
-          {/* Lot Size */}
-          <div>
-            <label htmlFor="lot_size" className={labelClassName}>
-              Lot Size
-            </label>
-            <input
-              id="lot_size"
-              type="text"
-              {...register("lot_size")}
-              className={inputClassName}
-              placeholder="0.25 acres"
-            />
-          </div>
+          {/* Lot Size — new_home, residential, garage */}
+          {["residential", "new_home", "garage"].includes(projectType) && (
+            <div>
+              <label htmlFor="lot_size" className={labelClassName}>
+                Lot Size
+              </label>
+              <input
+                id="lot_size"
+                type="text"
+                {...register("lot_size")}
+                className={inputClassName}
+                placeholder="0.25 acres"
+              />
+            </div>
+          )}
 
-          {/* Flooring Preference */}
-          <div>
-            <label htmlFor="flooring_preference" className={labelClassName}>
-              Flooring
-            </label>
-            <input
-              id="flooring_preference"
-              type="text"
-              {...register("flooring_preference")}
-              className={inputClassName}
-              placeholder="Hardwood, LVP, etc."
-            />
-          </div>
-
-          {/* Countertop Preference */}
-          <div>
-            <label htmlFor="countertop_preference" className={labelClassName}>
-              Countertops
-            </label>
-            <input
-              id="countertop_preference"
-              type="text"
-              {...register("countertop_preference")}
-              className={inputClassName}
-              placeholder="Granite, Quartz, etc."
-            />
-          </div>
-
-          {/* Cabinet Preference */}
-          <div>
-            <label htmlFor="cabinet_preference" className={labelClassName}>
-              Cabinets
-            </label>
-            <input
-              id="cabinet_preference"
-              type="text"
-              {...register("cabinet_preference")}
-              className={inputClassName}
-              placeholder="Stock, Semi-Custom, etc."
-            />
-          </div>
+          {/* Finish selections — new_home, addition, renovation, interior_design */}
+          {["residential", "new_home", "addition", "renovation", "interior_design"].includes(projectType) && (
+            <>
+              <div>
+                <label htmlFor="flooring_preference" className={labelClassName}>
+                  Flooring
+                </label>
+                <input
+                  id="flooring_preference"
+                  type="text"
+                  {...register("flooring_preference")}
+                  className={inputClassName}
+                  placeholder="Hardwood, LVP, etc."
+                />
+              </div>
+              <div>
+                <label htmlFor="countertop_preference" className={labelClassName}>
+                  Countertops
+                </label>
+                <input
+                  id="countertop_preference"
+                  type="text"
+                  {...register("countertop_preference")}
+                  className={inputClassName}
+                  placeholder="Granite, Quartz, etc."
+                />
+              </div>
+              <div>
+                <label htmlFor="cabinet_preference" className={labelClassName}>
+                  Cabinets
+                </label>
+                <input
+                  id="cabinet_preference"
+                  type="text"
+                  {...register("cabinet_preference")}
+                  className={inputClassName}
+                  placeholder="Stock, Semi-Custom, etc."
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
 
