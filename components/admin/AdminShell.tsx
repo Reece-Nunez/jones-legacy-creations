@@ -11,6 +11,7 @@ import {
   Users,
   DollarSign,
   Calculator,
+  ClipboardList,
   Banknote,
   FileCheck,
   ExternalLink,
@@ -33,6 +34,12 @@ const navLinks = [
     href: "/admin/estimates",
     icon: Calculator,
     badgeKey: "estimates",
+  },
+  {
+    label: "Quotes",
+    href: "/admin/quotes",
+    icon: ClipboardList,
+    badgeKey: "quotes",
   },
 ];
 
@@ -75,12 +82,13 @@ export default function AdminShell({
   const [newEstimateCount, setNewEstimateCount] = useState(0);
   const [missingW9Count, setMissingW9Count] = useState(0);
   const [missingDetailsCount, setMissingDetailsCount] = useState(0);
+  const [draftQuoteCount, setDraftQuoteCount] = useState(0);
 
   useEffect(() => {
     const supabase = createClient();
 
     async function fetchBadgeCounts() {
-      const [{ count: estimateCount }, { count: w9Count }, { count: detailsCount }] = await Promise.all([
+      const [{ count: estimateCount }, { count: w9Count }, { count: detailsCount }, { count: quoteCount }] = await Promise.all([
         supabase
           .from("estimates")
           .select("*", { count: "exact", head: true })
@@ -95,10 +103,15 @@ export default function AdminShell({
           .select("*", { count: "exact", head: true })
           .is("square_footage", null)
           .not("status", "in", '("completed","archived")'),
+        supabase
+          .from("quotes")
+          .select("*", { count: "exact", head: true })
+          .in("status", ["draft", "in_progress"]),
       ]);
       setNewEstimateCount(estimateCount ?? 0);
       setMissingW9Count(w9Count ?? 0);
       setMissingDetailsCount(detailsCount ?? 0);
+      setDraftQuoteCount(quoteCount ?? 0);
     }
 
     fetchBadgeCounts();
@@ -154,6 +167,17 @@ export default function AdminShell({
         </span>
       );
     }
+    if (badgeKey === "quotes" && draftQuoteCount > 0) {
+      return (
+        <span className="ml-auto flex items-center gap-1.5">
+          <span className="flex h-2 w-2">
+            <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-indigo-400 opacity-75" />
+            <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
+          </span>
+          <span className="text-xs text-indigo-400">{draftQuoteCount}</span>
+        </span>
+      );
+    }
     return null;
   }
 
@@ -179,6 +203,14 @@ export default function AdminShell({
         <span className="absolute -top-0.5 -right-1 flex h-2 w-2">
           <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-yellow-400 opacity-75" />
           <span className="relative inline-flex h-2 w-2 rounded-full bg-yellow-500" />
+        </span>
+      );
+    }
+    if (badgeKey === "quotes" && draftQuoteCount > 0) {
+      return (
+        <span className="absolute -top-0.5 -right-1 flex h-2 w-2">
+          <span className="absolute inline-flex h-2 w-2 animate-ping rounded-full bg-indigo-400 opacity-75" />
+          <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
         </span>
       );
     }

@@ -8,24 +8,18 @@ import { Menu, X, ChevronDown, Settings } from "lucide-react";
 
 export function Navigation() {
   const [isOpen, setIsOpen] = useState(false);
-  const [isVisible, setIsVisible] = useState(true);
+  const [isCompact, setIsCompact] = useState(true);
   const [servicesOpen, setServicesOpen] = useState(false);
   const pathname = usePathname();
-  const isHomepage = pathname === "/";
-
-  // Only hide-until-scroll on the homepage
+  // Compact mode at top of page, full navbar on scroll
   useEffect(() => {
-    if (!isHomepage) {
-      setIsVisible(true);
-      return;
-    }
-    setIsVisible(window.scrollY > 100);
+    setIsCompact(window.scrollY <= 100);
     const handleScroll = () => {
-      setIsVisible(window.scrollY > 100);
+      setIsCompact(window.scrollY <= 100);
     };
     window.addEventListener("scroll", handleScroll, { passive: true });
     return () => window.removeEventListener("scroll", handleScroll);
-  }, [isHomepage]);
+  }, []);
 
   const services = [
     { name: "Real Estate", href: "/services/real-estate" },
@@ -40,13 +34,15 @@ export function Navigation() {
     <nav
       aria-label="Main navigation"
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-500 ${
-        isVisible
-          ? "translate-y-0 bg-white/95 backdrop-blur-md shadow-lg"
-          : "-translate-y-full"
+        isCompact
+          ? "bg-black/30 backdrop-blur-sm"
+          : "bg-white/95 backdrop-blur-md shadow-lg"
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-28">
+        <div className={`flex justify-between items-center transition-all duration-500 ${
+          isCompact ? "h-14" : "h-28"
+        }`}>
           {/* Logo */}
           <Link href="/" className="flex items-center">
             <Image
@@ -54,17 +50,23 @@ export function Navigation() {
               alt="Jones Legacy Creations"
               width={152}
               height={152}
-              className="h-48 w-40 object-contain"
+              className={`object-contain transition-all duration-500 ${
+                isCompact ? "h-12 w-10" : "h-48 w-40"
+              }`}
               priority
             />
           </Link>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
+          <div className={`hidden md:flex items-center transition-all duration-500 ${
+            isCompact ? "space-x-4" : "space-x-8"
+          }`}>
             <Link
               href="/"
               className={`text-sm font-medium transition-colors duration-150 ${
-                isActive("/") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+                isCompact
+                  ? "text-white/90 hover:text-white"
+                  : isActive("/") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
               }`}
               {...(isActive("/") ? { "aria-current": "page" as const } : {})}
             >
@@ -79,7 +81,9 @@ export function Navigation() {
             >
               <button
                 className={`text-sm font-medium transition-colors duration-150 flex items-center gap-1 py-2 ${
-                  isServiceActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+                  isCompact
+                    ? "text-white/90 hover:text-white"
+                    : isServiceActive ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
                 }`}
                 aria-expanded={servicesOpen}
                 aria-haspopup="true"
@@ -120,7 +124,9 @@ export function Navigation() {
             <Link
               href="/about"
               className={`text-sm font-medium transition-colors duration-150 ${
-                isActive("/about") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+                isCompact
+                  ? "text-white/90 hover:text-white"
+                  : isActive("/about") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
               }`}
               {...(isActive("/about") ? { "aria-current": "page" as const } : {})}
             >
@@ -128,21 +134,27 @@ export function Navigation() {
             </Link>
             <Link
               href="/estimate"
-              className="px-6 py-3 bg-sky-700 text-white text-sm font-medium rounded-full hover:bg-sky-800 transition-colors duration-150"
+              className={`text-white text-sm font-medium rounded-full hover:bg-sky-800 transition-all duration-500 ${
+                isCompact ? "px-4 py-1.5 bg-sky-700/80" : "px-6 py-3 bg-sky-700"
+              }`}
               {...(isActive("/estimate") ? { "aria-current": "page" as const } : {})}
             >
               Free Estimate
             </Link>
             <Link
               href="/contact"
-              className="px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors duration-150"
+              className={`text-white text-sm font-medium rounded-full transition-all duration-500 ${
+                isCompact ? "px-4 py-1.5 bg-white/20 hover:bg-white/30" : "px-6 py-3 bg-black hover:bg-gray-800"
+              }`}
               {...(isActive("/contact") ? { "aria-current": "page" as const } : {})}
             >
               Contact
             </Link>
             <Link
               href="/admin"
-              className="flex items-center gap-1.5 px-4 py-2 text-sm font-medium text-gray-500 hover:text-gray-900 transition-colors duration-150"
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium transition-colors duration-150 ${
+                isCompact ? "text-white/60 hover:text-white" : "text-gray-500 hover:text-gray-900"
+              }`}
               title="Admin"
               aria-label="Admin panel"
               {...(isActive("/admin") ? { "aria-current": "page" as const } : {})}
@@ -155,7 +167,9 @@ export function Navigation() {
           {/* Mobile menu button */}
           <button
             onClick={() => setIsOpen(!isOpen)}
-            className="md:hidden h-11 w-11 flex items-center justify-center rounded-lg hover:bg-gray-100 transition-colors duration-150"
+            className={`md:hidden h-11 w-11 flex items-center justify-center rounded-lg transition-colors duration-150 ${
+              isCompact ? "text-white hover:bg-white/10" : "text-gray-900 hover:bg-gray-100"
+            }`}
             aria-label="Toggle menu"
             aria-expanded={isOpen}
             aria-controls="mobile-menu"
