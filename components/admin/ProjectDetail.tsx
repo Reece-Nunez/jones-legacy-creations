@@ -2074,12 +2074,33 @@ function DrawsTab({
         fd.append("contractor_id", userContractor.id);
         fd.append("vendor", userContractor.name);
       } else if (userContractor?.name) {
-        // New contractor name typed — auto-create a minimal contractor record
+        // New contractor name typed — auto-create with trade from selected category
+        const lineItemNum = userLineItem || (parsed.lineItemNumber !== null ? String(parsed.lineItemNumber) : "");
+        const lineItem = DEFAULT_BUDGET_LINE_ITEMS.find((li) => li.line_number === lineItemNum);
+        const desc = (lineItem?.description || "").toUpperCase();
+        const trade =
+          desc.includes("PLUMBING") ? "Plumbing" :
+          desc.includes("ELECTRICAL") ? "Electrical" :
+          desc.includes("HVAC") ? "HVAC" :
+          desc.includes("FRAMING") || desc.includes("LUMBER") || desc.includes("TRUSSES") ? "Framing" :
+          desc.includes("ROOFING") ? "Roofing" :
+          desc.includes("SLAB") || desc.includes("CONCRETE") ? "Concrete" :
+          desc.includes("SHEETROCK") ? "Drywall" :
+          desc.includes("PAINT") ? "Painting" :
+          desc.includes("FLOORING") ? "Flooring" :
+          desc.includes("LANDSCAPING") ? "Landscaping" :
+          desc.includes("INSULATION") ? "Insulation" :
+          desc.includes("WINDOWS") || desc.includes("DOORS") || desc.includes("GARAGE DOOR") ? "Windows/Doors" :
+          desc.includes("STUCCO") || desc.includes("STONE") ? "Siding" :
+          desc.includes("CABINETS") ? "Cabinetry" :
+          desc.includes("ENGINEERING") ? "Engineering" :
+          desc.includes("METAL") || desc.includes("STEEL") ? "Steel/Welding" :
+          "General";
         try {
           const createRes = await fetch("/api/admin/contractors", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ type: "contractor", name: userContractor.name, trade: "General" }),
+            body: JSON.stringify({ type: "contractor", name: userContractor.name, trade }),
           });
           if (createRes.ok) {
             const newContractor = await createRes.json();
