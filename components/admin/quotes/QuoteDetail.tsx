@@ -6,6 +6,8 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { RiskFlagPanel } from "@/components/admin/quotes/RiskFlagPanel";
+import { SimpleQuoteEditor, type SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
+import { SendQuoteModal } from "@/components/admin/quotes/SendQuoteModal";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
 import {
@@ -23,6 +25,7 @@ import {
   FileText,
   Printer,
   FolderPlus,
+  Mail,
 } from "lucide-react";
 import type {
   Quote,
@@ -148,6 +151,10 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
   // Convert to project
   const [convertingToProject, setConvertingToProject] = useState(false);
 
+  // Send quote modal
+  const [showSendModal, setShowSendModal] = useState(false);
+  const [simpleItems, setSimpleItems] = useState<SimpleQuoteItem[]>([]);
+
   // Delete confirmation
   const [deletingItem, setDeletingItem] = useState<string | null>(null);
 
@@ -157,6 +164,11 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
       if (!res.ok) throw new Error("Failed to fetch quote");
       const data = await res.json();
       setQuote(data);
+      // Load simple_items from job_type_inputs if they exist
+      const inputs = data.job_type_inputs as Record<string, unknown> | null;
+      if (inputs?.simple_items && Array.isArray(inputs.simple_items)) {
+        setSimpleItems(inputs.simple_items as SimpleQuoteItem[]);
+      }
     } catch {
       toast.error("Failed to load quote data");
     } finally {
@@ -466,8 +478,16 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
             <Save className="w-4 h-4 mr-1" />
             Revisions
           </Button>
+          <Button
+            variant="secondary"
+            size="sm"
+            onClick={() => setShowSendModal(true)}
+          >
+            <Mail className="w-4 h-4 mr-1" />
+            Send Quote
+          </Button>
           <Link href={`/admin/quotes/${quoteId}/proposal`}>
-            <Button variant="secondary" size="sm">
+            <Button variant="outline" size="sm">
               <Printer className="w-4 h-4 mr-1" />
               Proposal
             </Button>
@@ -514,29 +534,33 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
       {/* Tab content */}
       {activeTab === "Overview" && <OverviewTab quote={quote} />}
       {activeTab === "Cost Breakdown" && (
-        <CostBreakdownTab
-          quote={quote}
-          expandedSections={expandedSections}
-          toggleSection={toggleSection}
-          editingItem={editingItem}
-          editingValues={editingValues}
-          setEditingValues={setEditingValues}
-          startEditItem={startEditItem}
-          saveItem={saveItem}
-          cancelEditItem={() => {
-            setEditingItem(null);
-            setEditingValues({});
+        <SimpleQuoteEditor
+          quoteId={quoteId}
+          jobType={quote.job_type_slug}
+          initialItems={simpleItems.length > 0 ? simpleItems : undefined}
+          onSave={async (items) => {
+            setSimpleItems(items);
+            // Save items to quote's job_type_inputs as simple_items
+            try {
+              const res = await fetch(`/api/admin/quotes/${quoteId}`, {
+                method: "PATCH",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  job_type_inputs: {
+                    ...(quote.job_type_inputs as Record<string, unknown>),
+                    simple_items: items,
+                  },
+                  grand_total: items.reduce((sum, i) => sum + i.cost, 0),
+                  subtotal: items.filter((i) => !i.isOwnerPurchase).reduce((sum, i) => sum + i.cost, 0),
+                }),
+              });
+              if (!res.ok) throw new Error();
+              toast.success("Quote saved");
+              await fetchQuote();
+            } catch {
+              toast.error("Failed to save quote");
+            }
           }}
-          saving={saving}
-          deletingItem={deletingItem}
-          setDeletingItem={setDeletingItem}
-          deleteItem={deleteItem}
-          showAddItem={showAddItem}
-          setShowAddItem={setShowAddItem}
-          addItem={addItem}
-          showAddSection={showAddSection}
-          setShowAddSection={setShowAddSection}
-          addSection={addSection}
         />
       )}
       {activeTab === "Allowances & Exclusions" && (
@@ -560,6 +584,18 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
           setRevisionSummary={setRevisionSummary}
           saveRevision={saveRevision}
           creatingRevision={creatingRevision}
+        />
+      )}
+
+      {/* Send Quote Modal */}
+      {showSendModal && (
+        <SendQuoteModal
+          isOpen={showSendModal}
+          onClose={() => setShowSendModal(false)}
+          quote={quote}
+          items={simpleItems.length > 0 ? simpleItems : (
+            ((quote.job_type_inputs as Record<string, unknown>)?.simple_items as SimpleQuoteItem[]) || []
+          )}
         />
       )}
     </div>
