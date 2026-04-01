@@ -751,7 +751,7 @@ export default async function AdminDashboard({
                     className="block"
                     aria-label={`${project.name} - ${PROJECT_STATUS_LABELS[project.status]} - ${project.client_name}`}
                   >
-                    <Card className={`group cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border-l-4 ${STATUS_LEFT_BORDER[project.status]}`}>
+                    <Card className={`group cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border-l-4 h-full ${STATUS_LEFT_BORDER[project.status]}`}>
                       <CardHeader className="pb-2">
                         <div className="flex items-start justify-between gap-2">
                           <CardTitle className="text-base font-semibold text-gray-900 transition-colors duration-200 group-hover:text-indigo-600">
@@ -767,7 +767,7 @@ export default async function AdminDashboard({
                         </CardDescription>
                       </CardHeader>
 
-                      <CardContent className="pt-0">
+                      <CardContent className="pt-0 flex flex-col flex-1">
                         {(project.city || project.state) && (
                           <p className="text-sm text-gray-500">
                             {[project.city, project.state]
@@ -785,7 +785,7 @@ export default async function AdminDashboard({
 
                         {/* Task Progress */}
                         {taskTotal > 0 && (
-                          <div className="mt-3">
+                          <div className="mt-auto pt-3">
                             <div className="mb-1 flex items-center justify-between text-sm text-gray-600">
                               <span>
                                 {taskCompleted}/{taskTotal} tasks

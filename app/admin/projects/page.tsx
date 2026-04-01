@@ -262,7 +262,7 @@ export default async function AdminProjectsPage({
                 aria-label={`${project.name} - ${PROJECT_STATUS_LABELS[project.status]} - ${project.client_name}`}
               >
                 <Card
-                  className={`group cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border-l-4 ${STATUS_LEFT_BORDER[project.status]}`}
+                  className={`group cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md border-l-4 h-full ${STATUS_LEFT_BORDER[project.status]}`}
                 >
                   <CardHeader className="pb-2">
                     <div className="flex items-start justify-between gap-2">
@@ -282,7 +282,7 @@ export default async function AdminProjectsPage({
                     </CardDescription>
                   </CardHeader>
 
-                  <CardContent className="pt-0">
+                  <CardContent className="pt-0 flex flex-col flex-1">
                     {/* Type badge */}
                     <Badge
                       variant="outline"
@@ -313,7 +313,7 @@ export default async function AdminProjectsPage({
                     )}
 
                     {/* Created date */}
-                    <p className="mt-2 flex items-center gap-1.5 text-xs text-gray-400">
+                    <p className="mt-auto pt-2 flex items-center gap-1.5 text-xs text-gray-400">
                       <Calendar className="h-3 w-3" aria-hidden="true" />
                       Created {fmtDate(project.created_at)}
                     </p>
