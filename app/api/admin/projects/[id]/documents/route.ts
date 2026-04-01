@@ -40,6 +40,7 @@ export async function POST(
   const contractorId = formData.get("contractor_id") as string | null;
   const autoCreatePayment = formData.get("auto_create_payment") as string | null;
   const useAi = formData.get("use_ai") as string | null;
+  const aiReviewedDataRaw = formData.get("ai_reviewed_data") as string | null;
 
   if (!file) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
@@ -61,9 +62,29 @@ export async function POST(
 
   const fileUrl = urlData.publicUrl;
 
-  // AI extraction if requested
+  // AI extraction: use human-reviewed data if provided, otherwise run AI
   let aiData = null;
-  if (useAi === "true") {
+  if (aiReviewedDataRaw) {
+    // Human-reviewed AI data — already confirmed by the user
+    try {
+      const reviewed = JSON.parse(aiReviewedDataRaw);
+      aiData = {
+        vendor_name: reviewed.vendor_name || null,
+        vendor_company: reviewed.vendor_company || null,
+        vendor_email: null,
+        vendor_phone: null,
+        invoice_number: null,
+        invoice_date: reviewed.date || null,
+        due_date: null,
+        amount: typeof reviewed.amount === "number" ? reviewed.amount : null,
+        description: reviewed.description || null,
+        category: reviewed.category || null,
+        line_items: Array.isArray(reviewed.line_items) ? reviewed.line_items : [],
+      };
+    } catch {
+      // Invalid JSON, fall through to no AI data
+    }
+  } else if (useAi === "true") {
     const buffer = await file.arrayBuffer();
     aiData = await extractInvoiceData(buffer, file.type, file.name);
   }

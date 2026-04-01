@@ -13,15 +13,15 @@ import {
   Upload,
 } from "lucide-react";
 import toast from "react-hot-toast";
+import { AiReviewModal } from "@/components/admin/AiReviewModal";
+import type { ExtractedDocumentData } from "@/lib/extract-document";
 
 interface SmartUploadProps {
-  onUpload: (files: File[]) => Promise<void>;
+  onUpload: (files: File[], aiResults?: Map<string, ExtractedDocumentData>) => Promise<void>;
   accept?: string;
   multiple?: boolean;
   maxSizeMB?: number;
   showAiAnalyze?: boolean;
-  onAiAnalyze?: (file: File) => Promise<void>;
-  category?: string;
   className?: string;
 }
 
@@ -43,8 +43,6 @@ export default function SmartUpload({
   multiple = true,
   maxSizeMB = 25,
   showAiAnalyze = true,
-  onAiAnalyze,
-  category,
   className,
 }: SmartUploadProps) {
   const [files, setFiles] = useState<File[]>([]);
@@ -53,6 +51,13 @@ export default function SmartUpload({
   const [isUploading, setIsUploading] = useState(false);
   const [uploadProgress, setUploadProgress] = useState(0);
   const [aiAnalyze, setAiAnalyze] = useState(false);
+
+  // AI review state
+  const [aiReviewQueue, setAiReviewQueue] = useState<Array<{ file: File; data: ExtractedDocumentData; previewUrl: string | null }>>([]);
+  const [aiReviewIndex, setAiReviewIndex] = useState(0);
+  const [aiAnalyzing, setAiAnalyzing] = useState(false);
+  const [confirmedAiResults, setConfirmedAiResults] = useState<Map<string, ExtractedDocumentData>>(new Map());
+  const [pendingFiles, setPendingFiles] = useState<File[]>([]);
 
   const cameraInputRef = useRef<HTMLInputElement>(null);
   const libraryInputRef = useRef<HTMLInputElement>(null);
@@ -183,34 +188,118 @@ export default function SmartUpload({
 
   const handleUpload = useCallback(async () => {
     if (files.length === 0) return;
-    setIsUploading(true);
-    setUploadProgress(0);
 
-    try {
-      await onUpload(files);
+    if (aiAnalyze) {
+      // AI flow: analyze each file first, then show review modals one by one
+      setAiAnalyzing(true);
+      setPendingFiles([...files]);
+      const queue: Array<{ file: File; data: ExtractedDocumentData; previewUrl: string | null }> = [];
 
-      // If AI analysis is enabled, process each file
-      if (aiAnalyze && onAiAnalyze) {
-        for (let i = 0; i < files.length; i++) {
-          setUploadProgress(i + 1);
-          await onAiAnalyze(files[i]);
+      for (let i = 0; i < files.length; i++) {
+        setUploadProgress(i + 1);
+        try {
+          const fd = new FormData();
+          fd.append("file", files[i]);
+          const res = await fetch("/api/admin/analyze-document", { method: "POST", body: fd });
+          if (res.ok) {
+            const data: ExtractedDocumentData = await res.json();
+            const key = `${files[i].name}-${files[i].lastModified}`;
+            queue.push({ file: files[i], data, previewUrl: previews.get(key) || null });
+          } else {
+            toast.error(`Failed to analyze ${files[i].name}`);
+            queue.push({
+              file: files[i],
+              data: { document_type: "general", vendor_name: null, vendor_company: null, amount: null, date: null, description: null, category: null, line_items: [], payment_method: null, tax_amount: null, materials: [], summary: null, confidence: "low" },
+              previewUrl: null,
+            });
+          }
+        } catch {
+          toast.error(`Failed to analyze ${files[i].name}`);
         }
       }
 
-      // Clear files after successful upload
-      previews.forEach((url) => URL.revokeObjectURL(url));
-      setFiles([]);
-      setPreviews(new Map());
-      toast.success(
-        `${files.length} file${files.length > 1 ? "s" : ""} uploaded`
-      );
-    } catch {
-      toast.error("Upload failed. Please try again.");
-    } finally {
-      setIsUploading(false);
+      setAiAnalyzing(false);
       setUploadProgress(0);
+
+      if (queue.length > 0) {
+        // Show review modals
+        setAiReviewQueue(queue);
+        setAiReviewIndex(0);
+        setConfirmedAiResults(new Map());
+      }
+    } else {
+      // Direct upload without AI
+      setIsUploading(true);
+      setUploadProgress(0);
+      try {
+        await onUpload(files);
+        previews.forEach((url) => URL.revokeObjectURL(url));
+        setFiles([]);
+        setPreviews(new Map());
+        toast.success(`${files.length} file${files.length > 1 ? "s" : ""} uploaded`);
+      } catch {
+        toast.error("Upload failed. Please try again.");
+      } finally {
+        setIsUploading(false);
+        setUploadProgress(0);
+      }
     }
-  }, [files, onUpload, aiAnalyze, onAiAnalyze, previews]);
+  }, [files, onUpload, aiAnalyze, previews]);
+
+  // Handle AI review confirmation for one file
+  const handleAiConfirm = useCallback(async (reviewedData: ExtractedDocumentData) => {
+    const current = aiReviewQueue[aiReviewIndex];
+    const newResults = new Map(confirmedAiResults);
+    const key = `${current.file.name}-${current.file.lastModified}`;
+    newResults.set(key, reviewedData);
+    setConfirmedAiResults(newResults);
+
+    if (aiReviewIndex < aiReviewQueue.length - 1) {
+      // More files to review
+      setAiReviewIndex(aiReviewIndex + 1);
+    } else {
+      // All files reviewed — now upload with confirmed AI data
+      setAiReviewQueue([]);
+      setAiReviewIndex(0);
+      setIsUploading(true);
+      try {
+        await onUpload(pendingFiles, newResults);
+        previews.forEach((url) => URL.revokeObjectURL(url));
+        setFiles([]);
+        setPreviews(new Map());
+        setPendingFiles([]);
+        setConfirmedAiResults(new Map());
+        toast.success(`${pendingFiles.length} file${pendingFiles.length > 1 ? "s" : ""} uploaded`);
+      } catch {
+        toast.error("Upload failed. Please try again.");
+      } finally {
+        setIsUploading(false);
+      }
+    }
+  }, [aiReviewQueue, aiReviewIndex, confirmedAiResults, onUpload, pendingFiles, previews]);
+
+  const handleAiReviewClose = useCallback(() => {
+    // Skip this file's AI data but still include it in upload
+    if (aiReviewIndex < aiReviewQueue.length - 1) {
+      setAiReviewIndex(aiReviewIndex + 1);
+    } else {
+      // Upload all files without remaining AI data
+      setAiReviewQueue([]);
+      setAiReviewIndex(0);
+      setIsUploading(true);
+      onUpload(pendingFiles, confirmedAiResults)
+        .then(() => {
+          previews.forEach((url) => URL.revokeObjectURL(url));
+          setFiles([]);
+          setPreviews(new Map());
+          setPendingFiles([]);
+          setConfirmedAiResults(new Map());
+          toast.success(`${pendingFiles.length} file${pendingFiles.length > 1 ? "s" : ""} uploaded`);
+        })
+        .catch(() => toast.error("Upload failed."))
+        .finally(() => setIsUploading(false));
+    }
+  }, [aiReviewIndex, aiReviewQueue.length, onUpload, pendingFiles, confirmedAiResults, previews]);
 
   return (
     <div
@@ -422,12 +511,14 @@ export default function SmartUpload({
       <Button
         variant="primary"
         className="w-full"
-        disabled={files.length === 0 || isUploading}
-        isLoading={isUploading}
+        disabled={files.length === 0 || isUploading || aiAnalyzing}
+        isLoading={isUploading || aiAnalyzing}
         onClick={handleUpload}
       >
-        {isUploading ? (
-          `Uploading ${uploadProgress} of ${files.length}...`
+        {aiAnalyzing ? (
+          `Analyzing ${uploadProgress} of ${files.length}...`
+        ) : isUploading ? (
+          `Uploading...`
         ) : (
           <>
             <Upload className="w-4 h-4 mr-2" />
@@ -435,6 +526,18 @@ export default function SmartUpload({
           </>
         )}
       </Button>
+
+      {/* AI Review Modal */}
+      {aiReviewQueue.length > 0 && aiReviewQueue[aiReviewIndex] && (
+        <AiReviewModal
+          isOpen={true}
+          onClose={handleAiReviewClose}
+          onConfirm={handleAiConfirm}
+          data={aiReviewQueue[aiReviewIndex].data}
+          fileName={aiReviewQueue[aiReviewIndex].file.name}
+          filePreviewUrl={aiReviewQueue[aiReviewIndex].previewUrl}
+        />
+      )}
     </div>
   );
 }

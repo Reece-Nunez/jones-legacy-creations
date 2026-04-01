@@ -88,6 +88,7 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import SmartUpload from "@/components/admin/SmartUpload";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -3709,10 +3710,7 @@ function DocumentsTab({
   loading: boolean;
 }) {
   const [showForm, setShowForm] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
   const [category, setCategory] = useState<DocumentCategory>("general");
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState<{ done: number; total: number } | null>(null);
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
 
@@ -3742,53 +3740,10 @@ function DocumentsTab({
     setSelectMode(false);
   }
 
-  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
-    const selected = e.target.files;
-    if (!selected) return;
-    setFiles((prev) => [...prev, ...Array.from(selected)]);
-  }
-
-  function removeFile(index: number) {
-    setFiles((prev) => prev.filter((_, i) => i !== index));
-  }
-
-  async function uploadDocs() {
-    if (files.length === 0) return;
-    setUploading(true);
-    setUploadProgress({ done: 0, total: files.length });
-
-    for (let i = 0; i < files.length; i++) {
-      const fd = new FormData();
-      fd.append("file", files[i]);
-      fd.append("category", category);
-      if (category === "invoice" || category === "draw_request") {
-        fd.append("use_ai", "true");
-      }
-      await mutate(
-        `/api/admin/projects/${projectId}/documents`,
-        "POST",
-        fd,
-      );
-      setUploadProgress({ done: i + 1, total: files.length });
-    }
-
-    setFiles([]);
-    setCategory("general");
-    setShowForm(false);
-    setUploading(false);
-    setUploadProgress(null);
-  }
-
   async function deleteDoc(id: string) {
     if (!(await confirmAction("Delete this document?"))) return;
     await mutate(`/api/admin/projects/${projectId}/documents/${id}`, "DELETE");
   }
-
-  const fmtSize = (bytes: number) => {
-    if (bytes < 1024) return `${bytes} B`;
-    if (bytes < 1024 * 1024) return `${(bytes / 1024).toFixed(1)} KB`;
-    return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
-  };
 
   return (
     <ShadCard>
@@ -3817,119 +3772,63 @@ function DocumentsTab({
       </CardHeader>
       <CardContent>
         {showForm && (
-          <ShadCard className="mb-4 bg-gray-50 border-dashed">
-            <CardContent className="pt-4">
-              <div className="space-y-3">
-                {/* Drop zone / file picker */}
-                <div>
-                  <label htmlFor="doc-file" className="block text-sm text-gray-700 font-medium mb-1">
-                    Files <span className="text-red-500">*</span>
-                  </label>
-                  <label className="flex flex-col items-center gap-2 border-2 border-dashed border-gray-300 rounded-lg px-4 py-6 text-sm cursor-pointer hover:border-gray-400 hover:bg-gray-100/50 transition-colors">
-                    <Upload className="w-6 h-6 text-gray-400" />
-                    <span className="text-gray-600">
-                      Click to select files — you can pick multiple
-                    </span>
-                    <span className="text-xs text-gray-400">PDFs, images, documents, spreadsheets</span>
-                    <input
-                      id="doc-file"
-                      type="file"
-                      multiple
-                      className="hidden"
-                      onChange={handleFileSelect}
-                    />
-                  </label>
-                </div>
-
-                {/* Selected files list */}
-                {files.length > 0 && (
-                  <div className="space-y-1.5">
-                    <p className="text-xs font-medium text-gray-500">{files.length} file{files.length !== 1 ? "s" : ""} selected</p>
-                    <div className="max-h-48 overflow-y-auto space-y-1 rounded-lg border border-gray-200 bg-white p-2">
-                      {files.map((f, i) => (
-                        <div key={`${f.name}-${i}`} className="flex items-center justify-between gap-2 rounded px-2 py-1.5 text-sm hover:bg-gray-50">
-                          <div className="flex-1 min-w-0">
-                            <p className="truncate text-gray-900">{f.name}</p>
-                            <p className="text-xs text-gray-400">{fmtSize(f.size)}</p>
-                          </div>
-                          <button
-                            onClick={() => removeFile(i)}
-                            aria-label={`Remove ${f.name}`}
-                            className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
-                          >
-                            <X className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Category + actions */}
-                <div className="flex flex-col sm:flex-row gap-3">
-                  <div>
-                    <label htmlFor="doc-category" className="block text-sm text-gray-700 font-medium mb-1">
-                      Category for all files
-                    </label>
-                    <select
-                      id="doc-category"
-                      value={category}
-                      onChange={(e) =>
-                        setCategory(e.target.value as DocumentCategory)
-                      }
-                      className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
-                      <option value="general">General</option>
-                      <option value="contract">Contract</option>
-                      <option value="permit">Permit</option>
-                      <option value="invoice">Invoice</option>
-                      <option value="photo">Photo</option>
-                      <option value="plan">Plan</option>
-                      <option value="draw_request">Draw Request</option>
-                    </select>
-                  </div>
-                </div>
-
-                {/* Upload progress */}
-                {uploadProgress && (
-                  <div className="space-y-1.5">
-                    <div className="flex items-center justify-between text-sm">
-                      <span className="text-gray-600">Uploading {uploadProgress.done} of {uploadProgress.total}...</span>
-                      <span className="text-gray-500 tabular-nums">{Math.round((uploadProgress.done / uploadProgress.total) * 100)}%</span>
-                    </div>
-                    <div className="h-2 rounded-full bg-gray-200 overflow-hidden">
-                      <div
-                        className="h-full rounded-full bg-sky-600 transition-all duration-300"
-                        style={{ width: `${(uploadProgress.done / uploadProgress.total) * 100}%` }}
-                      />
-                    </div>
-                  </div>
-                )}
-
-                <div className="flex gap-2">
-                  <button
-                    disabled={uploading || loading || files.length === 0}
-                    onClick={uploadDocs}
-                    className="bg-black text-white px-4 py-2.5 min-h-[44px] rounded-lg text-sm hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
-                  >
-                    {uploading
-                      ? `Uploading ${uploadProgress?.done ?? 0}/${uploadProgress?.total ?? 0}...`
-                      : `Upload ${files.length || ""} File${files.length !== 1 ? "s" : ""}`}
-                  </button>
-                  <button
-                    disabled={uploading}
-                    onClick={() => {
-                      setShowForm(false);
-                      setFiles([]);
-                    }}
-                    className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors disabled:opacity-50"
-                  >
-                    Cancel
-                  </button>
-                </div>
-              </div>
-            </CardContent>
-          </ShadCard>
+          <div className="mb-4 space-y-3">
+            <div>
+              <label htmlFor="doc-category-su" className="block text-sm text-gray-700 font-medium mb-1">
+                Category for all files
+              </label>
+              <select
+                id="doc-category-su"
+                value={category}
+                onChange={(e) => setCategory(e.target.value as DocumentCategory)}
+                className="border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+              >
+                <option value="general">General</option>
+                <option value="contract">Contract</option>
+                <option value="permit">Permit</option>
+                <option value="invoice">Invoice</option>
+                <option value="photo">Photo</option>
+                <option value="plan">Plan</option>
+                <option value="draw_request">Draw Request</option>
+              </select>
+            </div>
+            <SmartUpload
+              onUpload={async (uploadFiles, aiResults) => {
+                for (let i = 0; i < uploadFiles.length; i++) {
+                  const fd = new FormData();
+                  fd.append("file", uploadFiles[i]);
+                  fd.append("category", category);
+                  const key = `${uploadFiles[i].name}-${uploadFiles[i].lastModified}`;
+                  const aiData = aiResults?.get(key);
+                  if (aiData) {
+                    fd.append("use_ai", "false");
+                    fd.append("vendor", aiData.vendor_company || aiData.vendor_name || "");
+                    fd.append("doc_type", aiData.document_type || "");
+                    fd.append("auto_create_payment", "true");
+                    fd.append("ai_reviewed_data", JSON.stringify(aiData));
+                  } else if (category === "invoice" || category === "draw_request") {
+                    fd.append("use_ai", "true");
+                  }
+                  await mutate(
+                    `/api/admin/projects/${projectId}/documents`,
+                    "POST",
+                    fd,
+                  );
+                }
+                setCategory("general");
+                setShowForm(false);
+              }}
+              showAiAnalyze={category === "invoice" || category === "draw_request"}
+            />
+            <button
+              onClick={() => {
+                setShowForm(false);
+              }}
+              className="text-sm text-gray-600 px-4 py-2.5 min-h-[44px] border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors w-full sm:w-auto"
+            >
+              Cancel
+            </button>
+          </div>
         )}
 
         {documents.length === 0 && !showForm && (
