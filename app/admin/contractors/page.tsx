@@ -263,8 +263,8 @@ export default async function ContractorsPage({
                   aria-label={`View details for ${contractor.name}${contractor.company ? `, ${contractor.company}` : ""}`}
                   className="group block"
                 >
-                <Card className="cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md">
-                <CardContent className="pt-6">
+                <Card className="cursor-pointer shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:shadow-md h-full">
+                <CardContent className="pt-6 h-full flex flex-col">
                   {/* Name & Badge */}
                   <div className="mb-3 flex items-start justify-between gap-2">
                     <div className="flex items-center gap-3">
@@ -318,7 +318,7 @@ export default async function ContractorsPage({
                   </div>
 
                   {/* Contact Info */}
-                  <div className="mb-3 space-y-1.5">
+                  <div className="mb-3 space-y-1.5 flex-1">
                     {contractor.phone && (
                       <p className="flex items-center gap-2 text-sm text-gray-600">
                         <Phone className="h-4 w-4 text-gray-400" />
@@ -382,7 +382,7 @@ export default async function ContractorsPage({
                   </div>
 
                   {/* Stats */}
-                  <div className="flex items-center gap-4 border-t border-gray-100 pt-3">
+                  <div className="flex items-center gap-4 border-t border-gray-100 pt-3 mt-auto">
                     <span className="flex items-center gap-1 text-sm tabular-nums text-green-600">
                       <DollarSign className="h-4 w-4 text-green-500" />
                       {formatCurrency(totalPaid)}
