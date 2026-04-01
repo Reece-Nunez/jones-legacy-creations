@@ -82,12 +82,14 @@ export function EstimateWizard() {
   const handleNext = () => {
     if (currentStep < STEPS.length && canProceed()) {
       setCurrentStep((s) => s + 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
   const handleBack = () => {
     if (currentStep > 1) {
       setCurrentStep((s) => s - 1);
+      window.scrollTo({ top: 0, behavior: "smooth" });
     }
   };
 
