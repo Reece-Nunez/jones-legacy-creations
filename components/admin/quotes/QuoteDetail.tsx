@@ -674,37 +674,45 @@ function OverviewTab({ quote }: { quote: FullQuote }) {
       </Card>
 
       <Card title="Pricing Summary">
-        <div className="space-y-0">
-          <InfoRow label="Subtotal" value={fmt(quote.subtotal)} />
-          <InfoRow label="Materials" value={fmt(quote.total_materials)} />
-          <InfoRow label="Labor" value={fmt(quote.total_labor)} />
-          <InfoRow label="Subcontractor" value={fmt(quote.total_subcontractor)} />
-          <InfoRow label="Equipment" value={fmt(quote.total_equipment)} />
-          <InfoRow
-            label={`Overhead (${quote.overhead_pct}%)`}
-            value={fmt(quote.overhead_amount)}
-          />
-          <InfoRow
-            label={`Profit (${quote.profit_pct}%)`}
-            value={fmt(quote.profit_amount)}
-          />
-          <InfoRow
-            label={`Contingency (${quote.contingency_pct}%)`}
-            value={fmt(quote.contingency_amount)}
-          />
-          <InfoRow
-            label={`Tax (${quote.sales_tax_pct}%)`}
-            value={fmt(quote.tax_amount)}
-          />
-          <div className="flex justify-between py-3 border-t-2 border-gray-900 mt-2">
-            <span className="text-base font-bold text-gray-900">
-              Grand Total
-            </span>
-            <span className="text-base font-bold text-gray-900">
-              {fmt(quote.grand_total)}
-            </span>
-          </div>
-        </div>
+        {(() => {
+          const inputs = quote.job_type_inputs as Record<string, unknown> | null;
+          const simpleItems = (inputs?.simple_items as Array<{ trade: string; cost: number; isOwnerPurchase: boolean }>) || [];
+          if (simpleItems.length === 0) {
+            return (
+              <div className="py-4 text-center">
+                <p className="text-sm text-gray-400">No costs entered yet</p>
+                <p className="text-xs text-gray-400 mt-1">Go to the Cost Breakdown tab to add trades and costs</p>
+              </div>
+            );
+          }
+          const tradeCosts = simpleItems.filter((i) => !i.isOwnerPurchase).reduce((s, i) => s + (i.cost || 0), 0);
+          const ownerCosts = simpleItems.filter((i) => i.isOwnerPurchase).reduce((s, i) => s + (i.cost || 0), 0);
+          const filledTrades = simpleItems.filter((i) => !i.isOwnerPurchase && i.cost > 0);
+          return (
+            <div className="space-y-0">
+              {filledTrades.slice(0, 8).map((item, i) => (
+                <InfoRow key={i} label={item.trade} value={fmt(item.cost)} />
+              ))}
+              {filledTrades.length > 8 && (
+                <p className="text-xs text-gray-400 py-1">+ {filledTrades.length - 8} more trades</p>
+              )}
+              <div className="flex justify-between py-3 border-t border-gray-200 mt-2">
+                <span className="text-sm font-semibold text-gray-700">Trade Costs</span>
+                <span className="text-sm font-semibold">{fmt(tradeCosts)}</span>
+              </div>
+              {ownerCosts > 0 && (
+                <div className="flex justify-between py-1">
+                  <span className="text-sm font-semibold text-gray-700">Owner Purchases</span>
+                  <span className="text-sm font-semibold">{fmt(ownerCosts)}</span>
+                </div>
+              )}
+              <div className="flex justify-between py-3 border-t-2 border-gray-900 mt-1">
+                <span className="text-base font-bold text-gray-900">Total</span>
+                <span className="text-base font-bold text-gray-900">{fmt(tradeCosts + ownerCosts)}</span>
+              </div>
+            </div>
+          );
+        })()}
       </Card>
 
       <Card title="Site Conditions">
