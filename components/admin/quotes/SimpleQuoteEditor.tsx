@@ -66,6 +66,9 @@ export function SimpleQuoteEditor({
   );
   const [saving, setSaving] = useState(false);
 
+  // Track raw string values for cost inputs so decimals aren't eaten mid-typing
+  const [costInputs, setCostInputs] = useState<Record<number, string>>({});
+
   // Custom trades library
   const [customTrades, setCustomTrades] = useState<CustomTrade[]>([]);
   const [showCustomPicker, setShowCustomPicker] = useState(false);
@@ -227,13 +230,20 @@ export function SimpleQuoteEditor({
                 <input
                   type="text"
                   inputMode="decimal"
-                  value={item.cost === 0 ? "" : item.cost.toString()}
-                  onChange={(e) =>
-                    updateItem(index, { cost: parseCurrency(e.target.value) })
-                  }
-                  onBlur={(e) => {
-                    const val = parseCurrency(e.target.value);
-                    updateItem(index, { cost: Math.round(val * 100) / 100 });
+                  value={costInputs[index] ?? (item.cost === 0 ? "" : item.cost.toString())}
+                  onChange={(e) => {
+                    const raw = e.target.value.replace(/[^0-9.]/g, "");
+                    setCostInputs((prev) => ({ ...prev, [index]: raw }));
+                  }}
+                  onBlur={() => {
+                    const val = parseCurrency(costInputs[index] ?? item.cost.toString());
+                    const rounded = Math.round(val * 100) / 100;
+                    updateItem(index, { cost: rounded });
+                    setCostInputs((prev) => {
+                      const next = { ...prev };
+                      delete next[index];
+                      return next;
+                    });
                   }}
                   placeholder="0.00"
                   className="w-full pl-6 pr-2 py-1.5 text-sm text-right border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-black focus:border-transparent"
