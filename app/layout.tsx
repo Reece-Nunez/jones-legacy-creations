@@ -57,7 +57,7 @@ export const metadata: Metadata = {
   },
   appleWebApp: {
     capable: true,
-    statusBarStyle: "default",
+    statusBarStyle: "black-translucent",
     title: "JLC Admin",
   },
   robots: {
@@ -71,6 +71,7 @@ export const metadata: Metadata = {
       "max-snippet": -1,
     },
   },
+  manifest: "/site.webmanifest",
   alternates: {
     canonical: BASE_URL,
   },
@@ -89,6 +90,17 @@ export default function RootLayout({
         <OrganizationJsonLd />
         <GoogleAnalytics />
         {children}
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js').catch(() => {});
+        });
+      }
+    `,
+          }}
+        />
         <Toaster />
       </body>
     </html>
