@@ -421,7 +421,17 @@ export default function ContractorDetail({
         </div>
 
         {/* W9 — contractors only */}
-        {!isVendor && (
+        {!isVendor && contractor.w9_required === false && (
+          <Card className="mb-8 shadow-sm">
+            <CardContent className="pt-6">
+              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
+                W9
+              </h2>
+              <p className="text-sm text-gray-400">W9 not required for this contractor.</p>
+            </CardContent>
+          </Card>
+        )}
+        {!isVendor && contractor.w9_required !== false && (
           <Card className="mb-8 shadow-sm">
             <CardContent className="pt-6">
               <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
