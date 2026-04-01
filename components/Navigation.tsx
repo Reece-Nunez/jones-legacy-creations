@@ -246,13 +246,13 @@ export function Navigation() {
           </Link>
           <Link
             href="/admin"
-            className="flex items-center justify-center gap-2 w-full py-3 text-base font-medium text-gray-500 hover:text-gray-900 transition-colors duration-150"
+            className="flex items-center justify-center gap-2 w-full py-3 text-base font-medium text-gray-700 border border-gray-300 rounded-full hover:bg-gray-50 transition-colors duration-150"
             onClick={() => setIsOpen(false)}
             aria-label="Admin panel"
             {...(isActive("/admin") ? { "aria-current": "page" as const } : {})}
           >
             <Settings className="w-4 h-4" />
-            Admin
+            Admin Login
           </Link>
         </div>
       </div>
