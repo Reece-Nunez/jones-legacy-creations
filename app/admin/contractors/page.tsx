@@ -367,10 +367,16 @@ export default async function ContractorsPage({
                         W9 on file
                       </p>
                     )}
-                    {!isVendor && !contractor.w9_file_url && (
+                    {!isVendor && !contractor.w9_file_url && contractor.w9_required !== false && (
                       <p className="flex items-center gap-2 text-sm text-amber-600">
                         <FileText className="h-4 w-4 text-amber-500" />
                         W9 missing
+                      </p>
+                    )}
+                    {!isVendor && contractor.w9_required === false && (
+                      <p className="flex items-center gap-2 text-sm text-gray-400">
+                        <FileText className="h-4 w-4 text-gray-300" />
+                        W9 not required
                       </p>
                     )}
                   </div>

@@ -162,8 +162,9 @@ export default async function AdminDashboard({
       .limit(5),
     supabase
       .from("contractors")
-      .select("id, name, company, type, w9_file_url")
+      .select("id, name, company, type, w9_file_url, w9_required")
       .eq("type", "contractor")
+      .eq("w9_required", true)
       .is("w9_file_url", null),
   ]);
 

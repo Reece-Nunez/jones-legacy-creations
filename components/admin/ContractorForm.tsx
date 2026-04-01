@@ -56,7 +56,8 @@ export default function ContractorForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const isEdit = !!contractor;
 
-  // W9 upload state
+  // W9 state
+  const [w9Required, setW9Required] = useState(contractor?.w9_required ?? true);
   const [w9File, setW9File] = useState<File | null>(null);
   const [w9Uploading, setW9Uploading] = useState(false);
   const [existingW9, setExistingW9] = useState<{
@@ -152,6 +153,7 @@ export default function ContractorForm({
       if (data.type === "contractor") {
         payload.vendor_category = null;
         payload.account_number = null;
+        payload.w9_required = w9Required;
       }
 
       const res = await fetch(url, {
@@ -503,8 +505,26 @@ export default function ContractorForm({
         </div>
       )}
 
-      {/* Contractor-specific: W9 Upload */}
+      {/* Contractor-specific: W9 Required toggle + Upload */}
       {entityType === "contractor" && (
+        <div className="space-y-3">
+          <label className="flex items-center gap-3 cursor-pointer select-none">
+            <input
+              type="checkbox"
+              checked={w9Required}
+              onChange={(e) => setW9Required(e.target.checked)}
+              className="w-5 h-5 rounded border-gray-300 text-black focus:ring-black focus:ring-offset-0 cursor-pointer"
+            />
+            <span className="text-sm font-medium text-gray-700">W9 Required</span>
+          </label>
+          {!w9Required && (
+            <p className="text-xs text-gray-400 ml-8">
+              W9 will not be required for this contractor. They won&apos;t appear in missing W9 alerts.
+            </p>
+          )}
+        </div>
+      )}
+      {entityType === "contractor" && w9Required && (
         <div>
           <label className={labelClass}>W9</label>
           {existingW9 && !w9File ? (

@@ -97,6 +97,7 @@ export default function AdminShell({
           .from("contractors")
           .select("*", { count: "exact", head: true })
           .eq("type", "contractor")
+          .eq("w9_required", true)
           .is("w9_file_url", null),
         supabase
           .from("projects")

@@ -28,6 +28,7 @@ export interface Contractor {
   phone: string | null;
   trade: string;
   license_number: string | null;
+  w9_required: boolean;
   w9_file_url: string | null;
   w9_file_name: string | null;
   vendor_category: string | null;
