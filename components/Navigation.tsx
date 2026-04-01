@@ -183,7 +183,7 @@ export function Navigation() {
       <div
         id="mobile-menu"
         className={`md:hidden bg-white border-t border-gray-200 overflow-hidden transition-all duration-300 ${
-          isOpen ? "max-h-[40rem] opacity-100" : "max-h-0 opacity-0"
+          isOpen ? "max-h-screen opacity-100" : "max-h-0 opacity-0"
         }`}
         style={{ overscrollBehavior: "contain" }}
       >
