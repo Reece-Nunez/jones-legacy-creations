@@ -356,15 +356,17 @@ export default function AdminShell({
                   <Menu className="h-5 w-5" />
                   <span className="sr-only">Open menu</span>
                 </SheetTrigger>
-                <SheetContent side="left" className="w-72 bg-slate-900 p-0" showCloseButton={false}>
+                <SheetContent side="left" className="w-72 bg-slate-900 p-0 overflow-hidden" showCloseButton={false}>
                   {/* Close button */}
                   <button
                     onClick={() => setSidebarOpen(false)}
-                    className="absolute right-3 top-4 flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:text-white"
+                    className="absolute right-3 top-4 z-10 flex h-11 w-11 items-center justify-center rounded-lg text-slate-400 hover:text-white"
                   >
                     <X className="h-5 w-5" />
                   </button>
-                  {sidebarContent}
+                  <div className="flex flex-col h-full overflow-y-auto overscroll-contain">
+                    {sidebarContent}
+                  </div>
                 </SheetContent>
               </Sheet>
               <span className="text-sm font-bold text-slate-800 tracking-tight">JLC Admin</span>
