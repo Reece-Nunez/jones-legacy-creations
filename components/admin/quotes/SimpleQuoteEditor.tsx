@@ -28,6 +28,7 @@ interface SimpleQuoteEditorProps {
   jobType: JobTypeSlug;
   initialItems?: SimpleQuoteItem[];
   onSave: (items: SimpleQuoteItem[]) => Promise<void>;
+  onChange?: (items: SimpleQuoteItem[]) => void;
 }
 
 function formatCurrency(value: number): string {
@@ -49,6 +50,7 @@ export function SimpleQuoteEditor({
   jobType,
   initialItems,
   onSave,
+  onChange,
 }: SimpleQuoteEditorProps) {
   const defaults = JOB_TYPE_TRADE_DEFAULTS[jobType];
 
@@ -102,10 +104,11 @@ export function SimpleQuoteEditor({
   }, [customTrades, customSearch]);
 
   const addCustomTrade = (trade: CustomTrade) => {
-    setItems((prev) => [
-      ...prev,
-      { trade: trade.trade_name, cost: 0, isOwnerPurchase: false, note: "" },
-    ]);
+    setItems((prev) => {
+      const next = [...prev, { trade: trade.trade_name, cost: 0, isOwnerPurchase: false, note: "" }];
+      onChange?.(next);
+      return next;
+    });
     setShowCustomPicker(false);
     setCustomSearch("");
   };
@@ -145,20 +148,27 @@ export function SimpleQuoteEditor({
   };
 
   const updateItem = (index: number, updates: Partial<SimpleQuoteItem>) => {
-    setItems((prev) =>
-      prev.map((item, i) => (i === index ? { ...item, ...updates } : item))
-    );
+    setItems((prev) => {
+      const next = prev.map((item, i) => (i === index ? { ...item, ...updates } : item));
+      onChange?.(next);
+      return next;
+    });
   };
 
   const addItem = () => {
-    setItems((prev) => [
-      ...prev,
-      { trade: "", cost: 0, isOwnerPurchase: false, note: "" },
-    ]);
+    setItems((prev) => {
+      const next = [...prev, { trade: "", cost: 0, isOwnerPurchase: false, note: "" }];
+      onChange?.(next);
+      return next;
+    });
   };
 
   const removeItem = (index: number) => {
-    setItems((prev) => prev.filter((_, i) => i !== index));
+    setItems((prev) => {
+      const next = prev.filter((_, i) => i !== index);
+      onChange?.(next);
+      return next;
+    });
   };
 
   const handleSave = async () => {

@@ -411,10 +411,14 @@ export function EstimateWizard() {
               quoteId="new"
               jobType={jobType}
               initialItems={simpleItems.length > 0 ? simpleItems : undefined}
+              onChange={(items) => {
+                setSimpleItems(items);
+                simpleItemsRef.current = items;
+              }}
               onSave={async (items) => {
                 setSimpleItems(items);
                 simpleItemsRef.current = items;
-                toast.success("Pricing saved — proceed to review");
+                toast.success("Pricing saved");
               }}
             />
           </div>

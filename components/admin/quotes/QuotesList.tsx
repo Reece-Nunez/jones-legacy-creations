@@ -32,6 +32,19 @@ function formatDate(dateStr: string): string {
   });
 }
 
+function getQuoteTotal(quote: Quote): number {
+  if (quote.grand_total > 0) return quote.grand_total;
+  // Fallback: compute from simple_items if grand_total wasn't saved
+  const inputs = quote.job_type_inputs as Record<string, unknown> | null;
+  if (inputs?.simple_items && Array.isArray(inputs.simple_items)) {
+    return (inputs.simple_items as Array<{ cost: number }>).reduce(
+      (sum, item) => sum + (item.cost || 0),
+      0
+    );
+  }
+  return 0;
+}
+
 export function QuotesList({ quotes, detailBasePath = "/admin/quotes" }: QuotesListProps) {
   if (quotes.length === 0) {
     return (
@@ -117,7 +130,7 @@ export function QuotesList({ quotes, detailBasePath = "/admin/quotes" }: QuotesL
                   </span>
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900 text-right font-medium">
-                  {formatCurrency(quote.grand_total)}
+                  {formatCurrency(getQuoteTotal(quote))}
                 </td>
                 <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-right">
                   {formatDate(quote.created_at)}
