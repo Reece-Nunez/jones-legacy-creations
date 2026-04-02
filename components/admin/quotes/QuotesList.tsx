@@ -12,6 +12,7 @@ import {
 
 interface QuotesListProps {
   quotes: Quote[];
+  detailBasePath?: string;
 }
 
 function formatCurrency(amount: number): string {
@@ -31,7 +32,7 @@ function formatDate(dateStr: string): string {
   });
 }
 
-export function QuotesList({ quotes }: QuotesListProps) {
+export function QuotesList({ quotes, detailBasePath = "/admin/quotes" }: QuotesListProps) {
   if (quotes.length === 0) {
     return (
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 text-center">
@@ -87,7 +88,7 @@ export function QuotesList({ quotes }: QuotesListProps) {
               >
                 <td className="px-6 py-4 whitespace-nowrap">
                   <Link
-                    href={`/admin/quotes/${quote.id}`}
+                    href={`${detailBasePath}/${quote.id}`}
                     className="text-sm font-medium text-gray-900 hover:text-black underline-offset-4 hover:underline"
                   >
                     {quote.quote_number}

@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { notFound } from "next/navigation";
-import { SimpleQuoteDetail } from "@/components/admin/quotes/SimpleQuoteDetail";
+import { QuoteDetail } from "@/components/admin/quotes/QuoteDetail";
 
-export default async function QuoteDetailPage({
+export default async function DetailedQuoteDetailPage({
   params,
 }: {
   params: Promise<{ id: string }>;
@@ -18,5 +18,5 @@ export default async function QuoteDetailPage({
 
   if (!quote) notFound();
 
-  return <SimpleQuoteDetail quoteId={id} initialQuote={quote} />;
+  return <QuoteDetail quoteId={id} initialQuote={quote} />;
 }
