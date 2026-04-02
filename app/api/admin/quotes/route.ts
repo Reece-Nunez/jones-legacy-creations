@@ -38,6 +38,7 @@ const QUOTE_COLUMNS = new Set([
   "valid_through_date", "payment_schedule", "change_order_language",
   "job_type_inputs", "created_by",
   "revision_number", "parent_quote_id",
+  "subtotal", "grand_total",
 ]);
 
 export async function POST(request: NextRequest) {

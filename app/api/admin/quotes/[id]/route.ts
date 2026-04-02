@@ -130,6 +130,8 @@ const allowedFields = [
   "change_order_language",
   "job_type_inputs",
   "created_by",
+  "subtotal",
+  "grand_total",
 ];
 
 const pricingFields = [
