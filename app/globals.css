@@ -329,6 +329,14 @@ input, textarea, select {
   .bg-blue-50, .bg-blue-100 { background-color: oklch(0.3 0.08 250) !important; }
   .bg-indigo-50 { background-color: oklch(0.3 0.08 270) !important; }
 
+  /* Gradient cards → flat dark surface */
+  .bg-gradient-to-br,
+  .bg-gradient-to-r,
+  .bg-gradient-to-b {
+    background-image: none !important;
+    background-color: oklch(0.205 0 0) !important;
+  }
+
   /* Scrollbar */
   ::-webkit-scrollbar-track {
     background: oklch(0.17 0 0);

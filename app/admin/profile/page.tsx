@@ -5,6 +5,7 @@ import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
+import { AvatarUpload } from "@/components/admin/AvatarUpload";
 import {
   User,
   Shield,
@@ -265,19 +266,15 @@ export default function ProfilePage() {
 
       {/* Profile Header Card */}
       <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
-        <div className="flex items-center gap-5">
-          {profile.avatar_url ? (
-            <img
-              src={profile.avatar_url}
-              alt={profile.display_name}
-              className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
-            />
-          ) : (
-            <div className="w-16 h-16 rounded-full bg-slate-800 flex items-center justify-center text-white font-bold text-lg">
-              {initials}
-            </div>
-          )}
-          <div className="flex-1">
+        <div className="flex items-start gap-5">
+          <AvatarUpload
+            currentUrl={profile.avatar_url}
+            initials={initials}
+            onUploaded={(url) => {
+              setProfile((prev) => prev ? { ...prev, avatar_url: url } : prev);
+            }}
+          />
+          <div className="flex-1 pt-1">
             <h2 className="text-lg font-semibold text-gray-900">
               {profile.display_name || "Unnamed User"}
             </h2>
