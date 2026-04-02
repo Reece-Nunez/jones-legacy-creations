@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useTheme } from "next-themes";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -173,12 +174,14 @@ export default function ProfilePage() {
       .then((r) => r.json())
       .then((data) => {
         setProfile(data);
+        if (data.theme) setNextTheme(data.theme);
         setLoading(false);
       })
       .catch(() => {
         toast.error("Failed to load profile");
         setLoading(false);
       });
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const update = (key: keyof UserProfile, value: unknown) => {
@@ -186,19 +189,11 @@ export default function ProfilePage() {
     setDirty(true);
   };
 
+  const { setTheme: setNextTheme } = useTheme();
+
   const applyTheme = (theme: "light" | "dark" | "system") => {
     update("theme", theme);
-    // Apply theme immediately
-    const root = document.documentElement;
-    if (theme === "dark") {
-      root.classList.add("dark");
-    } else if (theme === "light") {
-      root.classList.remove("dark");
-    } else {
-      // System preference
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
-      root.classList.toggle("dark", prefersDark);
-    }
+    setNextTheme(theme);
   };
 
   const handleSave = async () => {
@@ -254,7 +249,7 @@ export default function ProfilePage() {
     : "?";
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Profile</h1>
@@ -432,7 +427,7 @@ export default function ProfilePage() {
 
       {/* Sticky save bar */}
       {dirty && (
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-20 bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between shadow-lg">
+        <div className="fixed bottom-[52px] lg:bottom-0 left-0 right-0 lg:left-64 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 px-6 py-3 flex items-center justify-between shadow-lg">
           <p className="text-sm text-gray-600">You have unsaved changes</p>
           <Button onClick={handleSave} isLoading={saving}>
             <Save className="w-4 h-4 mr-1.5" />

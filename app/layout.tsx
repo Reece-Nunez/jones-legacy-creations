@@ -4,6 +4,7 @@ import "./globals.css";
 import { Toaster } from "@/components/Toaster";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { OrganizationJsonLd } from "@/components/JsonLd";
+import { ThemeProvider } from "@/components/ThemeProvider";
 import { cn } from "@/lib/utils";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
@@ -83,25 +84,27 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("scroll-smooth", "font-sans", geist.variable)}>
+    <html lang="en" className={cn("scroll-smooth", "font-sans", geist.variable)} suppressHydrationWarning>
       <body
-        className={`${openSans.variable} ${playfair.variable} font-sans antialiased bg-white text-black`}
+        className={`${openSans.variable} ${playfair.variable} font-sans antialiased`}
       >
-        <OrganizationJsonLd />
-        <GoogleAnalytics />
-        {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
-      if ('serviceWorker' in navigator) {
-        window.addEventListener('load', () => {
-          navigator.serviceWorker.register('/sw.js').catch(() => {});
-        });
-      }
-    `,
-          }}
-        />
-        <Toaster />
+        <ThemeProvider>
+          <OrganizationJsonLd />
+          <GoogleAnalytics />
+          {children}
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+        if ('serviceWorker' in navigator) {
+          window.addEventListener('load', () => {
+            navigator.serviceWorker.register('/sw.js').catch(() => {});
+          });
+        }
+      `,
+            }}
+          />
+          <Toaster />
+        </ThemeProvider>
       </body>
     </html>
   );

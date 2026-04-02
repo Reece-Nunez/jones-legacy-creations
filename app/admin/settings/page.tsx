@@ -176,7 +176,7 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="space-y-6 max-w-3xl">
+    <div className="space-y-6 max-w-3xl mx-auto w-full">
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
@@ -340,7 +340,7 @@ export default function SettingsPage() {
 
       {/* Sticky save bar when dirty */}
       {dirty && (
-        <div className="fixed bottom-0 left-0 right-0 lg:left-64 z-20 bg-white border-t border-gray-200 px-6 py-3 flex items-center justify-between shadow-lg">
+        <div className="fixed bottom-[52px] lg:bottom-0 left-0 right-0 lg:left-64 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 px-6 py-3 flex items-center justify-between shadow-lg">
           <p className="text-sm text-gray-600">You have unsaved changes</p>
           <Button onClick={handleSave} isLoading={saving}>
             <Save className="w-4 h-4 mr-1.5" />

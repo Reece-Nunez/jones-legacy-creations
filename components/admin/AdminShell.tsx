@@ -350,16 +350,16 @@ export default function AdminShell({
   );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
       {/* Desktop sidebar */}
-      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col bg-slate-900 lg:flex">
+      <aside className="fixed inset-y-0 left-0 z-30 hidden w-64 flex-col overflow-y-auto bg-slate-900 lg:flex">
         {sidebarContent}
       </aside>
 
       {/* Main content */}
       <div className="lg:pl-64">
         {/* Mobile top bar — compact, app-like */}
-        <div className="sticky top-0 z-20 bg-white shadow-sm lg:hidden">
+        <div className="sticky top-0 z-20 bg-white dark:bg-gray-900 shadow-sm lg:hidden">
           <div className="flex h-14 items-center justify-between px-4">
             <div className="flex items-center gap-3">
               <Sheet open={sidebarOpen} onOpenChange={setSidebarOpen}>
@@ -368,7 +368,7 @@ export default function AdminShell({
                     <button
                       aria-expanded={sidebarOpen}
                       aria-controls="mobile-sidebar"
-                      className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 hover:bg-slate-100 active:bg-slate-200 transition-colors"
+                      className="flex h-11 w-11 items-center justify-center rounded-lg text-slate-600 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 active:bg-slate-200 transition-colors"
                     />
                   }
                 >
@@ -388,7 +388,7 @@ export default function AdminShell({
                   </div>
                 </SheetContent>
               </Sheet>
-              <span className="text-sm font-bold text-slate-800 tracking-tight">JLC Admin</span>
+              <span className="text-sm font-bold text-slate-800 dark:text-slate-200 tracking-tight">JLC Admin</span>
             </div>
             {/* Mobile search toggle area */}
             <div className="flex items-center gap-1">
@@ -409,7 +409,7 @@ export default function AdminShell({
 
       {/* Mobile bottom tab bar — iOS/Android app style */}
       <nav
-        className="fixed bottom-0 left-0 right-0 z-30 border-t border-gray-200 bg-white/95 backdrop-blur-lg lg:hidden safe-bottom"
+        className="fixed bottom-0 left-0 right-0 z-30 border-t border-gray-200 dark:border-gray-800 bg-white/95 dark:bg-gray-900/95 backdrop-blur-lg lg:hidden safe-bottom"
         aria-label="Mobile navigation"
         style={{ paddingBottom: "env(safe-area-inset-bottom, 0px)" }}
       >
