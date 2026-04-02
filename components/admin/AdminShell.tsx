@@ -18,6 +18,8 @@ import {
   Menu,
   X,
   LogOut,
+  Settings,
+  UserCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
@@ -314,8 +316,24 @@ export default function AdminShell({
       </nav>
 
       {/* Footer */}
-      <div className="px-3 py-4 space-y-3">
-        <Separator className="bg-slate-700" />
+      <div className="px-3 py-4 space-y-1">
+        <Separator className="bg-slate-700 !mb-3" />
+        <Link
+          href="/admin/profile"
+          onClick={() => setSidebarOpen(false)}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white"
+        >
+          <UserCircle className="h-5 w-5 shrink-0" />
+          Profile
+        </Link>
+        <Link
+          href="/admin/settings"
+          onClick={() => setSidebarOpen(false)}
+          className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white"
+        >
+          <Settings className="h-5 w-5 shrink-0" />
+          Settings
+        </Link>
         <button
           onClick={handleSignOut}
           aria-label="Sign out"
@@ -324,7 +342,7 @@ export default function AdminShell({
           <LogOut className="h-5 w-5 shrink-0" />
           Sign Out
         </button>
-        <p className="px-3 text-xs text-slate-500">
+        <p className="px-3 pt-2 text-xs text-slate-500">
           &copy; {new Date().getFullYear()} Jones Legacy Creations
         </p>
       </div>

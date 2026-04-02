@@ -104,7 +104,7 @@ export function SimpleQuoteEditor({
   const addCustomTrade = (trade: CustomTrade) => {
     setItems((prev) => [
       ...prev,
-      { trade: trade.trade_name, cost: trade.default_cost || 0, isOwnerPurchase: false, note: "" },
+      { trade: trade.trade_name, cost: 0, isOwnerPurchase: false, note: "" },
     ]);
     setShowCustomPicker(false);
     setCustomSearch("");
@@ -128,7 +128,7 @@ export function SimpleQuoteEditor({
       await fetch("/api/admin/custom-trades", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ trade_name: item.trade.trim(), default_cost: item.cost }),
+        body: JSON.stringify({ trade_name: item.trade.trim() }),
       }).catch(() => {});
     }
 
@@ -138,7 +138,7 @@ export function SimpleQuoteEditor({
         await fetch("/api/admin/custom-trades", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ trade_name: item.trade.trim(), default_cost: item.cost }),
+          body: JSON.stringify({ trade_name: item.trade.trim() }),
         }).catch(() => {});
       }
     }
@@ -184,7 +184,7 @@ export function SimpleQuoteEditor({
   return (
     <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
       <div className="flex items-center justify-between mb-4">
-        <h3 className="text-lg font-semibold text-gray-900">Cost Breakdown</h3>
+        <h3 className="text-lg font-semibold text-gray-900">Pricing Breakdown</h3>
         {defaults.includeOwnerPurchases && (
           <span className="text-xs text-gray-500">
             Toggle &ldquo;OP&rdquo; for owner-purchased items
@@ -194,7 +194,7 @@ export function SimpleQuoteEditor({
 
       {/* Header row */}
       <div className="flex items-center gap-2 px-1 pb-2 border-b border-gray-200 text-xs font-medium text-gray-500 uppercase tracking-wider">
-        <span className="flex-1">Trade</span>
+        <span className="flex-1">Item</span>
         <span className="w-32 text-right">Cost</span>
         {defaults.includeOwnerPurchases && (
           <span className="w-10 text-center">OP</span>
@@ -217,7 +217,7 @@ export function SimpleQuoteEditor({
               type="text"
               value={item.trade}
               onChange={(e) => updateItem(index, { trade: e.target.value })}
-              placeholder="Trade name"
+              placeholder="Item name"
               className="flex-1 min-w-0 px-2 py-1.5 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-black focus:border-transparent"
             />
 
@@ -269,7 +269,7 @@ export function SimpleQuoteEditor({
                 type="button"
                 onClick={() => removeItem(index)}
                 className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded hover:bg-red-50"
-                aria-label={`Remove ${item.trade || "item"}`}
+                aria-label={`Remove ${item.trade || "line item"}`}
               >
                 <X className="w-4 h-4" />
               </button>
@@ -286,7 +286,7 @@ export function SimpleQuoteEditor({
           className="flex items-center gap-1.5 px-2 py-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors"
         >
           <Plus className="w-4 h-4" />
-          Add Trade
+          Add Item
         </button>
         {customTrades.length > 0 && (
           <div ref={pickerRef} className="relative">
@@ -305,28 +305,23 @@ export function SimpleQuoteEditor({
                     type="text"
                     value={customSearch}
                     onChange={(e) => setCustomSearch(e.target.value)}
-                    placeholder="Search trades..."
+                    placeholder="Search items..."
                     className="w-full px-3 py-2 text-sm border border-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-black"
                     autoFocus
                   />
                 </div>
                 <div className="max-h-48 overflow-y-auto">
                   {filteredCustomTrades.length === 0 ? (
-                    <p className="px-3 py-4 text-sm text-gray-400 text-center">No matching trades</p>
+                    <p className="px-3 py-4 text-sm text-gray-400 text-center">No matching items</p>
                   ) : (
                     filteredCustomTrades.map((trade) => (
                       <button
                         key={trade.id}
                         type="button"
                         onClick={() => addCustomTrade(trade)}
-                        className="flex items-center justify-between w-full px-3 py-2 text-sm hover:bg-gray-50 transition-colors text-left"
+                        className="flex items-center w-full px-3 py-2 text-sm hover:bg-gray-50 transition-colors text-left"
                       >
                         <span className="text-gray-900">{trade.trade_name}</span>
-                        {trade.default_cost != null && trade.default_cost > 0 && (
-                          <span className="text-gray-400 text-xs">
-                            {formatCurrency(trade.default_cost)}
-                          </span>
-                        )}
                       </button>
                     ))
                   )}
@@ -340,7 +335,7 @@ export function SimpleQuoteEditor({
       {/* Totals */}
       <div className="mt-4 pt-3 border-t-2 border-gray-200 space-y-1">
         <div className="flex justify-between text-sm">
-          <span className="font-medium text-gray-700">Trade Costs</span>
+          <span className="font-medium text-gray-700">Item Costs</span>
           <span className="font-semibold">{formatCurrency(tradeCosts)}</span>
         </div>
         {defaults.includeOwnerPurchases && ownerPurchases > 0 && (

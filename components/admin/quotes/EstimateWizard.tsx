@@ -474,7 +474,7 @@ export function EstimateWizard() {
                     </dd>
                   </div>
                   <div className="flex justify-between text-sm">
-                    <dt className="text-gray-500">Trade Costs</dt>
+                    <dt className="text-gray-500">Item Costs</dt>
                     <dd className="text-gray-900 font-medium">
                       {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tradeCosts)}
                     </dd>
@@ -501,7 +501,7 @@ export function EstimateWizard() {
             {simpleItems.length > 0 && (
               <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-6">
                 <h4 className="text-sm font-medium text-gray-500 mb-3">
-                  Cost Breakdown
+                  Pricing Breakdown
                 </h4>
                 <div className="divide-y divide-gray-100">
                   {simpleItems.filter((i) => i.cost > 0).map((item, idx) => (

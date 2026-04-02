@@ -262,7 +262,7 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
             )}
             <div className="pt-2 border-t border-gray-100">
               <div className="flex justify-between text-sm">
-                <span className="text-gray-500">Trade Costs</span>
+                <span className="text-gray-500">Item Costs</span>
                 <span className="font-medium text-gray-900">
                   {fmt(simpleItems.filter((i) => !i.isOwnerPurchase).reduce((s, i) => s + i.cost, 0))}
                 </span>

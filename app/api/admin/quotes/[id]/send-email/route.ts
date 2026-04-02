@@ -109,7 +109,7 @@ function buildEmailHtml(
   let tablesHtml = "";
 
   if (includeOwnerPurchases && ownerItems.length > 0) {
-    tablesHtml += buildTable(tradeItems, "Trade Costs", tradeCostTotal);
+    tablesHtml += buildTable(tradeItems, "Item Costs", tradeCostTotal);
     tablesHtml += buildTable(ownerItems, "Owner Purchases", ownerTotal);
     tablesHtml += `
       <table width="100%" cellpadding="0" cellspacing="0" style="border-collapse:collapse;margin-bottom:24px;">
