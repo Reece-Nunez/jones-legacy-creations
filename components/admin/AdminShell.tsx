@@ -22,6 +22,7 @@ import {
   UserCircle,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { useEnsureProfile } from "@/lib/hooks/useEnsureProfile";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
@@ -80,6 +81,7 @@ export default function AdminShell({
 }) {
   const pathname = usePathname();
   const router = useRouter();
+  useEnsureProfile();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [newEstimateCount, setNewEstimateCount] = useState(0);
   const [missingW9Count, setMissingW9Count] = useState(0);
