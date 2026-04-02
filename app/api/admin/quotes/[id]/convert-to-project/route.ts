@@ -11,6 +11,13 @@ const JOB_TYPE_TO_PROJECT_TYPE: Record<string, string> = {
   repair_punch: "other",
 };
 
+interface SimpleItem {
+  trade: string;
+  cost: number;
+  isOwnerPurchase: boolean;
+  note: string;
+}
+
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -18,7 +25,7 @@ export async function POST(
   const { id } = await params;
   const supabase = await createClient();
 
-  // Fetch the quote with sections
+  // Fetch the quote
   const { data: quote, error: quoteError } = await supabase
     .from("quotes")
     .select("*")
@@ -40,8 +47,30 @@ export async function POST(
     );
   }
 
-  // Extract job-type-specific inputs for extra field mapping
+  // Extract job-type-specific inputs
   const inputs = (quote.job_type_inputs || {}) as Record<string, unknown>;
+
+  // Extract simple items for budget creation
+  const simpleItems = (inputs.simple_items as SimpleItem[] | undefined) ?? [];
+
+  // Calculate totals from simple items
+  const contractorTotal = simpleItems
+    .filter((i) => !i.isOwnerPurchase)
+    .reduce((sum, i) => sum + (i.cost || 0), 0);
+  const grandTotal = simpleItems.reduce((sum, i) => sum + (i.cost || 0), 0);
+
+  // Use computed total if grand_total column is 0 (legacy quotes)
+  const estimatedValue = quote.grand_total > 0 ? quote.grand_total : grandTotal;
+  const contractValue = contractorTotal > 0 ? contractorTotal : estimatedValue;
+
+  // Collect notes from all available fields
+  const notesParts = [
+    quote.notes,
+    quote.included_scope ? `Included Scope:\n${quote.included_scope}` : null,
+    quote.excluded_scope ? `Excluded Scope:\n${quote.excluded_scope}` : null,
+    quote.owner_supplied_materials ? `Owner-Supplied Materials:\n${quote.owner_supplied_materials}` : null,
+    `Created from Quote ${quote.quote_number}`,
+  ].filter(Boolean);
 
   // Build project data from quote fields
   const projectData: Record<string, unknown> = {
@@ -55,17 +84,13 @@ export async function POST(
     zip: quote.zip,
     status: "approved",
     project_type: JOB_TYPE_TO_PROJECT_TYPE[quote.job_type_slug] || "other",
-    description: quote.scope_summary,
-    notes: [
-      quote.notes,
-      quote.included_scope ? `Included Scope: ${quote.included_scope}` : null,
-      `Created from Quote ${quote.quote_number}`,
-    ].filter(Boolean).join("\n\n"),
-    estimated_value: quote.grand_total,
-    contract_value: quote.grand_total,
+    description: quote.scope_summary || quote.notes || null,
+    notes: notesParts.join("\n\n"),
+    estimated_value: estimatedValue,
+    contract_value: contractValue,
     start_date: quote.target_start_date,
     end_date: quote.desired_completion_date,
-    // Map from job_type_inputs if available
+    // Map job-type-specific inputs
     square_footage: inputs.heated_sqft
       ?? (inputs.width && inputs.length ? Number(inputs.width) * Number(inputs.length) : null),
     stories: inputs.number_of_stories ? Number(inputs.number_of_stories) : null,
@@ -88,67 +113,41 @@ export async function POST(
     return NextResponse.json({ error: projectError.message }, { status: 400 });
   }
 
-  // Fetch quote sections to create budget line items
-  const { data: sections } = await supabase
-    .from("quote_sections")
-    .select("*")
-    .eq("quote_id", id)
-    .order("sort_order");
+  // Create budget line items from simple items
+  const pricedItems = simpleItems.filter((i) => i.cost > 0);
 
-  // Create budget line items from quote sections
-  if (sections && sections.length > 0) {
-    const budgetItems = sections.map((section, index) => ({
+  if (pricedItems.length > 0) {
+    const budgetItems = pricedItems.map((item, index) => ({
       project_id: project.id,
       line_number: String(index + 1),
-      description: section.name.toUpperCase(),
-      budgeted_amount: Number(section.subtotal) || 0,
-      notes: section.notes,
+      description: item.trade.toUpperCase(),
+      budgeted_amount: item.cost,
+      notes: [
+        item.isOwnerPurchase ? "Owner Purchase" : null,
+        item.note || null,
+      ].filter(Boolean).join(" — ") || null,
     }));
-
-    // Add overhead, profit, contingency as separate line items
-    if (Number(quote.overhead_amount) > 0) {
-      budgetItems.push({
-        project_id: project.id,
-        line_number: String(budgetItems.length + 1),
-        description: "OVERHEAD",
-        budgeted_amount: Number(quote.overhead_amount),
-        notes: `${quote.overhead_pct}%`,
-      });
-    }
-    if (Number(quote.profit_amount) > 0) {
-      budgetItems.push({
-        project_id: project.id,
-        line_number: String(budgetItems.length + 1),
-        description: "PROFIT",
-        budgeted_amount: Number(quote.profit_amount),
-        notes: `${quote.profit_pct}%`,
-      });
-    }
-    if (Number(quote.contingency_amount) > 0) {
-      budgetItems.push({
-        project_id: project.id,
-        line_number: String(budgetItems.length + 1),
-        description: "CONTINGENCY",
-        budgeted_amount: Number(quote.contingency_amount),
-        notes: `${quote.contingency_pct}%`,
-      });
-    }
 
     await supabase.from("budget_line_items").insert(budgetItems);
   }
 
-  // Link the quote to the new project
+  // Link the quote to the new project and mark as accepted
   await supabase
     .from("quotes")
     .update({ project_id: project.id, status: "accepted" })
     .eq("id", id);
 
-  // Log activity on the new project
+  // Log activity
   await supabase.from("activity_log").insert({
     project_id: project.id,
     action: "project_created",
-    description: `Project created from quote ${quote.quote_number}`,
-    metadata: { quote_id: id, quote_number: quote.quote_number },
+    description: `Project created from quote ${quote.quote_number} with ${pricedItems.length} budget line items`,
+    metadata: {
+      quote_id: id,
+      quote_number: quote.quote_number,
+      budget_items_count: pricedItems.length,
+      estimated_value: estimatedValue,
+    },
   });
 
   return NextResponse.json(project, { status: 201 });
