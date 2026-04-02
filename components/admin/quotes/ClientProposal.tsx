@@ -2,50 +2,35 @@
 
 import { useState, useEffect, useCallback } from "react";
 import toast from "react-hot-toast";
-import type {
-  Quote,
-  QuoteSection,
-  QuoteItem,
-  QuoteExclusion,
-  QuoteAllowance,
-} from "@/lib/types/quotes";
-import {
-  JOB_TYPE_LABELS,
-  ALLOWANCE_CATEGORY_LABELS,
-} from "@/lib/types/quotes";
-
-// ── Types ────────────────────────────────────────────────────────────────────
-
-interface SectionWithItems extends QuoteSection {
-  items: QuoteItem[];
-}
-
-interface FullQuote extends Quote {
-  sections: SectionWithItems[];
-  exclusions: QuoteExclusion[];
-  allowances: QuoteAllowance[];
-}
+import type { Quote } from "@/lib/types/quotes";
+import { JOB_TYPE_LABELS } from "@/lib/types/quotes";
+import type { SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
 
 interface ClientProposalProps {
   quoteId: string;
   initialQuote: Quote;
 }
 
-// ── Helpers ──────────────────────────────────────────────────────────────────
-
 const fmt = (v: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    v
-  );
+  new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: 2,
+  }).format(v);
 
 const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString() : "--";
-
-// ── Component ────────────────────────────────────────────────────────────────
+  d
+    ? new Date(d).toLocaleDateString("en-US", {
+        month: "long",
+        day: "numeric",
+        year: "numeric",
+      })
+    : null;
 
 export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
-  const [quote, setQuote] = useState<FullQuote | null>(null);
+  const [quote, setQuote] = useState<Quote>(initialQuote);
   const [loading, setLoading] = useState(true);
+  const [items, setItems] = useState<SimpleQuoteItem[]>([]);
 
   const fetchQuote = useCallback(async () => {
     try {
@@ -53,6 +38,10 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
       if (!res.ok) throw new Error();
       const data = await res.json();
       setQuote(data);
+      const inputs = data.job_type_inputs as Record<string, unknown> | null;
+      if (inputs?.simple_items && Array.isArray(inputs.simple_items)) {
+        setItems(inputs.simple_items as SimpleQuoteItem[]);
+      }
     } catch {
       toast.error("Failed to load quote data");
     } finally {
@@ -80,31 +69,52 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
     );
   }
 
-  const clientSections = quote.sections.filter((s) => s.is_visible_to_client);
-  const today = new Date().toLocaleDateString();
+  const today = new Date().toLocaleDateString("en-US", {
+    month: "long",
+    day: "numeric",
+    year: "numeric",
+  });
+
+  const lineItems = items.filter((i) => !i.isOwnerPurchase && i.cost > 0);
+  const ownerItems = items.filter((i) => i.isOwnerPurchase && i.cost > 0);
+  const subtotal = lineItems.reduce((sum, i) => sum + i.cost, 0);
+  const ownerTotal = ownerItems.reduce((sum, i) => sum + i.cost, 0);
+  const grandTotal = subtotal + ownerTotal;
+
+  const addressParts = [quote.address, quote.city, quote.state, quote.zip].filter(Boolean);
 
   return (
     <>
-      {/* Print button - hidden when printing */}
-      <div className="print:hidden fixed top-4 right-4 z-50">
+      {/* Print button */}
+      <div className="print:hidden fixed top-4 right-4 z-50 flex gap-2">
         <button
           onClick={() => window.print()}
           className="inline-flex items-center px-6 py-3 bg-black text-white text-sm font-medium rounded-full hover:bg-gray-800 transition-colors shadow-lg"
         >
-          Print Proposal
+          Print / Save PDF
         </button>
       </div>
 
       <style>{`
         @media print {
-          body { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+          body {
+            -webkit-print-color-adjust: exact;
+            print-color-adjust: exact;
+            margin: 0;
+          }
           .print\\:hidden { display: none !important; }
           .page-break { page-break-before: always; }
+          .no-break { page-break-inside: avoid; }
+        }
+        @page {
+          margin: 0.75in;
+          size: letter;
         }
       `}</style>
 
-      <div className="max-w-[800px] mx-auto bg-white px-10 py-12 print:px-0 print:py-0 print:max-w-none">
-        {/* Company Header */}
+      <div className="max-w-[800px] mx-auto bg-white text-gray-900 px-10 py-12 print:px-0 print:py-0 print:max-w-none">
+
+        {/* ── Header ─────────────────────────────────────────────── */}
         <div className="border-b-2 border-gray-900 pb-6 mb-8">
           <div className="flex items-start justify-between">
             <div>
@@ -116,16 +126,18 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
               </p>
             </div>
             <div className="text-right text-sm text-gray-500">
-              <p>Proposal</p>
-              <p className="font-medium text-gray-900 text-lg">
+              <p className="text-xs uppercase tracking-wider font-semibold text-gray-400">
+                Proposal
+              </p>
+              <p className="font-medium text-gray-900 text-lg mt-0.5">
                 {quote.quote_number}
               </p>
-              <p className="mt-1">Date: {today}</p>
+              <p className="mt-1">{today}</p>
             </div>
           </div>
         </div>
 
-        {/* Client Info */}
+        {/* ── Client & Project Info ───────────────────────────────── */}
         <div className="grid grid-cols-2 gap-8 mb-10">
           <div>
             <h2 className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-2">
@@ -134,17 +146,13 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
             <p className="text-base font-medium text-gray-900">
               {quote.client_name}
             </p>
-            {(quote.address || quote.city) && (
+            {addressParts.length > 0 && (
               <p className="text-sm text-gray-600 mt-1">
-                {[quote.address, quote.city, quote.state, quote.zip]
-                  .filter(Boolean)
-                  .join(", ")}
+                {addressParts.join(", ")}
               </p>
             )}
             {quote.client_email && (
-              <p className="text-sm text-gray-500 mt-1">
-                {quote.client_email}
-              </p>
+              <p className="text-sm text-gray-500 mt-1">{quote.client_email}</p>
             )}
             {quote.client_phone && (
               <p className="text-sm text-gray-500">{quote.client_phone}</p>
@@ -158,7 +166,7 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
               {quote.project_name}
             </p>
             <p className="text-sm text-gray-600 mt-1">
-              Type: {JOB_TYPE_LABELS[quote.job_type_slug]}
+              {JOB_TYPE_LABELS[quote.job_type_slug]}
             </p>
             {quote.target_start_date && (
               <p className="text-sm text-gray-500 mt-1">
@@ -173,211 +181,144 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
           </div>
         </div>
 
-        {/* Scope of Work */}
-        {quote.included_scope && (
-          <div className="mb-10">
+        {/* ── Notes / Scope ──────────────────────────────────────── */}
+        {(quote.notes || quote.scope_summary || quote.included_scope) && (
+          <div className="mb-10 no-break">
             <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
               Scope of Work
             </h2>
             <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-              {quote.included_scope}
+              {quote.included_scope || quote.scope_summary || quote.notes}
             </p>
           </div>
         )}
 
-        {quote.scope_summary && !quote.included_scope && (
-          <div className="mb-10">
+        {/* ── Cost Summary ───────────────────────────────────────── */}
+        {lineItems.length > 0 && (
+          <div className="mb-10 no-break">
             <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Scope of Work
-            </h2>
-            <p className="text-sm text-gray-700 leading-relaxed whitespace-pre-line">
-              {quote.scope_summary}
-            </p>
-          </div>
-        )}
-
-        {/* Pricing Table - Category level only */}
-        <div className="mb-10">
-          <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-            Cost Summary
-          </h2>
-          <table className="w-full text-sm">
-            <thead>
-              <tr className="border-b border-gray-300 text-left">
-                <th className="py-2 font-semibold text-gray-700">Category</th>
-                <th className="py-2 font-semibold text-gray-700 text-right">
-                  Amount
-                </th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-gray-100">
-              {clientSections.map((section) => (
-                <tr key={section.id}>
-                  <td className="py-2 text-gray-700">{section.name}</td>
-                  <td className="py-2 text-right text-gray-900 font-medium">
-                    {fmt(section.subtotal)}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Allowances */}
-        {quote.allowances.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Allowances
-            </h2>
-            <p className="text-xs text-gray-500 mb-3">
-              Allowance items are budgeted amounts. Final cost may vary based on
-              selections made by the owner.
-            </p>
-            <table className="w-full text-sm">
-              <tbody className="divide-y divide-gray-100">
-                {quote.allowances.map((a) => (
-                  <tr key={a.id}>
-                    <td className="py-2 text-gray-700">
-                      <span className="inline-block bg-blue-50 text-blue-700 rounded px-2 py-0.5 text-xs font-medium mr-2">
-                        ALLOWANCE
-                      </span>
-                      {a.description}
-                      <span className="text-gray-400 text-xs ml-1">
-                        ({ALLOWANCE_CATEGORY_LABELS[a.category]})
-                      </span>
-                    </td>
-                    <td className="py-2 text-right text-gray-900 font-medium">
-                      {fmt(a.amount)}
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        )}
-
-        {/* Exclusions */}
-        {quote.exclusions.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Exclusions
-            </h2>
-            <p className="text-xs text-gray-500 mb-3">
-              The following items are NOT included in this proposal:
-            </p>
-            <ol className="list-decimal list-inside space-y-1">
-              {quote.exclusions.map((e) => (
-                <li key={e.id} className="text-sm text-gray-700">
-                  {e.exclusion_text}
-                </li>
-              ))}
-            </ol>
-          </div>
-        )}
-
-        {/* Pricing Summary */}
-        <div className="mb-10 page-break">
-          <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-            Proposal Summary
-          </h2>
-          <table className="w-full text-sm">
-            <tbody>
-              <tr className="border-b border-gray-100">
-                <td className="py-2 text-gray-600">Subtotal</td>
-                <td className="py-2 text-right font-medium text-gray-900">
-                  {fmt(quote.subtotal)}
-                </td>
-              </tr>
-              {quote.overhead_amount > 0 && (
-                <tr className="border-b border-gray-100">
-                  <td className="py-2 text-gray-600">General Conditions</td>
-                  <td className="py-2 text-right font-medium text-gray-900">
-                    {fmt(quote.overhead_amount)}
-                  </td>
-                </tr>
-              )}
-              {quote.profit_amount > 0 && (
-                <tr className="border-b border-gray-100">
-                  <td className="py-2 text-gray-600">&nbsp;</td>
-                  <td className="py-2 text-right font-medium text-gray-900">
-                    &nbsp;
-                  </td>
-                </tr>
-              )}
-              {quote.contingency_amount > 0 && (
-                <tr className="border-b border-gray-100">
-                  <td className="py-2 text-gray-600">Contingency</td>
-                  <td className="py-2 text-right font-medium text-gray-900">
-                    {fmt(quote.contingency_amount)}
-                  </td>
-                </tr>
-              )}
-              {quote.tax_amount > 0 && (
-                <tr className="border-b border-gray-100">
-                  <td className="py-2 text-gray-600">Sales Tax</td>
-                  <td className="py-2 text-right font-medium text-gray-900">
-                    {fmt(quote.tax_amount)}
-                  </td>
-                </tr>
-              )}
-              <tr className="border-t-2 border-gray-900">
-                <td className="py-3 text-lg font-serif font-bold text-gray-900">
-                  Total
-                </td>
-                <td className="py-3 text-right text-lg font-bold text-gray-900">
-                  {fmt(quote.grand_total)}
-                </td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-
-        {/* Payment Schedule */}
-        {quote.payment_schedule && quote.payment_schedule.length > 0 && (
-          <div className="mb-10">
-            <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
-              Payment Schedule
+              Cost Summary
             </h2>
             <table className="w-full text-sm">
               <thead>
-                <tr className="border-b border-gray-300 text-left">
-                  <th className="py-2 font-semibold text-gray-700">
-                    Milestone
+                <tr className="border-b border-gray-300">
+                  <th className="py-2 text-left font-semibold text-gray-700">
+                    Item
                   </th>
-                  <th className="py-2 font-semibold text-gray-700">
-                    Description
-                  </th>
-                  <th className="py-2 font-semibold text-gray-700 text-right">
-                    %
-                  </th>
-                  <th className="py-2 font-semibold text-gray-700 text-right">
+                  <th className="py-2 text-right font-semibold text-gray-700">
                     Amount
                   </th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100">
-                {quote.payment_schedule.map((ps, i) => (
-                  <tr key={i}>
-                    <td className="py-2 text-gray-700">{ps.milestone}</td>
-                    <td className="py-2 text-gray-600">{ps.description}</td>
-                    <td className="py-2 text-right text-gray-700">
-                      {ps.percentage}%
-                    </td>
-                    <td className="py-2 text-right font-medium text-gray-900">
-                      {fmt(
-                        ps.amount ?? (quote.grand_total * ps.percentage) / 100
-                      )}
+              <tbody>
+                {lineItems.map((item, idx) => (
+                  <tr
+                    key={idx}
+                    className="border-b border-gray-100"
+                  >
+                    <td className="py-2.5 text-gray-700">{item.trade}</td>
+                    <td className="py-2.5 text-right text-gray-900 font-medium tabular-nums">
+                      {fmt(item.cost)}
                     </td>
                   </tr>
                 ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t-2 border-gray-900">
+                  <td className="py-3 text-base font-serif font-bold text-gray-900">
+                    {ownerItems.length > 0 ? "Subtotal" : "Total"}
+                  </td>
+                  <td className="py-3 text-right text-base font-bold text-gray-900 tabular-nums">
+                    {fmt(subtotal)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+
+        {/* ── Owner-Supplied Items ───────────────────────────────── */}
+        {ownerItems.length > 0 && (
+          <div className="mb-10 no-break">
+            <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
+              Owner Purchases
+            </h2>
+            <p className="text-xs text-gray-500 mb-3">
+              The following items will be purchased directly by the owner and are
+              not included in the contractor&apos;s scope above.
+            </p>
+            <table className="w-full text-sm">
+              <tbody>
+                {ownerItems.map((item, idx) => (
+                  <tr key={idx} className="border-b border-gray-100">
+                    <td className="py-2.5 text-gray-700">{item.trade}</td>
+                    <td className="py-2.5 text-right text-gray-900 font-medium tabular-nums">
+                      {fmt(item.cost)}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+              <tfoot>
+                <tr className="border-t border-gray-300">
+                  <td className="py-2 font-medium text-gray-700">
+                    Owner Purchase Total
+                  </td>
+                  <td className="py-2 text-right font-medium text-gray-900 tabular-nums">
+                    {fmt(ownerTotal)}
+                  </td>
+                </tr>
+              </tfoot>
+            </table>
+          </div>
+        )}
+
+        {/* ── Grand Total (if owner items exist) ─────────────────── */}
+        {ownerItems.length > 0 && (
+          <div className="mb-10 no-break bg-gray-50 rounded-lg p-5">
+            <table className="w-full text-sm">
+              <tbody>
+                <tr>
+                  <td className="py-1 text-gray-600">Contractor Costs</td>
+                  <td className="py-1 text-right font-medium text-gray-900 tabular-nums">
+                    {fmt(subtotal)}
+                  </td>
+                </tr>
+                <tr>
+                  <td className="py-1 text-gray-600">Owner Purchases</td>
+                  <td className="py-1 text-right font-medium text-gray-900 tabular-nums">
+                    {fmt(ownerTotal)}
+                  </td>
+                </tr>
+                <tr className="border-t-2 border-gray-900">
+                  <td className="pt-3 text-lg font-serif font-bold text-gray-900">
+                    Total Project Cost
+                  </td>
+                  <td className="pt-3 text-right text-lg font-bold text-gray-900 tabular-nums">
+                    {fmt(grandTotal)}
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
         )}
 
-        {/* Valid Through */}
+        {/* ── No items fallback ──────────────────────────────────── */}
+        {lineItems.length === 0 && ownerItems.length === 0 && (
+          <div className="mb-10 p-6 border border-gray-200 rounded-lg text-center">
+            <p className="text-sm text-gray-500">
+              Pricing details will be provided upon completion of the estimate.
+            </p>
+            {quote.grand_total > 0 && (
+              <p className="mt-3 text-2xl font-bold text-gray-900">
+                Estimated Total: {fmt(quote.grand_total)}
+              </p>
+            )}
+          </div>
+        )}
+
+        {/* ── Valid Through ──────────────────────────────────────── */}
         {quote.valid_through_date && (
-          <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200">
+          <div className="mb-8 p-4 bg-gray-50 rounded-lg border border-gray-200 no-break">
             <p className="text-sm text-gray-700">
               <strong>This proposal is valid through:</strong>{" "}
               {fmtDate(quote.valid_through_date)}
@@ -385,9 +326,9 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
           </div>
         )}
 
-        {/* Change Order Language */}
+        {/* ── Change Order Language ──────────────────────────────── */}
         {quote.change_order_language && (
-          <div className="mb-10">
+          <div className="mb-10 no-break">
             <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
               Change Orders
             </h2>
@@ -397,24 +338,23 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
           </div>
         )}
 
-        {/* Terms and Conditions */}
-        <div className="mb-10">
+        {/* ── Terms & Conditions ─────────────────────────────────── */}
+        <div className="mb-10 no-break">
           <h2 className="text-lg font-serif font-semibold text-gray-900 mb-3 border-b border-gray-200 pb-2">
             Terms &amp; Conditions
           </h2>
           <div className="text-xs text-gray-600 leading-relaxed space-y-2">
             <p>
-              1. This proposal is based on the scope described above. Any
-              changes or additions to the scope of work will be documented via a
-              written change order and may affect the contract price and
-              schedule.
+              1. This proposal is based on the scope described above. Any changes
+              or additions will be documented via a written change order and may
+              affect the contract price and schedule.
             </p>
             <p>
               2. Owner is responsible for obtaining and paying for all necessary
               permits unless otherwise stated.
             </p>
             <p>
-              3. Contractor shall maintain liability and workers compensation
+              3. Contractor shall maintain liability and workers&apos; compensation
               insurance for the duration of the project.
             </p>
             <p>
@@ -424,8 +364,8 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
               order.
             </p>
             <p>
-              5. Payment terms are as outlined above. Late payments may result
-              in work stoppage and/or applicable late fees.
+              5. Payment terms are net 30 unless otherwise agreed upon in writing.
+              Late payments may result in work stoppage and applicable late fees.
             </p>
             <p>
               6. This agreement may be terminated by either party with 10 days
@@ -434,37 +374,39 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
           </div>
         </div>
 
-        {/* Signature Block */}
-        <div className="mt-16 grid grid-cols-2 gap-12">
+        {/* ── Signature Block ────────────────────────────────────── */}
+        <div className="mt-16 grid grid-cols-2 gap-12 no-break">
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-8">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-10">
               Owner / Client
             </p>
-            <div className="border-b border-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Signature</p>
-            <div className="mt-6 border-b border-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Printed Name</p>
-            <div className="mt-6 border-b border-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Date</p>
+            <div className="border-b border-gray-400 mb-1.5" />
+            <p className="text-xs text-gray-500">Signature</p>
+            <div className="mt-8 border-b border-gray-400 mb-1.5" />
+            <p className="text-xs text-gray-500">Printed Name</p>
+            <div className="mt-8 border-b border-gray-400 mb-1.5" />
+            <p className="text-xs text-gray-500">Date</p>
           </div>
           <div>
-            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-8">
+            <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider mb-10">
               Contractor
             </p>
-            <div className="border-b border-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Signature</p>
-            <div className="mt-6 border-b border-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Printed Name</p>
-            <div className="mt-6 border-b border-gray-400 mb-2" />
-            <p className="text-sm text-gray-600">Date</p>
+            <div className="border-b border-gray-400 mb-1.5" />
+            <p className="text-xs text-gray-500">Signature</p>
+            <div className="mt-8 border-b border-gray-400 mb-1.5" />
+            <p className="text-xs text-gray-500">Printed Name</p>
+            <div className="mt-8 border-b border-gray-400 mb-1.5" />
+            <p className="text-xs text-gray-500">Date</p>
           </div>
         </div>
 
-        {/* Footer */}
-        <div className="mt-16 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
+        {/* ── Footer ─────────────────────────────────────────────── */}
+        <div className="mt-12 pt-4 border-t border-gray-200 text-center text-xs text-gray-400">
           <p>
-            Jones Legacy Creations &middot; {quote.quote_number} &middot;
-            Revision {quote.revision_number}
+            Jones Legacy Creations &middot; {quote.quote_number}
+            {quote.revision_number > 0 && (
+              <> &middot; Revision {quote.revision_number}</>
+            )}
           </p>
         </div>
       </div>
