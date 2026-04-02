@@ -52,7 +52,7 @@ export type Permission =
   | "settings:view"
   | "settings:edit";
 
-// ── All permissions (convenience) ─────────────────────────────────────────────
+// ── Permission Groups ─────────────────────────────────────────────────────────
 const ALL_PERMISSIONS: Permission[] = [
   "dashboard:view",
   "projects:view", "projects:create", "projects:edit", "projects:delete",
@@ -64,14 +64,22 @@ const ALL_PERMISSIONS: Permission[] = [
   "settings:view", "settings:edit",
 ];
 
+/** Everything except team management */
+const STANDARD_PERMISSIONS: Permission[] = ALL_PERMISSIONS.filter(
+  (p) => !p.startsWith("team:")
+);
+
 // ── Role Definitions ──────────────────────────────────────────────────────────
-// Ordered by level descending (highest access first).
+// Currently the ONLY difference between roles is team management access.
+// Owner and Technical Director can manage users; everyone else cannot.
+// The level + permissions system is here so you can tighten access later
+// without restructuring anything.
 
 export const ROLES: Record<RoleSlug, RoleDefinition> = {
   technical_director: {
     slug: "technical_director",
     label: "Technical Director",
-    description: "Full system access. Same as Owner.",
+    description: "Full system access including team management.",
     level: 100,
     permissions: new Set(ALL_PERMISSIONS),
   },
@@ -85,47 +93,23 @@ export const ROLES: Record<RoleSlug, RoleDefinition> = {
   project_manager: {
     slug: "project_manager",
     label: "Project Manager",
-    description: "Manages projects, quotes, contractors, and financials.",
+    description: "Full access to all features except user management.",
     level: 50,
-    permissions: new Set<Permission>([
-      "dashboard:view",
-      "projects:view", "projects:create", "projects:edit",
-      "quotes:view", "quotes:create", "quotes:edit", "quotes:send",
-      "estimates:view", "estimates:manage",
-      "contractors:view", "contractors:create", "contractors:edit",
-      "financials:view", "financials:manage",
-      "settings:view",
-    ]),
+    permissions: new Set(STANDARD_PERMISSIONS),
   },
   office_manager: {
     slug: "office_manager",
     label: "Office Manager",
-    description: "Manages day-to-day operations, financials, and contractors.",
+    description: "Full access to all features except user management.",
     level: 40,
-    permissions: new Set<Permission>([
-      "dashboard:view",
-      "projects:view", "projects:create", "projects:edit",
-      "quotes:view", "quotes:create", "quotes:edit", "quotes:send",
-      "estimates:view", "estimates:manage",
-      "contractors:view", "contractors:create", "contractors:edit",
-      "financials:view", "financials:manage",
-      "settings:view",
-    ]),
+    permissions: new Set(STANDARD_PERMISSIONS),
   },
   office_admin: {
     slug: "office_admin",
     label: "Office Administrator",
-    description: "View access to projects, quotes, and estimates. Limited editing.",
+    description: "Full access to all features except user management.",
     level: 20,
-    permissions: new Set<Permission>([
-      "dashboard:view",
-      "projects:view",
-      "quotes:view",
-      "estimates:view",
-      "contractors:view",
-      "financials:view",
-      "settings:view",
-    ]),
+    permissions: new Set(STANDARD_PERMISSIONS),
   },
 };
 
