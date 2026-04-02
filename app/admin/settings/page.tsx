@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
+import Link from "next/link";
 import {
   Building2,
   Mail,
@@ -12,6 +13,8 @@ import {
   Bell,
   Save,
   Loader2,
+  Users,
+  ChevronRight,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -193,6 +196,21 @@ export default function SettingsPage() {
           Save Changes
         </Button>
       </div>
+
+      {/* Team Management Link */}
+      <Link
+        href="/admin/settings/team"
+        className="flex items-center gap-4 bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:bg-gray-50 transition-colors group"
+      >
+        <div className="flex items-center justify-center w-10 h-10 rounded-lg bg-indigo-50 group-hover:bg-indigo-100 transition-colors">
+          <Users className="w-5 h-5 text-indigo-600" />
+        </div>
+        <div className="flex-1">
+          <h3 className="text-sm font-semibold text-gray-900">Team Members</h3>
+          <p className="text-xs text-gray-500">Manage users, roles, and permissions</p>
+        </div>
+        <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
+      </Link>
 
       {/* Company Info */}
       <SectionCard

@@ -37,12 +37,7 @@ interface UserProfile {
   created_at: string;
 }
 
-const ROLE_LABELS: Record<string, string> = {
-  owner: "Owner",
-  admin: "Admin",
-  project_manager: "Project Manager",
-  viewer: "Viewer",
-};
+import { getRoleLabel } from "@/lib/roles";
 
 const TIMEZONE_OPTIONS = [
   { value: "America/Denver", label: "Mountain Time (MT)" },
@@ -281,7 +276,7 @@ export default function ProfilePage() {
             <p className="text-sm text-gray-500">{profile.email}</p>
             <div className="flex items-center gap-2 mt-1">
               <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
-                {ROLE_LABELS[profile.role] ?? profile.role}
+                {getRoleLabel(profile.role)}
               </span>
               {profile.title && (
                 <span className="text-xs text-gray-400">{profile.title}</span>
@@ -343,7 +338,7 @@ export default function ProfilePage() {
         <FieldRow label="Role" hint="Contact the account owner to change roles">
           <div className="flex items-center gap-3 py-2">
             <span className="inline-flex items-center rounded-full bg-indigo-50 px-3 py-1 text-sm font-medium text-indigo-700">
-              {ROLE_LABELS[profile.role] ?? profile.role}
+              {getRoleLabel(profile.role)}
             </span>
           </div>
         </FieldRow>
