@@ -14,6 +14,7 @@ import {
   ClipboardList,
   Banknote,
   FileCheck,
+  Globe,
   ExternalLink,
   Menu,
   X,
@@ -58,18 +59,18 @@ const mobileTabLinks = [
 const quickLinks = [
   {
     label: "Pending Draws",
-    href: "/admin?filter=draws",
+    href: "/admin/financials",
     icon: Banknote,
   },
   {
     label: "Pending Permits",
-    href: "/admin?filter=permits",
+    href: "/admin",
     icon: FileCheck,
   },
   {
-    label: "Get an Estimate",
-    href: "/estimate",
-    icon: ExternalLink,
+    label: "Back to Site",
+    href: "/",
+    icon: Globe,
     external: true,
   },
 ];
@@ -244,8 +245,8 @@ export default function AdminShell({
       {/* Search */}
       <SearchBar />
 
-      {/* New Project — prominent CTA */}
-      <div className="px-3 mb-2">
+      {/* Quick-create CTAs */}
+      <div className="px-3 mb-2 space-y-1.5">
         <Link
           href="/admin/projects/new"
           onClick={() => setSidebarOpen(false)}
@@ -254,6 +255,15 @@ export default function AdminShell({
         >
           <Plus className="h-4 w-4" />
           New Project
+        </Link>
+        <Link
+          href="/admin/quotes/new"
+          onClick={() => setSidebarOpen(false)}
+          className="flex items-center justify-center gap-2 rounded-lg bg-slate-700 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-slate-600 active:bg-slate-800"
+          style={{ minHeight: 44 }}
+        >
+          <Plus className="h-4 w-4" />
+          New Quote
         </Link>
       </div>
 
