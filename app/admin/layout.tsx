@@ -1,5 +1,6 @@
 import AdminShell from "@/components/admin/AdminShell";
 import { PwaInstallBanner } from "@/components/admin/PwaInstallBanner";
+import { AdminThemeProvider } from "@/components/admin/AdminThemeProvider";
 
 export default function AdminLayout({
   children,
@@ -7,9 +8,11 @@ export default function AdminLayout({
   children: React.ReactNode;
 }) {
   return (
-    <AdminShell>
-      {children}
-      <PwaInstallBanner />
-    </AdminShell>
+    <AdminThemeProvider>
+      <AdminShell>
+        {children}
+        <PwaInstallBanner />
+      </AdminShell>
+    </AdminThemeProvider>
   );
 }

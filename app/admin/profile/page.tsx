@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useTheme } from "next-themes";
+import { useAdminTheme } from "@/components/admin/AdminThemeProvider";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -170,7 +170,7 @@ export default function ProfilePage() {
       .then((r) => r.json())
       .then((data) => {
         setProfile(data);
-        if (data.theme) setNextTheme(data.theme);
+        if (data.theme) setAdminTheme(data.theme);
         setLoading(false);
       })
       .catch(() => {
@@ -185,11 +185,11 @@ export default function ProfilePage() {
     setDirty(true);
   };
 
-  const { setTheme: setNextTheme } = useTheme();
+  const { setTheme: setAdminTheme } = useAdminTheme();
 
   const applyTheme = (theme: "light" | "dark" | "system") => {
     update("theme", theme);
-    setNextTheme(theme);
+    setAdminTheme(theme);
   };
 
   const handleSave = async () => {
