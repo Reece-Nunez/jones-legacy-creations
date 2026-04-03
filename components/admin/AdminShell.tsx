@@ -59,12 +59,12 @@ const mobileTabLinks = [
 const quickLinks = [
   {
     label: "Pending Draws",
-    href: "/admin/financials",
+    href: "/admin/pending-draws",
     icon: Banknote,
   },
   {
     label: "Pending Permits",
-    href: "/admin",
+    href: "/admin/pending-permits",
     icon: FileCheck,
   },
   {
