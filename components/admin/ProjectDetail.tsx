@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
   Mail,
@@ -244,7 +244,11 @@ export default function ProjectDetail({
   contractors,
 }: Props) {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<TabKey>("overview");
+  const searchParams = useSearchParams();
+  const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
+    ? (searchParams.get("tab") as TabKey)
+    : "overview";
+  const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [loading, setLoading] = useState(false);
 
   // ---- financial calculations -------------------------------------------

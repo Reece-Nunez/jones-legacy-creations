@@ -73,7 +73,7 @@ export default async function PendingDrawsPage() {
                     return (
                       <Link
                         key={draw.id}
-                        href={`/admin/projects/${draw.project_id}`}
+                        href={`/admin/projects/${draw.project_id}?tab=draws`}
                         className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50"
                       >
                         <div className="min-w-0 flex-1">

@@ -51,7 +51,7 @@ export default async function PendingPermitsPage() {
             return (
               <Link
                 key={permit.id}
-                href={`/admin/projects/${permit.project_id}`}
+                href={`/admin/projects/${permit.project_id}?tab=permits`}
                 className="flex items-center justify-between rounded-lg border border-gray-200 bg-white px-4 py-3 transition-colors hover:bg-gray-50"
               >
                 <div className="min-w-0 flex-1">
