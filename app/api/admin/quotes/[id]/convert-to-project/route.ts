@@ -4,7 +4,7 @@ import { createClient } from "@/lib/supabase/server";
 // Map quote job_type_slug → project project_type
 const JOB_TYPE_TO_PROJECT_TYPE: Record<string, string> = {
   new_construction: "new_home",
-  takeover: "new_home",
+  takeover: "takeover",
   addition: "addition",
   remodel: "renovation",
   shop_storage: "garage",

@@ -8,7 +8,7 @@ export type ProjectStatus =
   | "completed"
   | "archived";
 
-export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "new_home" | "addition" | "garage" | "deck_patio" | "other";
+export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "new_home" | "takeover" | "addition" | "garage" | "deck_patio" | "other";
 export type FinishLevel = "budget" | "standard" | "mid_range" | "high_end";
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
 export type PaymentStatus = "pending" | "paid";
@@ -293,6 +293,7 @@ export const PROJECT_TYPE_LABELS: Record<ProjectType, string> = {
   renovation: "Renovation",
   interior_design: "Interior Design",
   new_home: "New Custom Home",
+  takeover: "Takeover",
   addition: "Home Addition",
   garage: "Garage",
   deck_patio: "Deck / Patio",
@@ -385,6 +386,7 @@ export const DEFAULT_VENDOR_CATEGORIES = [
 // Cost ranges for the bid estimator (per sq ft)
 export const COST_RANGES: Record<string, { min: number; max: number }> = {
   new_home: { min: 150, max: 350 },
+  takeover: { min: 150, max: 350 },
   addition: { min: 150, max: 300 },
   garage: { min: 40, max: 80 },
   deck_patio: { min: 25, max: 75 },
@@ -393,6 +395,7 @@ export const COST_RANGES: Record<string, { min: number; max: number }> = {
 
 export const PROJECT_TYPE_OPTIONS = [
   { value: "new_home", label: "New Custom Home" },
+  { value: "takeover", label: "Takeover" },
   { value: "addition", label: "Home Addition" },
   { value: "garage", label: "Garage" },
   { value: "deck_patio", label: "Deck / Patio" },
