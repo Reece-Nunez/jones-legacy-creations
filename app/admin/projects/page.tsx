@@ -60,6 +60,7 @@ const PROJECT_TYPE_COLORS: Record<ProjectType, string> = {
   renovation: "bg-amber-100 text-amber-700",
   interior_design: "bg-pink-100 text-pink-700",
   new_home: "bg-emerald-100 text-emerald-700",
+  takeover: "bg-orange-100 text-orange-700",
   addition: "bg-teal-100 text-teal-700",
   garage: "bg-slate-100 text-slate-700",
   deck_patio: "bg-lime-100 text-lime-700",
