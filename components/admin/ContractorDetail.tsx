@@ -699,7 +699,31 @@ export default function ContractorDetail({
                           </div>
                           <button
                             onClick={async () => {
-                              if (!confirm(`Unlink ${proj.name} from this contractor?`)) return;
+                              const confirmed = await new Promise<boolean>((resolve) => {
+                                toast(
+                                  (t) => (
+                                    <div className="flex flex-col gap-3">
+                                      <p className="text-sm font-medium">Unlink {proj.name} from this contractor?</p>
+                                      <div className="flex gap-2">
+                                        <button
+                                          onClick={() => { toast.dismiss(t.id); resolve(true); }}
+                                          className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors"
+                                        >
+                                          Yes, Unlink
+                                        </button>
+                                        <button
+                                          onClick={() => { toast.dismiss(t.id); resolve(false); }}
+                                          className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition-colors"
+                                        >
+                                          Cancel
+                                        </button>
+                                      </div>
+                                    </div>
+                                  ),
+                                  { duration: Infinity }
+                                );
+                              });
+                              if (!confirmed) return;
                               try {
                                 const res = await fetch(`/api/admin/contractors/${contractor.id}/unlink-project`, {
                                   method: "POST",

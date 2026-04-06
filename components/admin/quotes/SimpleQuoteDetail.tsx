@@ -87,9 +87,31 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
   };
 
   const convertToProject = async () => {
-    if (!confirm("Create a new project from this quote? This will set the quote status to Accepted and generate budget line items from the cost breakdown.")) {
-      return;
-    }
+    const confirmed = await new Promise<boolean>((resolve) => {
+      toast(
+        (t) => (
+          <div className="flex flex-col gap-3">
+            <p className="text-sm font-medium">Create a new project from this quote? This will set the quote status to Accepted and generate budget line items from the cost breakdown.</p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => { toast.dismiss(t.id); resolve(true); }}
+                className="px-3 py-1.5 bg-green-600 text-white text-xs font-medium rounded-md hover:bg-green-700 transition-colors"
+              >
+                Yes, Convert
+              </button>
+              <button
+                onClick={() => { toast.dismiss(t.id); resolve(false); }}
+                className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        ),
+        { duration: Infinity }
+      );
+    });
+    if (!confirmed) return;
     setConvertingToProject(true);
     try {
       const res = await fetch(`/api/admin/quotes/${quoteId}/convert-to-project`, {

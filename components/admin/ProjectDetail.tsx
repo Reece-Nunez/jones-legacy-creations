@@ -4456,7 +4456,8 @@ function BudgetTab({
                 </button>
                 <button
                   onClick={async () => {
-                    if (!confirm("Delete the entire budget and start fresh? This cannot be undone.")) return;
+                    const confirmed = await confirmAction("Delete the entire budget and start fresh? This cannot be undone.");
+                    if (!confirmed) return;
                     setSaving(true);
                     try {
                       await fetch(`/api/admin/projects/${projectId}/budget`, { method: "DELETE" });
