@@ -12,6 +12,7 @@ export async function GET(
     .from("invoice_upload_tokens")
     .select("*")
     .eq("project_id", id)
+    .eq("active", true)
     .order("created_at", { ascending: false });
 
   if (error) {

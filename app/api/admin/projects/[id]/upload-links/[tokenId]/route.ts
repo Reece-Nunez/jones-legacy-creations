@@ -10,7 +10,7 @@ export async function DELETE(
 
   const { error } = await supabase
     .from("invoice_upload_tokens")
-    .update({ active: false })
+    .delete()
     .eq("id", tokenId)
     .eq("project_id", id);
 
