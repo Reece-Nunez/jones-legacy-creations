@@ -92,7 +92,26 @@ export async function POST(
   // Determine final values — AI data overrides filename parsing, but explicit form values override everything
   const finalVendor = vendor || aiData?.vendor_company || aiData?.vendor_name || null;
   const finalDocType = docType || (aiData?.category ? "Invoice" : null);
-  const finalCategory = category || (drawRequestId ? "draw_request" : "general");
+
+  // Map AI construction category → document category type
+  function inferCategory(aiCat: string | null, fileMime: string): string {
+    if (aiCat === "Permitting") return "permit";
+    if (aiCat === "Plans" || aiCat === "Engineering") return "plan";
+    // Any other specific construction trade → invoice
+    const invoiceCats = ["Slab","Plumbing","Lumber","Framing","Trusses","HVAC","Electrical",
+      "Windows","Roofing","Drywall","Painting","Flooring","Cabinets","Countertops",
+      "Appliances","Landscaping","Concrete","Insulation","Fencing"];
+    if (aiCat && invoiceCats.includes(aiCat)) return "invoice";
+    // Has an amount → treat as invoice
+    if (aiData?.amount) return "invoice";
+    // Image without invoice signals → photo
+    if (fileMime.startsWith("image/") && !aiData?.amount) return "photo";
+    // Linked to a draw → invoice
+    if (drawRequestId) return "invoice";
+    return "general";
+  }
+
+  const finalCategory = category || inferCategory(aiData?.category ?? null, file.type);
 
   // Resolve contractor_id: use explicit ID, or try to match by vendor name.
   // Priority: 1) explicit ID, 2) exact match on project contractors, 3) exact match globally.
