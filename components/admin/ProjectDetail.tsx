@@ -69,9 +69,11 @@ import type {
   DrawRequestStatus,
   DocumentCategory,
   InvoiceUploadToken,
-  ProjectPhase,
+  DrawLineItem,
 } from "@/lib/types/database";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
+
+type ProgressItem = DrawLineItem & { completed: boolean };
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
@@ -221,7 +223,6 @@ interface Props {
   drawRequests: DrawRequest[];
   activityLog: ActivityLogEntry[];
   contractors: Contractor[];
-  phases: ProjectPhase[];
 }
 
 // ---------------------------------------------------------------------------
@@ -250,7 +251,6 @@ export default function ProjectDetail({
   drawRequests,
   activityLog,
   contractors,
-  phases: initialPhases,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -260,20 +260,18 @@ export default function ProjectDetail({
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
-  const [phases, setPhases] = useState<ProjectPhase[]>(initialPhases);
+  const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+  const [completionPercent, setCompletionPercent] = useState(0);
 
   useEffect(() => {
-    if (initialPhases.length === 0) {
-      fetch(`/api/admin/projects/${project.id}/phases`)
-        .then(r => r.json())
-        .then(data => { if (Array.isArray(data)) setPhases(data); })
-        .catch(() => {});
-    }
-  }, [project.id, initialPhases.length]);
-
-  const completionPercent = phases.length > 0
-    ? phases.filter(p => p.completed).reduce((s, p) => s + p.weight, 0)
-    : 0;
+    fetch(`/api/admin/projects/${project.id}/progress`)
+      .then(r => r.json())
+      .then(data => {
+        if (Array.isArray(data.items)) setProgressItems(data.items);
+        if (typeof data.percent === "number") setCompletionPercent(data.percent);
+      })
+      .catch(() => {});
+  }, [project.id, documents]);
 
   // ---- financial calculations -------------------------------------------
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
@@ -368,19 +366,6 @@ export default function ProjectDetail({
   async function changeStatus(status: ProjectStatus) {
     await mutate(`/api/admin/projects/${project.id}`, "PATCH", { status });
     await logActivity(project.id, "status_change", `Status changed to ${PROJECT_STATUS_LABELS[status]}`);
-  }
-
-  // ---- phase toggle ------------------------------------------------------
-  async function handlePhaseToggle(phase: ProjectPhase) {
-    const res = await fetch(`/api/admin/projects/${project.id}/phases/${phase.id}`, {
-      method: "PATCH",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ completed: !phase.completed }),
-    });
-    if (res.ok) {
-      const updated = await res.json();
-      setPhases(prev => prev.map(p => p.id === phase.id ? updated : p));
-    }
   }
 
   // ---- render ------------------------------------------------------------
@@ -488,9 +473,8 @@ export default function ProjectDetail({
             <OverviewTab
               project={project}
               mutate={mutate}
-              phases={phases}
-              onPhaseToggle={handlePhaseToggle}
-              loading={loading}
+              progressItems={progressItems}
+              completionPercent={completionPercent}
             />
           </TabsContent>
           <TabsContent value="budget">
@@ -1002,19 +986,24 @@ function FilePreviewModal({
 // ===========================================================================
 
 function ProgressCard({
-  phases,
-  onPhaseToggle,
-  loading,
+  items,
+  completionPercent,
 }: {
-  projectId: string;
-  phases: ProjectPhase[];
-  onPhaseToggle: (phase: ProjectPhase) => void;
-  loading: boolean;
+  items: ProgressItem[];
+  completionPercent: number;
 }) {
-  const completionPercent = phases.length > 0
-    ? phases.filter(p => p.completed).reduce((s, p) => s + p.weight, 0)
-    : 0;
-  const completedCount = phases.filter(p => p.completed).length;
+  const completedCount = items.filter(i => i.completed).length;
+
+  // Group items by phase (preserving order from DRAW_LINE_ITEM_WEIGHTS)
+  const phases: string[] = [];
+  const byPhase: Record<string, ProgressItem[]> = {};
+  for (const item of items) {
+    if (!byPhase[item.phase]) {
+      phases.push(item.phase);
+      byPhase[item.phase] = [];
+    }
+    byPhase[item.phase].push(item);
+  }
 
   return (
     <ShadCard>
@@ -1025,8 +1014,8 @@ function ProgressCard({
         </div>
         <div className="mt-2">
           <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-            <span>{completedCount} of {phases.length} phases complete</span>
-            <span className="text-xs text-gray-400">Weighted by cost</span>
+            <span>{completedCount} of {items.length} items invoiced</span>
+            <span className="text-xs text-gray-400">Auto-tracked from invoices</span>
           </div>
           <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
             <div
@@ -1040,43 +1029,51 @@ function ProgressCard({
         </div>
       </CardHeader>
       <CardContent>
-        <div className="space-y-1">
-          {phases.map((phase) => (
-            <button
-              key={phase.id}
-              disabled={loading}
-              onClick={() => onPhaseToggle(phase)}
-              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer ${
-                phase.completed
-                  ? "bg-green-50 hover:bg-green-100"
-                  : "hover:bg-gray-50"
-              }`}
-            >
-              <div
-                className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
-                  phase.completed
-                    ? "bg-green-500 border-green-500"
-                    : "border-gray-300 hover:border-green-400"
-                }`}
-              >
-                {phase.completed && (
-                  <Check className="w-3 h-3 text-white" />
-                )}
-              </div>
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  <span className="text-xs font-bold text-gray-400 w-4 tabular-nums">{phase.sort_order}.</span>
-                  <span className={`text-sm font-medium ${phase.completed ? "text-green-700 line-through" : "text-gray-800"}`}>
-                    {phase.name}
-                  </span>
+        {items.length === 0 ? (
+          <p className="text-sm text-gray-400 text-center py-4">Loading progress...</p>
+        ) : (
+          <div className="space-y-4">
+            {phases.map((phase) => {
+              const phaseItems = byPhase[phase];
+              const phaseComplete = phaseItems.every(i => i.completed);
+              const phaseAny = phaseItems.some(i => i.completed);
+              return (
+                <div key={phase}>
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={`text-xs font-semibold uppercase tracking-wide ${
+                      phaseComplete ? "text-green-600" : phaseAny ? "text-blue-600" : "text-gray-400"
+                    }`}>
+                      {phase}
+                    </span>
+                    <div className="flex-1 h-px bg-gray-100" />
+                  </div>
+                  <div className="space-y-0.5">
+                    {phaseItems.map((item) => (
+                      <div
+                        key={item.number}
+                        className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                          item.completed ? "bg-green-50" : "bg-gray-50"
+                        }`}
+                      >
+                        <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+                          item.completed ? "bg-green-500 border-green-500" : "border-gray-300"
+                        }`}>
+                          {item.completed && <Check className="w-3 h-3 text-white" />}
+                        </div>
+                        <span className="text-xs font-bold text-gray-400 tabular-nums w-6 shrink-0">
+                          #{item.number}
+                        </span>
+                        <span className={`text-sm flex-1 ${item.completed ? "text-green-700" : "text-gray-700"}`}>
+                          {item.description}
+                        </span>
+                        <span className="text-xs text-gray-400 tabular-nums shrink-0">{item.weight}%</span>
+                      </div>
+                    ))}
+                  </div>
                 </div>
-              </div>
-              <span className="text-xs text-gray-400 tabular-nums shrink-0">{phase.weight}%</span>
-            </button>
-          ))}
-        </div>
-        {phases.length === 0 && (
-          <p className="text-sm text-gray-400 text-center py-4">Loading phases...</p>
+              );
+            })}
+          </div>
         )}
       </CardContent>
     </ShadCard>
@@ -1086,9 +1083,8 @@ function ProgressCard({
 function OverviewTab({
   project,
   mutate,
-  phases,
-  onPhaseToggle,
-  loading,
+  progressItems,
+  completionPercent,
 }: {
   project: Project;
   mutate: (
@@ -1096,9 +1092,8 @@ function OverviewTab({
     method: string,
     body?: Record<string, unknown>,
   ) => Promise<Response | undefined>;
-  phases: ProjectPhase[];
-  onPhaseToggle: (phase: ProjectPhase) => void;
-  loading: boolean;
+  progressItems: ProgressItem[];
+  completionPercent: number;
 }) {
   const [editingField, setEditingField] = useState<
     "description" | "notes" | null
@@ -1123,10 +1118,8 @@ function OverviewTab({
       {/* Progress card — full width */}
       <div className="lg:col-span-2">
         <ProgressCard
-          projectId={project.id}
-          phases={phases}
-          onPhaseToggle={onPhaseToggle}
-          loading={loading}
+          items={progressItems}
+          completionPercent={completionPercent}
         />
       </div>
 

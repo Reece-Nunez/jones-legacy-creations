@@ -187,6 +187,61 @@ export interface BudgetLineItem {
   updated_at: string;
 }
 
+export interface DrawLineItem {
+  number: string;
+  description: string;
+  phase: string;
+  weight: number;
+}
+
+// Weights derived from 12 NAHB phases, split evenly among line items in each phase.
+// Items 1 (LAND) and 29 (CONTINGENCY) are excluded — not construction milestones.
+export const DRAW_LINE_ITEM_WEIGHTS: DrawLineItem[] = [
+  // Phase 1 — Pre-Construction & Permitting (2% ÷ 3 = 0.67 each)
+  { number: "2",   description: "PLANS",                    phase: "Pre-Construction & Permitting",    weight: 0.67 },
+  { number: "3",   description: "ENGINEERING",               phase: "Pre-Construction & Permitting",    weight: 0.67 },
+  { number: "4",   description: "PERMITTING",                phase: "Pre-Construction & Permitting",    weight: 0.67 },
+  // Phase 2 — Site Work & Excavation (8% ÷ 2 = 4 each)
+  { number: "26",  description: "PORTA POTTY",               phase: "Site Work & Excavation",           weight: 4    },
+  { number: "27",  description: "DUMPSTER",                  phase: "Site Work & Excavation",           weight: 4    },
+  // Phase 3 — Foundation (10%)
+  { number: "5a",  description: "SLAB",                      phase: "Foundation",                       weight: 10   },
+  // Phase 4 — Framing (15% ÷ 3 = 5 each)
+  { number: "7",   description: "LUMBER",                    phase: "Framing",                          weight: 5    },
+  { number: "8",   description: "FRAMING LABOR",             phase: "Framing",                          weight: 5    },
+  { number: "9",   description: "TRUSSES",                   phase: "Framing",                          weight: 5    },
+  // Phase 5 — Roofing & Exterior Rough (8% ÷ 3 = 2.67 each)
+  { number: "10",  description: "ROOFING",                   phase: "Roofing & Exterior Rough",         weight: 2.67 },
+  { number: "11",  description: "STUCCO",                    phase: "Roofing & Exterior Rough",         weight: 2.67 },
+  { number: "12",  description: "STONE",                     phase: "Roofing & Exterior Rough",         weight: 2.67 },
+  // Phase 6 — Windows & Exterior Doors (5%)
+  { number: "13",  description: "WINDOWS",                   phase: "Windows & Exterior Doors",         weight: 5    },
+  // Phase 7 — MEP Rough-In (19% ÷ 3 = 6.33 each)
+  { number: "6a",  description: "PLUMBING (ROUGH-IN)",       phase: "MEP Rough-In",                     weight: 6.33 },
+  { number: "16a", description: "ELECTRICAL (ROUGH-IN)",     phase: "MEP Rough-In",                     weight: 6.33 },
+  { number: "17a", description: "HVAC (ROUGH-IN)",           phase: "MEP Rough-In",                     weight: 6.33 },
+  // Phase 8 — Insulation (3%)
+  { number: "15",  description: "INSULATION",                phase: "Insulation",                       weight: 3    },
+  // Phase 9 — Drywall (5%)
+  { number: "18",  description: "SHEETROCK",                 phase: "Drywall",                          weight: 5    },
+  // Phase 10 — Interior Finishes (14% ÷ 5 = 2.8 each)
+  { number: "14",  description: "DOORS/TRIM",                phase: "Interior Finishes",                weight: 2.8  },
+  { number: "19",  description: "PAINT",                     phase: "Interior Finishes",                weight: 2.8  },
+  { number: "20",  description: "FLOORING",                  phase: "Interior Finishes",                weight: 2.8  },
+  { number: "21",  description: "CABINETS",                  phase: "Interior Finishes",                weight: 2.8  },
+  { number: "22",  description: "COUNTERTOPS",               phase: "Interior Finishes",                weight: 2.8  },
+  // Phase 11 — Fixture Trim-Out & Appliances (6% ÷ 4 = 1.5 each)
+  { number: "6b",  description: "PLUMBING (FINISH)",         phase: "Fixture Trim-Out & Appliances",    weight: 1.5  },
+  { number: "16b", description: "ELECTRICAL (FINISH)",       phase: "Fixture Trim-Out & Appliances",    weight: 1.5  },
+  { number: "17b", description: "HVAC (FINISH)",             phase: "Fixture Trim-Out & Appliances",    weight: 1.5  },
+  { number: "24",  description: "APPLIANCES",                phase: "Fixture Trim-Out & Appliances",    weight: 1.5  },
+  // Phase 12 — Exterior Finishes & Landscaping (5% ÷ 4 = 1.25 each)
+  { number: "5b",  description: "FINISH CONCRETE/DRIVEWAY",  phase: "Exterior Finishes & Landscaping",  weight: 1.25 },
+  { number: "23",  description: "LANDSCAPING",               phase: "Exterior Finishes & Landscaping",  weight: 1.25 },
+  { number: "25",  description: "METAL STAIRCASE",           phase: "Exterior Finishes & Landscaping",  weight: 1.25 },
+  { number: "28",  description: "GARAGE DOOR",               phase: "Exterior Finishes & Landscaping",  weight: 1.25 },
+];
+
 export const DEFAULT_BUDGET_LINE_ITEMS = [
   { line_number: "1", description: "LAND" },
   { line_number: "2", description: "PLANS" },
