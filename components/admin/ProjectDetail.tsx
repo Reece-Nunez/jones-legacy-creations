@@ -5043,7 +5043,7 @@ function BudgetTab({
 
   // Owner-purchased items with no invoice count at their budgeted amount
   for (const item of lineItems) {
-    if (item.is_owner_purchase && ownerPurchased[item.id] && !spentByLine.has(item.line_number)) {
+    if (ownerPurchased[item.id] && !spentByLine.has(item.line_number)) {
       spentByLine.set(item.line_number, item.budgeted_amount || 0);
     }
   }
@@ -5239,15 +5239,15 @@ function BudgetTab({
                     const pctUsed = budgeted > 0 ? (spent / budgeted) * 100 : 0;
                     const overBudget = remaining < 0;
                     const isOwner = item.is_owner_purchase;
-                    const isPurchased = isOwner && ownerPurchased[item.id];
+                    const isPurchased = ownerPurchased[item.id] ?? false;
 
                     return (
-                      <tr key={item.line_number} className={`${overBudget ? "bg-red-50/50" : isOwner ? "bg-amber-50/40" : ""}`}>
+                      <tr key={item.line_number} className={`${overBudget ? "bg-red-50/50" : isPurchased ? "bg-amber-50/40" : ""}`}>
                         <td className="py-2.5 pr-3 text-xs text-gray-400 tabular-nums">{item.line_number}</td>
                         <td className="py-2.5 pr-3">
                           <div className="flex items-center gap-2 flex-wrap">
                             <span className="font-medium text-gray-900">{item.description}</span>
-                            {isOwner && (
+                            {(isOwner || isPurchased) && (
                               <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 uppercase tracking-wide">
                                 Owner Purchase
                               </span>
@@ -5269,31 +5269,45 @@ function BudgetTab({
                           )}
                         </td>
                         <td className="py-2.5 pr-3 text-right tabular-nums text-gray-700">
-                          {isOwner ? (
+                          {isPurchased ? (
                             <button
                               onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
-                              className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                                isPurchased
-                                  ? "bg-green-100 text-green-700 hover:bg-green-200"
-                                  : "bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-700"
-                              }`}
-                              title={isPurchased ? "Mark as not purchased" : "Mark as purchased"}
+                              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors bg-green-100 text-green-700 hover:bg-green-200"
+                              title="Mark as not purchased"
                             >
-                              <div className={`w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 ${isPurchased ? "bg-green-500 border-green-500" : "border-gray-400"}`}>
-                                {isPurchased && <Check className="w-2 h-2 text-white" />}
+                              <div className="w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 bg-green-500 border-green-500">
+                                <Check className="w-2 h-2 text-white" />
                               </div>
-                              {isPurchased ? "Purchased" : "Not yet"}
+                              Purchased
                             </button>
+                          ) : spent > 0 ? (
+                            <div className="flex items-center gap-1.5 justify-end">
+                              <span>{fmt(spent)}</span>
+                              <button
+                                onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
+                                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:bg-amber-100 hover:text-amber-700 transition-colors"
+                                title="Mark as owner purchased"
+                              >
+                                Owner?
+                              </button>
+                            </div>
                           ) : (
-                            spent > 0 ? fmt(spent) : "--"
+                            <button
+                              onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
+                              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-700"
+                              title="Mark as owner purchased"
+                            >
+                              <div className="w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 border-gray-400" />
+                              Owner?
+                            </button>
                           )}
                         </td>
                         <td className={`py-2.5 pr-3 text-right tabular-nums font-medium ${overBudget ? "text-red-600" : "text-green-600"}`}>
-                          {isOwner ? "--" : (budgeted > 0 || spent > 0 ? fmt(remaining) : "--")}
+                          {isPurchased ? "--" : (budgeted > 0 || spent > 0 ? fmt(remaining) : "--")}
                         </td>
                         <td className="py-2.5">
-                          {isOwner ? (
-                            isPurchased && budgeted > 0 ? (
+                          {isPurchased ? (
+                            budgeted > 0 ? (
                               <span className="text-xs text-green-600 font-medium">{fmt(budgeted)} counted</span>
                             ) : null
                           ) : budgeted > 0 ? (
@@ -5340,12 +5354,12 @@ function BudgetTab({
                 const pctUsed = budgeted > 0 ? (spent / budgeted) * 100 : 0;
                 const overBudget = remaining < 0;
                 const isOwner = item.is_owner_purchase;
-                const isPurchased = isOwner && ownerPurchased[item.id];
+                const isPurchased = ownerPurchased[item.id] ?? false;
 
                 return (
                   <div
                     key={item.line_number}
-                    className={`rounded-lg border p-3 ${overBudget ? "border-red-200 bg-red-50/30" : isOwner ? "border-amber-200 bg-amber-50/30" : "border-gray-100"}`}
+                    className={`rounded-lg border p-3 ${overBudget ? "border-red-200 bg-red-50/30" : isPurchased ? "border-amber-200 bg-amber-50/30" : "border-gray-100"}`}
                   >
                     <div className="flex items-start justify-between mb-1 gap-2">
                       <div>
@@ -5353,23 +5367,23 @@ function BudgetTab({
                           <span className="text-gray-400 mr-1.5">#{item.line_number}</span>
                           {item.description}
                         </span>
-                        {isOwner && (
+                        {(isOwner || isPurchased) && (
                           <span className="ml-2 inline-flex items-center rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 uppercase tracking-wide">
                             Owner Purchase
                           </span>
                         )}
                       </div>
-                      {isOwner && !editing && (
+                      {!editing && (
                         <button
                           onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
                           className={`shrink-0 inline-flex items-center gap-1 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
-                            isPurchased ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500"
+                            isPurchased ? "bg-green-100 text-green-700" : "bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-700"
                           }`}
                         >
                           <div className={`w-3 h-3 rounded-sm border flex items-center justify-center ${isPurchased ? "bg-green-500 border-green-500" : "border-gray-400"}`}>
                             {isPurchased && <Check className="w-2 h-2 text-white" />}
                           </div>
-                          {isPurchased ? "Purchased" : "Not yet"}
+                          {isPurchased ? "Purchased" : "Owner?"}
                         </button>
                       )}
                     </div>
@@ -5386,7 +5400,7 @@ function BudgetTab({
                           className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 mt-1"
                         />
                       </div>
-                    ) : !isOwner ? (
+                    ) : !isPurchased ? (
                       <>
                         <div className="flex items-center justify-between text-xs mt-1">
                           <span className="text-gray-500">Budget: {budgeted > 0 ? fmt(budgeted) : "--"}</span>
