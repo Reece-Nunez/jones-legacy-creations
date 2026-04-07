@@ -226,6 +226,89 @@ interface Props {
 }
 
 // ---------------------------------------------------------------------------
+// Tab scroll row with arrow buttons
+// ---------------------------------------------------------------------------
+
+function TabsScrollRow({ activeTab }: { activeTab: TabKey }) {
+  const listRef = useRef<HTMLDivElement>(null);
+  const [canLeft, setCanLeft] = useState(false);
+  const [canRight, setCanRight] = useState(false);
+
+  function checkScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    setCanLeft(el.scrollLeft > 4);
+    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }
+
+  useEffect(() => {
+    checkScroll();
+    const el = listRef.current;
+    if (!el) return;
+    el.addEventListener("scroll", checkScroll, { passive: true });
+    const ro = new ResizeObserver(checkScroll);
+    ro.observe(el);
+    return () => { el.removeEventListener("scroll", checkScroll); ro.disconnect(); };
+  }, []);
+
+  // Scroll active tab into view whenever it changes
+  useEffect(() => {
+    const el = listRef.current;
+    if (!el) return;
+    const active = el.querySelector('[data-state="active"]') as HTMLElement | null;
+    if (active) active.scrollIntoView({ inline: "nearest", behavior: "smooth" });
+    setTimeout(checkScroll, 300);
+  }, [activeTab]);
+
+  function scroll(dir: "left" | "right") {
+    const el = listRef.current;
+    if (!el) return;
+    el.scrollBy({ left: dir === "left" ? -160 : 160, behavior: "smooth" });
+  }
+
+  return (
+    <div className="relative flex items-end border-b border-gray-200">
+      {/* Left arrow */}
+      <button
+        onClick={() => scroll("left")}
+        aria-label="Scroll tabs left"
+        className={`absolute left-0 z-10 flex items-center justify-center w-7 h-full bg-gradient-to-r from-gray-50 via-gray-50 to-transparent transition-opacity ${
+          canLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <ChevronRight className="w-4 h-4 text-gray-500 rotate-180" />
+      </button>
+
+      {/* Scrollable list */}
+      <div ref={listRef} className="w-full overflow-x-auto scrollbar-hide">
+        <TabsList variant="line" className="justify-start flex-nowrap !h-auto border-b-0 pb-0 w-max min-w-full">
+          {TABS.map((t) => {
+            const Icon = t.icon;
+            return (
+              <TabsTrigger key={t.key} value={t.key} className="flex-shrink-0 flex-grow-0 px-3 py-2">
+                <Icon className="w-4 h-4" />
+                <span>{t.label}</span>
+              </TabsTrigger>
+            );
+          })}
+        </TabsList>
+      </div>
+
+      {/* Right arrow */}
+      <button
+        onClick={() => scroll("right")}
+        aria-label="Scroll tabs right"
+        className={`absolute right-0 z-10 flex items-center justify-center w-7 h-full bg-gradient-to-l from-gray-50 via-gray-50 to-transparent transition-opacity ${
+          canRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
+        }`}
+      >
+        <ChevronRight className="w-4 h-4 text-gray-500" />
+      </button>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Activity logger helper
 // ---------------------------------------------------------------------------
 
@@ -452,22 +535,7 @@ export default function ProjectDetail({
           onValueChange={(value) => setActiveTab(value as TabKey)}
           className="mt-6"
         >
-          <div className="relative">
-            <TabsList variant="line" className="w-full justify-start overflow-x-auto scrollbar-hide flex-nowrap !h-auto border-b border-gray-200 pb-0">
-              {TABS.map((t) => {
-                const Icon = t.icon;
-                return (
-                  <TabsTrigger key={t.key} value={t.key} className="flex-shrink-0 flex-grow-0 px-3 py-2">
-                    <Icon className="w-4 h-4" />
-                    <span className="hidden sm:inline">{t.label}</span>
-                    <span className="sm:hidden">{t.label}</span>
-                  </TabsTrigger>
-                );
-              })}
-            </TabsList>
-            {/* Fade indicator on right edge */}
-            <div className="absolute right-0 top-0 bottom-0 w-8 bg-gradient-to-l from-gray-50 to-transparent pointer-events-none sm:hidden" />
-          </div>
+          <TabsScrollRow activeTab={activeTab} />
 
           <TabsContent value="overview">
             <OverviewTab
