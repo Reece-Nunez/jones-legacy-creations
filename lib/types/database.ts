@@ -183,6 +183,8 @@ export interface BudgetLineItem {
   description: string;
   budgeted_amount: number;
   notes: string | null;
+  is_owner_purchase: boolean;
+  owner_purchased: boolean;
   created_at: string;
   updated_at: string;
 }

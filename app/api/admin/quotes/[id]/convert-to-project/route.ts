@@ -122,10 +122,8 @@ export async function POST(
       line_number: String(index + 1),
       description: item.trade.toUpperCase(),
       budgeted_amount: item.cost,
-      notes: [
-        item.isOwnerPurchase ? "Owner Purchase" : null,
-        item.note || null,
-      ].filter(Boolean).join(" — ") || null,
+      is_owner_purchase: item.isOwnerPurchase ?? false,
+      notes: item.note || null,
     }));
 
     await supabase.from("budget_line_items").insert(budgetItems);

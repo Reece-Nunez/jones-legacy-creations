@@ -101,6 +101,29 @@ export async function PUT(
   return NextResponse.json(data, { status: 201 });
 }
 
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
+  const supabase = await createClient();
+  const { line_item_id, owner_purchased } = await request.json();
+
+  const { data, error } = await supabase
+    .from("budget_line_items")
+    .update({ owner_purchased })
+    .eq("id", line_item_id)
+    .eq("project_id", id)
+    .select()
+    .single();
+
+  if (error) {
+    return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  return NextResponse.json(data);
+}
+
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
