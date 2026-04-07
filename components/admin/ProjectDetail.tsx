@@ -992,6 +992,7 @@ function ProgressCard({
   items: ProgressItem[];
   completionPercent: number;
 }) {
+  const [expanded, setExpanded] = useState(false);
   const completedCount = items.filter(i => i.completed).length;
 
   // Group items by phase (preserving order from DRAW_LINE_ITEM_WEIGHTS)
@@ -1007,16 +1008,12 @@ function ProgressCard({
 
   return (
     <ShadCard>
-      <CardHeader>
+      <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <CardTitle>Construction Progress</CardTitle>
           <span className="text-2xl font-bold text-gray-900">{completionPercent}%</span>
         </div>
         <div className="mt-2">
-          <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
-            <span>{completedCount} of {items.length} items invoiced</span>
-            <span className="text-xs text-gray-400">Auto-tracked from invoices</span>
-          </div>
           <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
             <div
               className={`h-full rounded-full transition-all duration-700 ${
@@ -1026,56 +1023,70 @@ function ProgressCard({
               style={{ width: `${completionPercent}%` }}
             />
           </div>
+          <div className="flex items-center justify-between mt-2">
+            <span className="text-xs text-gray-400">
+              {completedCount} of {items.length} items invoiced · Auto-tracked
+            </span>
+            <button
+              onClick={() => setExpanded(v => !v)}
+              className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+            >
+              {expanded ? "Hide details" : "View details"}
+              {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+            </button>
+          </div>
         </div>
       </CardHeader>
-      <CardContent>
-        {items.length === 0 ? (
-          <p className="text-sm text-gray-400 text-center py-4">Loading progress...</p>
-        ) : (
-          <div className="space-y-4">
-            {phases.map((phase) => {
-              const phaseItems = byPhase[phase];
-              const phaseComplete = phaseItems.every(i => i.completed);
-              const phaseAny = phaseItems.some(i => i.completed);
-              return (
-                <div key={phase}>
-                  <div className="flex items-center gap-2 mb-1">
-                    <span className={`text-xs font-semibold uppercase tracking-wide ${
-                      phaseComplete ? "text-green-600" : phaseAny ? "text-blue-600" : "text-gray-400"
-                    }`}>
-                      {phase}
-                    </span>
-                    <div className="flex-1 h-px bg-gray-100" />
-                  </div>
-                  <div className="space-y-0.5">
-                    {phaseItems.map((item) => (
-                      <div
-                        key={item.number}
-                        className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
-                          item.completed ? "bg-green-50" : "bg-gray-50"
-                        }`}
-                      >
-                        <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
-                          item.completed ? "bg-green-500 border-green-500" : "border-gray-300"
-                        }`}>
-                          {item.completed && <Check className="w-3 h-3 text-white" />}
+      {expanded && (
+        <CardContent className="pt-0">
+          {items.length === 0 ? (
+            <p className="text-sm text-gray-400 text-center py-4">Loading progress...</p>
+          ) : (
+            <div className="space-y-4">
+              {phases.map((phase) => {
+                const phaseItems = byPhase[phase];
+                const phaseComplete = phaseItems.every(i => i.completed);
+                const phaseAny = phaseItems.some(i => i.completed);
+                return (
+                  <div key={phase}>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className={`text-xs font-semibold uppercase tracking-wide ${
+                        phaseComplete ? "text-green-600" : phaseAny ? "text-blue-600" : "text-gray-400"
+                      }`}>
+                        {phase}
+                      </span>
+                      <div className="flex-1 h-px bg-gray-100" />
+                    </div>
+                    <div className="space-y-0.5">
+                      {phaseItems.map((item) => (
+                        <div
+                          key={item.number}
+                          className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                            item.completed ? "bg-green-50" : "bg-gray-50"
+                          }`}
+                        >
+                          <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+                            item.completed ? "bg-green-500 border-green-500" : "border-gray-300"
+                          }`}>
+                            {item.completed && <Check className="w-3 h-3 text-white" />}
+                          </div>
+                          <span className="text-xs font-bold text-gray-400 tabular-nums w-6 shrink-0">
+                            #{item.number}
+                          </span>
+                          <span className={`text-sm flex-1 ${item.completed ? "text-green-700" : "text-gray-700"}`}>
+                            {item.description}
+                          </span>
+                          <span className="text-xs text-gray-400 tabular-nums shrink-0">{item.weight}%</span>
                         </div>
-                        <span className="text-xs font-bold text-gray-400 tabular-nums w-6 shrink-0">
-                          #{item.number}
-                        </span>
-                        <span className={`text-sm flex-1 ${item.completed ? "text-green-700" : "text-gray-700"}`}>
-                          {item.description}
-                        </span>
-                        <span className="text-xs text-gray-400 tabular-nums shrink-0">{item.weight}%</span>
-                      </div>
-                    ))}
+                      ))}
+                    </div>
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
-      </CardContent>
+                );
+              })}
+            </div>
+          )}
+        </CardContent>
+      )}
     </ShadCard>
   );
 }
