@@ -63,7 +63,7 @@ export async function POST(
   const fileUrl = urlData.publicUrl;
 
   // AI extraction: use human-reviewed data if provided, otherwise run AI
-  let aiData = null;
+  let aiData: import("@/lib/extract-invoice").ExtractedInvoiceData | null = null;
   if (aiReviewedDataRaw) {
     // Human-reviewed AI data — already confirmed by the user
     try {
