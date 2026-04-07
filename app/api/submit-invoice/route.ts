@@ -19,6 +19,7 @@ export async function POST(request: NextRequest) {
   const amountStr = formData.get("amount") as string | null;
   const description = formData.get("description") as string | null;
   const referenceNumber = formData.get("reference_number") as string | null;
+  const w9File = formData.get("w9_file") as File | null;
 
   if (!token) {
     return NextResponse.json({ error: "Token is required" }, { status: 400 });
@@ -99,6 +100,25 @@ export async function POST(request: NextRequest) {
       { error: "Failed to save invoice record." },
       { status: 500 }
     );
+  }
+
+  // Upload W9 if provided and contractor exists
+  if (w9File && w9File.size > 0 && tokenRecord.contractor_id) {
+    const w9Path = `w9s/${tokenRecord.contractor_id}/${Date.now()}-${w9File.name}`;
+    const { error: w9UploadError } = await supabase.storage
+      .from("project-documents")
+      .upload(w9Path, w9File, { contentType: w9File.type });
+
+    if (!w9UploadError) {
+      const { data: w9UrlData } = supabase.storage
+        .from("project-documents")
+        .getPublicUrl(w9Path);
+
+      await supabase
+        .from("contractors")
+        .update({ w9_file_url: w9UrlData.publicUrl, w9_file_name: w9File.name })
+        .eq("id", tokenRecord.contractor_id);
+    }
   }
 
   // Log activity

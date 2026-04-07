@@ -24,6 +24,17 @@ export default async function SubmitInvoicePage({
     .eq("active", true)
     .single();
 
+  // Check if contractor already has a W9 on file
+  let hasW9 = false;
+  if (tokenRecord?.contractor_id) {
+    const { data: contractor } = await supabase
+      .from("contractors")
+      .select("w9_file_url")
+      .eq("id", tokenRecord.contractor_id)
+      .single();
+    hasW9 = !!contractor?.w9_file_url;
+  }
+
   if (error || !tokenRecord) {
     return (
       <>
@@ -66,6 +77,7 @@ export default async function SubmitInvoicePage({
           token={token}
           projectName={tokenRecord.project_name}
           contractorName={tokenRecord.contractor_name}
+          hasW9={hasW9}
         />
       </main>
       <Footer />

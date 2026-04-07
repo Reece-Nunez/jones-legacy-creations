@@ -9,14 +9,17 @@ interface ContractorInvoiceUploadProps {
   token: string;
   projectName: string;
   contractorName: string;
+  hasW9: boolean;
 }
 
 export function ContractorInvoiceUpload({
   token,
   projectName,
   contractorName,
+  hasW9,
 }: ContractorInvoiceUploadProps) {
   const [file, setFile] = useState<File | null>(null);
+  const [w9File, setW9File] = useState<File | null>(null);
   const [amount, setAmount] = useState("");
   const [description, setDescription] = useState("");
   const [referenceNumber, setReferenceNumber] = useState("");
@@ -24,6 +27,7 @@ export function ContractorInvoiceUpload({
   const [submitted, setSubmitted] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const w9InputRef = useRef<HTMLInputElement>(null);
 
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = e.target.files?.[0] ?? null;
@@ -33,9 +37,12 @@ export function ContractorInvoiceUpload({
 
   const removeFile = () => {
     setFile(null);
-    if (fileInputRef.current) {
-      fileInputRef.current.value = "";
-    }
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  };
+
+  const removeW9 = () => {
+    setW9File(null);
+    if (w9InputRef.current) w9InputRef.current.value = "";
   };
 
   const handleAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -65,6 +72,9 @@ export function ContractorInvoiceUpload({
       }
       if (referenceNumber.trim()) {
         formData.append("reference_number", referenceNumber.trim());
+      }
+      if (w9File) {
+        formData.append("w9_file", w9File);
       }
 
       const res = await fetch("/api/submit-invoice", {
@@ -228,6 +238,44 @@ export function ContractorInvoiceUpload({
               className="w-full rounded-xl border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-base"
             />
           </div>
+
+          {/* W9 Upload — only shown if no W9 on file */}
+          {!hasW9 && (
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                W9 form
+              </label>
+              <p className="text-xs text-gray-400 mb-2">
+                We don&apos;t have your W9 on file. Please upload one with your invoice.
+              </p>
+              {!w9File ? (
+                <button
+                  type="button"
+                  onClick={() => w9InputRef.current?.click()}
+                  className="w-full border-2 border-dashed border-amber-300 rounded-xl py-5 px-4 flex flex-col items-center justify-center gap-2 hover:border-amber-400 hover:bg-amber-50 transition-colors focus:outline-none focus:ring-2 focus:ring-amber-400"
+                >
+                  <Upload className="w-6 h-6 text-amber-400" />
+                  <span className="text-sm font-medium text-gray-600">Tap to upload W9</span>
+                  <span className="text-xs text-gray-400">PDF or image</span>
+                </button>
+              ) : (
+                <div className="flex items-center gap-3 bg-amber-50 rounded-xl px-4 py-3">
+                  <FileText className="w-5 h-5 text-amber-500 flex-shrink-0" />
+                  <span className="text-sm text-gray-700 truncate flex-1">{w9File.name}</span>
+                  <button type="button" onClick={removeW9} className="p-1 hover:bg-amber-100 rounded-full transition-colors">
+                    <X className="w-4 h-4 text-gray-500" />
+                  </button>
+                </div>
+              )}
+              <input
+                ref={w9InputRef}
+                type="file"
+                onChange={(e) => setW9File(e.target.files?.[0] ?? null)}
+                accept="image/*,.pdf"
+                className="hidden"
+              />
+            </div>
+          )}
 
           {/* Error */}
           {error && (
