@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -195,19 +195,19 @@ function paymentLeftBorder(status: string): string {
   return status === "paid" ? "border-l-green-500" : "border-l-yellow-500";
 }
 
-const TABS = [
-  { key: "overview",   label: "Overview",  icon: LayoutDashboard },
-  { key: "photos",     label: "Photos",    icon: Camera },
-  { key: "payments",   label: "Payments",  icon: CreditCard },
-  { key: "draws",      label: "Draws",     icon: Banknote },
-  { key: "budget",     label: "Budget",    icon: Wallet },
-  { key: "tasks",      label: "Tasks",     icon: CheckSquare },
-  { key: "permits",    label: "Permits",   icon: ClipboardList },
-  { key: "documents",  label: "Documents", icon: FolderOpen },
-  { key: "activity",   label: "Activity",  icon: Clock },
+const ALL_TABS = [
+  { key: "overview",   label: "Overview",  icon: LayoutDashboard, cashJob: true  },
+  { key: "photos",     label: "Photos",    icon: Camera,          cashJob: true  },
+  { key: "payments",   label: "Payments",  icon: CreditCard,      cashJob: true  },
+  { key: "draws",      label: "Draws",     icon: Banknote,        cashJob: false },
+  { key: "budget",     label: "Budget",    icon: Wallet,          cashJob: true  },
+  { key: "tasks",      label: "Tasks",     icon: CheckSquare,     cashJob: true  },
+  { key: "permits",    label: "Permits",   icon: ClipboardList,   cashJob: true  },
+  { key: "documents",  label: "Documents", icon: FolderOpen,      cashJob: true  },
+  { key: "activity",   label: "Activity",  icon: Clock,           cashJob: true  },
 ] as const;
 
-type TabKey = (typeof TABS)[number]["key"];
+type TabKey = (typeof ALL_TABS)[number]["key"];
 
 // ---------------------------------------------------------------------------
 // Props
@@ -229,7 +229,7 @@ interface Props {
 // Tab scroll row with arrow buttons
 // ---------------------------------------------------------------------------
 
-function TabsScrollRow({ activeTab }: { activeTab: TabKey }) {
+function TabsScrollRow({ activeTab, tabs }: { activeTab: TabKey; tabs: readonly { key: string; label: string; icon: React.ElementType }[] }) {
   const listRef = useRef<HTMLDivElement>(null);
   const [canLeft, setCanLeft] = useState(false);
   const [canRight, setCanRight] = useState(false);
@@ -284,7 +284,7 @@ function TabsScrollRow({ activeTab }: { activeTab: TabKey }) {
       {/* Scrollable list */}
       <div ref={listRef} className="w-full overflow-x-auto scrollbar-hide">
         <TabsList variant="line" className="justify-start flex-nowrap !h-auto border-b-0 pb-0 w-max min-w-full">
-          {TABS.map((t) => {
+          {tabs.map((t) => {
             const Icon = t.icon;
             return (
               <TabsTrigger key={t.key} value={t.key} className="flex-shrink-0 flex-grow-0 px-3 py-2">
@@ -341,6 +341,7 @@ export default function ProjectDetail({
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
+  const TABS = project.is_cash_job ? ALL_TABS.filter((t) => t.cashJob) : ALL_TABS;
   const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
     ? (searchParams.get("tab") as TabKey)
     : "overview";
@@ -475,7 +476,7 @@ export default function ProjectDetail({
         />
 
         {/* Financial Summary */}
-        {hasLoanFields ? (
+        {!project.is_cash_job && hasLoanFields ? (
           <FinancialSummary
             salePrice={salePrice}
             totalCosts={totalCosts}
@@ -539,7 +540,7 @@ export default function ProjectDetail({
           onValueChange={(value) => setActiveTab(value as TabKey)}
           className="mt-6"
         >
-          <TabsScrollRow activeTab={activeTab} />
+          <TabsScrollRow activeTab={activeTab} tabs={TABS} />
 
           <TabsContent value="overview">
             <OverviewTab

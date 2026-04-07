@@ -66,6 +66,7 @@ interface ProjectFormProps {
 export default function ProjectForm({ project }: ProjectFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isCashJob, setIsCashJob] = useState(project?.is_cash_job ?? false);
   const isEdit = !!project;
   const lastChangedBy = useRef<"loan_amount" | "down_payment" | "down_payment_percent" | null>(null);
 
@@ -158,6 +159,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
     try {
       const payload = {
         ...data,
+        is_cash_job: isCashJob,
         client_email: data.client_email || null,
         client_phone: data.client_phone || null,
         address: data.address || null,
@@ -415,6 +417,22 @@ export default function ProjectForm({ project }: ProjectFormProps) {
                 </option>
               ))}
             </select>
+          </div>
+
+          {/* Cash Job Toggle */}
+          <div className="md:col-span-2">
+            <label className="flex items-center gap-3 cursor-pointer select-none">
+              <div
+                onClick={() => setIsCashJob(v => !v)}
+                className={`relative w-11 h-6 rounded-full transition-colors ${isCashJob ? "bg-blue-600" : "bg-gray-300"}`}
+              >
+                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isCashJob ? "translate-x-5" : "translate-x-0"}`} />
+              </div>
+              <div>
+                <span className="text-sm font-medium text-gray-700">Cash Job</span>
+                <p className="text-xs text-gray-500">No lender or draws — client pays directly as work is completed</p>
+              </div>
+            </label>
           </div>
 
           {/* Estimated Value */}
@@ -684,8 +702,8 @@ export default function ProjectForm({ project }: ProjectFormProps) {
         </div>
       </div>
 
-      {/* Financing & Loan Details */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+      {/* Financing & Loan Details — hidden for cash jobs */}
+      {!isCashJob && <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
         <div className="border-b border-gray-200 pb-4 mb-6">
           <h2 className="text-lg font-semibold text-gray-900">
             Financing & Loan Details
@@ -823,13 +841,13 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             />
           </div>
         </div>
-      </div>
+      </div>}
 
       {/* Actions */}
       <div className="flex items-center justify-end gap-3">
         <button
           type="button"
-          onClick={() => router.push("/admin")}
+          onClick={() => router.push(isEdit ? `/admin/projects/${project.id}` : "/admin")}
           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
         >
           Cancel
