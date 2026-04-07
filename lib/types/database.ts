@@ -146,6 +146,7 @@ export interface Document {
   vendor: string | null;
   doc_type: string | null;
   contractor_id: string | null;
+  is_public: boolean;
   created_at: string;
 }
 

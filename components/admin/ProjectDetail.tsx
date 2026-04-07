@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
@@ -49,6 +49,9 @@ import {
   FileSpreadsheet,
   Sparkles,
   Wallet,
+  Camera,
+  Globe,
+  Lock,
 } from "lucide-react";
 import type {
   Project,
@@ -196,6 +199,7 @@ const TABS = [
   { key: "draws", label: "Draws", icon: Banknote },
   { key: "permits", label: "Permits", icon: ClipboardList },
   { key: "documents", label: "Documents", icon: FolderOpen },
+  { key: "photos", label: "Photos", icon: Camera },
   { key: "tasks", label: "Tasks", icon: CheckSquare },
   { key: "activity", label: "Activity", icon: Clock },
 ] as const;
@@ -503,6 +507,14 @@ export default function ProjectDetail({
               mutate={mutate}
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
+            />
+          </TabsContent>
+          <TabsContent value="photos">
+            <PhotosTab
+              projectId={project.id}
+              documents={documents}
+              mutate={mutate}
+              loading={loading}
             />
           </TabsContent>
           <TabsContent value="tasks">
@@ -4105,6 +4117,151 @@ function DocumentsTab({
               </button>
             </div>
           </div>
+        )}
+      </CardContent>
+    </ShadCard>
+  );
+}
+
+// ===========================================================================
+// Photos Tab
+// ===========================================================================
+
+function PhotosTab({
+  projectId,
+  documents,
+  mutate,
+  loading,
+}: {
+  projectId: string;
+  documents: Document[];
+  mutate: (url: string, method: string, body?: Record<string, unknown> | FormData) => Promise<Response | undefined>;
+  loading: boolean;
+}) {
+  const photos = documents.filter((d) => d.category === "photo");
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [uploading, setUploading] = useState(false);
+
+  async function uploadPhoto(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setUploading(true);
+    try {
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("name", file.name);
+      formData.append("category", "photo");
+      await mutate(`/api/admin/projects/${projectId}/documents`, "POST", formData);
+      toast.success("Photo uploaded");
+    } catch {
+      toast.error("Failed to upload photo");
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) fileInputRef.current.value = "";
+    }
+  }
+
+  async function togglePublic(doc: Document) {
+    await mutate(`/api/admin/projects/${projectId}/documents/${doc.id}`, "PATCH", {
+      is_public: !doc.is_public,
+    } as unknown as Record<string, unknown>);
+    toast.success(doc.is_public ? "Photo set to private" : "Photo is now public");
+  }
+
+  async function deletePhoto(doc: Document) {
+    const confirmed = await confirmAction("Delete this photo?");
+    if (!confirmed) return;
+    await mutate(`/api/admin/projects/${projectId}/documents/${doc.id}`, "DELETE");
+    toast.success("Photo deleted");
+  }
+
+  return (
+    <ShadCard>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Project Photos</CardTitle>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-gray-500">{photos.filter(p => p.is_public).length} public · {photos.filter(p => !p.is_public).length} private</span>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploading || loading}
+              className="inline-flex items-center gap-1.5 bg-black text-white text-xs font-medium px-3 py-2 rounded-lg hover:bg-gray-800 disabled:opacity-50 cursor-pointer transition-colors"
+            >
+              <Camera className="w-3.5 h-3.5" />
+              {uploading ? "Uploading..." : "Add Photo"}
+            </button>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={uploadPhoto}
+              className="hidden"
+            />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        {photos.length === 0 ? (
+          <div className="text-center py-12">
+            <Camera className="w-10 h-10 text-gray-300 mx-auto mb-3" />
+            <p className="text-sm text-gray-400 mb-4">No photos yet. Tap &quot;Add Photo&quot; to upload from your phone or camera.</p>
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              className="inline-flex items-center gap-2 text-sm text-blue-600 hover:underline cursor-pointer"
+            >
+              <Camera className="w-4 h-4" />
+              Upload first photo
+            </button>
+          </div>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500 mb-4">
+              Toggle the <Globe className="w-3 h-3 inline" /> icon to make a photo visible on the public gallery. <Lock className="w-3 h-3 inline" /> = private only.
+            </p>
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {photos.map((doc) => (
+                <div key={doc.id} className="group relative">
+                  <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 relative">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={doc.file_url}
+                      alt={doc.name}
+                      className="w-full h-full object-cover"
+                    />
+                    {/* Overlay on hover */}
+                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200" />
+                    {/* Actions */}
+                    <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <button
+                        onClick={() => deletePhoto(doc)}
+                        className="w-7 h-7 flex items-center justify-center bg-white/90 rounded-full text-red-500 hover:bg-white cursor-pointer"
+                        aria-label="Delete photo"
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+                  {/* Public toggle below image */}
+                  <button
+                    onClick={() => togglePublic(doc)}
+                    className={`mt-1.5 w-full inline-flex items-center justify-center gap-1.5 text-xs py-1 rounded-lg border transition-colors cursor-pointer ${
+                      doc.is_public
+                        ? "border-green-200 bg-green-50 text-green-700 hover:bg-green-100"
+                        : "border-gray-200 bg-gray-50 text-gray-500 hover:bg-gray-100"
+                    }`}
+                    aria-label={doc.is_public ? "Make private" : "Make public"}
+                  >
+                    {doc.is_public ? (
+                      <><Globe className="w-3 h-3" /> Public</>
+                    ) : (
+                      <><Lock className="w-3 h-3" /> Private</>
+                    )}
+                  </button>
+                </div>
+              ))}
+            </div>
+          </>
         )}
       </CardContent>
     </ShadCard>

@@ -133,6 +133,17 @@ export function Navigation() {
               About
             </Link>
             <Link
+              href="/gallery"
+              className={`text-sm font-medium transition-colors duration-150 ${
+                isCompact
+                  ? "text-white/90 hover:text-white"
+                  : isActive("/gallery") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+              }`}
+              {...(isActive("/gallery") ? { "aria-current": "page" as const } : {})}
+            >
+              Gallery
+            </Link>
+            <Link
               href="/estimate"
               className={`text-white text-sm font-medium rounded-full hover:bg-sky-800 transition-all duration-500 ${
                 isCompact ? "px-4 py-1.5 bg-sky-700/80" : "px-6 py-3 bg-sky-700"
@@ -227,6 +238,16 @@ export function Navigation() {
             {...(isActive("/about") ? { "aria-current": "page" as const } : {})}
           >
             About
+          </Link>
+          <Link
+            href="/gallery"
+            className={`block w-full py-3 text-base font-medium transition-colors duration-150 ${
+              isActive("/gallery") ? "text-gray-900" : "text-gray-700 hover:text-gray-900"
+            }`}
+            onClick={() => setIsOpen(false)}
+            {...(isActive("/gallery") ? { "aria-current": "page" as const } : {})}
+          >
+            Gallery
           </Link>
           <Link
             href="/estimate"
