@@ -196,15 +196,15 @@ function paymentLeftBorder(status: string): string {
 }
 
 const TABS = [
-  { key: "overview", label: "Overview", icon: LayoutDashboard },
-  { key: "budget", label: "Budget", icon: Wallet },
-  { key: "payments", label: "Payments", icon: CreditCard },
-  { key: "draws", label: "Draws", icon: Banknote },
-  { key: "permits", label: "Permits", icon: ClipboardList },
-  { key: "documents", label: "Documents", icon: FolderOpen },
-  { key: "photos", label: "Photos", icon: Camera },
-  { key: "tasks", label: "Tasks", icon: CheckSquare },
-  { key: "activity", label: "Activity", icon: Clock },
+  { key: "overview",   label: "Overview",  icon: LayoutDashboard },
+  { key: "photos",     label: "Photos",    icon: Camera },
+  { key: "payments",   label: "Payments",  icon: CreditCard },
+  { key: "draws",      label: "Draws",     icon: Banknote },
+  { key: "budget",     label: "Budget",    icon: Wallet },
+  { key: "tasks",      label: "Tasks",     icon: CheckSquare },
+  { key: "permits",    label: "Permits",   icon: ClipboardList },
+  { key: "documents",  label: "Documents", icon: FolderOpen },
+  { key: "activity",   label: "Activity",  icon: Clock },
 ] as const;
 
 type TabKey = (typeof TABS)[number]["key"];
@@ -4871,15 +4871,53 @@ function BudgetTab({
 
   const hasBudget = budgetLineItems.length > 0;
 
-  // Build actual spent per line item from documents + payments
+  // Parse a line item number from a filename like "5_Slab_Invoice_..." or "6a_Plumbing_..."
+  function parseLineNumFromFilename(filename: string | null): string | null {
+    if (!filename) return null;
+    const m = filename.match(/^(\d+[a-z]?)\s*[_ ]/i);
+    return m ? m[1].toLowerCase() : null;
+  }
+
+  // Normalize line number for matching: "5A" → "5a", strip trailing letters for fallback
+  function numericPart(s: string) { return s.replace(/[a-z]/gi, ""); }
+
+  // Resolve the best matching budget line_number for a parsed filename number
+  // e.g. "5" → "5a" (first budget item with numeric part "5"), "6a" → "6a" (exact)
+  function resolveLine(parsed: string): string {
+    const lower = parsed.toLowerCase();
+    // Exact match first
+    if (budgetLineItems.some(b => b.line_number.toLowerCase() === lower)) return lower;
+    // Numeric prefix fallback — first budget line item with same digits
+    const num = numericPart(lower);
+    const fallback = budgetLineItems.find(b => numericPart(b.line_number) === num);
+    return fallback ? fallback.line_number : lower;
+  }
+
+  // Build actual spent per line item.
+  // Source 1: documents with line_item_number that have a matching payment by URL.
+  // Source 2: payments whose invoice_file_name encodes a line number (covers payments
+  //           uploaded without a document record, e.g. via contractor invoice link).
   const spentByLine = new Map<string, number>();
+  const countedPaymentIds = new Set<string>();
+
+  // Source 1 — document-linked payments
   for (const doc of documents) {
     if (doc.line_item_number == null) continue;
     const payment = payments.find((p) => p.invoice_file_url === doc.file_url);
     if (payment) {
-      const current = spentByLine.get(doc.line_item_number) || 0;
-      spentByLine.set(doc.line_item_number, current + payment.amount);
+      const key = resolveLine(doc.line_item_number);
+      spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+      countedPaymentIds.add(payment.id);
     }
+  }
+
+  // Source 2 — payments not already counted, parse line number from invoice_file_name
+  for (const payment of payments) {
+    if (countedPaymentIds.has(payment.id)) continue;
+    const parsed = parseLineNumFromFilename(payment.invoice_file_name);
+    if (!parsed) continue;
+    const key = resolveLine(parsed);
+    spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
   }
 
   // Use budget line items if they exist, otherwise show defaults
