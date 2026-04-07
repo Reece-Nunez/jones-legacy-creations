@@ -118,6 +118,32 @@ export interface DrawRequest {
   created_at: string;
 }
 
+export interface ProjectPhase {
+  id: string;
+  project_id: string;
+  sort_order: number;
+  name: string;
+  weight: number;
+  completed: boolean;
+  completed_at: string | null;
+  created_at: string;
+}
+
+export const DEFAULT_PROJECT_PHASES = [
+  { sort_order: 1,  name: "Pre-Construction & Permitting",      weight: 2  },
+  { sort_order: 2,  name: "Site Work & Excavation",             weight: 8  },
+  { sort_order: 3,  name: "Foundation",                         weight: 10 },
+  { sort_order: 4,  name: "Framing",                            weight: 15 },
+  { sort_order: 5,  name: "Roofing & Exterior Rough",           weight: 8  },
+  { sort_order: 6,  name: "Windows & Exterior Doors",           weight: 5  },
+  { sort_order: 7,  name: "MEP Rough-In (Plumbing, Electrical, HVAC)", weight: 19 },
+  { sort_order: 8,  name: "Insulation",                         weight: 3  },
+  { sort_order: 9,  name: "Drywall",                            weight: 5  },
+  { sort_order: 10, name: "Interior Finishes",                  weight: 14 },
+  { sort_order: 11, name: "Fixture Trim-Out & Appliances",      weight: 6  },
+  { sort_order: 12, name: "Exterior Finishes & Landscaping",    weight: 5  },
+] as const;
+
 export interface Permit {
   id: string;
   project_id: string;

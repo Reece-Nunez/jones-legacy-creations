@@ -69,6 +69,7 @@ import type {
   DrawRequestStatus,
   DocumentCategory,
   InvoiceUploadToken,
+  ProjectPhase,
 } from "@/lib/types/database";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 import {
@@ -220,6 +221,7 @@ interface Props {
   drawRequests: DrawRequest[];
   activityLog: ActivityLogEntry[];
   contractors: Contractor[];
+  phases: ProjectPhase[];
 }
 
 // ---------------------------------------------------------------------------
@@ -248,6 +250,7 @@ export default function ProjectDetail({
   drawRequests,
   activityLog,
   contractors,
+  phases: initialPhases,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -257,6 +260,20 @@ export default function ProjectDetail({
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
+  const [phases, setPhases] = useState<ProjectPhase[]>(initialPhases);
+
+  useEffect(() => {
+    if (initialPhases.length === 0) {
+      fetch(`/api/admin/projects/${project.id}/phases`)
+        .then(r => r.json())
+        .then(data => { if (Array.isArray(data)) setPhases(data); })
+        .catch(() => {});
+    }
+  }, [project.id, initialPhases.length]);
+
+  const completionPercent = phases.length > 0
+    ? phases.filter(p => p.completed).reduce((s, p) => s + p.weight, 0)
+    : 0;
 
   // ---- financial calculations -------------------------------------------
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
@@ -353,6 +370,19 @@ export default function ProjectDetail({
     await logActivity(project.id, "status_change", `Status changed to ${PROJECT_STATUS_LABELS[status]}`);
   }
 
+  // ---- phase toggle ------------------------------------------------------
+  async function handlePhaseToggle(phase: ProjectPhase) {
+    const res = await fetch(`/api/admin/projects/${project.id}/phases/${phase.id}`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ completed: !phase.completed }),
+    });
+    if (res.ok) {
+      const updated = await res.json();
+      setPhases(prev => prev.map(p => p.id === phase.id ? updated : p));
+    }
+  }
+
   // ---- render ------------------------------------------------------------
   return (
     <div className="min-h-screen bg-gray-50">
@@ -369,6 +399,7 @@ export default function ProjectDetail({
           project={project}
           onStatusChange={changeStatus}
           loading={loading}
+          completionPercent={completionPercent}
         />
 
         {/* Financial Summary */}
@@ -454,7 +485,13 @@ export default function ProjectDetail({
           </div>
 
           <TabsContent value="overview">
-            <OverviewTab project={project} mutate={mutate} />
+            <OverviewTab
+              project={project}
+              mutate={mutate}
+              phases={phases}
+              onPhaseToggle={handlePhaseToggle}
+              loading={loading}
+            />
           </TabsContent>
           <TabsContent value="budget">
             <BudgetTab
@@ -752,10 +789,12 @@ function Header({
   project,
   onStatusChange,
   loading,
+  completionPercent,
 }: {
   project: Project;
   onStatusChange: (s: ProjectStatus) => void;
   loading: boolean;
+  completionPercent: number;
 }) {
   const address = [project.address, project.city, project.state, project.zip]
     .filter(Boolean)
@@ -839,6 +878,31 @@ function Header({
               <MapPin className="w-3.5 h-3.5" /> {address}
             </span>
           )}
+        </div>
+
+        {/* Progress bar */}
+        <div className="mt-4 pt-4 border-t border-gray-100">
+          <div className="flex items-center justify-between mb-1.5">
+            <span className="text-xs font-medium text-gray-600">Construction Progress</span>
+            <span className="text-sm font-bold text-gray-900">{completionPercent}%</span>
+          </div>
+          <div className="h-2.5 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${
+                completionPercent >= 100
+                  ? "bg-green-500"
+                  : completionPercent >= 50
+                  ? "bg-blue-500"
+                  : "bg-amber-500"
+              }`}
+              style={{ width: `${completionPercent}%` }}
+            />
+          </div>
+          <p className="text-xs text-gray-400 mt-1">
+            {completionPercent === 0 ? "Not started" :
+             completionPercent === 100 ? "Complete!" :
+             `${completionPercent}% complete`}
+          </p>
         </div>
       </CardContent>
     </ShadCard>
@@ -937,9 +1001,94 @@ function FilePreviewModal({
 // Overview Tab
 // ===========================================================================
 
+function ProgressCard({
+  phases,
+  onPhaseToggle,
+  loading,
+}: {
+  projectId: string;
+  phases: ProjectPhase[];
+  onPhaseToggle: (phase: ProjectPhase) => void;
+  loading: boolean;
+}) {
+  const completionPercent = phases.length > 0
+    ? phases.filter(p => p.completed).reduce((s, p) => s + p.weight, 0)
+    : 0;
+  const completedCount = phases.filter(p => p.completed).length;
+
+  return (
+    <ShadCard>
+      <CardHeader>
+        <div className="flex items-center justify-between">
+          <CardTitle>Construction Progress</CardTitle>
+          <span className="text-2xl font-bold text-gray-900">{completionPercent}%</span>
+        </div>
+        <div className="mt-2">
+          <div className="flex items-center justify-between text-xs text-gray-500 mb-1.5">
+            <span>{completedCount} of {phases.length} phases complete</span>
+            <span className="text-xs text-gray-400">Weighted by cost</span>
+          </div>
+          <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+            <div
+              className={`h-full rounded-full transition-all duration-700 ${
+                completionPercent >= 100 ? "bg-green-500" :
+                completionPercent >= 50 ? "bg-blue-500" : "bg-amber-500"
+              }`}
+              style={{ width: `${completionPercent}%` }}
+            />
+          </div>
+        </div>
+      </CardHeader>
+      <CardContent>
+        <div className="space-y-1">
+          {phases.map((phase) => (
+            <button
+              key={phase.id}
+              disabled={loading}
+              onClick={() => onPhaseToggle(phase)}
+              className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors cursor-pointer ${
+                phase.completed
+                  ? "bg-green-50 hover:bg-green-100"
+                  : "hover:bg-gray-50"
+              }`}
+            >
+              <div
+                className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center transition-colors ${
+                  phase.completed
+                    ? "bg-green-500 border-green-500"
+                    : "border-gray-300 hover:border-green-400"
+                }`}
+              >
+                {phase.completed && (
+                  <Check className="w-3 h-3 text-white" />
+                )}
+              </div>
+              <div className="flex-1 min-w-0">
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-bold text-gray-400 w-4 tabular-nums">{phase.sort_order}.</span>
+                  <span className={`text-sm font-medium ${phase.completed ? "text-green-700 line-through" : "text-gray-800"}`}>
+                    {phase.name}
+                  </span>
+                </div>
+              </div>
+              <span className="text-xs text-gray-400 tabular-nums shrink-0">{phase.weight}%</span>
+            </button>
+          ))}
+        </div>
+        {phases.length === 0 && (
+          <p className="text-sm text-gray-400 text-center py-4">Loading phases...</p>
+        )}
+      </CardContent>
+    </ShadCard>
+  );
+}
+
 function OverviewTab({
   project,
   mutate,
+  phases,
+  onPhaseToggle,
+  loading,
 }: {
   project: Project;
   mutate: (
@@ -947,6 +1096,9 @@ function OverviewTab({
     method: string,
     body?: Record<string, unknown>,
   ) => Promise<Response | undefined>;
+  phases: ProjectPhase[];
+  onPhaseToggle: (phase: ProjectPhase) => void;
+  loading: boolean;
 }) {
   const [editingField, setEditingField] = useState<
     "description" | "notes" | null
@@ -968,6 +1120,16 @@ function OverviewTab({
 
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      {/* Progress card — full width */}
+      <div className="lg:col-span-2">
+        <ProgressCard
+          projectId={project.id}
+          phases={phases}
+          onPhaseToggle={onPhaseToggle}
+          loading={loading}
+        />
+      </div>
+
       {/* Description card */}
       <ShadCard>
         <CardHeader>
