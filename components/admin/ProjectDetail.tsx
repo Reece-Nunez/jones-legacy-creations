@@ -272,11 +272,13 @@ function TabsScrollRow({ activeTab }: { activeTab: TabKey }) {
       <button
         onClick={() => scroll("left")}
         aria-label="Scroll tabs left"
-        className={`absolute left-0 z-10 flex items-center justify-center w-7 h-full bg-gradient-to-r from-gray-50 via-gray-50 to-transparent transition-opacity ${
+        className={`absolute left-0 z-10 flex items-center justify-center w-10 h-full bg-gradient-to-r from-gray-50 via-gray-50/90 to-transparent transition-opacity ${
           canLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
-        <ChevronRight className="w-4 h-4 text-gray-500 rotate-180" />
+        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow-sm">
+          <ChevronRight className="w-3.5 h-3.5 text-gray-700 rotate-180" />
+        </span>
       </button>
 
       {/* Scrollable list */}
@@ -298,11 +300,13 @@ function TabsScrollRow({ activeTab }: { activeTab: TabKey }) {
       <button
         onClick={() => scroll("right")}
         aria-label="Scroll tabs right"
-        className={`absolute right-0 z-10 flex items-center justify-center w-7 h-full bg-gradient-to-l from-gray-50 via-gray-50 to-transparent transition-opacity ${
+        className={`absolute right-0 z-10 flex items-center justify-center w-10 h-full bg-gradient-to-l from-gray-50 via-gray-50/90 to-transparent transition-opacity ${
           canRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
         }`}
       >
-        <ChevronRight className="w-4 h-4 text-gray-500" />
+        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow-sm">
+          <ChevronRight className="w-3.5 h-3.5 text-gray-700" />
+        </span>
       </button>
     </div>
   );
