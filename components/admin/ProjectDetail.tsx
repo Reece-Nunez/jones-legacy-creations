@@ -19,6 +19,7 @@ import {
   X,
   Download,
   Eye,
+  FileText,
   Upload,
   Edit3,
   Check,
