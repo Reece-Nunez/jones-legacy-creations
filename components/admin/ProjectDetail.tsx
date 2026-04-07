@@ -2151,6 +2151,37 @@ function DrawsTab({
   const [reviewDrawId, setReviewDrawId] = useState<string | null>(null);
   const [savingReview, setSavingReview] = useState(false);
 
+  // Inline doc editing
+  const [editingDocId, setEditingDocId] = useState<string | null>(null);
+  const [editDocForm, setEditDocForm] = useState<{ category: string; line_item_number: string; doc_type: string }>({
+    category: "", line_item_number: "", doc_type: "",
+  });
+
+  function startEditDoc(doc: Document) {
+    setEditingDocId(doc.id);
+    setEditDocForm({
+      category: doc.category ?? "",
+      line_item_number: doc.line_item_number ?? "",
+      doc_type: doc.doc_type ?? "",
+    });
+  }
+
+  async function saveEditDoc() {
+    if (!editingDocId) return;
+    const updates: Record<string, unknown> = { id: editingDocId };
+    if (editDocForm.category) updates.category = editDocForm.category;
+    if (editDocForm.line_item_number !== undefined) updates.line_item_number = editDocForm.line_item_number || null;
+    if (editDocForm.doc_type !== undefined) updates.doc_type = editDocForm.doc_type || null;
+    await fetch(`/api/admin/projects/${projectId}/documents`, {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(updates),
+    });
+    setEditingDocId(null);
+    drawsRouter.refresh();
+    toast.success("Document updated");
+  }
+
   /** Build filename: #_Category_DocType_VendorName.ext */
   function buildDocFilename(lineNum: string, docType: string, vendor: string, ext: string) {
     const category = DEFAULT_BUDGET_LINE_ITEMS.find((b) => String(b.line_number) === lineNum)?.description || "";
@@ -2233,7 +2264,7 @@ function DrawsTab({
           const userContractor = newDrawContractors[i];
           const fd = new FormData();
           fd.append("file", file);
-          fd.append("category", "draw_request");
+          fd.append("category", "invoice");
           fd.append("draw_request_id", drawId);
           fd.append("auto_create_payment", "true");
           fd.append("use_ai", "true");
@@ -2418,7 +2449,7 @@ function DrawsTab({
       const userContractor = uploadContractors[i];
       const fd = new FormData();
       fd.append("file", file);
-      fd.append("category", "draw_request");
+      fd.append("category", "invoice");
       fd.append("draw_request_id", drawId);
       fd.append("auto_create_payment", "true");
       fd.append("use_ai", "true");
@@ -3249,6 +3280,7 @@ function DrawsTab({
                         </thead>
                         <tbody className="divide-y divide-gray-100">
                           {drawDocs.map((doc) => (
+                            <>
                             <tr key={doc.id} className="hover:bg-gray-50">
                               <td className="py-2 pr-3 text-xs text-gray-500 tabular-nums">
                                 {doc.line_item_number ?? "--"}
@@ -3287,6 +3319,13 @@ function DrawsTab({
                               <td className="py-2">
                                 <div className="flex items-center gap-1">
                                   <button
+                                    aria-label={`Edit ${doc.name}`}
+                                    onClick={() => editingDocId === doc.id ? setEditingDocId(null) : startEditDoc(doc)}
+                                    className={`p-1 cursor-pointer transition-colors ${editingDocId === doc.id ? "text-blue-500" : "text-gray-400 hover:text-blue-500"}`}
+                                  >
+                                    <Edit3 className="w-3.5 h-3.5" />
+                                  </button>
+                                  <button
                                     aria-label={`Preview ${doc.name}`}
                                     onClick={() => onPreview(doc.file_url, doc.name)}
                                     className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
@@ -3313,6 +3352,67 @@ function DrawsTab({
                                 </div>
                               </td>
                             </tr>
+                            {editingDocId === doc.id && (
+                              <tr key={`${doc.id}-edit`} className="bg-blue-50">
+                                <td colSpan={6} className="px-2 py-2">
+                                  <div className="flex flex-wrap items-end gap-2">
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Category</label>
+                                      <select
+                                        value={editDocForm.category}
+                                        onChange={(e) => setEditDocForm(f => ({ ...f, category: e.target.value }))}
+                                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      >
+                                        {["invoice","contract","permit","photo","plan","draw_request","general"].map(c => (
+                                          <option key={c} value={c}>{c}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Line Item #</label>
+                                      <select
+                                        value={editDocForm.line_item_number}
+                                        onChange={(e) => setEditDocForm(f => ({ ...f, line_item_number: e.target.value }))}
+                                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      >
+                                        <option value="">-- none --</option>
+                                        {DEFAULT_BUDGET_LINE_ITEMS.map(b => (
+                                          <option key={b.line_number} value={b.line_number}>{b.line_number} — {b.description}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Doc Type</label>
+                                      <select
+                                        value={editDocForm.doc_type}
+                                        onChange={(e) => setEditDocForm(f => ({ ...f, doc_type: e.target.value }))}
+                                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      >
+                                        <option value="">-- none --</option>
+                                        {["Invoice","Receipt","Estimate","Quote","Bid","PO","Statement","Credit"].map(t => (
+                                          <option key={t} value={t}>{t}</option>
+                                        ))}
+                                      </select>
+                                    </div>
+                                    <div className="flex gap-1.5">
+                                      <button
+                                        onClick={saveEditDoc}
+                                        className="px-3 py-1 text-xs bg-black text-white rounded hover:bg-gray-800 transition-colors"
+                                      >
+                                        Save
+                                      </button>
+                                      <button
+                                        onClick={() => setEditingDocId(null)}
+                                        className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors"
+                                      >
+                                        Cancel
+                                      </button>
+                                    </div>
+                                  </div>
+                                </td>
+                              </tr>
+                            )}
+                            </>
                           ))}
                         </tbody>
                       </table>
@@ -3321,10 +3421,7 @@ function DrawsTab({
                     {/* Mobile card layout */}
                     <div className="sm:hidden space-y-2">
                       {drawDocs.map((doc) => (
-                        <div
-                          key={doc.id}
-                          className="bg-gray-50 rounded-lg p-3 space-y-1"
-                        >
+                        <div key={doc.id} className="bg-gray-50 rounded-lg p-3 space-y-1">
                           <div className="flex items-start justify-between gap-2">
                             <a
                               href={doc.file_url}
@@ -3335,6 +3432,13 @@ function DrawsTab({
                               {doc.name}
                             </a>
                             <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                aria-label={`Edit ${doc.name}`}
+                                onClick={() => editingDocId === doc.id ? setEditingDocId(null) : startEditDoc(doc)}
+                                className={`p-1 cursor-pointer transition-colors ${editingDocId === doc.id ? "text-blue-500" : "text-gray-400 hover:text-blue-500"}`}
+                              >
+                                <Edit3 className="w-3.5 h-3.5" />
+                              </button>
                               <button
                                 aria-label={`Preview ${doc.name}`}
                                 onClick={() => onPreview(doc.file_url, doc.name)}
@@ -3362,12 +3466,58 @@ function DrawsTab({
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
-                            {doc.line_item_number !== null && (
-                              <span>#{doc.line_item_number}</span>
-                            )}
+                            {doc.line_item_number !== null && <span>#{doc.line_item_number}</span>}
                             {doc.doc_type && <span>{doc.doc_type}</span>}
                             {doc.vendor && <span>{doc.vendor}</span>}
                           </div>
+                          {editingDocId === doc.id && (
+                            <div className="pt-2 border-t border-blue-200 space-y-2">
+                              <div className="grid grid-cols-2 gap-2">
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-0.5">Category</label>
+                                  <select
+                                    value={editDocForm.category}
+                                    onChange={(e) => setEditDocForm(f => ({ ...f, category: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    {["invoice","contract","permit","photo","plan","draw_request","general"].map(c => (
+                                      <option key={c} value={c}>{c}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                                <div>
+                                  <label className="block text-xs text-gray-500 mb-0.5">Doc Type</label>
+                                  <select
+                                    value={editDocForm.doc_type}
+                                    onChange={(e) => setEditDocForm(f => ({ ...f, doc_type: e.target.value }))}
+                                    className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  >
+                                    <option value="">-- none --</option>
+                                    {["Invoice","Receipt","Estimate","Quote","Bid","PO","Statement","Credit"].map(t => (
+                                      <option key={t} value={t}>{t}</option>
+                                    ))}
+                                  </select>
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Line Item #</label>
+                                <select
+                                  value={editDocForm.line_item_number}
+                                  onChange={(e) => setEditDocForm(f => ({ ...f, line_item_number: e.target.value }))}
+                                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                >
+                                  <option value="">-- none --</option>
+                                  {DEFAULT_BUDGET_LINE_ITEMS.map(b => (
+                                    <option key={b.line_number} value={b.line_number}>{b.line_number} — {b.description}</option>
+                                  ))}
+                                </select>
+                              </div>
+                              <div className="flex gap-2">
+                                <button onClick={saveEditDoc} className="flex-1 py-1.5 text-xs bg-black text-white rounded hover:bg-gray-800 transition-colors">Save</button>
+                                <button onClick={() => setEditingDocId(null)} className="flex-1 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Cancel</button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       ))}
                     </div>
