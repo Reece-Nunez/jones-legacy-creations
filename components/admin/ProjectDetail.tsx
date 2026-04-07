@@ -4018,7 +4018,7 @@ function TasksTab({
   useEffect(() => {
     fetch("/api/admin/team")
       .then((res) => res.json())
-      .then((data) => setTeamMembers(data))
+      .then((data) => { if (Array.isArray(data)) setTeamMembers(data); })
       .catch(() => {});
   }, []);
 
