@@ -27,7 +27,8 @@ export async function GET() {
   }>();
 
   for (const doc of data ?? []) {
-    const project = doc.projects as { id: string; name: string; city: string | null; state: string | null; description: string | null } | null;
+    const raw = doc.projects;
+    const project = (Array.isArray(raw) ? raw[0] : raw) as { id: string; name: string; city: string | null; state: string | null; description: string | null } | null;
     if (!project) continue;
     if (!projectMap.has(project.id)) {
       projectMap.set(project.id, {
