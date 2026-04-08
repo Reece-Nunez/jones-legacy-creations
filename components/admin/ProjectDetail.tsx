@@ -383,6 +383,55 @@ export default function ProjectDetail({
   const markupAmount = totalBudgetedForMarkup * (markupPercent / 100);
   const cashJobContractPrice = totalBudgetedForMarkup + markupAmount;
 
+  // ---- cash job accurate spent -------------------------------------------
+  // Mirrors the BudgetTab spentByLine logic so financial cards stay in sync.
+  const cashTotalSpent = (() => {
+    if (!project.is_cash_job) return totalCosts;
+    const spentByLine = new Map<string, number>();
+    const counted = new Set<string>();
+
+    const parseNum = (filename: string | null): string | null => {
+      if (!filename) return null;
+      const m = filename.match(/^(\d+[a-z]?)\s*[_ ]/i);
+      return m ? m[1].toLowerCase() : null;
+    };
+    const numericPart = (s: string) => s.replace(/[a-z]/gi, "");
+    const resolveLine = (parsed: string): string => {
+      const lower = parsed.toLowerCase();
+      if (budgetLineItems.some(b => b.line_number.toLowerCase() === lower)) return lower;
+      const num = numericPart(lower);
+      const fb = budgetLineItems.find(b => numericPart(b.line_number) === num);
+      return fb ? fb.line_number : lower;
+    };
+
+    // Source 1: document-linked payments
+    for (const doc of documents) {
+      if (doc.line_item_number == null) continue;
+      const payment = payments.find(p => p.invoice_file_url === doc.file_url);
+      if (payment) {
+        const key = resolveLine(doc.line_item_number);
+        spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+        counted.add(payment.id);
+      }
+    }
+    // Source 2: filename-parsed payments
+    for (const payment of payments) {
+      if (counted.has(payment.id)) continue;
+      const parsed = parseNum(payment.invoice_file_name ?? null);
+      if (!parsed) continue;
+      const key = resolveLine(parsed);
+      spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+    }
+    // Source 3: owner-purchased items (no invoice needed)
+    for (const item of budgetLineItems) {
+      if (item.owner_purchased && !spentByLine.has(item.line_number)) {
+        spentByLine.set(item.line_number, item.budgeted_amount || 0);
+      }
+    }
+
+    return Array.from(spentByLine.values()).reduce((s, v) => s + v, 0);
+  })();
+
   // ---- loan / profit calculations ----------------------------------------
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
@@ -529,7 +578,7 @@ export default function ProjectDetail({
             <FinancialCard
               icon={<CreditCard className="w-4 h-4 text-orange-500" />}
               label="Costs So Far"
-              value={totalCosts}
+              value={cashTotalSpent}
             />
           </div>
         ) : (
