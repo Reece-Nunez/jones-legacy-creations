@@ -74,6 +74,13 @@ import type {
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 
 type ProgressItem = DrawLineItem & { completed: boolean };
+type CashProgressItem = {
+  line_number: string;
+  description: string;
+  budgeted_amount: number;
+  completed: boolean;
+  source: "invoice" | "owner_purchased" | null;
+};
 import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
@@ -349,17 +356,22 @@ export default function ProjectDetail({
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
+  const [cashProgressItems, setCashProgressItems] = useState<CashProgressItem[]>([]);
   const [completionPercent, setCompletionPercent] = useState(0);
 
   useEffect(() => {
     fetch(`/api/admin/projects/${project.id}/progress`)
       .then(r => r.json())
       .then(data => {
-        if (Array.isArray(data.items)) setProgressItems(data.items);
         if (typeof data.percent === "number") setCompletionPercent(data.percent);
+        if (data.cashJob) {
+          if (Array.isArray(data.items)) setCashProgressItems(data.items);
+        } else {
+          if (Array.isArray(data.items)) setProgressItems(data.items);
+        }
       })
       .catch(() => {});
-  }, [project.id, documents]);
+  }, [project.id, documents, budgetLineItems]);
 
   // ---- financial calculations -------------------------------------------
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
@@ -576,6 +588,7 @@ export default function ProjectDetail({
               project={project}
               mutate={mutate}
               progressItems={progressItems}
+              cashProgressItems={cashProgressItems}
               completionPercent={completionPercent}
             />
           </TabsContent>
@@ -1089,15 +1102,128 @@ function FilePreviewModal({
 
 function ProgressCard({
   items,
+  cashItems,
+  isCashJob,
   completionPercent,
 }: {
   items: ProgressItem[];
+  cashItems?: CashProgressItem[];
+  isCashJob?: boolean;
   completionPercent: number;
 }) {
   const [expanded, setExpanded] = useState(false);
+
+  const fmt = (n: number) =>
+    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+
+  // ── Cash job mode ────────────────────────────────────────────────────────
+  if (isCashJob) {
+    const cash = cashItems ?? [];
+    const done = cash.filter(i => i.completed);
+    const pending = cash.filter(i => !i.completed);
+    const totalBudgeted = cash.reduce((s, i) => s + i.budgeted_amount, 0);
+    const coveredBudget = done.reduce((s, i) => s + i.budgeted_amount, 0);
+
+    return (
+      <ShadCard>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between">
+            <CardTitle>Construction Progress</CardTitle>
+            <span className="text-2xl font-bold text-gray-900">{completionPercent}%</span>
+          </div>
+          <div className="mt-2">
+            <div className="h-3 rounded-full bg-gray-200 overflow-hidden">
+              <div
+                className={`h-full rounded-full transition-all duration-700 ${
+                  completionPercent >= 100 ? "bg-green-500" :
+                  completionPercent >= 50 ? "bg-blue-500" : "bg-amber-500"
+                }`}
+                style={{ width: `${completionPercent}%` }}
+              />
+            </div>
+            <div className="flex items-center justify-between mt-2">
+              <span className="text-xs text-gray-400">
+                {done.length} of {cash.length} items covered · {fmt(coveredBudget)} of {fmt(totalBudgeted)}
+              </span>
+              <button
+                onClick={() => setExpanded(v => !v)}
+                className="flex items-center gap-1 text-xs text-gray-500 hover:text-gray-800 transition-colors"
+              >
+                {expanded ? "Hide details" : "View details"}
+                {expanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+              </button>
+            </div>
+          </div>
+        </CardHeader>
+        {expanded && (
+          <CardContent className="pt-0">
+            {cash.length === 0 ? (
+              <p className="text-sm text-gray-400 text-center py-4">No budget items yet</p>
+            ) : (
+              <div className="space-y-3">
+                {/* Completed items */}
+                {done.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-green-600">Completed</span>
+                      <div className="flex-1 h-px bg-gray-100" />
+                    </div>
+                    <div className="space-y-0.5">
+                      {done.map((item) => (
+                        <div key={item.line_number} className={`flex items-center gap-3 px-3 py-2 rounded-lg ${
+                          item.source === "owner_purchased" ? "bg-amber-50" : "bg-green-50"
+                        }`}>
+                          <div className={`w-5 h-5 rounded border-2 flex-shrink-0 flex items-center justify-center ${
+                            item.source === "owner_purchased"
+                              ? "bg-amber-500 border-amber-500"
+                              : "bg-green-500 border-green-500"
+                          }`}>
+                            <Check className="w-3 h-3 text-white" />
+                          </div>
+                          <span className={`text-sm flex-1 ${
+                            item.source === "owner_purchased" ? "text-amber-700" : "text-green-700"
+                          }`}>
+                            {item.description}
+                          </span>
+                          <span className="text-xs text-gray-400 tabular-nums shrink-0">{fmt(item.budgeted_amount)}</span>
+                          {item.source === "owner_purchased" && (
+                            <span className="text-[10px] font-semibold uppercase tracking-wide text-amber-600 bg-amber-100 rounded-full px-2 py-0.5 shrink-0">Owner</span>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Pending items */}
+                {pending.length > 0 && (
+                  <div>
+                    <div className="flex items-center gap-2 mb-1">
+                      <span className="text-xs font-semibold uppercase tracking-wide text-gray-400">Remaining</span>
+                      <div className="flex-1 h-px bg-gray-100" />
+                    </div>
+                    <div className="space-y-0.5">
+                      {pending.map((item) => (
+                        <div key={item.line_number} className="flex items-center gap-3 px-3 py-2 rounded-lg bg-gray-50">
+                          <div className="w-5 h-5 rounded border-2 border-gray-300 flex-shrink-0" />
+                          <span className="text-sm flex-1 text-gray-600">{item.description}</span>
+                          <span className="text-xs text-gray-400 tabular-nums shrink-0">{fmt(item.budgeted_amount)}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        )}
+      </ShadCard>
+    );
+  }
+
+  // ── Standard NAHB mode ───────────────────────────────────────────────────
   const completedCount = items.filter(i => i.completed).length;
 
-  // Group items by phase (preserving order from DRAW_LINE_ITEM_WEIGHTS)
   const phases: string[] = [];
   const byPhase: Record<string, ProgressItem[]> = {};
   for (const item of items) {
@@ -1197,6 +1323,7 @@ function OverviewTab({
   project,
   mutate,
   progressItems,
+  cashProgressItems,
   completionPercent,
 }: {
   project: Project;
@@ -1206,6 +1333,7 @@ function OverviewTab({
     body?: Record<string, unknown>,
   ) => Promise<Response | undefined>;
   progressItems: ProgressItem[];
+  cashProgressItems: CashProgressItem[];
   completionPercent: number;
 }) {
   const [editingField, setEditingField] = useState<
@@ -1232,6 +1360,8 @@ function OverviewTab({
       <div className="lg:col-span-2">
         <ProgressCard
           items={progressItems}
+          cashItems={cashProgressItems}
+          isCashJob={project.is_cash_job}
           completionPercent={completionPercent}
         />
       </div>
