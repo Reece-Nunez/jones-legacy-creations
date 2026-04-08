@@ -365,6 +365,12 @@ export default function ProjectDetail({
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
   const totalCosts = payments.reduce((s, p) => s + p.amount, 0);
 
+  // ---- cash job markup ---------------------------------------------------
+  const markupPercent = project.markup_percent ?? 0;
+  const totalBudgetedForMarkup = budgetLineItems.reduce((s, i) => s + (i.budgeted_amount || 0), 0);
+  const markupAmount = totalBudgetedForMarkup * (markupPercent / 100);
+  const cashJobContractPrice = totalBudgetedForMarkup + markupAmount;
+
   // ---- loan / profit calculations ----------------------------------------
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
@@ -491,6 +497,29 @@ export default function ProjectDetail({
             projectedProfit={projectedProfit}
             profitMargin={profitMargin}
           />
+        ) : project.is_cash_job ? (
+          <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
+            <FinancialCard
+              icon={<Wallet className="w-4 h-4 text-blue-500" />}
+              label="Total Budget"
+              value={totalBudgetedForMarkup}
+            />
+            <FinancialCard
+              icon={<Percent className="w-4 h-4 text-indigo-500" />}
+              label={`Markup (${markupPercent}%)`}
+              value={markupAmount}
+            />
+            <FinancialCard
+              icon={<Receipt className="w-4 h-4 text-emerald-500" />}
+              label="Client Price"
+              value={cashJobContractPrice}
+            />
+            <FinancialCard
+              icon={<CreditCard className="w-4 h-4 text-orange-500" />}
+              label="Costs So Far"
+              value={totalCosts}
+            />
+          </div>
         ) : (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 sm:gap-3">
             <FinancialCard

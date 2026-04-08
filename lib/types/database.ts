@@ -63,6 +63,7 @@ export interface Project {
   origination_fee_percent: number | null;
   loan_start_date: string | null;
   is_cash_job: boolean;
+  markup_percent: number | null;
   start_date: string | null;
   end_date: string | null;
   square_footage: number | null;

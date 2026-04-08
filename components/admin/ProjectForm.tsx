@@ -67,6 +67,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isCashJob, setIsCashJob] = useState(project?.is_cash_job ?? false);
+  const [markupPercent, setMarkupPercent] = useState<number>(project?.markup_percent ?? 20);
   const isEdit = !!project;
   const lastChangedBy = useRef<"loan_amount" | "down_payment" | "down_payment_percent" | null>(null);
 
@@ -160,6 +161,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       const payload = {
         ...data,
         is_cash_job: isCashJob,
+        markup_percent: isCashJob ? markupPercent : null,
         client_email: data.client_email || null,
         client_phone: data.client_phone || null,
         address: data.address || null,
@@ -434,6 +436,34 @@ export default function ProjectForm({ project }: ProjectFormProps) {
               </div>
             </label>
           </div>
+
+          {/* Profit Markup Slider — cash jobs only */}
+          {isCashJob && (
+            <div className="md:col-span-2 bg-blue-50 border border-blue-200 rounded-lg p-4">
+              <div className="flex items-center justify-between mb-2">
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Profit Markup</label>
+                  <p className="text-xs text-gray-500">Percentage added on top of total budget costs</p>
+                </div>
+                <span className="text-2xl font-bold text-blue-700 tabular-nums">{markupPercent}%</span>
+              </div>
+              <input
+                type="range"
+                min={1}
+                max={100}
+                value={markupPercent}
+                onChange={(e) => setMarkupPercent(Number(e.target.value))}
+                className="w-full accent-blue-600"
+              />
+              <div className="flex justify-between text-xs text-gray-400 mt-1">
+                <span>1%</span>
+                <span>25%</span>
+                <span>50%</span>
+                <span>75%</span>
+                <span>100%</span>
+              </div>
+            </div>
+          )}
 
           {/* Estimated Value */}
           <div>
