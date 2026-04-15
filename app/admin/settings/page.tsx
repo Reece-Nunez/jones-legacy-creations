@@ -21,6 +21,8 @@ import {
   XCircle,
   AlertTriangle,
   RefreshCw,
+  ShieldCheck,
+  ShieldOff,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -147,7 +149,85 @@ function SettingsPageInner() {
   const [syncingVendors, setSyncingVendors] = useState(false);
   const [syncingPayments, setSyncingPayments] = useState(false);
 
+  // MFA state
+  const [mfaEnrolled, setMfaEnrolled] = useState<boolean | null>(null);
+  const [mfaEnrolling, setMfaEnrolling] = useState(false);
+  const [mfaQr, setMfaQr] = useState<string | null>(null);
+  const [mfaFactorId, setMfaFactorId] = useState<string | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+  const [mfaError, setMfaError] = useState<string | null>(null);
+  const [mfaRemoving, setMfaRemoving] = useState(false);
+
   const searchParams = useSearchParams();
+
+  // ── MFA helpers ──────────────────────────────────────────────────────────────
+  const checkMfaStatus = useCallback(async () => {
+    const { createClient: createBrowserClient } = await import("@/lib/supabase/client");
+    const supabase = createBrowserClient();
+    const { data } = await supabase.auth.mfa.listFactors();
+    setMfaEnrolled((data?.totp?.length ?? 0) > 0);
+  }, []);
+
+  async function handleMfaEnroll() {
+    setMfaEnrolling(true);
+    setMfaError(null);
+    const { createClient: createBrowserClient } = await import("@/lib/supabase/client");
+    const supabase = createBrowserClient();
+    const { data, error } = await supabase.auth.mfa.enroll({ factorType: "totp", issuer: "Jones Legacy Creations" });
+    if (error || !data) {
+      setMfaError("Failed to start MFA enrollment. Please try again.");
+      setMfaEnrolling(false);
+      return;
+    }
+    setMfaQr(data.totp.qr_code);
+    setMfaFactorId(data.id);
+    setMfaEnrolling(false);
+  }
+
+  async function handleMfaConfirm() {
+    if (!mfaFactorId || mfaCode.length !== 6) return;
+    setMfaError(null);
+    const { createClient: createBrowserClient } = await import("@/lib/supabase/client");
+    const supabase = createBrowserClient();
+    const { error } = await supabase.auth.mfa.challengeAndVerify({ factorId: mfaFactorId, code: mfaCode });
+    if (error) {
+      setMfaError("Invalid code. Please check your authenticator app.");
+      setMfaCode("");
+      return;
+    }
+    setMfaQr(null);
+    setMfaFactorId(null);
+    setMfaCode("");
+    setMfaEnrolled(true);
+    toast.success("Two-factor authentication enabled");
+  }
+
+  async function handleMfaRemove() {
+    if (!mfaFactorId) {
+      // Need to get the factor ID first
+      const { createClient: createBrowserClient } = await import("@/lib/supabase/client");
+      const supabase = createBrowserClient();
+      const { data } = await supabase.auth.mfa.listFactors();
+      const totp = data?.totp?.[0];
+      if (!totp) return;
+      setMfaRemoving(true);
+      await supabase.auth.mfa.unenroll({ factorId: totp.id });
+      setMfaEnrolled(false);
+      setMfaRemoving(false);
+      toast.success("Two-factor authentication removed");
+      return;
+    }
+    setMfaRemoving(true);
+    const { createClient: createBrowserClient } = await import("@/lib/supabase/client");
+    const supabase = createBrowserClient();
+    await supabase.auth.mfa.unenroll({ factorId: mfaFactorId });
+    setMfaQr(null);
+    setMfaFactorId(null);
+    setMfaEnrolled(false);
+    setMfaRemoving(false);
+    toast.success("Two-factor authentication removed");
+  }
+  // ─────────────────────────────────────────────────────────────────────────────
 
   const fetchQboStatus = useCallback(async () => {
     try {
@@ -208,7 +288,8 @@ function SettingsPageInner() {
       });
 
     fetchQboStatus();
-  }, [fetchQboStatus]);
+    checkMfaStatus();
+  }, [fetchQboStatus, checkMfaStatus]);
 
   // Handle QB OAuth callback result in URL
   useEffect(() => {
@@ -594,6 +675,87 @@ function SettingsPageInner() {
               </div>
               <p className="text-xs text-gray-400 mt-1.5">Sync vendors before payments. Safe to run anytime — won&apos;t create duplicates.</p>
             </div>
+          </div>
+        )}
+      </SectionCard>
+
+      {/* Two-Factor Authentication */}
+      <SectionCard
+        icon={ShieldCheck}
+        title="Two-Factor Authentication"
+        description="Add an extra layer of security to your account"
+      >
+        {mfaEnrolled === null ? (
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <Loader2 className="w-4 h-4 animate-spin" /> Checking MFA status…
+          </div>
+        ) : mfaEnrolled && !mfaQr ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <ShieldCheck className="w-5 h-5 text-green-500" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">MFA enabled</p>
+                <p className="text-xs text-gray-500">Your account is protected with an authenticator app</p>
+              </div>
+            </div>
+            <button
+              onClick={handleMfaRemove}
+              disabled={mfaRemoving}
+              className="inline-flex items-center gap-1.5 rounded-lg border border-red-200 bg-white px-3 py-1.5 text-xs font-medium text-red-600 hover:bg-red-50 disabled:opacity-50"
+            >
+              {mfaRemoving ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldOff className="w-3.5 h-3.5" />}
+              Remove MFA
+            </button>
+          </div>
+        ) : mfaQr ? (
+          <div className="space-y-4">
+            <p className="text-sm text-gray-600">
+              Scan this QR code with your authenticator app (Google Authenticator, Authy, etc.), then enter the 6-digit code below to confirm.
+            </p>
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img src={mfaQr} alt="MFA QR code" className="w-40 h-40 border rounded-lg" />
+            {mfaError && (
+              <p className="text-sm text-red-600 flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4" /> {mfaError}
+              </p>
+            )}
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                inputMode="numeric"
+                maxLength={6}
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
+                placeholder="000000"
+                className="w-32 rounded-lg border border-gray-300 px-3 py-2 text-center font-mono tracking-widest text-lg outline-none focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20"
+              />
+              <button
+                onClick={handleMfaConfirm}
+                disabled={mfaCode.length !== 6}
+                className="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+              >
+                <ShieldCheck className="w-4 h-4" /> Confirm &amp; Enable
+              </button>
+              <button onClick={handleMfaRemove} className="text-sm text-gray-400 hover:text-gray-600">Cancel</button>
+            </div>
+          </div>
+        ) : (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2.5">
+              <ShieldOff className="w-5 h-5 text-gray-300" />
+              <div>
+                <p className="text-sm font-medium text-gray-900">MFA not enabled</p>
+                <p className="text-xs text-gray-500">Protect your account with an authenticator app</p>
+              </div>
+            </div>
+            <button
+              onClick={handleMfaEnroll}
+              disabled={mfaEnrolling}
+              className="inline-flex items-center gap-1.5 rounded-lg bg-gray-900 px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-700 disabled:opacity-50"
+            >
+              {mfaEnrolling ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
+              Enable MFA
+            </button>
           </div>
         )}
       </SectionCard>

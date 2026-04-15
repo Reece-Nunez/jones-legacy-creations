@@ -10,6 +10,13 @@ export async function GET(request: Request) {
     const supabase = await createClient();
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // Check if MFA verification is required (user has a TOTP factor enrolled)
+      const { data: aal } = await supabase.auth.mfa.getAuthenticatorAssuranceLevel();
+      if (aal?.nextLevel === "aal2" && aal?.currentLevel !== "aal2") {
+        const verifyUrl = new URL(`${origin}/admin/mfa/verify`);
+        verifyUrl.searchParams.set("next", next);
+        return NextResponse.redirect(verifyUrl.toString());
+      }
       return NextResponse.redirect(`${origin}${next}`);
     }
   }
