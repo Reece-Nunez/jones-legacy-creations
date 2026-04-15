@@ -30,6 +30,17 @@ async function qboFetch(
   });
 }
 
+/**
+ * Extracts intuit_tid from a QBO response header and throws a standardised
+ * error that includes it. Intuit support uses intuit_tid to look up the
+ * exact server-side request for troubleshooting.
+ */
+function qboError(res: Response, body: string, context: string): Error {
+  const tid = res.headers.get("intuit_tid") ?? "unknown";
+  console.error(`[QBO] ${context} failed | status: ${res.status} | intuit_tid: ${tid} | body: ${body}`);
+  return new Error(`${context} failed (intuit_tid: ${tid}): ${body}`);
+}
+
 async function qboQuery(query: string) {
   const { accessToken, realmId } = await getValidAccessToken();
   const encoded = encodeURIComponent(query);
@@ -44,7 +55,7 @@ async function qboQuery(query: string) {
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO query failed: ${err}`);
+    throw qboError(res, err, "QBO query");
   }
 
   return res.json();
@@ -107,7 +118,7 @@ export async function createOrUpdateCustomer(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO customer upsert failed: ${err}`);
+    throw qboError(res, err, "QBO customer upsert");
   }
 
   const json = await res.json();
@@ -175,7 +186,7 @@ export async function createOrUpdateVendor(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO vendor upsert failed: ${err}`);
+    throw qboError(res, err, "QBO vendor upsert");
   }
 
   const json = await res.json();
@@ -222,7 +233,7 @@ export async function createInvoice(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO invoice create failed: ${err}`);
+    throw qboError(res, err, "QBO invoice create");
   }
 
   const json = await res.json();
@@ -337,7 +348,7 @@ export async function createBill(
         }
       } catch { /* fall through */ }
     }
-    throw new Error(`QBO bill create failed: ${errText}`);
+    throw qboError(res, errText, "QBO bill create");
   }
 
   const json = await res.json();
@@ -408,7 +419,7 @@ export async function createBillPayment(
         }
       } catch { /* fall through */ }
     }
-    throw new Error(`QBO bill payment failed: ${errText}`);
+    throw qboError(res, errText, "QBO bill payment");
   }
 
   const json = await res.json();
@@ -433,7 +444,7 @@ export async function updateVendorBankDetails(
   const getRes = await qboFetch(`vendor/${vendorQboId}?${MV}`);
   if (!getRes.ok) {
     const err = await getRes.text();
-    throw new Error(`QBO get vendor failed: ${err}`);
+    throw qboError(getRes, err, "QBO get vendor");
   }
   const { Vendor } = await getRes.json();
 
@@ -456,7 +467,7 @@ export async function updateVendorBankDetails(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO update vendor bank details failed: ${err}`);
+    throw qboError(res, err, "QBO update vendor bank details");
   }
 }
 
@@ -510,7 +521,7 @@ export async function updateVendorContractorInfo(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO vendor info update failed: ${err}`);
+    throw qboError(res, err, "QBO vendor info update");
   }
 }
 
@@ -555,7 +566,7 @@ async function uploadAttachment(
 
   if (!res.ok) {
     const err = await res.text();
-    throw new Error(`QBO attachment upload failed: ${err}`);
+    throw qboError(res, err, "QBO attachment upload");
   }
 }
 

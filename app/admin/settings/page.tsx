@@ -598,6 +598,24 @@ function SettingsPageInner() {
         )}
       </SectionCard>
 
+      {/* Support */}
+      <SectionCard
+        icon={Mail}
+        title="Support"
+        description="Get help with the platform or report an issue"
+      >
+        <p className="text-sm text-gray-600 mb-3">
+          Need help? Contact us and we&apos;ll get back to you as soon as possible.
+        </p>
+        <a
+          href="mailto:office@joneslegacycreations.com?subject=Jones Legacy Creations Platform Support"
+          className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 transition-colors"
+        >
+          <Mail className="w-4 h-4" />
+          office@joneslegacycreations.com
+        </a>
+      </SectionCard>
+
       {/* Sticky save bar when dirty */}
       {dirty && (
         <div className="fixed bottom-[52px] lg:bottom-0 left-0 right-0 lg:left-64 z-20 bg-white dark:bg-gray-900 border-t border-gray-200 px-6 py-3 flex items-center justify-between shadow-lg">
