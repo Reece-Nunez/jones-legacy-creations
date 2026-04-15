@@ -80,6 +80,8 @@ export async function POST(
         description: reviewed.description || null,
         category: reviewed.category || null,
         line_items: Array.isArray(reviewed.line_items) ? reviewed.line_items : [],
+        is_paid: reviewed.is_paid === true,
+        card_fee_warning: typeof reviewed.card_fee_warning === "string" ? reviewed.card_fee_warning : null,
       };
     } catch {
       // Invalid JSON, fall through to no AI data
