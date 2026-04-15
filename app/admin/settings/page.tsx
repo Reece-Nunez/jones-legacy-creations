@@ -146,9 +146,12 @@ function SettingsPageInner() {
   const [qboStatus, setQboStatus] = useState<QBOStatus | null>(null);
   const [qboDisconnecting, setQboDisconnecting] = useState(false);
   const [syncHealth, setSyncHealth] = useState<SyncHealth | null>(null);
-  const [syncingVendors, setSyncingVendors] = useState(false);
-  const [syncingPayments, setSyncingPayments] = useState(false);
-  const [syncingW9s, setSyncingW9s] = useState(false);
+  type SyncPhase = "vendors" | "w9s" | "payments";
+  interface SyncResult { succeeded: number; failed: number; skipped?: number; }
+  const [syncing, setSyncing] = useState(false);
+  const [syncPhase, setSyncPhase] = useState<SyncPhase | null>(null);
+  const [syncDone, setSyncDone] = useState(false);
+  const [syncResults, setSyncResults] = useState<Partial<Record<SyncPhase, SyncResult>>>({});
 
   // MFA state
   const [mfaEnrolled, setMfaEnrolled] = useState<boolean | null>(null);
@@ -246,47 +249,56 @@ function SettingsPageInner() {
     }
   }, []);
 
-  async function handleSyncAllVendors() {
-    setSyncingVendors(true);
+  async function handleSyncAll() {
+    setSyncing(true);
+    setSyncDone(false);
+    setSyncResults({});
+
+    const results: Partial<Record<SyncPhase, SyncResult>> = {};
+
+    // Step 1: Vendors
+    setSyncPhase("vendors");
     try {
       const res = await fetch("/api/quickbooks/sync/all-vendors", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Sync failed");
-      toast.success(`${data.succeeded} vendor${data.succeeded !== 1 ? "s" : ""} synced${data.failed ? `, ${data.failed} failed` : ""}`);
-      fetch("/api/quickbooks/sync-health").then((r) => r.json()).then(setSyncHealth).catch(() => {});
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Vendor sync failed");
-    } finally {
-      setSyncingVendors(false);
+      results.vendors = { succeeded: data.succeeded ?? 0, failed: data.failed ?? 0 };
+    } catch {
+      results.vendors = { succeeded: 0, failed: 1 };
     }
-  }
+    setSyncResults({ ...results });
 
-  async function handleSyncAllPayments() {
-    setSyncingPayments(true);
-    try {
-      const res = await fetch("/api/quickbooks/sync/all-payments", { method: "POST" });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Sync failed");
-      toast.success(`${data.succeeded} payment${data.succeeded !== 1 ? "s" : ""} synced${data.failed ? `, ${data.failed} failed` : ""}${data.skipped ? ` (${data.skipped} skipped — sync vendors first)` : ""}`);
-      fetch("/api/quickbooks/sync-health").then((r) => r.json()).then(setSyncHealth).catch(() => {});
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Payment sync failed");
-    } finally {
-      setSyncingPayments(false);
-    }
-  }
-
-  async function handleSyncAllW9s() {
-    setSyncingW9s(true);
+    // Step 2: W9s
+    setSyncPhase("w9s");
     try {
       const res = await fetch("/api/quickbooks/sync/all-w9s", { method: "POST" });
       const data = await res.json();
-      if (!res.ok) throw new Error(data.error ?? "Sync failed");
-      toast.success(`${data.succeeded} W9${data.succeeded !== 1 ? "s" : ""} synced to QuickBooks${data.failed ? `, ${data.failed} failed` : ""}${data.skipped ? ` (${data.skipped} skipped — sync vendors first)` : ""}`);
-    } catch (err) {
-      toast.error(err instanceof Error ? err.message : "W9 sync failed");
-    } finally {
-      setSyncingW9s(false);
+      results.w9s = { succeeded: data.succeeded ?? 0, failed: data.failed ?? 0, skipped: data.skipped ?? 0 };
+    } catch {
+      results.w9s = { succeeded: 0, failed: 1 };
+    }
+    setSyncResults({ ...results });
+
+    // Step 3: Payments
+    setSyncPhase("payments");
+    try {
+      const res = await fetch("/api/quickbooks/sync/all-payments", { method: "POST" });
+      const data = await res.json();
+      results.payments = { succeeded: data.succeeded ?? 0, failed: data.failed ?? 0, skipped: data.skipped ?? 0 };
+    } catch {
+      results.payments = { succeeded: 0, failed: 1 };
+    }
+    setSyncResults({ ...results });
+
+    setSyncPhase(null);
+    setSyncing(false);
+    setSyncDone(true);
+    fetch("/api/quickbooks/sync-health").then((r) => r.json()).then(setSyncHealth).catch(() => {});
+
+    const totalFailed = (results.vendors?.failed ?? 0) + (results.w9s?.failed ?? 0) + (results.payments?.failed ?? 0);
+    if (totalFailed > 0) {
+      toast.error(`Sync complete with ${totalFailed} error${totalFailed !== 1 ? "s" : ""} — check details below`);
+    } else {
+      toast.success("All data synced to QuickBooks successfully");
     }
   }
 
@@ -667,36 +679,69 @@ function SettingsPageInner() {
               </p>
             )}
 
-            {/* Global Re-sync */}
-            <div>
-              <p className="text-xs font-medium text-gray-600 mb-2">Global Recovery Sync</p>
-              <div className="flex flex-wrap gap-2">
-                <button
-                  onClick={handleSyncAllVendors}
-                  disabled={syncingVendors}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {syncingVendors ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  {syncingVendors ? "Syncing…" : "Re-sync All Vendors"}
-                </button>
-                <button
-                  onClick={handleSyncAllPayments}
-                  disabled={syncingPayments}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {syncingPayments ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  {syncingPayments ? "Syncing…" : "Re-sync All Payments"}
-                </button>
-                <button
-                  onClick={handleSyncAllW9s}
-                  disabled={syncingW9s}
-                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
-                >
-                  {syncingW9s ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
-                  {syncingW9s ? "Syncing…" : "Sync All W9s to QuickBooks"}
-                </button>
-              </div>
-              <p className="text-xs text-gray-400 mt-1.5">Run in order: Vendors → W9s → Payments. Safe to run anytime — won&apos;t create duplicates.</p>
+            {/* Global Sync */}
+            <div className="space-y-3">
+              <button
+                onClick={handleSyncAll}
+                disabled={syncing}
+                className="inline-flex items-center gap-2 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-700 disabled:opacity-50 transition-colors"
+              >
+                {syncing ? <Loader2 className="w-4 h-4 animate-spin" /> : <RefreshCw className="w-4 h-4" />}
+                {syncing ? "Syncing…" : "Sync Data to QuickBooks"}
+              </button>
+
+              {/* Progress bar — shown while syncing or after done */}
+              {(syncing || syncDone) && (() => {
+                const steps: { key: SyncPhase; label: string }[] = [
+                  { key: "vendors", label: "Vendors" },
+                  { key: "w9s", label: "W9 Data" },
+                  { key: "payments", label: "Payments" },
+                ];
+                const currentIndex = syncPhase ? steps.findIndex((s) => s.key === syncPhase) : (syncDone ? 3 : -1);
+                const pct = Math.round((currentIndex / 3) * 100);
+
+                return (
+                  <div className="space-y-2">
+                    {/* Bar */}
+                    <div className="h-2 w-full rounded-full bg-gray-100 overflow-hidden">
+                      <div
+                        className="h-full rounded-full bg-green-500 transition-all duration-500"
+                        style={{ width: `${syncDone ? 100 : pct}%` }}
+                      />
+                    </div>
+
+                    {/* Step indicators */}
+                    <div className="flex gap-4">
+                      {steps.map((step, i) => {
+                        const done = syncResults[step.key] !== undefined;
+                        const active = syncPhase === step.key;
+                        const result = syncResults[step.key];
+                        return (
+                          <div key={step.key} className="flex items-center gap-1.5 text-xs">
+                            {done ? (
+                              result?.failed ? (
+                                <AlertTriangle className="w-3.5 h-3.5 text-red-500 shrink-0" />
+                              ) : (
+                                <CheckCircle2 className="w-3.5 h-3.5 text-green-500 shrink-0" />
+                              )
+                            ) : active ? (
+                              <Loader2 className="w-3.5 h-3.5 animate-spin text-gray-500 shrink-0" />
+                            ) : (
+                              <div className="w-3.5 h-3.5 rounded-full border-2 border-gray-200 shrink-0" />
+                            )}
+                            <span className={done ? (result?.failed ? "text-red-600" : "text-green-700") : active ? "text-gray-700 font-medium" : "text-gray-400"}>
+                              {step.label}
+                              {done && result && ` (${result.succeeded} synced${result.failed ? `, ${result.failed} failed` : ""})`}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                );
+              })()}
+
+              <p className="text-xs text-gray-400">Syncs vendors, W9 tax data, and payments in order. Safe to run anytime — won&apos;t create duplicates.</p>
             </div>
           </div>
         )}
