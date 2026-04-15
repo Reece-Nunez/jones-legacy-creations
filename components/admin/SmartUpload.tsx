@@ -209,7 +209,7 @@ export default function SmartUpload({
             toast.error(`Failed to analyze ${files[i].name}`);
             queue.push({
               file: files[i],
-              data: { document_type: "general", vendor_name: null, vendor_company: null, amount: null, date: null, description: null, category: null, line_items: [], payment_method: null, tax_amount: null, materials: [], summary: null, confidence: "low" },
+              data: { document_type: "general", vendor_name: null, vendor_company: null, amount: null, date: null, description: null, category: null, line_items: [], payment_method: null, tax_amount: null, materials: [], summary: null, confidence: "low", card_fee_warning: null },
               previewUrl: null,
             });
           }
