@@ -148,6 +148,7 @@ function SettingsPageInner() {
   const [syncHealth, setSyncHealth] = useState<SyncHealth | null>(null);
   const [syncingVendors, setSyncingVendors] = useState(false);
   const [syncingPayments, setSyncingPayments] = useState(false);
+  const [syncingW9s, setSyncingW9s] = useState(false);
 
   // MFA state
   const [mfaEnrolled, setMfaEnrolled] = useState<boolean | null>(null);
@@ -272,6 +273,20 @@ function SettingsPageInner() {
       toast.error(err instanceof Error ? err.message : "Payment sync failed");
     } finally {
       setSyncingPayments(false);
+    }
+  }
+
+  async function handleSyncAllW9s() {
+    setSyncingW9s(true);
+    try {
+      const res = await fetch("/api/quickbooks/sync/all-w9s", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Sync failed");
+      toast.success(`${data.succeeded} W9${data.succeeded !== 1 ? "s" : ""} synced to QuickBooks${data.failed ? `, ${data.failed} failed` : ""}${data.skipped ? ` (${data.skipped} skipped — sync vendors first)` : ""}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "W9 sync failed");
+    } finally {
+      setSyncingW9s(false);
     }
   }
 
@@ -672,8 +687,16 @@ function SettingsPageInner() {
                   {syncingPayments ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
                   {syncingPayments ? "Syncing…" : "Re-sync All Payments"}
                 </button>
+                <button
+                  onClick={handleSyncAllW9s}
+                  disabled={syncingW9s}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {syncingW9s ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {syncingW9s ? "Syncing…" : "Sync All W9s to QuickBooks"}
+                </button>
               </div>
-              <p className="text-xs text-gray-400 mt-1.5">Sync vendors before payments. Safe to run anytime — won&apos;t create duplicates.</p>
+              <p className="text-xs text-gray-400 mt-1.5">Run in order: Vendors → W9s → Payments. Safe to run anytime — won&apos;t create duplicates.</p>
             </div>
           </div>
         )}
