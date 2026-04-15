@@ -102,16 +102,18 @@ export async function POST(request: NextRequest) {
       }
 
       // Log every event — success or failure — for the audit trail
-      await supabase.from("qbo_webhook_events").insert({
-        realm_id: realmId,
-        entity_type: entity.name,
-        entity_id: entity.id,
-        operation: entity.operation,
-        payload: entity,
-        error: processingError,
-      }).catch((e) => {
+      try {
+        await supabase.from("qbo_webhook_events").insert({
+          realm_id: realmId,
+          entity_type: entity.name,
+          entity_id: entity.id,
+          operation: entity.operation,
+          payload: entity,
+          error: processingError,
+        });
+      } catch (e) {
         console.error("[QBO Webhook] Failed to log event:", e);
-      });
+      }
     }
   }
 
