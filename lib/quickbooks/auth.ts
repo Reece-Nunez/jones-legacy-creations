@@ -23,15 +23,51 @@ export const QBO_BASE_URL = IS_SANDBOX
   ? "https://sandbox-quickbooks.api.intuit.com"
   : "https://quickbooks.api.intuit.com";
 
-const TOKEN_URL =
+// ─── Intuit discovery document ───────────────────────────────────────────────
+// Intuit best practice: fetch the latest OAuth 2.0 endpoints from the
+// OpenID Connect discovery document rather than hardcoding them.
+// Cached in-memory per serverless function instance (refetched on cold start).
+
+const DISCOVERY_URL =
+  "https://developer.api.intuit.com/.well-known/openid_configuration";
+
+// Fallback values in case discovery fetch fails
+const FALLBACK_AUTH_ENDPOINT = "https://appcenter.intuit.com/connect/oauth2";
+const FALLBACK_TOKEN_ENDPOINT =
   "https://oauth.platform.intuit.com/oauth2/v1/tokens/bearer";
 
-const AUTH_BASE =
-  "https://appcenter.intuit.com/connect/oauth2";
+interface DiscoveryDocument {
+  authorization_endpoint: string;
+  token_endpoint: string;
+}
+
+let discoveryCache: DiscoveryDocument | null = null;
+
+async function getDiscovery(): Promise<DiscoveryDocument> {
+  if (discoveryCache) return discoveryCache;
+
+  try {
+    const res = await fetch(DISCOVERY_URL, { next: { revalidate: 3600 } });
+    if (!res.ok) throw new Error(`Discovery fetch failed: ${res.status}`);
+    const doc = await res.json();
+    discoveryCache = {
+      authorization_endpoint: doc.authorization_endpoint,
+      token_endpoint: doc.token_endpoint,
+    };
+    return discoveryCache;
+  } catch (err) {
+    console.warn("[QBO] Discovery document fetch failed, using fallback endpoints:", err);
+    return {
+      authorization_endpoint: FALLBACK_AUTH_ENDPOINT,
+      token_endpoint: FALLBACK_TOKEN_ENDPOINT,
+    };
+  }
+}
 
 // ─── URL builders ────────────────────────────────────────────────────────────
 
-export function buildAuthUrl(state: string): string {
+export async function buildAuthUrl(state: string): Promise<string> {
+  const { authorization_endpoint } = await getDiscovery();
   const params = new URLSearchParams({
     client_id: CLIENT_ID,
     response_type: "code",
@@ -39,7 +75,7 @@ export function buildAuthUrl(state: string): string {
     redirect_uri: REDIRECT_URI,
     state,
   });
-  return `${AUTH_BASE}?${params.toString()}`;
+  return `${authorization_endpoint}?${params.toString()}`;
 }
 
 // ─── Token exchange ───────────────────────────────────────────────────────────
@@ -59,7 +95,8 @@ export async function exchangeCode(
   code: string,
   realmId: string
 ): Promise<QBOTokens> {
-  const res = await fetch(TOKEN_URL, {
+  const { token_endpoint } = await getDiscovery();
+  const res = await fetch(token_endpoint, {
     method: "POST",
     headers: {
       Authorization: `Basic ${basicAuth()}`,
@@ -84,7 +121,8 @@ export async function exchangeCode(
 export async function refreshAccessToken(
   refreshToken: string
 ): Promise<QBOTokens> {
-  const res = await fetch(TOKEN_URL, {
+  const { token_endpoint } = await getDiscovery();
+  const res = await fetch(token_endpoint, {
     method: "POST",
     headers: {
       Authorization: `Basic ${basicAuth()}`,

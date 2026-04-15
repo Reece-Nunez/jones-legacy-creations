@@ -13,7 +13,7 @@ export async function GET(request: NextRequest) {
   // Generate random state for CSRF protection
   const state = crypto.randomUUID();
 
-  const authUrl = buildAuthUrl(state);
+  const authUrl = await buildAuthUrl(state);
 
   // Store state in a short-lived cookie
   const response = NextResponse.redirect(authUrl);
