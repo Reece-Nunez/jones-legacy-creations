@@ -1,6 +1,7 @@
 "use client";
 
 import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { QBOConnectionProvider } from "./QBOConnectionContext";
 
 type Theme = "light" | "dark" | "system";
 
@@ -51,9 +52,11 @@ export function AdminThemeProvider({ children }: { children: React.ReactNode }) 
 
   return (
     <AdminThemeContext.Provider value={{ theme, resolvedTheme: resolved, setTheme }}>
-      <div className={resolved === "dark" ? "dark" : undefined}>
-        {children}
-      </div>
+      <QBOConnectionProvider>
+        <div className={resolved === "dark" ? "dark" : undefined}>
+          {children}
+        </div>
+      </QBOConnectionProvider>
     </AdminThemeContext.Provider>
   );
 }

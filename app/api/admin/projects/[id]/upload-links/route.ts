@@ -60,12 +60,7 @@ export async function POST(
   }
 
   // Build the full URL
-  const origin =
-    request.headers.get("origin") ||
-    request.headers.get("x-forwarded-host")
-      ? `https://${request.headers.get("x-forwarded-host")}`
-      : "http://localhost:3000";
-
+  const origin = process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;
   const url = `${origin}/submit-invoice/${token}`;
 
   return NextResponse.json({ ...data, url }, { status: 201 });

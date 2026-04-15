@@ -21,6 +21,16 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
+  // When a draw is funded, mark all linked contractor payments as funded too
+  if (body.status === "funded") {
+    await supabase
+      .from("contractor_payments")
+      .update({ status: "funded" })
+      .eq("draw_request_id", drawId)
+      .eq("project_id", id)
+      .neq("status", "funded");
+  }
+
   // Log activity if status changed
   if (body.status) {
     await supabase.from("activity_log").insert({

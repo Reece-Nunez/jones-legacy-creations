@@ -33,6 +33,8 @@ export interface ExtractedDocumentData {
   // Raw text summary for anything the AI finds interesting
   summary: string | null;
   confidence: "high" | "medium" | "low";
+  // Card fee / dual pricing detection
+  card_fee_warning: string | null;
 }
 
 function emptyResult(): ExtractedDocumentData {
@@ -50,6 +52,7 @@ function emptyResult(): ExtractedDocumentData {
     materials: [],
     summary: null,
     confidence: "low",
+    card_fee_warning: null,
   };
 }
 
@@ -139,14 +142,20 @@ Then extract all relevant information. Return ONLY a JSON object with these fiel
   "tax_amount": 9.87,
   "materials": [{"item": "2x4x8 SPF Stud", "quantity": "50", "unit": "each"}],
   "summary": "Any additional notes, findings, or observations worth capturing",
-  "confidence": "high"
+  "confidence": "high",
+  "card_fee_warning": null
 }
 
 Field guidance:
-- "amount": The TOTAL amount (final total including tax). Parse as a number (no $ sign, no commas).
+- "amount": CRITICAL — This system pays contractors via ACH bank transfer, NOT by credit card. Use these rules in order:
+    1. If the invoice shows dual pricing (e.g. "Card / ACH", "Credit Card / Bank Transfer", or separate Card and ACH totals), ALWAYS use the ACH (bank transfer) amount — it will be the lower of the two.
+    2. If the invoice includes a card surcharge, processing fee, convenience fee, or credit card fee as a line item, subtract it — we will not be paying by card.
+    3. If there is only one total, use that.
+    Parse as a number (no $ sign, no commas).
+- "card_fee_warning": Set to a short human-readable string if ANY of the following are true: (a) the invoice has separate Card and ACH/bank transfer pricing, (b) a credit card surcharge, processing fee, or convenience fee is listed, (c) the invoice otherwise charges more for card payment. Describe what you found and what amount you used, e.g. "Invoice shows Card: $6,108.30 / ACH: $5,873.93 — ACH amount used ($5,873.93)". Set to null if no card-related pricing differences exist.
 - "date": In YYYY-MM-DD format.
 - "category": Pick the BEST match from: Plans, Engineering, Permitting, Slab, Plumbing, Lumber, Framing, Trusses, HVAC, Electrical, Windows, Roofing, Drywall, Painting, Flooring, Cabinets, Countertops, Appliances, Landscaping, Concrete, Insulation, Fencing, General
-- "line_items": Individual purchased items with pricing (for receipts/invoices).
+- "line_items": Individual purchased items with pricing (for receipts/invoices). Use ACH/bank transfer unit prices where dual pricing exists.
 - "payment_method": How it was paid if visible (cash, check #, card type + last 4).
 - "tax_amount": Sales tax amount as a number if visible.
 - "materials": For material lists/delivery tickets — item names with quantities and units.
@@ -210,6 +219,7 @@ Return ONLY valid JSON, no other text.`,
       confidence: validConfidence.includes(parsed.confidence)
         ? parsed.confidence
         : "low",
+      card_fee_warning: typeof parsed.card_fee_warning === "string" ? parsed.card_fee_warning : null,
     };
   } catch (error) {
     console.error("Document extraction error:", error);

@@ -52,6 +52,7 @@ import {
   Camera,
   Globe,
   Lock,
+  AlertTriangle,
 } from "lucide-react";
 import type {
   Project,
@@ -104,6 +105,7 @@ import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SmartUpload from "@/components/admin/SmartUpload";
+import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -199,7 +201,9 @@ function drawLeftBorder(status: DrawRequestStatus): string {
 }
 
 function paymentLeftBorder(status: string): string {
-  return status === "paid" ? "border-l-green-500" : "border-l-yellow-500";
+  if (status === "funded") return "border-l-green-500";
+  if (status === "paid") return "border-l-indigo-400";
+  return "border-l-yellow-500";
 }
 
 const ALL_TABS = [
@@ -657,6 +661,7 @@ export default function ProjectDetail({
               projectName={project.name}
               payments={payments}
               contractors={contractors}
+              drawRequests={drawRequests}
               mutate={mutate}
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
@@ -1702,6 +1707,7 @@ function PaymentsTab({
   projectName,
   payments,
   contractors,
+  drawRequests,
   mutate,
   loading,
   onPreview,
@@ -1710,6 +1716,7 @@ function PaymentsTab({
   projectName: string;
   payments: ContractorPayment[];
   contractors: Contractor[];
+  drawRequests: DrawRequest[];
   mutate: (
     url: string,
     method: string,
@@ -1718,6 +1725,7 @@ function PaymentsTab({
   loading: boolean;
   onPreview: (url: string, name: string) => void;
 }) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [form, setForm] = useState({
     contractor_id: "",
@@ -1727,6 +1735,9 @@ function PaymentsTab({
     due_date: "",
   });
   const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
+
+  // --- QBO Pay Modal state ---
+  const [payModalPayment, setPayModalPayment] = useState<{ id: string; contractor_name: string; amount: number } | null>(null);
 
   // --- Upload Links state ---
   const [uploadLinksOpen, setUploadLinksOpen] = useState(false);
@@ -1869,10 +1880,16 @@ function PaymentsTab({
     setEditingPayment(null);
   }
 
-  async function markFunded(p: ContractorPayment) {
+  async function markAsPaid(p: ContractorPayment) {
     await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
       status: "paid",
       paid_date: new Date().toISOString().split("T")[0],
+    });
+  }
+
+  async function markFunded(p: ContractorPayment) {
+    await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
+      status: "funded",
     });
   }
 
@@ -1882,6 +1899,7 @@ function PaymentsTab({
   }
 
   return (
+    <>
     <ShadCard>
       <CardHeader>
         <CardTitle>Contractor Payments</CardTitle>
@@ -2226,17 +2244,42 @@ function PaymentsTab({
                           {p.contractor_name}
                         </span>
                       )}
-                      <Badge
-                        variant="outline"
-                        className={`inline-flex items-center gap-1 rounded-full ${
-                          p.status === "paid"
-                            ? "bg-green-100 text-green-700"
-                            : "bg-orange-100 text-orange-700"
-                        }`}
-                      >
-                        <Circle className="w-1.5 h-1.5 fill-current" />
-                        {p.status === "paid" ? "Funded" : "Needs Draw"}
-                      </Badge>
+                      {(() => {
+                        const linkedDraw = p.draw_request_id ? drawRequests.find((d) => d.id === p.draw_request_id) : null;
+                        const drawFunded = linkedDraw?.status === "funded" || p.status === "funded";
+                        return (
+                          <>
+                            {drawFunded && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700">
+                                <Circle className="w-1.5 h-1.5 fill-current" />
+                                Funded
+                              </Badge>
+                            )}
+                            {!drawFunded && p.status === "paid" && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-700">
+                                <Circle className="w-1.5 h-1.5 fill-current" />
+                                Paid from Personal Funds
+                              </Badge>
+                            )}
+                            {!drawFunded && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700">
+                                <Circle className="w-1.5 h-1.5 fill-current" />
+                                Needs Draw
+                              </Badge>
+                            )}
+                            {p.qbo_sync_error && (
+                              <Badge
+                                variant="outline"
+                                className="inline-flex items-center gap-1 rounded-full bg-red-100 text-red-700"
+                                title={p.qbo_sync_error}
+                              >
+                                <AlertTriangle className="w-3 h-3" />
+                                QB Sync Failed
+                              </Badge>
+                            )}
+                          </>
+                        );
+                      })()}
                     </div>
                     {p.description && (
                       <p className="text-xs text-gray-500 mt-0.5 truncate">
@@ -2260,15 +2303,48 @@ function PaymentsTab({
                     <span className="text-gray-500 text-xs">
                       Due {fmtDate(p.due_date)}
                     </span>
-                    {p.status !== "paid" && (
-                      <button
-                        disabled={loading}
-                        onClick={() => markFunded(p)}
-                        className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
-                      >
-                        Mark Funded
-                      </button>
-                    )}
+                    {(() => {
+                      const linkedDraw = p.draw_request_id ? drawRequests.find((d) => d.id === p.draw_request_id) : null;
+                      const drawFunded = linkedDraw?.status === "funded" || p.status === "funded";
+                      if (drawFunded) return null;
+                      if (p.status === "pending") {
+                        const pc = p.contractor_id ? contractors.find((c) => c.id === p.contractor_id) : null;
+                        const missingW9 = pc?.type !== "vendor" && pc?.w9_required && !pc?.w9_file_url;
+                        return (
+                          <>
+                            <button
+                              disabled={loading || !!missingW9}
+                              onClick={() => setPayModalPayment({ id: p.id, contractor_name: p.contractor_name, amount: p.amount })}
+                              className={`text-xs font-medium min-h-[44px] px-1 transition-colors ${missingW9 ? "text-gray-400 cursor-not-allowed opacity-50" : p.qbo_sync_error ? "text-red-600 hover:text-red-700 cursor-pointer" : "text-[#2CA01C] hover:text-[#1e7a14] cursor-pointer"}`}
+                              title={missingW9 ? "W9 required — upload on the contractor page before paying" : p.qbo_sync_error ? `Last error: ${p.qbo_sync_error}` : "Pay this contractor via QuickBooks"}
+                            >
+                              {p.qbo_sync_error ? "Retry QB Sync" : "Pay Contractor"}
+                            </button>
+                            <button
+                              disabled={loading}
+                              onClick={() => markAsPaid(p)}
+                              className="text-xs text-indigo-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-1 transition-colors"
+                              title="Mark as paid from personal funds without going through QuickBooks"
+                            >
+                              Mark as Paid
+                            </button>
+                          </>
+                        );
+                      }
+                      if (p.status === "paid") {
+                        return (
+                          <button
+                            disabled={loading}
+                            onClick={() => markFunded(p)}
+                            className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
+                            title="Mark as funded — draw received and Blake has been reimbursed"
+                          >
+                            Mark Funded
+                          </button>
+                        );
+                      }
+                      return null;
+                    })()}
                     <button
                       disabled={loading}
                       aria-label={`Edit payment to ${p.contractor_name}`}
@@ -2293,6 +2369,18 @@ function PaymentsTab({
         </div>
       </CardContent>
     </ShadCard>
+
+    {/* QBO Pay Contractor Modal */}
+    {payModalPayment && (
+      <QBOPayContractorModal
+        contractorPaymentId={payModalPayment.id}
+        contractorName={payModalPayment.contractor_name}
+        amount={payModalPayment.amount}
+        onClose={() => setPayModalPayment(null)}
+        onPaid={() => { setPayModalPayment(null); router.refresh(); }}
+      />
+    )}
+    </>
   );
 }
 

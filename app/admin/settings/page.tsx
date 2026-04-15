@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -15,6 +16,11 @@ import {
   Loader2,
   Users,
   ChevronRight,
+  Plug,
+  CheckCircle2,
+  XCircle,
+  AlertTriangle,
+  RefreshCw,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -119,11 +125,75 @@ function Toggle({
   );
 }
 
+interface QBOStatus {
+  connected: boolean;
+  realm_id?: string;
+  refresh_token_expires_at?: string;
+}
+
+interface SyncHealth {
+  failedPayments: { count: number; items: Array<{ id: string; contractor_name: string; amount: number; qbo_sync_error: string }> };
+  recentWebhookErrors: Array<{ id: string; entity_type: string; entity_id: string; operation: string; error: string; processed_at: string }>;
+}
+
 export default function SettingsPage() {
   const [settings, setSettings] = useState<CompanySettings | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [dirty, setDirty] = useState(false);
+  const [qboStatus, setQboStatus] = useState<QBOStatus | null>(null);
+  const [qboDisconnecting, setQboDisconnecting] = useState(false);
+  const [syncHealth, setSyncHealth] = useState<SyncHealth | null>(null);
+  const [syncingVendors, setSyncingVendors] = useState(false);
+  const [syncingPayments, setSyncingPayments] = useState(false);
+
+  const searchParams = useSearchParams();
+
+  const fetchQboStatus = useCallback(async () => {
+    try {
+      const res = await fetch("/api/quickbooks/status");
+      const data = await res.json();
+      setQboStatus(data);
+      if (data.connected) {
+        fetch("/api/quickbooks/sync-health")
+          .then((r) => r.json())
+          .then(setSyncHealth)
+          .catch(() => {});
+      }
+    } catch {
+      setQboStatus({ connected: false });
+    }
+  }, []);
+
+  async function handleSyncAllVendors() {
+    setSyncingVendors(true);
+    try {
+      const res = await fetch("/api/quickbooks/sync/all-vendors", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Sync failed");
+      toast.success(`${data.succeeded} vendor${data.succeeded !== 1 ? "s" : ""} synced${data.failed ? `, ${data.failed} failed` : ""}`);
+      fetch("/api/quickbooks/sync-health").then((r) => r.json()).then(setSyncHealth).catch(() => {});
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Vendor sync failed");
+    } finally {
+      setSyncingVendors(false);
+    }
+  }
+
+  async function handleSyncAllPayments() {
+    setSyncingPayments(true);
+    try {
+      const res = await fetch("/api/quickbooks/sync/all-payments", { method: "POST" });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Sync failed");
+      toast.success(`${data.succeeded} payment${data.succeeded !== 1 ? "s" : ""} synced${data.failed ? `, ${data.failed} failed` : ""}${data.skipped ? ` (${data.skipped} skipped — sync vendors first)` : ""}`);
+      fetch("/api/quickbooks/sync-health").then((r) => r.json()).then(setSyncHealth).catch(() => {});
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Payment sync failed");
+    } finally {
+      setSyncingPayments(false);
+    }
+  }
 
   useEffect(() => {
     fetch("/api/admin/settings")
@@ -136,7 +206,40 @@ export default function SettingsPage() {
         toast.error("Failed to load settings");
         setLoading(false);
       });
-  }, []);
+
+    fetchQboStatus();
+  }, [fetchQboStatus]);
+
+  // Handle QB OAuth callback result in URL
+  useEffect(() => {
+    if (searchParams.get("qbo_connected") === "1") {
+      toast.success("QuickBooks connected successfully");
+      fetchQboStatus();
+    }
+    const qboError = searchParams.get("qbo_error");
+    if (qboError) {
+      const messages: Record<string, string> = {
+        invalid_state: "Connection failed: security check failed. Try again.",
+        missing_params: "Connection failed: missing parameters from QuickBooks.",
+        token_exchange_failed: "Could not exchange authorization code. Try again.",
+      };
+      toast.error(messages[qboError] ?? `QuickBooks error: ${qboError}`);
+    }
+  }, [searchParams, fetchQboStatus]);
+
+  const handleQboDisconnect = async () => {
+    setQboDisconnecting(true);
+    try {
+      const res = await fetch("/api/quickbooks/disconnect", { method: "DELETE" });
+      if (!res.ok) throw new Error();
+      setQboStatus({ connected: false });
+      toast.success("QuickBooks disconnected");
+    } catch {
+      toast.error("Failed to disconnect QuickBooks");
+    } finally {
+      setQboDisconnecting(false);
+    }
+  };
 
   const update = (key: keyof CompanySettings, value: unknown) => {
     setSettings((prev) => prev ? { ...prev, [key]: value } as CompanySettings : prev);
@@ -354,6 +457,145 @@ export default function SettingsPage() {
           onChange={(v) => update("notify_draw_submitted", v)}
           label="Draw request submitted"
         />
+      </SectionCard>
+
+      {/* QuickBooks Integration */}
+      <SectionCard
+        icon={Plug}
+        title="QuickBooks Integration"
+        description="Sync invoices, customers, and contractor payments with QuickBooks Online"
+      >
+        <div className="flex items-center justify-between py-1">
+          <div className="flex items-center gap-3">
+            {qboStatus === null ? (
+              <Loader2 className="w-4 h-4 animate-spin text-gray-400" />
+            ) : qboStatus.connected ? (
+              <CheckCircle2 className="w-5 h-5 text-green-500 shrink-0" />
+            ) : (
+              <XCircle className="w-5 h-5 text-gray-300 shrink-0" />
+            )}
+            <div>
+              <p className="text-sm font-medium text-gray-900">
+                {qboStatus?.connected ? "Connected" : "Not connected"}
+              </p>
+              {qboStatus?.connected && qboStatus.realm_id && (
+                <p className="text-xs text-gray-400">
+                  Company ID: {qboStatus.realm_id}
+                </p>
+              )}
+              {qboStatus?.connected && qboStatus.refresh_token_expires_at && (
+                <p className="text-xs text-gray-400">
+                  Token valid until{" "}
+                  {new Date(qboStatus.refresh_token_expires_at).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+          </div>
+
+          {qboStatus?.connected ? (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleQboDisconnect}
+              isLoading={qboDisconnecting}
+              className="text-red-600 border-red-200 hover:bg-red-50"
+            >
+              Disconnect
+            </Button>
+          ) : (
+            <a href="/api/quickbooks/connect">
+              <Button size="sm">Connect QuickBooks</Button>
+            </a>
+          )}
+        </div>
+
+        {qboStatus?.connected && (
+          <div className="mt-2 pt-4 border-t border-gray-100 space-y-4">
+            {/* Capabilities */}
+            <div className="flex flex-wrap gap-2">
+              {["Customers", "Invoices", "Vendors / Contractors", "Bills (contractor payments)"].map((cap) => (
+                <span key={cap} className="inline-flex items-center gap-1.5 text-xs bg-green-50 text-green-700 px-2.5 py-1 rounded-full border border-green-100">
+                  <CheckCircle2 className="w-3 h-3" /> {cap}
+                </span>
+              ))}
+            </div>
+
+            {/* Sync Health */}
+            {syncHealth && (syncHealth.failedPayments.count > 0 || syncHealth.recentWebhookErrors.length > 0) && (
+              <div className="rounded-lg border border-red-200 bg-red-50 p-4 space-y-3">
+                <p className="text-sm font-semibold text-red-800 flex items-center gap-2">
+                  <AlertTriangle className="w-4 h-4" /> Sync Issues Detected
+                </p>
+                {syncHealth.failedPayments.count > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-red-700 mb-1">
+                      {syncHealth.failedPayments.count} payment{syncHealth.failedPayments.count !== 1 ? "s" : ""} failed to sync to QuickBooks
+                    </p>
+                    <ul className="space-y-1">
+                      {syncHealth.failedPayments.items.map((p) => (
+                        <li key={p.id} className="text-xs text-red-600 flex items-start gap-1.5">
+                          <span className="shrink-0 mt-0.5">•</span>
+                          <span>
+                            <span className="font-medium">{p.contractor_name}</span>
+                            {" — "}${Number(p.amount).toLocaleString()}
+                            {" — "}
+                            <span className="text-red-500">{p.qbo_sync_error}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+                {syncHealth.recentWebhookErrors.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-red-700 mb-1">Recent webhook processing errors</p>
+                    <ul className="space-y-1">
+                      {syncHealth.recentWebhookErrors.slice(0, 3).map((e) => (
+                        <li key={e.id} className="text-xs text-red-600 flex items-start gap-1.5">
+                          <span className="shrink-0 mt-0.5">•</span>
+                          <span>
+                            <span className="font-medium">{e.entity_type} {e.operation}</span>
+                            {" — "}
+                            <span className="text-red-500">{e.error}</span>
+                          </span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+            {syncHealth && syncHealth.failedPayments.count === 0 && syncHealth.recentWebhookErrors.length === 0 && (
+              <p className="text-xs text-green-700 flex items-center gap-1.5">
+                <CheckCircle2 className="w-3.5 h-3.5" /> All syncs healthy — no errors detected
+              </p>
+            )}
+
+            {/* Global Re-sync */}
+            <div>
+              <p className="text-xs font-medium text-gray-600 mb-2">Global Recovery Sync</p>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  onClick={handleSyncAllVendors}
+                  disabled={syncingVendors}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {syncingVendors ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {syncingVendors ? "Syncing…" : "Re-sync All Vendors"}
+                </button>
+                <button
+                  onClick={handleSyncAllPayments}
+                  disabled={syncingPayments}
+                  className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 transition-colors hover:bg-gray-50 disabled:opacity-50"
+                >
+                  {syncingPayments ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <RefreshCw className="w-3.5 h-3.5" />}
+                  {syncingPayments ? "Syncing…" : "Re-sync All Payments"}
+                </button>
+              </div>
+              <p className="text-xs text-gray-400 mt-1.5">Sync vendors before payments. Safe to run anytime — won&apos;t create duplicates.</p>
+            </div>
+          </div>
+        )}
       </SectionCard>
 
       {/* Sticky save bar when dirty */}

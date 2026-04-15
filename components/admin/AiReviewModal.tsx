@@ -196,6 +196,18 @@ export function AiReviewModal({
 
         {/* Scrollable Body */}
         <div className="flex-1 overflow-y-auto p-5 space-y-4">
+          {/* Card fee warning — shown prominently when AI detected dual pricing or card surcharges */}
+          {editedData.card_fee_warning && (
+            <div className="flex items-start gap-2.5 p-3 bg-red-50 border border-red-200 rounded-lg">
+              <AlertTriangle className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-sm font-semibold text-red-800">Card fee detected — amount adjusted</p>
+                <p className="text-sm text-red-700 mt-0.5">{editedData.card_fee_warning}</p>
+                <p className="text-xs text-red-600 mt-1">We pay via ACH. Verify the amount below is the ACH total.</p>
+              </div>
+            </div>
+          )}
+
           {/* Info Banner */}
           <div className="flex items-start gap-2.5 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
             <AlertTriangle className="w-4 h-4 text-yellow-600 shrink-0 mt-0.5" />

@@ -11,7 +11,7 @@ export type ProjectStatus =
 export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "new_home" | "takeover" | "addition" | "garage" | "deck_patio" | "other";
 export type FinishLevel = "budget" | "standard" | "mid_range" | "high_end";
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
-export type PaymentStatus = "pending" | "paid";
+export type PaymentStatus = "pending" | "paid" | "funded";
 export type PermitStatus = "not_applied" | "applied" | "approved" | "denied" | "expired";
 export type DrawRequestStatus = "draft" | "submitted" | "approved" | "funded" | "denied";
 export type DocumentCategory = "contract" | "permit" | "invoice" | "photo" | "plan" | "draw_request" | "general";
@@ -31,6 +31,8 @@ export interface Contractor {
   w9_required: boolean;
   w9_file_url: string | null;
   w9_file_name: string | null;
+  w9_qbo_uploaded_at: string | null;
+  w9_qbo_extracted_at: string | null;
   vendor_category: string | null;
   account_number: string | null;
   notes: string | null;
@@ -104,6 +106,8 @@ export interface ContractorPayment {
   paid_date: string | null;
   invoice_file_url: string | null;
   invoice_file_name: string | null;
+  draw_request_id: string | null;
+  qbo_sync_error: string | null;
   created_at: string;
 }
 
@@ -442,7 +446,7 @@ export const TRADES = [
   "Tile",
   "Insulation",
   "Windows/Doors",
-  "Siding",
+  "Exterior Finishes",
   "Fencing",
   "Other",
 ] as const;

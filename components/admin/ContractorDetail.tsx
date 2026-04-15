@@ -26,6 +26,7 @@ import {
   Tag,
   Upload,
   Plus,
+  Send,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -70,7 +71,7 @@ const TRADE_COLORS: Record<string, string> = {
   Tile: "bg-teal-100 text-teal-700",
   Insulation: "bg-pink-100 text-pink-700",
   "Windows/Doors": "bg-indigo-100 text-indigo-700",
-  Siding: "bg-lime-100 text-lime-700",
+  "Exterior Finishes": "bg-lime-100 text-lime-700",
   Fencing: "bg-emerald-100 text-emerald-700",
   Other: "bg-gray-100 text-gray-600",
 };
@@ -108,6 +109,12 @@ export default function ContractorDetail({
   const [w9Uploading, setW9Uploading] = useState(false);
   const [linkingProject, setLinkingProject] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("");
+  const [showDDModal, setShowDDModal] = useState(false);
+  const [ddPreviewHtml, setDdPreviewHtml] = useState<string | null>(null);
+  const [ddPreviewLoading, setDdPreviewLoading] = useState(false);
+  const [ddSending, setDdSending] = useState(false);
+  const [w9Syncing, setW9Syncing] = useState(false);
+  const [w9Extracting, setW9Extracting] = useState(false);
 
   const isVendor = contractor.type === "vendor";
   const entityLabel = isVendor ? "Vendor" : "Contractor";
@@ -158,6 +165,82 @@ export default function ContractorDetail({
     }
   }
 
+  async function syncW9ToQBO() {
+    try {
+      const res = await fetch("/api/quickbooks/sync/w9", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ contractorId: contractor.id }),
+      });
+      if (res.ok) {
+        setContractor((prev) => ({ ...prev, w9_qbo_uploaded_at: new Date().toISOString() }));
+        return true;
+      }
+    } catch { /* ignore */ }
+    return false;
+  }
+
+  async function extractW9ToQBO() {
+    setW9Extracting(true);
+    try {
+      const res = await fetch(
+        `/api/admin/contractors/${contractor.id}/extract-w9`,
+        { method: "POST" }
+      );
+      const data = await res.json();
+      if (!res.ok) {
+        toast.error(data.error ?? "Failed to extract W9 details");
+        return;
+      }
+      setContractor((prev) => ({ ...prev, w9_qbo_extracted_at: new Date().toISOString() }));
+      const { extracted } = data;
+      const parts = [
+        extracted.name,
+        extracted.ein ? `EIN: ${extracted.ein}` : null,
+        [extracted.city, extracted.state, extracted.zip].filter(Boolean).join(", "),
+      ].filter(Boolean);
+      toast.success(`QB updated — ${parts.join(" · ")}`);
+    } catch {
+      toast.error("Failed to extract W9 details");
+    } finally {
+      setW9Extracting(false);
+    }
+  }
+
+  async function openDDInvite() {
+    setShowDDModal(true);
+    setDdPreviewHtml(null);
+    setDdPreviewLoading(true);
+    try {
+      const res = await fetch(`/api/admin/contractors/${contractor.id}/dd-invite`);
+      if (!res.ok) throw new Error("Failed to load preview");
+      const html = await res.text();
+      setDdPreviewHtml(html);
+    } catch {
+      toast.error("Failed to load email preview");
+      setShowDDModal(false);
+    } finally {
+      setDdPreviewLoading(false);
+    }
+  }
+
+  async function sendDDInvite() {
+    setDdSending(true);
+    try {
+      const res = await fetch(`/api/admin/contractors/${contractor.id}/dd-invite`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error ?? "Failed to send");
+      toast.success(`Direct deposit invite sent to ${contractor.email}`);
+      setShowDDModal(false);
+    } catch (err: unknown) {
+      toast.error(err instanceof Error ? err.message : "Failed to send invite");
+    } finally {
+      setDdSending(false);
+    }
+  }
+
   if (isEditing) {
     return (
       <div className="min-h-screen bg-gray-50">
@@ -188,6 +271,7 @@ export default function ContractorDetail({
   }
 
   return (
+    <>
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         {/* Back Link */}
@@ -245,11 +329,27 @@ export default function ContractorDetail({
                   <Badge variant="outline" className="bg-gray-50 text-gray-600">
                     {entityLabel}
                   </Badge>
+                  {!isVendor && (
+                    <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                      1099
+                    </Badge>
+                  )}
                 </div>
               </div>
             </div>
 
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={contractor.email ? openDDInvite : undefined}
+                disabled={!contractor.email}
+                title={!contractor.email ? "Add an email to this contractor to send a direct deposit invite" : "Send direct deposit invite"}
+                aria-label="Send direct deposit invite"
+                className="inline-flex items-center gap-2 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-2.5 text-sm font-medium text-indigo-700 shadow-sm transition-colors hover:bg-indigo-100 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-indigo-50"
+                style={{ minHeight: 44 }}
+              >
+                <Send className="h-4 w-4" />
+                Invite DD
+              </button>
               <button
                 onClick={() => setIsEditing(true)}
                 aria-label="Edit contractor"
@@ -438,18 +538,20 @@ export default function ContractorDetail({
                 W9
               </h2>
               {contractor.w9_file_url ? (
-                <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
-                  <FileText className="h-5 w-5 text-green-600 shrink-0" />
-                  <a
-                    href={contractor.w9_file_url}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="flex-1 text-sm font-medium text-green-700 underline decoration-green-400 underline-offset-2 hover:text-green-900 truncate"
-                  >
-                    {contractor.w9_file_name || "View W9"}
-                  </a>
-                  <label className="cursor-pointer text-sm text-gray-500 hover:text-gray-700">
-                    {w9Uploading ? "Uploading..." : "Replace"}
+                <div className="space-y-2">
+                  {/* File row */}
+                  <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
+                    <FileText className="h-5 w-5 text-green-600 shrink-0" />
+                    <a
+                      href={contractor.w9_file_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="flex-1 text-sm font-medium text-green-700 underline decoration-green-400 underline-offset-2 hover:text-green-900 truncate"
+                    >
+                      {contractor.w9_file_name || "View W9"}
+                    </a>
+                    <label className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 shrink-0">
+                      {w9Uploading ? "Uploading..." : "Replace"}
                     <input
                       type="file"
                       accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
@@ -477,7 +579,10 @@ export default function ContractorDetail({
                           if (!res.ok) throw new Error("Failed to update");
                           const updated = await res.json();
                           setContractor(updated);
+                          await syncW9ToQBO();
                           toast.success("W9 updated");
+                          // Fire-and-forget extraction — result shown via its own toast
+                          extractW9ToQBO();
                         } catch {
                           toast.error("Failed to upload W9");
                         } finally {
@@ -485,7 +590,69 @@ export default function ContractorDetail({
                         }
                       }}
                     />
-                  </label>
+                    </label>
+                  </div>
+                  {/* Action buttons + status badges row */}
+                  <div className="flex items-center gap-3 flex-wrap px-1">
+                    <button
+                      onClick={async () => {
+                        setW9Syncing(true);
+                        try {
+                          const res = await fetch("/api/quickbooks/sync/w9", {
+                            method: "POST",
+                            headers: { "Content-Type": "application/json" },
+                            body: JSON.stringify({ contractorId: contractor.id }),
+                          });
+                          const data = await res.json();
+                          if (!res.ok) throw new Error(data.error ?? "Upload failed");
+                          setContractor((prev) => ({ ...prev, w9_qbo_uploaded_at: new Date().toISOString() }));
+                          toast.success("W9 uploaded to QuickBooks");
+                        } catch (err: unknown) {
+                          toast.error(err instanceof Error ? err.message : "Failed to upload W9");
+                        } finally {
+                          setW9Syncing(false);
+                        }
+                      }}
+                      disabled={w9Syncing}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-[#2CA01C] px-3 py-1.5 text-xs font-medium text-white hover:bg-[#1e7a14] disabled:opacity-50 transition-colors"
+                      title="Upload W9 to QuickBooks"
+                    >
+                      {w9Syncing ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Send className="h-3.5 w-3.5" />}
+                      {w9Syncing ? "Uploading…" : "Send W9 to QB"}
+                    </button>
+                    <button
+                      onClick={extractW9ToQBO}
+                      disabled={w9Extracting}
+                      className="inline-flex items-center gap-1.5 rounded-md bg-indigo-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-50 transition-colors"
+                      title="Extract name, EIN, and address from W9 and update QuickBooks"
+                    >
+                      {w9Extracting ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <FileText className="h-3.5 w-3.5" />}
+                      {w9Extracting ? "Reading…" : "Extract Info to QB"}
+                    </button>
+                    <div className="flex items-center gap-2 ml-auto flex-wrap">
+                      {contractor.w9_qbo_uploaded_at ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-green-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                          <CheckCircle2 className="h-3 w-3" />
+                          W9 in QB
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-gray-500 px-2.5 py-0.5 text-xs font-medium text-white">
+                          W9 not sent to QB
+                        </span>
+                      )}
+                      {contractor.w9_qbo_extracted_at ? (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-blue-600 px-2.5 py-0.5 text-xs font-medium text-white">
+                          <CheckCircle2 className="h-3 w-3" />
+                          Info in QB
+                        </span>
+                      ) : (
+                        <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-medium text-white">
+                          <AlertTriangle className="h-3 w-3" />
+                          Info not extracted
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </div>
               ) : (
                 <label className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed ${
@@ -531,7 +698,10 @@ export default function ContractorDetail({
                         if (!res.ok) throw new Error("Failed to update");
                         const updated = await res.json();
                         setContractor(updated);
+                        await syncW9ToQBO();
                         toast.success("W9 uploaded");
+                        // Fire-and-forget extraction — result shown via its own toast
+                        extractW9ToQBO();
                       } catch {
                         toast.error("Failed to upload W9");
                       } finally {
@@ -943,5 +1113,70 @@ export default function ContractorDetail({
         </Card>
       </div>
     </div>
+
+    {/* Direct Deposit Invite Modal */}
+    {showDDModal && (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 p-4">
+        <div className="flex w-full max-w-xl flex-col rounded-2xl bg-white shadow-xl" style={{ maxHeight: "90vh" }}>
+          {/* Modal header */}
+          <div className="flex items-center justify-between border-b border-gray-100 px-6 py-4">
+            <div>
+              <h2 className="text-base font-semibold text-gray-900">Direct Deposit Invite</h2>
+              <p className="mt-0.5 text-xs text-gray-500">
+                Preview the email that will be sent to {contractor.email}
+              </p>
+            </div>
+            <button
+              onClick={() => setShowDDModal(false)}
+              aria-label="Close"
+              className="rounded-lg p-1 text-gray-400 hover:text-gray-600"
+            >
+              <X className="h-5 w-5" />
+            </button>
+          </div>
+
+          {/* Email preview */}
+          <div className="min-h-0 flex-1 overflow-auto p-4">
+            {ddPreviewLoading ? (
+              <div className="flex h-48 items-center justify-center">
+                <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
+              </div>
+            ) : ddPreviewHtml ? (
+              <iframe
+                srcDoc={ddPreviewHtml}
+                title="Email Preview"
+                className="w-full rounded-lg border border-gray-200"
+                style={{ height: 480 }}
+              />
+            ) : null}
+          </div>
+
+          {/* Footer */}
+          <div className="flex items-center justify-end gap-3 border-t border-gray-100 px-6 py-4">
+            <button
+              onClick={() => setShowDDModal(false)}
+              className="inline-flex items-center rounded-lg border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50"
+              style={{ minHeight: 44 }}
+            >
+              Cancel
+            </button>
+            <button
+              onClick={sendDDInvite}
+              disabled={ddSending || ddPreviewLoading}
+              className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-4 py-2.5 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
+              style={{ minHeight: 44 }}
+            >
+              {ddSending ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <Send className="h-4 w-4" />
+              )}
+              {ddSending ? "Sending…" : "Send Invite"}
+            </button>
+          </div>
+        </div>
+      </div>
+    )}
+    </>
   );
 }

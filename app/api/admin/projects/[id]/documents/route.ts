@@ -191,6 +191,7 @@ export async function POST(
       matchedContractor = cData;
     }
 
+    const isPaid = aiData?.is_paid === true;
     const { data: payment } = await supabase
       .from("contractor_payments")
       .insert({
@@ -199,10 +200,12 @@ export async function POST(
         contractor_name: matchedContractor?.company || matchedContractor?.name || finalVendor,
         description: aiData?.description || `${finalDocType || "Invoice"} — ${file.name}`,
         amount: aiData?.amount || 0,
-        status: "pending",
+        status: isPaid ? "paid" : "pending",
+        paid_date: isPaid ? new Date().toISOString().split("T")[0] : null,
         due_date: aiData?.due_date || null,
         invoice_file_url: fileUrl,
         invoice_file_name: file.name,
+        draw_request_id: drawRequestId || null,
       })
       .select()
       .single();

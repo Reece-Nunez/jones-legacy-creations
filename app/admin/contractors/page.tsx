@@ -46,7 +46,7 @@ const TRADE_COLORS: Record<string, string> = {
   Tile: "bg-teal-100 text-teal-700",
   Insulation: "bg-pink-100 text-pink-700",
   "Windows/Doors": "bg-indigo-100 text-indigo-700",
-  Siding: "bg-lime-100 text-lime-700",
+  "Exterior Finishes": "bg-lime-100 text-lime-700",
   Fencing: "bg-emerald-100 text-emerald-700",
   Other: "bg-gray-100 text-gray-600",
 };
@@ -313,6 +313,9 @@ export default async function ContractorsPage({
                             {t}
                           </Badge>
                         ))}
+                        <Badge variant="outline" className="shrink-0 bg-amber-50 text-amber-700 border-amber-200">
+                          1099
+                        </Badge>
                       </div>
                     )}
                   </div>
