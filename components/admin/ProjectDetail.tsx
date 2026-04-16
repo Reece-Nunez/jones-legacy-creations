@@ -108,6 +108,14 @@ import SmartUpload from "@/components/admin/SmartUpload";
 import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
 
 // ---------------------------------------------------------------------------
+// Feature flags
+// ---------------------------------------------------------------------------
+// QBO Contractor Direct Deposit requires the "Contractor Payments" add-on in
+// QuickBooks. Set this to true once Blake has that subscription enabled —
+// it will restore the Pay Contractor button and modal in the Payments tab.
+const QBO_CONTRACTOR_PAYMENTS_ENABLED = false;
+
+// ---------------------------------------------------------------------------
 // Helpers
 // ---------------------------------------------------------------------------
 
@@ -2312,6 +2320,7 @@ function PaymentsTab({
                         const missingW9 = pc?.type !== "vendor" && pc?.w9_required && !pc?.w9_file_url;
                         return (
                           <>
+                            {QBO_CONTRACTOR_PAYMENTS_ENABLED && (
                             <button
                               disabled={loading || !!missingW9}
                               onClick={() => setPayModalPayment({ id: p.id, contractor_name: p.contractor_name, amount: p.amount })}
@@ -2320,6 +2329,7 @@ function PaymentsTab({
                             >
                               {p.qbo_sync_error ? "Retry QB Sync" : "Pay Contractor"}
                             </button>
+                            )}
                             <button
                               disabled={loading}
                               onClick={() => markAsPaid(p)}
@@ -2370,8 +2380,8 @@ function PaymentsTab({
       </CardContent>
     </ShadCard>
 
-    {/* QBO Pay Contractor Modal */}
-    {payModalPayment && (
+    {/* QBO Pay Contractor Modal — requires QBO Contractor Payments add-on */}
+    {QBO_CONTRACTOR_PAYMENTS_ENABLED && payModalPayment && (
       <QBOPayContractorModal
         contractorPaymentId={payModalPayment.id}
         contractorName={payModalPayment.contractor_name}
