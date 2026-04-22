@@ -2701,6 +2701,32 @@ function DrawsTab({
     }
   }
 
+  async function downloadDrawInvoicesPdf(draw: DrawRequest) {
+    const toastId = toast.loading("Building combined PDF...");
+    try {
+      const res = await fetch(
+        `/api/admin/projects/${projectId}/draws/${draw.id}/invoices-pdf`,
+      );
+      if (!res.ok) {
+        const { error } = await res.json().catch(() => ({ error: "Download failed" }));
+        throw new Error(error || "Download failed");
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Draw_${draw.draw_number}_Invoices.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      toast.success("Invoices downloaded", { id: toastId });
+    } catch (err) {
+      console.error("Download invoices error:", err);
+      toast.error(err instanceof Error ? err.message : "Failed to download invoices", { id: toastId });
+    }
+  }
+
   async function rescanDrawDocs(drawId: string, docs: Document[]) {
     if (docs.length === 0) return;
     setScanningDrawId(drawId);
@@ -3423,6 +3449,15 @@ function DrawsTab({
                       className="inline-flex items-center gap-1.5 text-xs text-emerald-700 hover:text-emerald-900 cursor-pointer min-h-[36px] px-2 border border-emerald-200 rounded-lg hover:bg-emerald-50 transition-colors"
                     >
                       <FileSpreadsheet className="w-3.5 h-3.5" /> Export Draw Request
+                    </button>
+                    <button
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadDrawInvoicesPdf(draw);
+                      }}
+                      className="inline-flex items-center gap-1.5 text-xs text-blue-700 hover:text-blue-900 cursor-pointer min-h-[36px] px-2 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+                    >
+                      <Download className="w-3.5 h-3.5" /> Download All Invoices
                     </button>
                   </div>
                 )}
