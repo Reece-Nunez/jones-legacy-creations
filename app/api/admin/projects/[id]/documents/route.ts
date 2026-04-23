@@ -177,6 +177,7 @@ export async function POST(
 
   // Auto-create contractor payment when we have invoice data
   let paymentRecord = null;
+  let duplicatePayment: { id: string; amount: number; contractor_name: string } | null = null;
   if (
     (autoCreatePayment === "true" || useAi === "true") &&
     finalVendor &&
@@ -193,32 +194,55 @@ export async function POST(
       matchedContractor = cData;
     }
 
-    const isPaid = aiData?.is_paid === true;
-    const { data: payment } = await supabase
-      .from("contractor_payments")
-      .insert({
+    // Duplicate detection: skip creating a new payment if one already exists
+    // on this project with the same contractor (by id if resolved, else by name)
+    // and the same amount. Prevents re-uploads from producing duplicate payments.
+    if (aiData?.amount && aiData.amount > 0) {
+      const nameForMatch = matchedContractor?.company || matchedContractor?.name || finalVendor;
+      let dupQuery = supabase
+        .from("contractor_payments")
+        .select("id, amount, contractor_name")
+        .eq("project_id", id)
+        .eq("amount", aiData.amount);
+      if (matchedContractor?.id) {
+        dupQuery = dupQuery.eq("contractor_id", matchedContractor.id);
+      } else {
+        dupQuery = dupQuery.ilike("contractor_name", nameForMatch);
+      }
+      const { data: existingDupes } = await dupQuery.limit(1);
+      if (existingDupes && existingDupes.length > 0) {
+        duplicatePayment = existingDupes[0];
+      }
+    }
+
+    if (!duplicatePayment) {
+      const isPaid = aiData?.is_paid === true;
+      const { data: payment } = await supabase
+        .from("contractor_payments")
+        .insert({
+          project_id: id,
+          contractor_id: matchedContractor?.id || null,
+          contractor_name: matchedContractor?.company || matchedContractor?.name || finalVendor,
+          description: aiData?.description || `${finalDocType || "Invoice"} — ${file.name}`,
+          amount: aiData?.amount || 0,
+          status: isPaid ? "paid" : "pending",
+          paid_date: isPaid ? new Date().toISOString().split("T")[0] : null,
+          due_date: aiData?.due_date || null,
+          invoice_file_url: fileUrl,
+          invoice_file_name: file.name,
+          draw_request_id: drawRequestId || null,
+        })
+        .select()
+        .single();
+
+      paymentRecord = payment;
+
+      await supabase.from("activity_log").insert({
         project_id: id,
-        contractor_id: matchedContractor?.id || null,
-        contractor_name: matchedContractor?.company || matchedContractor?.name || finalVendor,
-        description: aiData?.description || `${finalDocType || "Invoice"} — ${file.name}`,
-        amount: aiData?.amount || 0,
-        status: isPaid ? "paid" : "pending",
-        paid_date: isPaid ? new Date().toISOString().split("T")[0] : null,
-        due_date: aiData?.due_date || null,
-        invoice_file_url: fileUrl,
-        invoice_file_name: file.name,
-        draw_request_id: drawRequestId || null,
-      })
-      .select()
-      .single();
-
-    paymentRecord = payment;
-
-    await supabase.from("activity_log").insert({
-      project_id: id,
-      action: "payment_created",
-      description: `${aiData?.amount ? `$${aiData.amount.toLocaleString()}` : "Invoice"} from ${finalVendor}${aiData?.description ? ` — ${aiData.description}` : ""}`,
-    });
+        action: "payment_created",
+        description: `${aiData?.amount ? `$${aiData.amount.toLocaleString()}` : "Invoice"} from ${finalVendor}${aiData?.description ? ` — ${aiData.description}` : ""}`,
+      });
+    }
   }
 
   // Update draw total — sum all contractor payments linked to this draw's documents
@@ -250,6 +274,7 @@ export async function POST(
       ...data,
       ai_extracted: aiData,
       payment_created: paymentRecord,
+      duplicate_payment: duplicatePayment,
     },
     { status: 201 }
   );

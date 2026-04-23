@@ -2591,6 +2591,12 @@ function DrawsTab({
           if (docRes) {
             try {
               const result = await docRes.clone().json();
+              if (result.duplicate_payment) {
+                toast(
+                  `Possible duplicate: ${result.duplicate_payment.contractor_name} at ${fmt(result.duplicate_payment.amount)} already exists — no new payment was created.`,
+                  { icon: "⚠️", duration: 8000 },
+                );
+              }
               const ai = result.ai_extracted;
               const vendor = result.vendor || ai?.vendor_company || ai?.vendor_name || "";
               const docType = result.doc_type || (ai?.category ? "Invoice" : "");
@@ -2842,6 +2848,12 @@ function DrawsTab({
       if (res) {
         try {
           const result = await res.clone().json();
+          if (result.duplicate_payment) {
+            toast(
+              `Possible duplicate: ${result.duplicate_payment.contractor_name} at ${fmt(result.duplicate_payment.amount)} already exists — no new payment was created.`,
+              { icon: "⚠️", duration: 8000 },
+            );
+          }
           const ai = result.ai_extracted;
           const vendor = result.vendor || ai?.vendor_company || ai?.vendor_name || "";
           const docType = result.doc_type || (ai?.category ? "Invoice" : "");
@@ -3611,6 +3623,7 @@ function DrawsTab({
                             <th className="pb-2 pr-3 font-medium">Type</th>
                             <th className="pb-2 pr-3 font-medium">Vendor</th>
                             <th className="pb-2 pr-3 font-medium">Filename</th>
+                            <th className="pb-2 pr-3 font-medium text-right w-24">Amount</th>
                             <th className="pb-2 font-medium w-20"></th>
                           </tr>
                         </thead>
@@ -3652,6 +3665,12 @@ function DrawsTab({
                                   {doc.name}
                                 </a>
                               </td>
+                              <td className="py-2 pr-3 text-xs text-right tabular-nums text-gray-700">
+                                {(() => {
+                                  const p = payments.find((p) => p.invoice_file_url === doc.file_url);
+                                  return p ? fmt(p.amount) : "--";
+                                })()}
+                              </td>
                               <td className="py-2">
                                 <div className="flex items-center gap-1">
                                   <button
@@ -3690,7 +3709,7 @@ function DrawsTab({
                             </tr>
                             {editingDocId === doc.id && (
                               <tr key={`${doc.id}-edit`} className="bg-blue-50">
-                                <td colSpan={6} className="px-2 py-2">
+                                <td colSpan={7} className="px-2 py-2">
                                   <div className="flex flex-wrap items-end gap-2">
                                     <div>
                                       <label className="block text-xs text-gray-500 mb-0.5">Category</label>
@@ -3718,6 +3737,20 @@ function DrawsTab({
                             </>
                           ))}
                         </tbody>
+                        <tfoot>
+                          <tr className="border-t-2 border-gray-300 font-semibold">
+                            <td colSpan={5} className="py-2 pr-3 text-xs text-right text-gray-700">Total</td>
+                            <td className="py-2 pr-3 text-xs text-right tabular-nums text-gray-900">
+                              {fmt(
+                                drawDocs.reduce((sum, d) => {
+                                  const p = payments.find((p) => p.invoice_file_url === d.file_url);
+                                  return sum + (p?.amount ?? 0);
+                                }, 0),
+                              )}
+                            </td>
+                            <td className="py-2"></td>
+                          </tr>
+                        </tfoot>
                       </table>
                     </div>
 
@@ -3772,6 +3805,10 @@ function DrawsTab({
                             {doc.line_item_number !== null && <span>#{doc.line_item_number}</span>}
                             {doc.doc_type && <span>{doc.doc_type}</span>}
                             {doc.vendor && <span>{doc.vendor}</span>}
+                            {(() => {
+                              const p = payments.find((p) => p.invoice_file_url === doc.file_url);
+                              return p ? <span className="font-medium text-gray-700 tabular-nums">{fmt(p.amount)}</span> : null;
+                            })()}
                           </div>
                           {editingDocId === doc.id && (
                             <div className="pt-2 border-t border-blue-200 space-y-2">
