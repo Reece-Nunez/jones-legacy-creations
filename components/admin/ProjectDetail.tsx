@@ -3030,29 +3030,72 @@ function DrawsTab({
   const [reviewDrawId, setReviewDrawId] = useState<string | null>(null);
   const [savingReview, setSavingReview] = useState(false);
 
-  // Inline doc editing — just the budget line item (category)
+  // Inline row editing — edit doc + linked payment fields together
   const [editingDocId, setEditingDocId] = useState<string | null>(null);
-  const [editDocLineItem, setEditDocLineItem] = useState<string>("");
+  const [editDocForm, setEditDocForm] = useState({
+    line_item_number: "",
+    doc_type: "",
+    vendor: "",
+    name: "",
+    amount: "",
+    status: "pending" as string,
+  });
 
   function startEditDoc(doc: Document) {
+    const p = payments.find((pp) => pp.invoice_file_url === doc.file_url);
     setEditingDocId(doc.id);
-    setEditDocLineItem(doc.line_item_number ?? "");
+    setEditDocForm({
+      line_item_number: doc.line_item_number ?? "",
+      doc_type: doc.doc_type ?? "",
+      vendor: doc.vendor ?? "",
+      name: doc.name ?? "",
+      amount: p ? formatCurrencyInput(String(p.amount)) : "",
+      status: p?.status ?? "pending",
+    });
   }
 
   async function saveEditDoc() {
     if (!editingDocId) return;
+    const doc = documents.find((d) => d.id === editingDocId);
+    if (!doc) return;
+
+    const docPatch: Record<string, unknown> = {
+      id: editingDocId,
+      line_item_number: editDocForm.line_item_number || null,
+      doc_type: editDocForm.doc_type || null,
+      vendor: editDocForm.vendor || null,
+      name: editDocForm.name || doc.name,
+    };
+    if (editDocForm.line_item_number) {
+      docPatch.category = "invoice";
+    }
+
     await fetch(`/api/admin/projects/${projectId}/documents`, {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        id: editingDocId,
-        line_item_number: editDocLineItem || null,
-        category: editDocLineItem ? "invoice" : undefined,
-      }),
+      body: JSON.stringify(docPatch),
     });
+
+    const payment = payments.find((p) => p.invoice_file_url === doc.file_url);
+    if (payment) {
+      const parsedAmount = parseFloat(unformatCurrency(editDocForm.amount));
+      await fetch(
+        `/api/admin/projects/${projectId}/payments/${payment.id}`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            amount: isNaN(parsedAmount) ? payment.amount : parsedAmount,
+            status: editDocForm.status,
+            contractor_name: editDocForm.vendor || payment.contractor_name,
+          }),
+        },
+      );
+    }
+
     setEditingDocId(null);
     router.refresh();
-    toast.success("Document updated");
+    toast.success("Row updated");
   }
 
   /** Build filename: #_Category_DocType_VendorName.ext */
@@ -4593,7 +4636,7 @@ function DrawsTab({
                               </td>
                               <td className="py-2">
                                 <div className="flex items-center gap-0.5 flex-nowrap justify-end">
-                                  {docPayment && docPayment.status === "pending" && !drawFunded && (
+                                  {docPayment && docPayment.status === "pending" && (
                                     <button
                                       disabled={loading}
                                       onClick={() => markAsPaid(docPayment)}
@@ -4604,41 +4647,31 @@ function DrawsTab({
                                       <Wallet className="w-3.5 h-3.5" />
                                     </button>
                                   )}
-                                  {docPayment && docPayment.status === "pending" && drawFunded && (
-                                    <>
-                                      <button
-                                        disabled={loading}
-                                        onClick={() => markPaidFromDraw(docPayment)}
-                                        title="Mark as Paid from Draw"
-                                        aria-label="Mark as Paid from Draw"
-                                        className="text-green-600 hover:text-green-800 disabled:opacity-50 cursor-pointer p-1 transition-colors"
-                                      >
-                                        <Banknote className="w-3.5 h-3.5" />
-                                      </button>
-                                      <label
-                                        title="Upload receipt"
-                                        aria-label="Upload receipt"
-                                        className="text-gray-400 hover:text-blue-600 cursor-pointer p-1 transition-colors inline-flex items-center"
-                                      >
-                                        <input
-                                          type="file"
-                                          accept="application/pdf,image/*"
-                                          className="hidden"
-                                          onChange={(e) => {
-                                            const f = e.target.files?.[0];
-                                            if (f) uploadReceipt(docPayment.id, f);
-                                            e.target.value = "";
-                                          }}
-                                        />
-                                        <Receipt className="w-3.5 h-3.5" />
-                                      </label>
-                                    </>
+                                  {docPayment && (docPayment.status === "pending" || docPayment.status === "paid_personal") && (
+                                    <button
+                                      disabled={loading}
+                                      onClick={() => markPaidFromDraw(docPayment)}
+                                      title="Mark as Paid from Draw"
+                                      aria-label="Mark as Paid from Draw"
+                                      className="text-green-600 hover:text-green-800 disabled:opacity-50 cursor-pointer p-1 transition-colors"
+                                    >
+                                      <Banknote className="w-3.5 h-3.5" />
+                                    </button>
                                   )}
-                                  {docPayment && docPayment.status === "paid_from_draw" && !docPayment.receipt_file_url && (
+                                  {docPayment && docPayment.receipt_file_url ? (
+                                    <button
+                                      onClick={() => onPreview(docPayment.receipt_file_url!, docPayment.receipt_file_name ?? "Receipt")}
+                                      title={docPayment.payment_method ? `View receipt · ${docPayment.payment_method}` : "View receipt"}
+                                      aria-label="View receipt"
+                                      className="text-blue-500 hover:text-blue-700 cursor-pointer p-1 transition-colors"
+                                    >
+                                      <Receipt className="w-3.5 h-3.5" />
+                                    </button>
+                                  ) : docPayment ? (
                                     <label
                                       title="Upload receipt"
                                       aria-label="Upload receipt"
-                                      className="text-amber-500 hover:text-amber-700 cursor-pointer p-1 transition-colors inline-flex items-center"
+                                      className="text-gray-400 hover:text-amber-600 cursor-pointer p-1 transition-colors inline-flex items-center"
                                     >
                                       <input
                                         type="file"
@@ -4652,19 +4685,9 @@ function DrawsTab({
                                       />
                                       <Receipt className="w-3.5 h-3.5" />
                                     </label>
-                                  )}
-                                  {docPayment && docPayment.status === "paid_from_draw" && docPayment.receipt_file_url && (
-                                    <button
-                                      onClick={() => onPreview(docPayment.receipt_file_url!, docPayment.receipt_file_name ?? "Receipt")}
-                                      title={docPayment.payment_method ? `View receipt · ${docPayment.payment_method}` : "View receipt"}
-                                      aria-label="View receipt"
-                                      className="text-blue-500 hover:text-blue-700 cursor-pointer p-1 transition-colors"
-                                    >
-                                      <Receipt className="w-3.5 h-3.5" />
-                                    </button>
-                                  )}
+                                  ) : null}
                                   {/* Divider between payment actions and doc actions */}
-                                  <span className="mx-0.5 h-4 w-px bg-gray-200" aria-hidden />
+                                  {docPayment && <span className="mx-0.5 h-4 w-px bg-gray-200" aria-hidden />}
                                   <button
                                     aria-label={`Edit ${doc.name}`}
                                     title="Edit"
@@ -4705,14 +4728,14 @@ function DrawsTab({
                             </tr>
                             {editingDocId === doc.id && (
                               <tr className="bg-blue-50">
-                                <td colSpan={8} className="px-2 py-2">
-                                  <div className="flex flex-wrap items-end gap-2">
+                                <td colSpan={8} className="px-3 py-3">
+                                  <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-3">
                                     <div>
-                                      <label className="block text-xs text-gray-500 mb-0.5">Category</label>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Category / Line #</label>
                                       <select
-                                        value={editDocLineItem}
-                                        onChange={(e) => setEditDocLineItem(e.target.value)}
-                                        className="border border-gray-300 rounded px-2 py-1 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        value={editDocForm.line_item_number}
+                                        onChange={(e) => setEditDocForm((prev) => ({ ...prev, line_item_number: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                                       >
                                         <option value="">Select category...</option>
                                         {DEFAULT_BUDGET_LINE_ITEMS.map(item => (
@@ -4722,10 +4745,66 @@ function DrawsTab({
                                         ))}
                                       </select>
                                     </div>
-                                    <div className="flex gap-1.5">
-                                      <button onClick={saveEditDoc} className="px-3 py-1 text-xs bg-black text-white rounded hover:bg-gray-800 transition-colors">Save</button>
-                                      <button onClick={() => setEditingDocId(null)} className="px-3 py-1 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Cancel</button>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Type</label>
+                                      <input
+                                        value={editDocForm.doc_type}
+                                        onChange={(e) => setEditDocForm((prev) => ({ ...prev, doc_type: e.target.value }))}
+                                        placeholder="Invoice, Receipt, etc."
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
                                     </div>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Vendor</label>
+                                      <input
+                                        value={editDocForm.vendor}
+                                        onChange={(e) => setEditDocForm((prev) => ({ ...prev, vendor: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </div>
+                                    <div className="sm:col-span-2">
+                                      <label className="block text-xs text-gray-500 mb-0.5">Filename</label>
+                                      <input
+                                        value={editDocForm.name}
+                                        onChange={(e) => setEditDocForm((prev) => ({ ...prev, name: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      />
+                                    </div>
+                                    {(() => {
+                                      const p = payments.find((pp) => pp.invoice_file_url === doc.file_url);
+                                      if (!p) return null;
+                                      return (
+                                        <>
+                                          <div>
+                                            <label className="block text-xs text-gray-500 mb-0.5">Amount</label>
+                                            <input
+                                              type="text"
+                                              inputMode="decimal"
+                                              value={editDocForm.amount}
+                                              onChange={(e) => setEditDocForm((prev) => ({ ...prev, amount: formatCurrencyInput(e.target.value) }))}
+                                              className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums"
+                                            />
+                                          </div>
+                                          <div>
+                                            <label className="block text-xs text-gray-500 mb-0.5">Payment Status</label>
+                                            <select
+                                              value={editDocForm.status}
+                                              onChange={(e) => setEditDocForm((prev) => ({ ...prev, status: e.target.value }))}
+                                              className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            >
+                                              <option value="pending">Needs Draw</option>
+                                              <option value="paid_personal">Paid Personal</option>
+                                              <option value="reimbursed">Reimbursed</option>
+                                              <option value="paid_from_draw">Paid from Draw</option>
+                                            </select>
+                                          </div>
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                  <div className="flex gap-1.5">
+                                    <button onClick={saveEditDoc} className="px-3 py-1.5 text-xs bg-black text-white rounded hover:bg-gray-800 transition-colors">Save Changes</button>
+                                    <button onClick={() => setEditingDocId(null)} className="px-3 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Cancel</button>
                                   </div>
                                 </td>
                               </tr>
@@ -4810,10 +4889,10 @@ function DrawsTab({
                           {editingDocId === doc.id && (
                             <div className="pt-2 border-t border-blue-200 space-y-2">
                               <div>
-                                <label className="block text-xs text-gray-500 mb-0.5">Category</label>
+                                <label className="block text-xs text-gray-500 mb-0.5">Category / Line #</label>
                                 <select
-                                  value={editDocLineItem}
-                                  onChange={(e) => setEditDocLineItem(e.target.value)}
+                                  value={editDocForm.line_item_number}
+                                  onChange={(e) => setEditDocForm((prev) => ({ ...prev, line_item_number: e.target.value }))}
                                   className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
                                 >
                                   <option value="">Select category...</option>
@@ -4824,8 +4903,63 @@ function DrawsTab({
                                   ))}
                                 </select>
                               </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Type</label>
+                                <input
+                                  value={editDocForm.doc_type}
+                                  onChange={(e) => setEditDocForm((prev) => ({ ...prev, doc_type: e.target.value }))}
+                                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Vendor</label>
+                                <input
+                                  value={editDocForm.vendor}
+                                  onChange={(e) => setEditDocForm((prev) => ({ ...prev, vendor: e.target.value }))}
+                                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Filename</label>
+                                <input
+                                  value={editDocForm.name}
+                                  onChange={(e) => setEditDocForm((prev) => ({ ...prev, name: e.target.value }))}
+                                  className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                />
+                              </div>
+                              {(() => {
+                                const p = payments.find((pp) => pp.invoice_file_url === doc.file_url);
+                                if (!p) return null;
+                                return (
+                                  <>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Amount</label>
+                                      <input
+                                        type="text"
+                                        inputMode="decimal"
+                                        value={editDocForm.amount}
+                                        onChange={(e) => setEditDocForm((prev) => ({ ...prev, amount: formatCurrencyInput(e.target.value) }))}
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500 tabular-nums"
+                                      />
+                                    </div>
+                                    <div>
+                                      <label className="block text-xs text-gray-500 mb-0.5">Payment Status</label>
+                                      <select
+                                        value={editDocForm.status}
+                                        onChange={(e) => setEditDocForm((prev) => ({ ...prev, status: e.target.value }))}
+                                        className="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                      >
+                                        <option value="pending">Needs Draw</option>
+                                        <option value="paid_personal">Paid Personal</option>
+                                        <option value="reimbursed">Reimbursed</option>
+                                        <option value="paid_from_draw">Paid from Draw</option>
+                                      </select>
+                                    </div>
+                                  </>
+                                );
+                              })()}
                               <div className="flex gap-2">
-                                <button onClick={saveEditDoc} className="flex-1 py-1.5 text-xs bg-black text-white rounded hover:bg-gray-800 transition-colors">Save</button>
+                                <button onClick={saveEditDoc} className="flex-1 py-1.5 text-xs bg-black text-white rounded hover:bg-gray-800 transition-colors">Save Changes</button>
                                 <button onClick={() => setEditingDocId(null)} className="flex-1 py-1.5 text-xs bg-gray-100 text-gray-700 rounded hover:bg-gray-200 transition-colors">Cancel</button>
                               </div>
                             </div>
