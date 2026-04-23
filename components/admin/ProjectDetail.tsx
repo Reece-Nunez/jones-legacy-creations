@@ -2245,7 +2245,7 @@ function PaymentsTab({
                       <option value="pending">Needs Draw</option>
                       <option value="paid_personal">Paid Personal</option>
                       <option value="reimbursed">Reimbursed</option>
-                      <option value="paid_from_draw">Paid from Draw</option>
+                      <option value="paid_from_draw">Paid</option>
                     </select>
                   </div>
                   <div className="flex gap-2">
@@ -2296,7 +2296,7 @@ function PaymentsTab({
                             {p.status === "paid_from_draw" && (
                               <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700" title={p.paid_from_draw_date ? `Paid ${fmtDate(p.paid_from_draw_date)}${p.payment_method ? ` · ${p.payment_method}` : ""}` : undefined}>
                                 <Circle className="w-1.5 h-1.5 fill-current" />
-                                Paid from Draw
+                                Paid
                                 {!p.receipt_file_url && <span className="ml-1 text-amber-700">(no receipt)</span>}
                               </Badge>
                             )}
@@ -2396,7 +2396,7 @@ function PaymentsTab({
                               className="text-xs text-green-700 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-1 transition-colors"
                               title="Mark as paid from draw funds"
                             >
-                              Paid from Draw
+                              Paid
                             </button>
                             <label className="text-xs text-gray-500 hover:text-blue-600 cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center">
                               <input
@@ -2778,7 +2778,7 @@ function DrawsTab({
               <option value="pending">Needs Draw</option>
               <option value="paid_personal">Paid Personal</option>
               <option value="reimbursed">Reimbursed</option>
-              <option value="paid_from_draw">Paid from Draw</option>
+              <option value="paid_from_draw">Paid</option>
             </select>
           </div>
           <div className="flex gap-2">
@@ -2830,7 +2830,7 @@ function DrawsTab({
             {p.status === "paid_from_draw" && (
               <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700" title={p.paid_from_draw_date ? `Paid ${fmtDate(p.paid_from_draw_date)}${p.payment_method ? ` · ${p.payment_method}` : ""}` : undefined}>
                 <Circle className="w-1.5 h-1.5 fill-current" />
-                Paid from Draw
+                Paid
                 {!p.receipt_file_url && <span className="ml-1 text-amber-700">(no receipt)</span>}
               </Badge>
             )}
@@ -2921,7 +2921,7 @@ function DrawsTab({
                     className="text-xs text-green-700 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-1 transition-colors"
                     title="Mark as paid from draw funds"
                   >
-                    Paid from Draw
+                    Paid
                   </button>
                   <label className="text-xs text-gray-500 hover:text-blue-600 cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center">
                     <input
@@ -3609,7 +3609,7 @@ function DrawsTab({
         </ShadCard>
         <ShadCard className="p-4 border-l-4 border-l-green-700">
           <CardContent className="p-0">
-            <p className="text-xs text-gray-500 font-medium">Paid from Draw</p>
+            <p className="text-xs text-gray-500 font-medium">Paid</p>
             <p className="text-lg font-bold text-green-700 tabular-nums">{fmt(paymentTotals.paidFromDraw)}</p>
           </CardContent>
         </ShadCard>
@@ -4598,7 +4598,7 @@ function DrawsTab({
                                     {docPayment.status === "paid_from_draw" && (
                                       <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700 text-[10px]" title={docPayment.paid_from_draw_date ? `Paid ${fmtDate(docPayment.paid_from_draw_date)}` : undefined}>
                                         <Circle className="w-1.5 h-1.5 fill-current" />
-                                        Paid from Draw
+                                        Paid
                                       </Badge>
                                     )}
                                     {docPayment.status === "paid_personal" && (
@@ -4651,8 +4651,8 @@ function DrawsTab({
                                     <button
                                       disabled={loading}
                                       onClick={() => markPaidFromDraw(docPayment)}
-                                      title="Mark as Paid from Draw"
-                                      aria-label="Mark as Paid from Draw"
+                                      title="Mark as Paid"
+                                      aria-label="Mark as Paid"
                                       className="text-green-600 hover:text-green-800 disabled:opacity-50 cursor-pointer p-1 transition-colors"
                                     >
                                       <Banknote className="w-3.5 h-3.5" />
@@ -4795,7 +4795,7 @@ function DrawsTab({
                                               <option value="pending">Needs Draw</option>
                                               <option value="paid_personal">Paid Personal</option>
                                               <option value="reimbursed">Reimbursed</option>
-                                              <option value="paid_from_draw">Paid from Draw</option>
+                                              <option value="paid_from_draw">Paid</option>
                                             </select>
                                           </div>
                                         </>
@@ -4952,7 +4952,7 @@ function DrawsTab({
                                         <option value="pending">Needs Draw</option>
                                         <option value="paid_personal">Paid Personal</option>
                                         <option value="reimbursed">Reimbursed</option>
-                                        <option value="paid_from_draw">Paid from Draw</option>
+                                        <option value="paid_from_draw">Paid</option>
                                       </select>
                                     </div>
                                   </>

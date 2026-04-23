@@ -21,9 +21,11 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // When a draw is funded, auto-reimburse any payments Blake covered personally.
-  // Payments still in "pending" stay pending — Blake will pay them from the draw
-  // funds and can mark them "paid_from_draw" individually when that happens.
+  // When a draw is funded:
+  //   paid_personal -> reimbursed      (Blake fronted and got repaid)
+  //   pending       -> paid_from_draw  (investor pays the contractor from draw funds)
+  // Payments that already had a receipt uploaded (status already paid_from_draw
+  // with receipt_file_url) stay untouched so a manual entry isn't overridden.
   if (body.status === "funded") {
     const fundedDate = body.funded_date || new Date().toISOString().split("T")[0];
     await supabase
@@ -32,6 +34,13 @@ export async function PATCH(
       .eq("draw_request_id", drawId)
       .eq("project_id", id)
       .eq("status", "paid_personal");
+
+    await supabase
+      .from("contractor_payments")
+      .update({ status: "paid_from_draw", paid_from_draw_date: fundedDate })
+      .eq("draw_request_id", drawId)
+      .eq("project_id", id)
+      .eq("status", "pending");
   }
 
   // Log activity if status changed
