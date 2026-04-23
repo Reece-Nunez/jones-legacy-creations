@@ -209,8 +209,8 @@ function drawLeftBorder(status: DrawRequestStatus): string {
 }
 
 function paymentLeftBorder(status: string): string {
-  if (status === "funded") return "border-l-green-500";
-  if (status === "paid") return "border-l-indigo-400";
+  if (status === "reimbursed" || status === "paid_from_draw") return "border-l-green-500";
+  if (status === "paid_personal") return "border-l-indigo-400";
   return "border-l-yellow-500";
 }
 
@@ -1890,15 +1890,40 @@ function PaymentsTab({
 
   async function markAsPaid(p: ContractorPayment) {
     await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
-      status: "paid",
+      status: "paid_personal",
       paid_date: new Date().toISOString().split("T")[0],
     });
   }
 
-  async function markFunded(p: ContractorPayment) {
+  async function markPaidFromDraw(p: ContractorPayment) {
     await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
-      status: "funded",
+      status: "paid_from_draw",
+      paid_from_draw_date: new Date().toISOString().split("T")[0],
     });
+  }
+
+  async function uploadReceipt(paymentId: string, file: File) {
+    const fd = new FormData();
+    fd.append("file", file);
+    const res = await fetch(
+      `/api/admin/projects/${projectId}/payments/${paymentId}/receipt`,
+      { method: "POST", body: fd },
+    );
+    if (!res.ok) {
+      toast.error("Failed to upload receipt");
+      return;
+    }
+    const result = await res.json();
+    if (result.amount_mismatch) {
+      const extracted = result.ai_extracted?.amount;
+      toast(
+        `Receipt amount (${fmt(extracted)}) doesn't match invoice — please verify.`,
+        { icon: "⚠️", duration: 8000 },
+      );
+    } else {
+      toast.success("Receipt uploaded");
+    }
+    router.refresh();
   }
 
   async function deletePayment(id: string) {
@@ -2215,7 +2240,9 @@ function PaymentsTab({
                       className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
                     >
                       <option value="pending">Needs Draw</option>
-                      <option value="paid">Funded</option>
+                      <option value="paid_personal">Paid Personal</option>
+                      <option value="reimbursed">Reimbursed</option>
+                      <option value="paid_from_draw">Paid from Draw</option>
                     </select>
                   </div>
                   <div className="flex gap-2">
@@ -2254,25 +2281,38 @@ function PaymentsTab({
                       )}
                       {(() => {
                         const linkedDraw = p.draw_request_id ? drawRequests.find((d) => d.id === p.draw_request_id) : null;
-                        const drawFunded = linkedDraw?.status === "funded" || p.status === "funded";
+                        const drawFunded = linkedDraw?.status === "funded";
                         return (
                           <>
-                            {drawFunded && (
-                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700">
+                            {p.status === "reimbursed" && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700" title={p.reimbursed_date ? `Reimbursed ${fmtDate(p.reimbursed_date)}` : undefined}>
                                 <Circle className="w-1.5 h-1.5 fill-current" />
-                                Funded
+                                Reimbursed
                               </Badge>
                             )}
-                            {!drawFunded && p.status === "paid" && (
-                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-700">
+                            {p.status === "paid_from_draw" && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-green-100 text-green-700" title={p.paid_from_draw_date ? `Paid ${fmtDate(p.paid_from_draw_date)}${p.payment_method ? ` · ${p.payment_method}` : ""}` : undefined}>
                                 <Circle className="w-1.5 h-1.5 fill-current" />
-                                Paid from Personal Funds
+                                Paid from Draw
+                                {!p.receipt_file_url && <span className="ml-1 text-amber-700">(no receipt)</span>}
                               </Badge>
                             )}
-                            {!drawFunded && (
+                            {p.status === "paid_personal" && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-indigo-100 text-indigo-700" title="Blake paid from personal funds — awaiting reimbursement via draw">
+                                <Circle className="w-1.5 h-1.5 fill-current" />
+                                Paid Personal
+                              </Badge>
+                            )}
+                            {p.status === "pending" && !drawFunded && (
                               <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-orange-100 text-orange-700">
                                 <Circle className="w-1.5 h-1.5 fill-current" />
                                 Needs Draw
+                              </Badge>
+                            )}
+                            {p.status === "pending" && drawFunded && (
+                              <Badge variant="outline" className="inline-flex items-center gap-1 rounded-full bg-yellow-100 text-yellow-800">
+                                <Circle className="w-1.5 h-1.5 fill-current" />
+                                Ready to Pay from Draw
                               </Badge>
                             )}
                             {p.qbo_sync_error && (
@@ -2313,9 +2353,10 @@ function PaymentsTab({
                     </span>
                     {(() => {
                       const linkedDraw = p.draw_request_id ? drawRequests.find((d) => d.id === p.draw_request_id) : null;
-                      const drawFunded = linkedDraw?.status === "funded" || p.status === "funded";
-                      if (drawFunded) return null;
-                      if (p.status === "pending") {
+                      const drawFunded = linkedDraw?.status === "funded";
+
+                      // Pending + draw not funded → Blake can front it
+                      if (p.status === "pending" && !drawFunded) {
                         const pc = p.contractor_id ? contractors.find((c) => c.id === p.contractor_id) : null;
                         const missingW9 = pc?.type !== "vendor" && pc?.w9_required && !pc?.w9_file_url;
                         return (
@@ -2334,25 +2375,76 @@ function PaymentsTab({
                               disabled={loading}
                               onClick={() => markAsPaid(p)}
                               className="text-xs text-indigo-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-1 transition-colors"
-                              title="Mark as paid from personal funds without going through QuickBooks"
+                              title="Mark as paid from Blake's personal funds"
                             >
-                              Mark as Paid
+                              Paid Personal
                             </button>
                           </>
                         );
                       }
-                      if (p.status === "paid") {
+
+                      // Pending + draw funded → Blake can pay with draw funds
+                      if (p.status === "pending" && drawFunded) {
+                        return (
+                          <>
+                            <button
+                              disabled={loading}
+                              onClick={() => markPaidFromDraw(p)}
+                              className="text-xs text-green-700 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-1 transition-colors"
+                              title="Mark as paid from draw funds"
+                            >
+                              Paid from Draw
+                            </button>
+                            <label className="text-xs text-gray-500 hover:text-blue-600 cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center">
+                              <input
+                                type="file"
+                                accept="application/pdf,image/*"
+                                className="hidden"
+                                onChange={(e) => {
+                                  const f = e.target.files?.[0];
+                                  if (f) uploadReceipt(p.id, f);
+                                  e.target.value = "";
+                                }}
+                              />
+                              Upload Receipt
+                            </label>
+                          </>
+                        );
+                      }
+
+                      // Paid from draw but no receipt yet → prompt to upload
+                      if (p.status === "paid_from_draw" && !p.receipt_file_url) {
+                        return (
+                          <label className="text-xs text-blue-600 hover:underline cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center">
+                            <input
+                              type="file"
+                              accept="application/pdf,image/*"
+                              className="hidden"
+                              onChange={(e) => {
+                                const f = e.target.files?.[0];
+                                if (f) uploadReceipt(p.id, f);
+                                e.target.value = "";
+                              }}
+                            />
+                            Upload Receipt
+                          </label>
+                        );
+                      }
+
+                      // Paid from draw + receipt uploaded → show receipt link
+                      if (p.status === "paid_from_draw" && p.receipt_file_url) {
                         return (
                           <button
-                            disabled={loading}
-                            onClick={() => markFunded(p)}
-                            className="text-xs text-green-600 hover:underline disabled:opacity-50 cursor-pointer min-h-[44px] px-2 transition-colors"
-                            title="Mark as funded — draw received and Blake has been reimbursed"
+                            onClick={() => onPreview(p.receipt_file_url!, p.receipt_file_name ?? "Receipt")}
+                            className="text-xs text-blue-600 hover:underline cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center gap-1"
+                            title={p.payment_method ? `Paid via ${p.payment_method}` : "View receipt"}
                           >
-                            Mark Funded
+                            <Paperclip className="w-3 h-3" />
+                            Receipt
                           </button>
                         );
                       }
+
                       return null;
                     })()}
                     <button

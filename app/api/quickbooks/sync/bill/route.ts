@@ -107,7 +107,7 @@ export async function POST(request: NextRequest) {
 
   if (existingBill && !force) {
     // Bill exists — but if it's paid and has no BillPayment yet, create one now
-    if (payment.status === "paid") {
+    if (payment.status !== "pending") {
       const { data: existingBillPayment } = await supabase
         .from("quickbooks_entity_map")
         .select("qbo_id")
@@ -210,7 +210,7 @@ export async function POST(request: NextRequest) {
     }
 
     // If already paid, also create a BillPayment so it shows as closed in QBO
-    if (payment.status === "paid") {
+    if (payment.status !== "pending") {
       const { data: existingBillPayment } = await supabase
         .from("quickbooks_entity_map")
         .select("qbo_id")

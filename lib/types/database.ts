@@ -11,7 +11,11 @@ export type ProjectStatus =
 export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "new_home" | "takeover" | "addition" | "garage" | "deck_patio" | "other";
 export type FinishLevel = "budget" | "standard" | "mid_range" | "high_end";
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
-export type PaymentStatus = "pending" | "paid" | "funded";
+export type PaymentStatus =
+  | "pending"
+  | "paid_personal"
+  | "reimbursed"
+  | "paid_from_draw";
 export type PermitStatus = "not_applied" | "applied" | "approved" | "denied" | "expired";
 export type DrawRequestStatus = "draft" | "submitted" | "approved" | "funded" | "denied";
 export type DocumentCategory = "contract" | "permit" | "invoice" | "photo" | "plan" | "draw_request" | "general";
@@ -104,6 +108,13 @@ export interface ContractorPayment {
   status: PaymentStatus;
   due_date: string | null;
   paid_date: string | null;
+  paid_from_draw_date: string | null;
+  reimbursed_date: string | null;
+  payment_method: string | null;
+  personal_amount: number | null;
+  receipt_file_url: string | null;
+  receipt_file_name: string | null;
+  receipt_uploaded_at: string | null;
   invoice_file_url: string | null;
   invoice_file_name: string | null;
   draw_request_id: string | null;

@@ -21,14 +21,17 @@ export async function PATCH(
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
 
-  // When a draw is funded, mark all linked contractor payments as funded too
+  // When a draw is funded, auto-reimburse any payments Blake covered personally.
+  // Payments still in "pending" stay pending — Blake will pay them from the draw
+  // funds and can mark them "paid_from_draw" individually when that happens.
   if (body.status === "funded") {
+    const fundedDate = body.funded_date || new Date().toISOString().split("T")[0];
     await supabase
       .from("contractor_payments")
-      .update({ status: "funded" })
+      .update({ status: "reimbursed", reimbursed_date: fundedDate })
       .eq("draw_request_id", drawId)
       .eq("project_id", id)
-      .neq("status", "funded");
+      .eq("status", "paid_personal");
   }
 
   // Log activity if status changed

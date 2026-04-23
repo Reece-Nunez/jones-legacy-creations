@@ -120,7 +120,7 @@ export default function ContractorDetail({
   const entityLabel = isVendor ? "Vendor" : "Contractor";
 
   const totalPaid = payments
-    .filter((p) => p.status === "paid")
+    .filter((p) => p.status !== "pending")
     .reduce((sum, p) => sum + (p.amount || 0), 0);
 
   const totalPending = payments
@@ -809,14 +809,14 @@ export default function ContractorDetail({
             const existing = projectMap.get(p.projects.id);
             if (existing) {
               existing.paymentCount++;
-              if (p.status === "paid") existing.totalPaid += p.amount || 0;
+              if (p.status !== "pending") existing.totalPaid += p.amount || 0;
               else existing.totalPending += p.amount || 0;
             } else {
               projectMap.set(p.projects.id, {
                 id: p.projects.id,
                 name: p.projects.name,
-                totalPaid: p.status === "paid" ? (p.amount || 0) : 0,
-                totalPending: p.status !== "paid" ? (p.amount || 0) : 0,
+                totalPaid: p.status !== "pending" ? (p.amount || 0) : 0,
+                totalPending: p.status === "pending" ? (p.amount || 0) : 0,
                 paymentCount: 1,
                 assigned: false,
               });
@@ -1022,17 +1022,17 @@ export default function ContractorDetail({
                       )}
                       <span
                         className={`inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                          payment.status === "paid"
+                          payment.status !== "pending"
                             ? "bg-green-100 text-green-700"
                             : "bg-yellow-100 text-yellow-700"
                         }`}
                       >
-                        {payment.status === "paid" ? (
+                        {payment.status !== "pending" ? (
                           <CheckCircle2 className="h-3 w-3" />
                         ) : (
                           <Clock className="h-3 w-3" />
                         )}
-                        {payment.status === "paid" ? "Paid" : "Pending"}
+                        {payment.status !== "pending" ? "Paid" : "Pending"}
                       </span>
                     </div>
                     {payment.description && (
@@ -1087,17 +1087,17 @@ export default function ContractorDetail({
                       <td className="py-3 pr-4">
                         <span
                           className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${
-                            payment.status === "paid"
+                            payment.status !== "pending"
                               ? "bg-green-100 text-green-700"
                               : "bg-yellow-100 text-yellow-700"
                           }`}
                         >
-                          {payment.status === "paid" ? (
+                          {payment.status !== "pending" ? (
                             <CheckCircle2 className="h-3 w-3" />
                           ) : (
                             <Clock className="h-3 w-3" />
                           )}
-                          {payment.status === "paid" ? "Paid" : "Pending"}
+                          {payment.status !== "pending" ? "Paid" : "Pending"}
                         </span>
                       </td>
                       <td className="py-3 tabular-nums text-gray-500">

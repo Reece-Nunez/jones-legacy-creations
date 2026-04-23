@@ -98,7 +98,7 @@ export default async function ContractorsPage({
     if (!paymentSummary[p.contractor_id]) {
       paymentSummary[p.contractor_id] = { totalPaid: 0, projectIds: new Set() };
     }
-    if (p.status === "paid") {
+    if (p.status !== "pending") {
       paymentSummary[p.contractor_id].totalPaid += p.amount || 0;
     }
     paymentSummary[p.contractor_id].projectIds.add(p.project_id);
