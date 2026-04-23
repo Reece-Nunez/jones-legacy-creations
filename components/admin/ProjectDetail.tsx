@@ -5568,6 +5568,7 @@ function BudgetTab({
                     <th className="pb-2 pr-3">Description</th>
                     <th className="pb-2 pr-3 text-right w-32">Budgeted</th>
                     <th className="pb-2 pr-3 text-right w-32">Spent</th>
+                    <th className="pb-2 pr-3 text-center w-24">Owner</th>
                     <th className="pb-2 pr-3 text-right w-32">Remaining</th>
                     <th className="pb-2 w-40">Progress</th>
                   </tr>
@@ -5611,37 +5612,30 @@ function BudgetTab({
                         </td>
                         <td className="py-2.5 pr-3 text-right tabular-nums text-gray-700">
                           {isPurchased ? (
-                            <button
-                              onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
-                              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors bg-green-100 text-green-700 hover:bg-green-200"
-                              title="Mark as not purchased"
-                            >
-                              <div className="w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 bg-green-500 border-green-500">
-                                <Check className="w-2 h-2 text-white" />
-                              </div>
-                              Purchased
-                            </button>
-                          ) : spent > 0 ? (
-                            <div className="flex items-center gap-1.5 justify-end">
-                              <span>{fmt(spent)}</span>
-                              <button
-                                onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
-                                className="inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-[10px] font-medium text-gray-400 hover:bg-amber-100 hover:text-amber-700 transition-colors"
-                                title="Mark as owner purchased"
-                              >
-                                Owner?
-                              </button>
-                            </div>
+                            <span className="text-gray-400">--</span>
                           ) : (
-                            <button
-                              onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
-                              className="inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-700"
-                              title="Mark as owner purchased"
-                            >
-                              <div className="w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 border-gray-400" />
-                              Owner?
-                            </button>
+                            <span>{spent > 0 ? fmt(spent) : "--"}</span>
                           )}
+                        </td>
+                        <td className="py-2.5 pr-3 text-center">
+                          <button
+                            onClick={() => item.id && toggleOwnerPurchased(item as BudgetLineItem)}
+                            className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
+                              isPurchased
+                                ? "bg-green-100 text-green-700 hover:bg-green-200"
+                                : "bg-gray-100 text-gray-500 hover:bg-amber-100 hover:text-amber-700"
+                            }`}
+                            title={isPurchased ? "Mark as not purchased" : "Mark as owner purchased"}
+                          >
+                            <div
+                              className={`w-3 h-3 rounded-sm border flex items-center justify-center flex-shrink-0 ${
+                                isPurchased ? "bg-green-500 border-green-500" : "border-gray-400"
+                              }`}
+                            >
+                              {isPurchased && <Check className="w-2 h-2 text-white" />}
+                            </div>
+                            {isPurchased ? "Purchased" : "Owner?"}
+                          </button>
                         </td>
                         <td className={`py-2.5 pr-3 text-right tabular-nums font-medium ${overBudget ? "text-red-600" : "text-green-600"}`}>
                           {isPurchased ? "--" : (budgeted > 0 || spent > 0 ? fmt(remaining) : "--")}
@@ -5677,6 +5671,7 @@ function BudgetTab({
                     <td className="py-3 pr-3 text-gray-900">TOTALS</td>
                     <td className="py-3 pr-3 text-right tabular-nums text-gray-900">{fmt(totalBudgeted)}</td>
                     <td className="py-3 pr-3 text-right tabular-nums text-gray-900">{fmt(totalSpent)}</td>
+                    <td className="py-3 pr-3"></td>
                     <td className={`py-3 pr-3 text-right tabular-nums ${totalBudgeted - totalSpent >= 0 ? "text-green-600" : "text-red-600"}`}>
                       {fmt(totalBudgeted - totalSpent)}
                     </td>
