@@ -4592,15 +4592,16 @@ function DrawsTab({
                                 )}
                               </td>
                               <td className="py-2">
-                                <div className="flex items-center gap-1 flex-wrap">
+                                <div className="flex items-center gap-0.5 flex-nowrap justify-end">
                                   {docPayment && docPayment.status === "pending" && !drawFunded && (
                                     <button
                                       disabled={loading}
                                       onClick={() => markAsPaid(docPayment)}
-                                      title="Mark as paid from personal funds"
-                                      className="text-[10px] text-indigo-600 hover:underline disabled:opacity-50 cursor-pointer px-1 transition-colors"
+                                      title="Mark as Paid Personal"
+                                      aria-label="Mark as Paid Personal"
+                                      className="text-indigo-500 hover:text-indigo-700 disabled:opacity-50 cursor-pointer p-1 transition-colors"
                                     >
-                                      Paid Personal
+                                      <Wallet className="w-3.5 h-3.5" />
                                     </button>
                                   )}
                                   {docPayment && docPayment.status === "pending" && drawFunded && (
@@ -4608,12 +4609,17 @@ function DrawsTab({
                                       <button
                                         disabled={loading}
                                         onClick={() => markPaidFromDraw(docPayment)}
-                                        title="Mark as paid from draw funds"
-                                        className="text-[10px] text-green-700 hover:underline disabled:opacity-50 cursor-pointer px-1 transition-colors"
+                                        title="Mark as Paid from Draw"
+                                        aria-label="Mark as Paid from Draw"
+                                        className="text-green-600 hover:text-green-800 disabled:opacity-50 cursor-pointer p-1 transition-colors"
                                       >
-                                        Paid from Draw
+                                        <Banknote className="w-3.5 h-3.5" />
                                       </button>
-                                      <label className="text-[10px] text-gray-500 hover:text-blue-600 cursor-pointer px-1 transition-colors inline-flex items-center" title="Upload receipt">
+                                      <label
+                                        title="Upload receipt"
+                                        aria-label="Upload receipt"
+                                        className="text-gray-400 hover:text-blue-600 cursor-pointer p-1 transition-colors inline-flex items-center"
+                                      >
                                         <input
                                           type="file"
                                           accept="application/pdf,image/*"
@@ -4624,12 +4630,16 @@ function DrawsTab({
                                             e.target.value = "";
                                           }}
                                         />
-                                        Upload Receipt
+                                        <Receipt className="w-3.5 h-3.5" />
                                       </label>
                                     </>
                                   )}
                                   {docPayment && docPayment.status === "paid_from_draw" && !docPayment.receipt_file_url && (
-                                    <label className="text-[10px] text-blue-600 hover:underline cursor-pointer px-1 transition-colors inline-flex items-center" title="Upload receipt">
+                                    <label
+                                      title="Upload receipt"
+                                      aria-label="Upload receipt"
+                                      className="text-amber-500 hover:text-amber-700 cursor-pointer p-1 transition-colors inline-flex items-center"
+                                    >
                                       <input
                                         type="file"
                                         accept="application/pdf,image/*"
@@ -4640,21 +4650,24 @@ function DrawsTab({
                                           e.target.value = "";
                                         }}
                                       />
-                                      Upload Receipt
+                                      <Receipt className="w-3.5 h-3.5" />
                                     </label>
                                   )}
                                   {docPayment && docPayment.status === "paid_from_draw" && docPayment.receipt_file_url && (
                                     <button
                                       onClick={() => onPreview(docPayment.receipt_file_url!, docPayment.receipt_file_name ?? "Receipt")}
-                                      className="text-[10px] text-blue-600 hover:underline cursor-pointer px-1 transition-colors inline-flex items-center gap-0.5"
-                                      title="View receipt"
+                                      title={docPayment.payment_method ? `View receipt · ${docPayment.payment_method}` : "View receipt"}
+                                      aria-label="View receipt"
+                                      className="text-blue-500 hover:text-blue-700 cursor-pointer p-1 transition-colors"
                                     >
-                                      <Paperclip className="w-3 h-3" />
-                                      Receipt
+                                      <Receipt className="w-3.5 h-3.5" />
                                     </button>
                                   )}
+                                  {/* Divider between payment actions and doc actions */}
+                                  <span className="mx-0.5 h-4 w-px bg-gray-200" aria-hidden />
                                   <button
                                     aria-label={`Edit ${doc.name}`}
+                                    title="Edit"
                                     onClick={() => editingDocId === doc.id ? setEditingDocId(null) : startEditDoc(doc)}
                                     className={`p-1 cursor-pointer transition-colors ${editingDocId === doc.id ? "text-blue-500" : "text-gray-400 hover:text-blue-500"}`}
                                   >
@@ -4662,6 +4675,7 @@ function DrawsTab({
                                   </button>
                                   <button
                                     aria-label={`Preview ${doc.name}`}
+                                    title="Preview"
                                     onClick={() => onPreview(doc.file_url, doc.name)}
                                     className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
                                   >
@@ -4672,6 +4686,7 @@ function DrawsTab({
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label={`Download ${doc.name}`}
+                                    title="Download"
                                     className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
                                   >
                                     <Download className="w-3.5 h-3.5" />
@@ -4679,6 +4694,7 @@ function DrawsTab({
                                   <button
                                     disabled={loading}
                                     aria-label={`Delete ${doc.name}`}
+                                    title="Delete"
                                     onClick={() => deleteDoc(doc.id)}
                                     className="text-gray-400 hover:text-red-500 disabled:opacity-50 p-1 cursor-pointer transition-colors"
                                   >
