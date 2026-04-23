@@ -37,6 +37,9 @@ export interface Contractor {
   w9_file_name: string | null;
   w9_qbo_uploaded_at: string | null;
   w9_qbo_extracted_at: string | null;
+  insurance_file_url: string | null;
+  insurance_file_name: string | null;
+  insurance_expiration_date: string | null;
   vendor_category: string | null;
   account_number: string | null;
   notes: string | null;
