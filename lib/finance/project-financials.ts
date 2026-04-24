@@ -14,11 +14,13 @@
  *   draws_pending      = sum(draw_requests.amount where status in (submitted, approved))
  *   draws_total        = sum(draw_requests.amount)                     per project
  *   origination_fee    = loan_amount * origination_fee_percent / 100
- *   accrued_interest   = per-funded-draw simple interest from funded_date to endDate,
- *                        where endDate = project.end_date ?? asOf ?? today
+ *   accrued_interest   = per-funded-draw simple interest from funded_date to endDate
  *                        (mathematically equivalent to running-balance between events
  *                        under simple daily interest)
- *   projected_profit   = sale_price - total_costs - origination_fee - accrued_interest
+ *   projected_profit:
+ *     external_loan   → sale_price - total_costs - origination_fee - accrued_interest
+ *     seller_financed → sale_price - total_costs + origination_fee + accrued_interest
+ *     cash            → sale_price - total_costs
  *   profit_margin      = projected_profit / sale_price     (0 if sale_price <= 0)
  *
  * If you change any of these, update the v_project_financials view too.
@@ -27,11 +29,13 @@
 import type {
   ContractorPayment,
   DrawRequest,
+  FinancingType,
   Project,
 } from "@/lib/types/database";
 
 export interface ProjectFinancials {
   project: Project;
+  financingType: FinancingType;
   salePrice: number;
   totalCosts: number;
   loanAmount: number;
@@ -42,8 +46,23 @@ export interface ProjectFinancials {
   originationFee: number;
   interestRate: number;
   accruedInterest: number;
+  /** Combined effect of financing on profit: negative for external_loan
+   *  (costs to Blake), positive for seller_financed (revenue to Blake),
+   *  zero for cash. */
+  financingImpact: number;
   projectedProfit: number;
   profitMargin: number;
+}
+
+/**
+ * Resolve financing type, preferring the explicit field and falling back
+ * to the legacy is_cash_job flag so old records (and test fixtures) still
+ * work. Callers should never branch on is_cash_job directly.
+ */
+export function resolveFinancingType(project: Project): FinancingType {
+  if (project.financing_type) return project.financing_type;
+  if (project.is_cash_job) return "cash";
+  return "external_loan";
 }
 
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
@@ -109,6 +128,7 @@ export function computeProjectFinancials(
   const projPayments = allPayments.filter((p) => p.project_id === project.id);
   const projDraws = allDraws.filter((d) => d.project_id === project.id);
 
+  const financingType = resolveFinancingType(project);
   const salePrice = Number(project.sale_price ?? 0);
   const loanAmount = Number(project.loan_amount ?? 0);
   const originationFeePercent = Number(project.origination_fee_percent ?? 0);
@@ -126,12 +146,24 @@ export function computeProjectFinancials(
 
   const originationFee = (loanAmount * originationFeePercent) / 100;
   const accruedInterest = computeAccruedInterest(project, projDraws, asOf);
-  const projectedProfit =
-    salePrice - totalCosts - originationFee - accruedInterest;
+
+  // How financing affects profit:
+  //   external_loan   — Blake pays a bank: origination + interest subtract
+  //   seller_financed — Blake IS the bank: origination + interest add
+  //   cash            — no financing line items
+  let financingImpact = 0;
+  if (financingType === "external_loan") {
+    financingImpact = -(originationFee + accruedInterest);
+  } else if (financingType === "seller_financed") {
+    financingImpact = originationFee + accruedInterest;
+  }
+
+  const projectedProfit = salePrice - totalCosts + financingImpact;
   const profitMargin = salePrice > 0 ? projectedProfit / salePrice : 0;
 
   return {
     project,
+    financingType,
     salePrice,
     totalCosts,
     loanAmount,
@@ -142,6 +174,7 @@ export function computeProjectFinancials(
     originationFee,
     interestRate,
     accruedInterest,
+    financingImpact,
     projectedProfit,
     profitMargin,
   };

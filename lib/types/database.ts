@@ -9,6 +9,14 @@ export type ProjectStatus =
   | "archived";
 
 export type ProjectType = "residential" | "commercial" | "renovation" | "interior_design" | "new_home" | "takeover" | "addition" | "garage" | "deck_patio" | "other";
+
+/**
+ * How a project is financed. Changes how profit is calculated:
+ *  - external_loan: interest + origination are costs to Blake (subtract from profit)
+ *  - seller_financed: Blake IS the lender — interest + origination are revenue (add to profit)
+ *  - cash: no financing, no draws, neither applies
+ */
+export type FinancingType = "external_loan" | "seller_financed" | "cash";
 export type FinishLevel = "budget" | "standard" | "mid_range" | "high_end";
 export type InvoiceStatus = "draft" | "sent" | "paid" | "overdue";
 export type PaymentStatus =
@@ -72,6 +80,7 @@ export interface Project {
   origination_fee_percent: number | null;
   loan_start_date: string | null;
   is_cash_job: boolean;
+  financing_type: FinancingType;
   markup_percent: number | null;
   start_date: string | null;
   end_date: string | null;

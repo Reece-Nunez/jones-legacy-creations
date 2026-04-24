@@ -66,7 +66,10 @@ interface ProjectFormProps {
 export default function ProjectForm({ project }: ProjectFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [isCashJob, setIsCashJob] = useState(project?.is_cash_job ?? false);
+  const [financingType, setFinancingType] = useState<"external_loan" | "seller_financed" | "cash">(
+    project?.financing_type ?? (project?.is_cash_job ? "cash" : "external_loan"),
+  );
+  const isCashJob = financingType === "cash";
   const [markupPercent, setMarkupPercent] = useState<number>(project?.markup_percent ?? 20);
   const isEdit = !!project;
   const lastChangedBy = useRef<"loan_amount" | "down_payment" | "down_payment_percent" | null>(null);
@@ -160,6 +163,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
     try {
       const payload = {
         ...data,
+        financing_type: financingType,
         is_cash_job: isCashJob,
         markup_percent: isCashJob ? markupPercent : null,
         client_email: data.client_email || null,
@@ -421,20 +425,52 @@ export default function ProjectForm({ project }: ProjectFormProps) {
             </select>
           </div>
 
-          {/* Cash Job Toggle */}
+          {/* Financing Type */}
           <div className="md:col-span-2">
-            <label className="flex items-center gap-3 cursor-pointer select-none">
-              <div
-                onClick={() => setIsCashJob(v => !v)}
-                className={`relative w-11 h-6 rounded-full transition-colors ${isCashJob ? "bg-blue-600" : "bg-gray-300"}`}
-              >
-                <div className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${isCashJob ? "translate-x-5" : "translate-x-0"}`} />
-              </div>
-              <div>
-                <span className="text-sm font-medium text-gray-700">Cash Job</span>
-                <p className="text-xs text-gray-500">No lender or draws — client pays directly as work is completed</p>
-              </div>
-            </label>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Financing</label>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              {([
+                {
+                  value: "external_loan" as const,
+                  label: "External Loan",
+                  hint: "A 3rd-party lender funds the build. Interest + origination are costs.",
+                },
+                {
+                  value: "seller_financed" as const,
+                  label: "Seller Financed",
+                  hint: "Blake is the lender. Interest + origination are revenue.",
+                },
+                {
+                  value: "cash" as const,
+                  label: "Cash Job",
+                  hint: "No lender or draws — client pays directly as work is completed.",
+                },
+              ]).map((opt) => {
+                const selected = financingType === opt.value;
+                return (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    onClick={() => setFinancingType(opt.value)}
+                    className={`text-left rounded-lg border p-3 transition-colors cursor-pointer ${
+                      selected
+                        ? "border-blue-500 bg-blue-50 ring-2 ring-blue-200"
+                        : "border-gray-200 bg-white hover:border-gray-300 hover:bg-gray-50"
+                    }`}
+                  >
+                    <div className="flex items-center gap-2">
+                      <span
+                        className={`inline-block w-3 h-3 rounded-full border ${
+                          selected ? "bg-blue-600 border-blue-600" : "border-gray-300"
+                        }`}
+                      />
+                      <span className="text-sm font-medium text-gray-900">{opt.label}</span>
+                    </div>
+                    <p className="text-xs text-gray-500 mt-1">{opt.hint}</p>
+                  </button>
+                );
+              })}
+            </div>
           </div>
 
           {/* Profit Markup Slider — cash jobs only */}
