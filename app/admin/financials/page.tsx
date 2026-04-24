@@ -227,8 +227,12 @@ export default async function FinancialsPage({
     entry.draws.sort((a, b) => a.draw_number - b.draw_number);
   }
 
-  // ── Pending Contractor Payments (needs draw request) ────────────
-  const pendingPayments = payments.filter((p) => p.status === "pending");
+  // ── Pending Contractor Payments that aren't on any draw yet ────
+  // (If a pending payment is already on a submitted/approved draw it's
+  //  awaiting funding, not awaiting a draw request — don't list it here.)
+  const pendingPayments = payments.filter(
+    (p) => p.status === "pending" && p.draw_request_id === null,
+  );
 
   return (
     <div className="min-h-screen bg-gray-50">
