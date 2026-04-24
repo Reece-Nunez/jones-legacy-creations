@@ -32,6 +32,10 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  computeProjectFinancials,
+  sumProjectedProfit,
+} from "@/lib/finance/project-financials";
 
 // ── Helpers ─────────────────────────────────────────────────
 
@@ -199,35 +203,14 @@ export default async function AdminDashboard({
   );
   const overdueCount = overdueTasks.length;
 
-  // Total projected profit across all active projects.
-  // Profit = sale_price - total_costs - origination_fee - accrued_interest
-  //
-  // total_costs is the sum of ALL contractor payments on the project, not just
-  // those that have been drawn against. Previously this used "funded draws"
-  // as costs, which ignored any payment that was pending or on a
-  // submitted-but-not-yet-funded draw, inflating profit by that amount.
-  let totalProjectedProfit = 0;
-  let projectsWithProfit = 0;
-  for (const p of activeProjects) {
-    if (p.sale_price && p.sale_price > 0) {
-      const projectPayments = payments.filter((pm) => pm.project_id === p.id);
-      const totalCosts = projectPayments.reduce((s, pm) => s + (pm.amount || 0), 0);
-      const projectDrawsFunded = draws.filter((d) => d.project_id === p.id && d.status === "funded");
-      const loanAmt = p.loan_amount || 0;
-      const origFee = loanAmt * (p.origination_fee_percent || 2) / 100;
-      let interest = 0;
-      const rate = (p.interest_rate || 8.75) / 100;
-      for (const d of projectDrawsFunded) {
-        if (d.funded_date) {
-          const days = Math.max(0, (now.getTime() - new Date(d.funded_date).getTime()) / (1000 * 60 * 60 * 24));
-          interest += d.amount * rate * (days / 365);
-        }
-      }
-      const profit = p.sale_price - totalCosts - origFee - interest;
-      totalProjectedProfit += profit;
-      projectsWithProfit++;
-    }
-  }
+  // Total projected profit across all active projects — delegates to the
+  // shared helper so the dashboard can't drift from the Financials page.
+  // See lib/finance/project-financials.ts for the formula and invariants.
+  const activeFinancials = activeProjects.map((p) =>
+    computeProjectFinancials(p, payments, draws, now),
+  );
+  const totalProjectedProfit = sumProjectedProfit(activeFinancials);
+  const projectsWithProfit = activeFinancials.filter((f) => f.salePrice > 0).length;
 
   // Draws: funded vs pending
   const fundedDraws = draws.filter((d) => d.status === "funded");

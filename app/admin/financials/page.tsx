@@ -8,6 +8,11 @@ import type {
 } from "@/lib/types/database";
 import { DRAW_STATUS_COLORS } from "@/lib/types/database";
 import {
+  computeProjectFinancials,
+  sumProjectedProfit,
+  type ProjectFinancials,
+} from "@/lib/finance/project-financials";
+import {
   DollarSign,
   TrendingUp,
   TrendingDown,
@@ -58,45 +63,8 @@ function formatDate(iso: string | null): string {
   });
 }
 
-/** Calculate accrued interest for a project's funded draws (same logic as ProjectDetail) */
-function calcAccruedInterest(
-  project: Project,
-  projectDraws: DrawRequest[]
-): number {
-  const interestRate = project.interest_rate ?? 0;
-  if (!interestRate) return 0;
-
-  const fundedDraws = projectDraws
-    .filter((d) => d.status === "funded" && d.funded_date)
-    .sort(
-      (a, b) =>
-        new Date(a.funded_date!).getTime() - new Date(b.funded_date!).getTime()
-    );
-
-  if (fundedDraws.length === 0) return 0;
-
-  const endDate = project.end_date
-    ? new Date(project.end_date)
-    : new Date();
-
-  let interest = 0;
-  let runningBalance = 0;
-  for (let i = 0; i < fundedDraws.length; i++) {
-    const draw = fundedDraws[i];
-    const drawDate = new Date(draw.funded_date!);
-    runningBalance += draw.amount;
-    const nextDate =
-      i < fundedDraws.length - 1
-        ? new Date(fundedDraws[i + 1].funded_date!)
-        : endDate;
-    const days = Math.max(
-      0,
-      (nextDate.getTime() - drawDate.getTime()) / (1000 * 60 * 60 * 24)
-    );
-    interest += runningBalance * (interestRate / 100) * (days / 365);
-  }
-  return interest;
-}
+/* Accrued interest is computed by lib/finance/project-financials.ts —
+ * do not re-implement it here. See that file for the formula. */
 
 /* ------------------------------------------------------------------ */
 /*  Page                                                              */
@@ -130,69 +98,15 @@ export default async function FinancialsPage({
   // ── Active Projects (not archived) ──────────────────────────────
   const activeProjects = projects.filter((p) => p.status !== "archived");
 
-  // ── Per-project financials ──────────────────────────────────────
-  interface ProjectFinancials {
-    project: Project;
-    salePrice: number;
-    totalCosts: number;
-    loanAmount: number;
-    drawsFunded: number;
-    drawsPending: number;
-    totalDraws: number;
-    originationFeePercent: number;
-    originationFee: number;
-    interestRate: number;
-    accruedInterest: number;
-    projectedProfit: number;
-    profitMargin: number;
-  }
-
-  const projectFinancials: ProjectFinancials[] = activeProjects.map((p) => {
-    const projPayments = payments.filter((pm) => pm.project_id === p.id);
-    const projDraws = draws.filter((d) => d.project_id === p.id);
-
-    const salePrice = p.sale_price ?? 0;
-    const loanAmount = p.loan_amount ?? 0;
-    const originationFeePercent = p.origination_fee_percent ?? 0;
-    const interestRate = p.interest_rate ?? 0;
-
-    const totalCosts = projPayments.reduce((s, pm) => s + pm.amount, 0);
-
-    const drawsFunded = projDraws
-      .filter((d) => d.status === "funded")
-      .reduce((s, d) => s + d.amount, 0);
-    const drawsPending = projDraws
-      .filter((d) => d.status === "submitted" || d.status === "approved")
-      .reduce((s, d) => s + d.amount, 0);
-    const totalDraws = projDraws.reduce((s, d) => s + d.amount, 0);
-
-    const originationFee = (loanAmount * originationFeePercent) / 100;
-    const accruedInterest = calcAccruedInterest(p, projDraws);
-    const projectedProfit =
-      salePrice - totalCosts - originationFee - accruedInterest;
-    const profitMargin = salePrice > 0 ? projectedProfit / salePrice : 0;
-
-    return {
-      project: p,
-      salePrice,
-      totalCosts,
-      loanAmount,
-      drawsFunded,
-      drawsPending,
-      totalDraws,
-      originationFeePercent,
-      originationFee,
-      interestRate,
-      accruedInterest,
-      projectedProfit,
-      profitMargin,
-    };
-  });
+  // ── Per-project financials (uses shared helper — do not inline) ─
+  const projectFinancials: ProjectFinancials[] = activeProjects.map((p) =>
+    computeProjectFinancials(p, payments, draws),
+  );
 
   // Sort: projects with activity first, then by profit descending
   projectFinancials.sort((a, b) => {
-    const aHasActivity = a.totalCosts + a.totalDraws > 0;
-    const bHasActivity = b.totalCosts + b.totalDraws > 0;
+    const aHasActivity = a.totalCosts + a.drawsTotal > 0;
+    const bHasActivity = b.totalCosts + b.drawsTotal > 0;
     if (aHasActivity !== bHasActivity) return aHasActivity ? -1 : 1;
     return b.projectedProfit - a.projectedProfit;
   });
@@ -205,9 +119,7 @@ export default async function FinancialsPage({
   const totalPendingDraws = draws
     .filter((d) => d.status === "submitted" || d.status === "approved")
     .reduce((s, d) => s + d.amount, 0);
-  const totalProjectedProfit = projectFinancials
-    .filter((pf) => pf.salePrice > 0)
-    .reduce((s, pf) => s + pf.projectedProfit, 0);
+  const totalProjectedProfit = sumProjectedProfit(projectFinancials);
 
   // ── Draw Requests by Project ────────────────────────────────────
   const drawsByProject = new Map<
@@ -460,9 +372,9 @@ export default async function FinancialsPage({
                             </td>
                             <td className="py-3 pr-4 text-right tabular-nums text-gray-700">
                               {fmt(pf.drawsFunded)}
-                              {pf.totalDraws > 0 && (
+                              {pf.drawsTotal > 0 && (
                                 <span className="ml-1 text-xs text-gray-400">
-                                  / {fmt(pf.totalDraws)}
+                                  / {fmt(pf.drawsTotal)}
                                 </span>
                               )}
                             </td>

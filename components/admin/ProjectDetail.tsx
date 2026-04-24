@@ -106,6 +106,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SmartUpload from "@/components/admin/SmartUpload";
 import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
+import { computeAccruedInterest } from "@/lib/finance/project-financials";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -457,33 +458,9 @@ export default function ProjectDetail({
 
   const originationFee = loanAmount * originationFeePercent / 100;
 
-  // Accrued interest: per-draw method
-  const accruedInterest = (() => {
-    if (!interestRate) return 0;
-    const fundedDraws = drawRequests
-      .filter((d) => d.status === "funded" && d.funded_date)
-      .sort((a, b) => new Date(a.funded_date!).getTime() - new Date(b.funded_date!).getTime());
-    if (fundedDraws.length === 0) return 0;
-
-    const endDate = project.status === "completed" && project.end_date
-      ? new Date(project.end_date)
-      : new Date();
-
-    let interest = 0;
-    let runningBalance = 0;
-    for (let i = 0; i < fundedDraws.length; i++) {
-      const draw = fundedDraws[i];
-      runningBalance += draw.amount;
-      const drawDate = new Date(draw.funded_date!);
-      // Interest accrues from this draw's funded_date to the next draw's funded_date (or endDate)
-      const nextDate = i < fundedDraws.length - 1
-        ? new Date(fundedDraws[i + 1].funded_date!)
-        : endDate;
-      const days = Math.max(0, (nextDate.getTime() - drawDate.getTime()) / (1000 * 60 * 60 * 24));
-      interest += runningBalance * (interestRate / 100) * (days / 365);
-    }
-    return interest;
-  })();
+  // Accrued interest — shared helper, single source of truth.
+  // See lib/finance/project-financials.ts for the formula.
+  const accruedInterest = computeAccruedInterest(project, drawRequests);
 
   const totalLenderCost = originationFee + accruedInterest;
   // Down payment is collateral — Blake gets it back at closing, not a cost
