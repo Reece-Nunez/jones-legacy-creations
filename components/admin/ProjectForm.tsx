@@ -101,9 +101,18 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       lender_name: project?.lender_name ?? "",
       loan_amount: project?.loan_amount ? formatCurrencyInput(String(project.loan_amount)) : "",
       down_payment: project?.down_payment ? formatCurrencyInput(String(project.down_payment)) : "",
-      down_payment_percent: project?.down_payment_percent != null ? String(project.down_payment_percent) : "",
-      interest_rate: project?.interest_rate != null ? String(project.interest_rate) : "",
-      origination_fee_percent: project?.origination_fee_percent != null ? String(project.origination_fee_percent) : "",
+      // Defaults for external_loan: typical rates for the bank-financed builds
+      // Blake is used to. Cleared automatically if the user picks cash or
+      // seller_financed (see useEffect below).
+      down_payment_percent: project?.down_payment_percent != null
+        ? String(project.down_payment_percent)
+        : (project?.financing_type ?? "external_loan") === "external_loan" ? "20" : "",
+      interest_rate: project?.interest_rate != null
+        ? String(project.interest_rate)
+        : (project?.financing_type ?? "external_loan") === "external_loan" ? "8.75" : "",
+      origination_fee_percent: project?.origination_fee_percent != null
+        ? String(project.origination_fee_percent)
+        : (project?.financing_type ?? "external_loan") === "external_loan" ? "2" : "",
       loan_start_date: project?.loan_start_date ?? "",
       start_date: project?.start_date ?? "",
       end_date: project?.end_date ?? "",
@@ -156,6 +165,31 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       lastChangedBy.current = null;
     }
   }, [downPayment, loanAmount, setValue]);
+
+  // When the user switches financing_type, reconcile the rate fields.
+  //   -> external_loan: fill with Blake's typical defaults if currently empty
+  //   -> cash / seller_financed: clear — those rates don't apply (cash) or
+  //      are custom to the deal (seller_financed)
+  // Skips the very first render so we don't wipe values loaded from the DB.
+  const didInitFinancing = useRef(false);
+  useEffect(() => {
+    if (!didInitFinancing.current) {
+      didInitFinancing.current = true;
+      return;
+    }
+    if (financingType === "external_loan") {
+      const currIR = (watch("interest_rate") ?? "").trim();
+      const currOF = (watch("origination_fee_percent") ?? "").trim();
+      const currDP = (watch("down_payment_percent") ?? "").trim();
+      if (!currIR) setValue("interest_rate", "8.75");
+      if (!currOF) setValue("origination_fee_percent", "2");
+      if (!currDP) setValue("down_payment_percent", "20");
+    } else {
+      setValue("interest_rate", "");
+      setValue("origination_fee_percent", "");
+      setValue("down_payment_percent", "");
+    }
+  }, [financingType, setValue, watch]);
 
   const onSubmit = async (data: ProjectFormData) => {
     setIsSubmitting(true);
