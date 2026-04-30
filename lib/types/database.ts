@@ -45,14 +45,25 @@ export interface Contractor {
   w9_file_name: string | null;
   w9_qbo_uploaded_at: string | null;
   w9_qbo_extracted_at: string | null;
-  insurance_file_url: string | null;
-  insurance_file_name: string | null;
-  insurance_expiration_date: string | null;
+  // Insurance docs are now a one-to-many table — see ContractorInsuranceDocument.
   vendor_category: string | null;
   account_number: string | null;
   notes: string | null;
   created_at: string;
   updated_at: string;
+}
+
+export interface ContractorInsuranceDocument {
+  id: string;
+  contractor_id: string;
+  file_url: string;
+  file_name: string;
+  insurance_company: string | null;
+  policy_number: string | null;
+  coverage_type: string | null;
+  expiration_date: string | null;
+  uploaded_at: string;
+  created_at: string;
 }
 
 export interface Project {

@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Contractor, ContractorPayment, TRADES } from "@/lib/types/database";
+import { Contractor, ContractorInsuranceDocument, ContractorPayment, TRADES } from "@/lib/types/database";
 import ContractorForm from "./ContractorForm";
 import {
   ArrowLeft,
@@ -13,6 +13,7 @@ import {
   Wrench,
   Building2,
   Pencil,
+  Edit3,
   Trash2,
   DollarSign,
   Clock,
@@ -90,6 +91,7 @@ interface ContractorDetailProps {
   payments: PaymentWithProject[];
   allProjects: { id: string; name: string }[];
   projectAssignments: ProjectAssignment[];
+  insuranceDocs: ContractorInsuranceDocument[];
 }
 
 export default function ContractorDetail({
@@ -97,7 +99,9 @@ export default function ContractorDetail({
   payments,
   allProjects,
   projectAssignments,
+  insuranceDocs: initialInsuranceDocs,
 }: ContractorDetailProps) {
+  const [insuranceDocs, setInsuranceDocs] = useState(initialInsuranceDocs);
   const router = useRouter();
   const [contractor, setContractor] = useState(initialContractor);
   const [isEditing, setIsEditing] = useState(false);
@@ -108,8 +112,13 @@ export default function ContractorDetail({
   const [savingNotes, setSavingNotes] = useState(false);
   const [w9Uploading, setW9Uploading] = useState(false);
   const [insuranceUploading, setInsuranceUploading] = useState(false);
-  const [editingInsuranceExp, setEditingInsuranceExp] = useState(false);
-  const [insuranceExp, setInsuranceExp] = useState(contractor.insurance_expiration_date ?? "");
+  const [editingInsuranceDocId, setEditingInsuranceDocId] = useState<string | null>(null);
+  const [insuranceEditForm, setInsuranceEditForm] = useState({
+    insurance_company: "",
+    policy_number: "",
+    coverage_type: "",
+    expiration_date: "",
+  });
   const [linkingProject, setLinkingProject] = useState(false);
   const [selectedProjectId, setSelectedProjectId] = useState("");
   const [showDDModal, setShowDDModal] = useState(false);
@@ -718,185 +727,120 @@ export default function ContractorDetail({
           </Card>
         )}
 
-        {/* Proof of Insurance */}
-        {!isVendor && (
-          <Card className="mb-8 shadow-sm">
-            <CardContent className="pt-6">
-              <h2 className="mb-4 text-sm font-semibold uppercase tracking-wider text-gray-400">
-                Proof of Insurance
-              </h2>
-              {(() => {
-                const today = new Date();
-                today.setHours(0, 0, 0, 0);
-                const expDate = contractor.insurance_expiration_date
-                  ? new Date(contractor.insurance_expiration_date)
-                  : null;
-                const isExpired = expDate ? expDate < today : false;
-                const daysUntilExp = expDate
-                  ? Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
-                  : null;
-                const expiringSoon = daysUntilExp !== null && daysUntilExp >= 0 && daysUntilExp <= 30;
+        {/* Proof of Insurance — one-to-many: a contractor may carry multiple
+            policies (general liability, workers comp, auto) with different carriers. */}
+        {!isVendor && (() => {
+          const today = new Date();
+          today.setHours(0, 0, 0, 0);
 
-                async function uploadInsurance(file: File) {
-                  setInsuranceUploading(true);
-                  try {
-                    const supabase = createClient();
-                    const storagePath = `${contractor.id}/insurance/${Date.now()}-${sanitizeFilename(file.name)}`;
-                    const { error: uploadError } = await supabase.storage
-                      .from("contractor-w9")
-                      .upload(storagePath, file, { contentType: file.type });
-                    if (uploadError) throw uploadError;
-                    const { data: urlData } = supabase.storage
-                      .from("contractor-w9")
-                      .getPublicUrl(storagePath);
-                    const res = await fetch(`/api/admin/contractors/${contractor.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({
-                        insurance_file_url: urlData.publicUrl,
-                        insurance_file_name: file.name,
-                      }),
-                    });
-                    if (!res.ok) throw new Error("Failed to update");
-                    const updated = await res.json();
-                    setContractor(updated);
-                    toast.success("Insurance uploaded");
-                  } catch {
-                    toast.error("Failed to upload insurance");
-                  } finally {
-                    setInsuranceUploading(false);
-                  }
-                }
+          async function uploadInsurance(file: File) {
+            setInsuranceUploading(true);
+            try {
+              const fd = new FormData();
+              fd.append("file", file);
+              const res = await fetch(`/api/admin/contractors/${contractor.id}/insurance`, {
+                method: "POST",
+                body: fd,
+              });
+              if (!res.ok) throw new Error("Failed to upload");
+              const result = await res.json();
+              setInsuranceDocs((prev) => [...prev, result.document]);
+              toast.success(
+                result.ai_extracted?.insurance_company
+                  ? `Uploaded — extracted ${result.ai_extracted.insurance_company}`
+                  : "Insurance uploaded",
+              );
+            } catch {
+              toast.error("Failed to upload insurance");
+            } finally {
+              setInsuranceUploading(false);
+            }
+          }
 
-                async function saveInsuranceExp() {
-                  try {
-                    const res = await fetch(`/api/admin/contractors/${contractor.id}`, {
-                      method: "PATCH",
-                      headers: { "Content-Type": "application/json" },
-                      body: JSON.stringify({ insurance_expiration_date: insuranceExp || null }),
-                    });
-                    if (!res.ok) throw new Error("Failed");
-                    const updated = await res.json();
-                    setContractor(updated);
-                    setEditingInsuranceExp(false);
-                    toast.success("Expiration updated");
-                  } catch {
-                    toast.error("Failed to update expiration");
-                  }
-                }
+          function startEditInsuranceDoc(doc: ContractorInsuranceDocument) {
+            setEditingInsuranceDocId(doc.id);
+            setInsuranceEditForm({
+              insurance_company: doc.insurance_company ?? "",
+              policy_number: doc.policy_number ?? "",
+              coverage_type: doc.coverage_type ?? "",
+              expiration_date: doc.expiration_date ?? "",
+            });
+          }
 
-                return contractor.insurance_file_url ? (
-                  <div className="space-y-2">
-                    <div
-                      className={`flex items-center gap-3 rounded-lg border px-4 py-3 ${
-                        isExpired
-                          ? "border-red-200 bg-red-50"
-                          : expiringSoon
-                          ? "border-amber-200 bg-amber-50"
-                          : "border-green-200 bg-green-50"
-                      }`}
-                    >
-                      <FileText
-                        className={`h-5 w-5 shrink-0 ${
-                          isExpired ? "text-red-600" : expiringSoon ? "text-amber-600" : "text-green-600"
-                        }`}
-                      />
-                      <a
-                        href={contractor.insurance_file_url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className={`flex-1 text-sm font-medium truncate underline underline-offset-2 ${
-                          isExpired
-                            ? "text-red-700 decoration-red-400 hover:text-red-900"
-                            : expiringSoon
-                            ? "text-amber-700 decoration-amber-400 hover:text-amber-900"
-                            : "text-green-700 decoration-green-400 hover:text-green-900"
-                        }`}
-                      >
-                        {contractor.insurance_file_name || "View insurance"}
-                      </a>
-                      <label className="cursor-pointer text-xs text-gray-500 hover:text-gray-700 shrink-0">
-                        {insuranceUploading ? "Uploading..." : "Replace"}
-                        <input
-                          type="file"
-                          accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                          className="hidden"
-                          disabled={insuranceUploading}
-                          onChange={(e) => {
-                            const f = e.target.files?.[0];
-                            if (f) uploadInsurance(f);
-                          }}
-                        />
-                      </label>
-                    </div>
-                    <div className="flex items-center gap-3 flex-wrap px-1 text-xs">
-                      <span className="text-gray-500">Expiration:</span>
-                      {editingInsuranceExp ? (
-                        <>
-                          <input
-                            type="date"
-                            value={insuranceExp}
-                            onChange={(e) => setInsuranceExp(e.target.value)}
-                            className="rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                          />
-                          <button
-                            onClick={saveInsuranceExp}
-                            className="rounded bg-black px-2 py-1 text-xs text-white hover:bg-gray-800"
-                          >
-                            Save
-                          </button>
-                          <button
-                            onClick={() => {
-                              setEditingInsuranceExp(false);
-                              setInsuranceExp(contractor.insurance_expiration_date ?? "");
-                            }}
-                            className="text-xs text-gray-500 hover:text-gray-700"
-                          >
-                            Cancel
-                          </button>
-                        </>
-                      ) : (
-                        <>
-                          <button
-                            onClick={() => setEditingInsuranceExp(true)}
-                            className="font-medium text-gray-700 underline decoration-gray-300 underline-offset-2 hover:text-black"
-                          >
-                            {contractor.insurance_expiration_date ?? "Set expiration date"}
-                          </button>
-                          {isExpired && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2.5 py-0.5 text-xs font-medium text-white">
-                              <AlertTriangle className="h-3 w-3" />
-                              Expired
-                            </span>
-                          )}
-                          {expiringSoon && (
-                            <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2.5 py-0.5 text-xs font-medium text-white">
-                              <AlertTriangle className="h-3 w-3" />
-                              Expires in {daysUntilExp} day{daysUntilExp === 1 ? "" : "s"}
-                            </span>
-                          )}
-                        </>
-                      )}
-                    </div>
+          async function saveInsuranceDoc(docId: string) {
+            try {
+              const res = await fetch(
+                `/api/admin/contractors/${contractor.id}/insurance/${docId}`,
+                {
+                  method: "PATCH",
+                  headers: { "Content-Type": "application/json" },
+                  body: JSON.stringify(insuranceEditForm),
+                },
+              );
+              if (!res.ok) throw new Error("Failed");
+              const updated: ContractorInsuranceDocument = await res.json();
+              setInsuranceDocs((prev) =>
+                prev.map((d) => (d.id === docId ? updated : d)),
+              );
+              setEditingInsuranceDocId(null);
+              toast.success("Insurance updated");
+            } catch {
+              toast.error("Failed to update");
+            }
+          }
+
+          async function deleteInsuranceDoc(docId: string) {
+            const doc = insuranceDocs.find((d) => d.id === docId);
+            if (!doc) return;
+            const confirmed = await new Promise<boolean>((resolve) => {
+              toast(
+                (t) => (
+                  <div className="flex items-center gap-2">
+                    <span>Delete {doc.insurance_company || doc.file_name}?</span>
+                    <button
+                      onClick={() => { toast.dismiss(t.id); resolve(true); }}
+                      className="rounded bg-red-600 px-2 py-1 text-xs text-white hover:bg-red-700"
+                    >Delete</button>
+                    <button
+                      onClick={() => { toast.dismiss(t.id); resolve(false); }}
+                      className="rounded bg-gray-200 px-2 py-1 text-xs text-gray-800 hover:bg-gray-300"
+                    >Cancel</button>
                   </div>
-                ) : (
-                  <label
-                    className={`flex w-full cursor-pointer items-center justify-center gap-2 rounded-lg border-2 border-dashed px-4 py-4 text-sm font-medium transition-colors ${
-                      insuranceUploading
-                        ? "border-gray-200 bg-gray-50"
-                        : "border-gray-300 bg-gray-50 hover:border-indigo-400 hover:bg-indigo-50"
-                    }`}
-                    style={{ minHeight: 44 }}
-                  >
+                ),
+                { duration: Infinity },
+              );
+            });
+            if (!confirmed) return;
+            try {
+              const res = await fetch(
+                `/api/admin/contractors/${contractor.id}/insurance/${docId}`,
+                { method: "DELETE" },
+              );
+              if (!res.ok) throw new Error("Failed");
+              setInsuranceDocs((prev) => prev.filter((d) => d.id !== docId));
+              toast.success("Insurance removed");
+            } catch {
+              toast.error("Failed to delete");
+            }
+          }
+
+          return (
+            <Card className="mb-8 shadow-sm">
+              <CardContent className="pt-6">
+                <div className="mb-4 flex items-center justify-between">
+                  <h2 className="text-sm font-semibold uppercase tracking-wider text-gray-400">
+                    Proof of Insurance
+                  </h2>
+                  <label className="inline-flex cursor-pointer items-center gap-1.5 rounded-md bg-black px-3 py-1.5 text-xs font-medium text-white hover:bg-gray-800 disabled:opacity-50 transition-colors">
                     {insuranceUploading ? (
                       <>
-                        <Loader2 className="h-4 w-4 animate-spin text-gray-500" />
-                        <span className="text-gray-500">Uploading...</span>
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        Uploading...
                       </>
                     ) : (
                       <>
-                        <Upload className="h-4 w-4 text-gray-600" />
-                        <span className="text-gray-700">Upload proof of insurance</span>
+                        <Upload className="h-3.5 w-3.5" />
+                        Add Insurance Doc
                       </>
                     )}
                     <input
@@ -907,14 +851,166 @@ export default function ContractorDetail({
                       onChange={(e) => {
                         const f = e.target.files?.[0];
                         if (f) uploadInsurance(f);
+                        e.target.value = "";
                       }}
                     />
                   </label>
-                );
-              })()}
-            </CardContent>
-          </Card>
-        )}
+                </div>
+
+                {insuranceDocs.length === 0 ? (
+                  <p className="text-sm text-gray-400 py-4 text-center">
+                    No insurance docs uploaded yet. Add one — AI will read the carrier, policy #, and expiration.
+                  </p>
+                ) : (
+                  <div className="space-y-2">
+                    {insuranceDocs.map((doc) => {
+                      const expDate = doc.expiration_date ? new Date(doc.expiration_date) : null;
+                      const isExpired = expDate ? expDate < today : false;
+                      const daysUntilExp = expDate
+                        ? Math.ceil((expDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24))
+                        : null;
+                      const expiringSoon = daysUntilExp !== null && daysUntilExp >= 0 && daysUntilExp <= 30;
+                      const isEditing = editingInsuranceDocId === doc.id;
+
+                      const borderClass = isExpired
+                        ? "border-red-200 bg-red-50"
+                        : expiringSoon
+                        ? "border-amber-200 bg-amber-50"
+                        : expDate
+                        ? "border-green-200 bg-green-50"
+                        : "border-gray-200 bg-gray-50";
+                      const iconClass = isExpired
+                        ? "text-red-600"
+                        : expiringSoon
+                        ? "text-amber-600"
+                        : expDate
+                        ? "text-green-600"
+                        : "text-gray-500";
+
+                      return (
+                        <div key={doc.id} className={`rounded-lg border px-4 py-3 ${borderClass}`}>
+                          <div className="flex items-start gap-3">
+                            <FileText className={`h-5 w-5 shrink-0 mt-0.5 ${iconClass}`} />
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <a
+                                  href={doc.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-sm font-medium text-gray-900 hover:underline truncate"
+                                >
+                                  {doc.insurance_company || doc.file_name}
+                                </a>
+                                {doc.coverage_type && (
+                                  <span className="inline-flex items-center rounded-full bg-white px-2 py-0.5 text-[10px] font-medium text-gray-700 border border-gray-200">
+                                    {doc.coverage_type}
+                                  </span>
+                                )}
+                                {isExpired && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-red-600 px-2 py-0.5 text-[10px] font-medium text-white">
+                                    <AlertTriangle className="h-3 w-3" /> Expired
+                                  </span>
+                                )}
+                                {expiringSoon && (
+                                  <span className="inline-flex items-center gap-1 rounded-full bg-amber-500 px-2 py-0.5 text-[10px] font-medium text-white">
+                                    <AlertTriangle className="h-3 w-3" /> {daysUntilExp}d left
+                                  </span>
+                                )}
+                              </div>
+                              <div className="flex flex-wrap gap-x-4 gap-y-0.5 text-xs text-gray-500 mt-0.5">
+                                {doc.policy_number && <span>Policy #{doc.policy_number}</span>}
+                                {doc.expiration_date && <span>Expires {doc.expiration_date}</span>}
+                                <a
+                                  href={doc.file_url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 hover:underline truncate"
+                                >
+                                  {doc.file_name}
+                                </a>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1 shrink-0">
+                              <button
+                                aria-label="Edit"
+                                title="Edit"
+                                onClick={() => isEditing ? setEditingInsuranceDocId(null) : startEditInsuranceDoc(doc)}
+                                className={`p-1 cursor-pointer transition-colors ${isEditing ? "text-blue-600" : "text-gray-400 hover:text-blue-600"}`}
+                              >
+                                <Edit3 className="h-3.5 w-3.5" />
+                              </button>
+                              <button
+                                aria-label="Delete"
+                                title="Delete"
+                                onClick={() => deleteInsuranceDoc(doc.id)}
+                                className="p-1 text-gray-400 hover:text-red-600 cursor-pointer transition-colors"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
+                            </div>
+                          </div>
+
+                          {isEditing && (
+                            <div className="mt-3 pt-3 border-t border-white/60 grid grid-cols-1 sm:grid-cols-2 gap-2">
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Insurance Company</label>
+                                <input
+                                  value={insuranceEditForm.insurance_company}
+                                  onChange={(e) => setInsuranceEditForm((f) => ({ ...f, insurance_company: e.target.value }))}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Coverage Type</label>
+                                <input
+                                  value={insuranceEditForm.coverage_type}
+                                  onChange={(e) => setInsuranceEditForm((f) => ({ ...f, coverage_type: e.target.value }))}
+                                  placeholder="General Liability, Workers Comp, etc."
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Policy #</label>
+                                <input
+                                  value={insuranceEditForm.policy_number}
+                                  onChange={(e) => setInsuranceEditForm((f) => ({ ...f, policy_number: e.target.value }))}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-xs text-gray-500 mb-0.5">Expiration Date</label>
+                                <input
+                                  type="date"
+                                  value={insuranceEditForm.expiration_date}
+                                  onChange={(e) => setInsuranceEditForm((f) => ({ ...f, expiration_date: e.target.value }))}
+                                  className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300 bg-white"
+                                />
+                              </div>
+                              <div className="sm:col-span-2 flex gap-1.5">
+                                <button
+                                  onClick={() => saveInsuranceDoc(doc.id)}
+                                  className="rounded bg-black px-3 py-1 text-xs text-white hover:bg-gray-800"
+                                >
+                                  Save
+                                </button>
+                                <button
+                                  onClick={() => setEditingInsuranceDocId(null)}
+                                  className="rounded bg-gray-100 px-3 py-1 text-xs text-gray-700 hover:bg-gray-200"
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          );
+        })()}
 
         {/* Notes */}
         <Card className="mb-8 shadow-sm">
