@@ -130,6 +130,21 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     return "bg-gray-500";
   }
 
+  function getBadgeTooltip(badgeKey?: string) {
+    const count = getBadgeCount(badgeKey);
+    if (!count) return null;
+    if (badgeKey === "estimates") return `${count} new estimate${count === 1 ? "" : "s"} awaiting review`;
+    if (badgeKey === "w9") return `${count} contractor${count === 1 ? "" : "s"} missing W-9`;
+    if (badgeKey === "details") return `${count} project${count === 1 ? "" : "s"} missing details (square footage)`;
+    if (badgeKey === "quotes") return `${count} draft quote${count === 1 ? "" : "s"} in progress`;
+    return null;
+  }
+
+  function getNavTitle(label: string, badgeKey?: string) {
+    const tip = getBadgeTooltip(badgeKey);
+    return tip ? `${label} — ${tip}` : label;
+  }
+
   function renderBadge(badgeKey?: string) {
     const count = getBadgeCount(badgeKey);
     if (!count) return null;
@@ -202,6 +217,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               key={link.href}
               href={link.href}
               onClick={() => setSidebarOpen(false)}
+              title={getNavTitle(link.label, link.badgeKey)}
               aria-current={active ? "page" : undefined}
               className={`flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
                 active ? "bg-slate-700/80 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -300,7 +316,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   <Link
                     key={link.href}
                     href={link.href}
-                    title={link.label}
+                    title={getNavTitle(link.label, link.badgeKey)}
                     aria-current={active ? "page" : undefined}
                     className={`relative flex items-center justify-center h-10 w-full rounded-lg transition-colors duration-150 ${
                       active ? "bg-slate-700/80 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"
@@ -408,6 +424,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
                   <Link
                     key={link.href}
                     href={link.href}
+                    title={getNavTitle(link.label, link.badgeKey)}
                     aria-current={active ? "page" : undefined}
                     className={`flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
                       active ? "bg-slate-700/80 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
@@ -530,6 +547,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               <Link
                 key={link.href}
                 href={link.href}
+                title={getNavTitle(link.label, link.badgeKey)}
+                aria-label={getNavTitle(link.label, link.badgeKey)}
                 className={`flex flex-1 flex-col items-center gap-0.5 py-2 pt-2.5 text-[10px] font-medium transition-colors ${
                   active ? "text-indigo-600" : "text-gray-400 active:text-gray-600"
                 }`}
