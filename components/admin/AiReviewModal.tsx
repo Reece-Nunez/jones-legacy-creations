@@ -72,10 +72,16 @@ export function AiReviewModal({
   isLoading,
 }: AiReviewModalProps) {
   const [editedData, setEditedData] = useState<ExtractedDocumentData>(data);
+  // Parallel stable keys for line items so React reconciliation doesn't reuse
+  // an input across rows when one is removed.
+  const [lineItemKeys, setLineItemKeys] = useState<string[]>(() =>
+    (data.line_items ?? []).map(() => crypto.randomUUID())
+  );
 
   // Re-initialize when data changes (new extraction)
   useEffect(() => {
     setEditedData(data);
+    setLineItemKeys((data.line_items ?? []).map(() => crypto.randomUUID()));
   }, [data]);
 
   // Close on Escape
@@ -130,6 +136,7 @@ export function AiReviewModal({
       ...prev,
       line_items: prev.line_items.filter((_, i) => i !== index),
     }));
+    setLineItemKeys((prev) => prev.filter((_, i) => i !== index));
   }, []);
 
   const handleConfirm = () => {
@@ -359,7 +366,7 @@ export function AiReviewModal({
                 {/* Table Rows */}
                 {editedData.line_items.map((item, index) => (
                   <div
-                    key={index}
+                    key={lineItemKeys[index] ?? index}
                     className="grid grid-cols-[1fr_60px_80px_80px_32px] gap-1 px-2 py-1 border-t border-gray-100 items-center"
                   >
                     <input

@@ -145,12 +145,15 @@ export default function ContractorDetail({
       const res = await fetch(`/api/admin/contractors/${contractor.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to delete");
+      }
       toast.success(`${entityLabel} deleted`);
       router.push("/admin/contractors");
       router.refresh();
-    } catch {
-      toast.error(`Failed to delete ${entityLabel.toLowerCase()}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : `Failed to delete ${entityLabel.toLowerCase()}`);
     } finally {
       setIsDeleting(false);
       setShowDeleteConfirm(false);
@@ -165,13 +168,16 @@ export default function ContractorDetail({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ notes: notes || null }),
       });
-      if (!res.ok) throw new Error("Failed to save");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to save");
+      }
       const updated = await res.json();
       setContractor(updated);
       setEditingNotes(false);
       toast.success("Notes saved");
-    } catch {
-      toast.error("Failed to save notes");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save notes");
     } finally {
       setSavingNotes(false);
     }
@@ -188,7 +194,11 @@ export default function ContractorDetail({
         setContractor((prev) => ({ ...prev, w9_qbo_uploaded_at: new Date().toISOString() }));
         return true;
       }
-    } catch { /* ignore */ }
+      const body = await res.json().catch(() => ({}));
+      toast(body.error || "QuickBooks W-9 sync failed", { icon: "⚠️" });
+    } catch (err) {
+      toast(err instanceof Error ? err.message : "QuickBooks W-9 sync failed", { icon: "⚠️" });
+    }
     return false;
   }
 

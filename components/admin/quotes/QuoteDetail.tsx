@@ -1649,15 +1649,26 @@ function RevisionsTab({
 }) {
   const [revisions, setRevisions] = useState<QuoteRevision[]>([]);
   const [loaded, setLoaded] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
+    setLoadError(null);
     fetch(`/api/admin/quotes/${quote.id}/revisions`)
-      .then((r) => r.json())
+      .then(async (r) => {
+        if (!r.ok) {
+          const body = await r.json().catch(() => ({}));
+          throw new Error(body.error || "Failed to load revisions");
+        }
+        return r.json();
+      })
       .then((data) => {
         setRevisions(Array.isArray(data) ? data : []);
         setLoaded(true);
       })
-      .catch(() => setLoaded(true));
+      .catch((err) => {
+        setLoadError(err instanceof Error ? err.message : "Failed to load revisions");
+        setLoaded(true);
+      });
   }, [quote.id, quote.revision_number]);
 
   return (
@@ -1687,6 +1698,8 @@ function RevisionsTab({
       <Card title="Revision History">
         {!loaded ? (
           <p className="text-sm text-gray-400">Loading...</p>
+        ) : loadError ? (
+          <p className="text-sm text-red-600">{loadError}</p>
         ) : revisions.length > 0 ? (
           <div className="divide-y divide-gray-200">
             {revisions.map((rev) => (

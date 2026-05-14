@@ -385,7 +385,9 @@ export default function ProjectDetail({
           if (Array.isArray(data.items)) setProgressItems(data.items);
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Failed to load project progress", err);
+      });
   }, [project.id, documents, budgetLineItems]);
 
   // ---- financial calculations -------------------------------------------
@@ -6126,7 +6128,9 @@ function TasksTab({
     fetch("/api/admin/team")
       .then((res) => res.json())
       .then((data) => { if (Array.isArray(data)) setTeamMembers(data); })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Failed to load team list", err);
+      });
   }, []);
 
   function startEditTask(t: Task) {

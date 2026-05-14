@@ -126,7 +126,10 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(data),
     });
-    if (!res.ok) throw new Error("Failed to update");
+    if (!res.ok) {
+      const body = await res.json().catch(() => ({}));
+      throw new Error(body.error || "Failed to update");
+    }
     return res.json();
   }
 
@@ -135,8 +138,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
     try {
       await patchEstimate({ status: "reviewed" });
       onUpdate();
-    } catch {
-      toast.error("Failed to update status");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update status");
     } finally {
       setActionLoading(null);
     }
@@ -148,8 +151,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
     try {
       await patchEstimate({ status: "declined" });
       onUpdate();
-    } catch {
-      toast.error("Failed to update status");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to update status");
     } finally {
       setActionLoading(null);
     }
@@ -202,8 +205,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
       );
       setTimeout(() => setConvertedSuccess(false), 6000);
       onUpdate();
-    } catch {
-      toast.error("Failed to convert estimate to project");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to convert estimate to project");
     } finally {
       setActionLoading(null);
     }
@@ -213,8 +216,8 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
     setSaving(true);
     try {
       await patchEstimate({ notes });
-    } catch {
-      toast.error("Failed to save notes");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to save notes");
     } finally {
       setSaving(false);
     }
@@ -227,10 +230,13 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
       const res = await fetch(`/api/admin/estimates/${estimate.id}`, {
         method: "DELETE",
       });
-      if (!res.ok) throw new Error("Failed to delete");
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to delete");
+      }
       onUpdate();
-    } catch {
-      toast.error("Failed to delete estimate");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete estimate");
     } finally {
       setActionLoading(null);
     }

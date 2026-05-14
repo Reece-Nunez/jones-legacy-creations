@@ -56,6 +56,7 @@ export function SimpleQuoteEditor({
 
   const buildDefaultItems = useCallback((): SimpleQuoteItem[] => {
     return defaults.trades.map((t) => ({
+      id: crypto.randomUUID(),
       trade: t.trade,
       cost: 0,
       isOwnerPurchase: false,
@@ -63,8 +64,11 @@ export function SimpleQuoteEditor({
     }));
   }, [defaults]);
 
+  const ensureIds = (xs: SimpleQuoteItem[]): SimpleQuoteItem[] =>
+    xs.map((x) => (x.id ? x : { ...x, id: crypto.randomUUID() }));
+
   const [items, setItems] = useState<SimpleQuoteItem[]>(
-    initialItems && initialItems.length > 0 ? initialItems : buildDefaultItems()
+    initialItems && initialItems.length > 0 ? ensureIds(initialItems) : buildDefaultItems()
   );
   const [saving, setSaving] = useState(false);
 
@@ -81,7 +85,9 @@ export function SimpleQuoteEditor({
     fetch("/api/admin/custom-trades")
       .then((r) => r.ok ? r.json() : [])
       .then(setCustomTrades)
-      .catch(() => {});
+      .catch((err) => {
+        console.warn("Failed to load custom trades", err);
+      });
   }, []);
 
   // Close picker on outside click
@@ -105,7 +111,7 @@ export function SimpleQuoteEditor({
 
   const addCustomTrade = (trade: CustomTrade) => {
     setItems((prev) => {
-      const next = [...prev, { trade: trade.trade_name, cost: 0, isOwnerPurchase: false, note: "" }];
+      const next = [...prev, { id: crypto.randomUUID(), trade: trade.trade_name, cost: 0, isOwnerPurchase: false, note: "" }];
       onChange?.(next);
       return next;
     });
@@ -132,7 +138,9 @@ export function SimpleQuoteEditor({
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ trade_name: item.trade.trim() }),
-      }).catch(() => {});
+      }).catch((err) => {
+        console.warn("Failed to save custom trade to library", err);
+      });
     }
 
     // Also bump usage_count for existing custom trades that were used
@@ -142,7 +150,9 @@ export function SimpleQuoteEditor({
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ trade_name: item.trade.trim() }),
-        }).catch(() => {});
+        }).catch((err) => {
+          console.warn("Failed to bump custom-trade usage", err);
+        });
       }
     }
   };
@@ -157,7 +167,7 @@ export function SimpleQuoteEditor({
 
   const addItem = () => {
     setItems((prev) => {
-      const next = [...prev, { trade: "", cost: 0, isOwnerPurchase: false, note: "" }];
+      const next = [...prev, { id: crypto.randomUUID(), trade: "", cost: 0, isOwnerPurchase: false, note: "" }];
       onChange?.(next);
       return next;
     });
@@ -216,7 +226,7 @@ export function SimpleQuoteEditor({
       <div className="divide-y divide-gray-100">
         {items.map((item, index) => (
           <div
-            key={index}
+            key={item.id ?? index}
             className={cn(
               "group flex flex-col sm:flex-row sm:items-center gap-2 py-2 px-1",
               item.cost === 0 && "opacity-50"
