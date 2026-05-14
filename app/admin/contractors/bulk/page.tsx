@@ -196,8 +196,134 @@ export default function BulkAddPage() {
           ))}
         </div>
 
-        {/* Bulk Entry Table */}
-        <div className="rounded-xl bg-white shadow-sm overflow-hidden">
+        {/* Mobile card list */}
+        <div className="md:hidden space-y-4">
+          {rows.map((row, idx) => (
+            <div
+              key={row.id}
+              className="rounded-xl bg-white shadow-sm p-4 space-y-3"
+            >
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-semibold uppercase tracking-wider text-gray-500">
+                  {bulkType === "contractor" ? "Contractor" : "Vendor"} #{idx + 1}
+                </span>
+                {rows.length > 1 && (
+                  <button
+                    type="button"
+                    onClick={() => removeRow(row.id)}
+                    className="h-10 w-10 flex items-center justify-center rounded text-gray-400 hover:text-red-500"
+                    aria-label="Remove row"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                )}
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">
+                  {bulkType === "vendor" ? "Contact Name" : "Name"} *
+                </label>
+                <input
+                  type="text"
+                  placeholder={bulkType === "vendor" ? "Rep name" : "John Smith"}
+                  value={row.name}
+                  onChange={(e) => updateRow(row.id, "name", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-500 mb-1">Company</label>
+                <input
+                  type="text"
+                  placeholder={bulkType === "vendor" ? "ABC Lumber" : "Smith LLC"}
+                  value={row.company}
+                  onChange={(e) => updateRow(row.id, "company", e.target.value)}
+                  className={inputClass}
+                />
+              </div>
+              {bulkType === "contractor" ? (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Trade *</label>
+                  <select
+                    value={row.trade}
+                    onChange={(e) => updateRow(row.id, "trade", e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">Select...</option>
+                    {TRADES.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+              ) : (
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Category</label>
+                  <select
+                    value={row.vendor_category}
+                    onChange={(e) => updateRow(row.id, "vendor_category", e.target.value)}
+                    className={selectClass}
+                  >
+                    <option value="">Select...</option>
+                    {DEFAULT_VENDOR_CATEGORIES.map((c) => (
+                      <option key={c} value={c}>{c}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
+              <div className="grid grid-cols-1 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Email</label>
+                  <input
+                    type="email"
+                    placeholder="email@example.com"
+                    value={row.email}
+                    onChange={(e) => updateRow(row.id, "email", e.target.value)}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">Phone</label>
+                  <input
+                    type="text"
+                    placeholder="(435) 555-0100"
+                    value={row.phone}
+                    onChange={(e) => updateRow(row.id, "phone", formatPhoneNumber(e.target.value))}
+                    className={inputClass}
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-500 mb-1">
+                    {bulkType === "contractor" ? "License #" : "Account #"}
+                  </label>
+                  <input
+                    type="text"
+                    placeholder={bulkType === "contractor" ? "UT-12345" : "ACCT-123"}
+                    value={bulkType === "contractor" ? row.license_number : row.account_number}
+                    onChange={(e) =>
+                      updateRow(
+                        row.id,
+                        bulkType === "contractor" ? "license_number" : "account_number",
+                        e.target.value
+                      )
+                    }
+                    className={inputClass}
+                  />
+                </div>
+              </div>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={() => addRows(1)}
+            className="w-full inline-flex items-center justify-center gap-2 rounded-xl bg-white shadow-sm py-3 text-sm font-medium text-indigo-600 hover:bg-indigo-50"
+            style={{ minHeight: 48 }}
+          >
+            <Plus className="h-4 w-4" />
+            Add Row
+          </button>
+        </div>
+
+        {/* Desktop table */}
+        <div className="hidden md:block rounded-xl bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full">
               <thead>

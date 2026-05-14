@@ -77,11 +77,14 @@ export default async function AdminProjectsPage({
   const { status: statusFilter, type: typeFilter, q: searchQuery } = await searchParams;
   const supabase = await createClient();
 
-  // Fetch all projects ordered by most recently updated
+  // Fetch projects ordered by most recently updated. Capped at 1000 so the
+  // page payload stays bounded; revisit with cursor pagination if Blake's
+  // active project count approaches the cap.
   const { data } = await supabase
     .from("projects")
     .select("*")
-    .order("updated_at", { ascending: false });
+    .order("updated_at", { ascending: false })
+    .limit(1000);
 
   const projects: Project[] = data ?? [];
 

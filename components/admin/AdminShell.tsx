@@ -50,6 +50,7 @@ const mobileTabLinks = [
 const quickLinks = [
   { label: "Pending Draws", href: "/admin/pending-draws", icon: Banknote },
   { label: "Pending Permits", href: "/admin/pending-permits", icon: FileCheck },
+  { label: "Detailed Quotes", href: "/admin/detailedquotes", icon: ClipboardList },
   { label: "Back to Site", href: "/", icon: Globe, external: true },
 ];
 
@@ -83,6 +84,9 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     });
   }
 
+  // Badge counts: fetch once on mount, then poll every 30s. We deliberately
+  // don't include `pathname` here — every navigation would otherwise refire
+  // the four count queries on top of the running interval.
   useEffect(() => {
     const supabase = createClient();
 
@@ -102,7 +106,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     fetchBadgeCounts();
     const interval = setInterval(fetchBadgeCounts, 30000);
     return () => clearInterval(interval);
-  }, [pathname]);
+  }, []);
 
   async function handleSignOut() {
     const supabase = createClient();

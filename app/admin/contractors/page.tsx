@@ -59,11 +59,15 @@ export default async function ContractorsPage({
   const { q, trade, type } = await searchParams;
   const supabase = await createClient();
 
-  // Fetch contractors and payments in parallel
+  // Fetch contractors and payments in parallel. Contractor list is capped
+  // at 1000 to bound the page payload; revisit if the directory grows past
+  // that. Payments are NOT capped because they feed totalPaid aggregates
+  // below — a silent cap would understate contractor totals.
   let contractorsQuery = supabase
     .from("contractors")
     .select("*")
-    .order("name", { ascending: true });
+    .order("name", { ascending: true })
+    .limit(1000);
 
   if (q) {
     contractorsQuery = contractorsQuery.or(

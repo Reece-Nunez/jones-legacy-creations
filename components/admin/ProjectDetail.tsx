@@ -374,6 +374,9 @@ export default function ProjectDetail({
   const [cashProgressItems, setCashProgressItems] = useState<CashProgressItem[]>([]);
   const [completionPercent, setCompletionPercent] = useState(0);
 
+  // Refetch progress when the project's document/budget COUNTS change.
+  // Depending on the array identities re-fires this effect on every parent
+  // re-render (since they're props recreated each render), causing a loop.
   useEffect(() => {
     fetch(`/api/admin/projects/${project.id}/progress`)
       .then(r => r.json())
@@ -388,7 +391,7 @@ export default function ProjectDetail({
       .catch((err) => {
         console.warn("Failed to load project progress", err);
       });
-  }, [project.id, documents, budgetLineItems]);
+  }, [project.id, documents.length, budgetLineItems.length]);
 
   // ---- financial calculations -------------------------------------------
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
