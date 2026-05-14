@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
 import {
   ArrowLeft,
@@ -6019,11 +6020,13 @@ function PhotosTab({
               {photos.map((doc) => (
                 <div key={doc.id} className="group relative">
                   <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 relative">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img
+                    <Image
                       src={fileDownloadUrl(doc.file_url)}
                       alt={doc.name}
-                      className="w-full h-full object-cover"
+                      fill
+                      sizes="(max-width: 640px) 50vw, 33vw"
+                      unoptimized
+                      className="object-cover"
                     />
                     {/* Overlay on hover */}
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200" />

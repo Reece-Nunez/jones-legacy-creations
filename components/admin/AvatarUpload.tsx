@@ -1,6 +1,9 @@
 "use client";
 
 import { useState, useRef, useCallback } from "react";
+// Use NextImage alias so the global Image() constructor (used below to measure
+// uploaded files) stays in scope.
+import NextImage from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Camera, X, Check, ZoomIn, ZoomOut } from "lucide-react";
 import toast from "react-hot-toast";
@@ -258,9 +261,11 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
     <div className="flex flex-col items-center gap-3">
       <div className="relative group">
         {currentUrl ? (
-          <img
+          <NextImage
             src={currentUrl}
             alt="Avatar"
+            width={80}
+            height={80}
             className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
           />
         ) : (

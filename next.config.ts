@@ -18,6 +18,12 @@ const nextConfig: NextConfig = {
         hostname: "jones-legacy-creations.s3.us-east-1.amazonaws.com",
         pathname: "/about-us/**",
       },
+      {
+        // Public avatars bucket (the only Supabase bucket still public)
+        protocol: "https",
+        hostname: "rvyummgsvggjqtjbtqfw.supabase.co",
+        pathname: "/storage/v1/object/public/avatars/**",
+      },
     ],
   },
   async headers() {

@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -360,9 +361,11 @@ export default function TeamManagementPage() {
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
                       {member.avatar_url ? (
-                        <img
+                        <Image
                           src={member.avatar_url}
                           alt={member.display_name}
+                          width={40}
+                          height={40}
                           className="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
                         />
                       ) : (
