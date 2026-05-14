@@ -284,11 +284,11 @@ export function SimpleQuoteEditor({
                 </label>
               )}
 
-              {/* Delete button */}
+              {/* Delete button — desktop reveals on row hover; mobile shows it always at ≥44px tap target */}
               <button
                 type="button"
                 onClick={() => removeItem(index)}
-                className="w-8 h-8 flex items-center justify-center text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded hover:bg-red-50"
+                className="h-11 w-11 sm:h-8 sm:w-8 flex items-center justify-center text-gray-300 hover:text-red-500 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity rounded hover:bg-red-50"
                 aria-label={`Remove ${item.trade || "line item"}`}
               >
                 <X className="w-4 h-4" />

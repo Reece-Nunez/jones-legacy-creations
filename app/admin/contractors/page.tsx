@@ -317,9 +317,11 @@ export default async function ContractorsPage({
                             {t}
                           </Badge>
                         ))}
-                        <Badge variant="outline" className="shrink-0 bg-amber-50 text-amber-700 border-amber-200">
-                          1099
-                        </Badge>
+                        {contractor.w9_required !== false && (
+                          <Badge variant="outline" className="shrink-0 bg-amber-50 text-amber-700 border-amber-200">
+                            1099
+                          </Badge>
+                        )}
                       </div>
                     )}
                   </div>
