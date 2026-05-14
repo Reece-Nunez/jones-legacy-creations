@@ -91,7 +91,7 @@ function flattenResults(results: SearchResults): FlatItem[] {
     })
   );
   results.estimates.forEach((e) =>
-    items.push({ href: `/admin/estimates/${e.id}`, label: e.client_name })
+    items.push({ href: `/admin/estimates?id=${e.id}`, label: e.client_name })
   );
   return items;
 }

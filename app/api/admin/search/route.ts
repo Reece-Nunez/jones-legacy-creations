@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { safeIlikeValue } from "@/lib/supabase/filterSafe";
 
 export async function GET(request: NextRequest) {
   const gate = await requireAdmin();
@@ -13,7 +14,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  const pattern = `%${q}%`;
+  const pattern = `%${safeIlikeValue(q)}%`;
 
   const [projectsRes, contractorsRes, invoicesRes, estimatesRes] =
     await Promise.all([

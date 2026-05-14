@@ -43,20 +43,42 @@ export async function DELETE(
   return NextResponse.json({ success: true });
 }
 
+const ALLOWED_DOC_PATCH_FIELDS = new Set([
+  "name",
+  "description",
+  "category",
+  "vendor",
+  "is_public",
+  "contractor_id",
+  "amount",
+]);
+
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
-  const { docId } = await params;
+  const { id, docId } = await params;
   const gate = await requireAdmin();
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const body = await request.json();
 
+  const updates: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(body)) {
+    if (ALLOWED_DOC_PATCH_FIELDS.has(key)) {
+      updates[key] = value;
+    }
+  }
+
+  if (Object.keys(updates).length === 0) {
+    return NextResponse.json({ error: "No valid fields" }, { status: 400 });
+  }
+
   const { data, error } = await supabase
     .from("documents")
-    .update(body)
+    .update(updates)
     .eq("id", docId)
+    .eq("project_id", id)
     .select()
     .single();
 

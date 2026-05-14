@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { safeIlikeValue } from "@/lib/supabase/filterSafe";
 
 export async function GET(request: NextRequest) {
   const gate = await requireAdmin();
@@ -14,7 +15,8 @@ export async function GET(request: NextRequest) {
     .order("name", { ascending: true });
 
   if (q) {
-    query = query.or(`name.ilike.%${q}%,company.ilike.%${q}%`);
+    const safe = safeIlikeValue(q);
+    query = query.or(`name.ilike.%${safe}%,company.ilike.%${safe}%`);
   }
 
   if (trade) {
@@ -62,9 +64,11 @@ export async function POST(request: NextRequest) {
       const words = [...new Set(fullTerms.flatMap(getSearchWords).map((w: string) => w.toLowerCase()))];
       if (words.length === 0) continue;
 
-      // Build OR conditions using individual words for broader matching
-      const paymentConditions = words.map((w: string) => `contractor_name.ilike.%${w}%`).join(",");
-      const docConditions = words.map((w: string) => `vendor.ilike.%${w}%`).join(",");
+      // Build OR conditions using individual words for broader matching.
+      // safeIlikeValue strips PostgREST filter metacharacters (commas, parens,
+      // quotes) so a malicious contractor name can't break out of the OR list.
+      const paymentConditions = words.map((w: string) => `contractor_name.ilike.%${safeIlikeValue(w)}%`).join(",");
+      const docConditions = words.map((w: string) => `vendor.ilike.%${safeIlikeValue(w)}%`).join(",");
 
       // Link unlinked contractor_payments
       await supabase

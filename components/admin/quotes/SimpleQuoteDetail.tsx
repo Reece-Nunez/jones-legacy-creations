@@ -43,10 +43,21 @@ const fmt = (v: number) =>
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
 
+function readSimpleItems(quote: Quote): SimpleQuoteItem[] {
+  const inputs = quote.job_type_inputs as Record<string, unknown> | null;
+  if (inputs?.simple_items && Array.isArray(inputs.simple_items)) {
+    return inputs.simple_items as SimpleQuoteItem[];
+  }
+  return [];
+}
+
 export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailProps) {
+  // Render from SSR data immediately — no spinner gate. We still refetch in
+  // the background to pick up any drift (e.g. from another tab).
   const [quote, setQuote] = useState<Quote>(initialQuote);
-  const [loading, setLoading] = useState(true);
-  const [simpleItems, setSimpleItems] = useState<SimpleQuoteItem[]>([]);
+  const [simpleItems, setSimpleItems] = useState<SimpleQuoteItem[]>(() =>
+    readSimpleItems(initialQuote)
+  );
   const [convertingToProject, setConvertingToProject] = useState(false);
   const [showSendModal, setShowSendModal] = useState(false);
 
@@ -56,14 +67,9 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
       if (!res.ok) throw new Error("Failed to fetch quote");
       const data = await res.json();
       setQuote(data);
-      const inputs = data.job_type_inputs as Record<string, unknown> | null;
-      if (inputs?.simple_items && Array.isArray(inputs.simple_items)) {
-        setSimpleItems(inputs.simple_items as SimpleQuoteItem[]);
-      }
+      setSimpleItems(readSimpleItems(data));
     } catch {
-      toast.error("Failed to load quote data");
-    } finally {
-      setLoading(false);
+      // SSR data is already rendered; a refetch failure isn't worth a toast.
     }
   }, [quoteId]);
 
@@ -130,14 +136,6 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
       setConvertingToProject(false);
     }
   };
-
-  if (loading) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <div className="w-8 h-8 border-2 border-gray-300 border-t-black rounded-full animate-spin" />
-      </div>
-    );
-  }
 
   const inputs = quote.job_type_inputs as Record<string, unknown> | null;
   const startDate = fmtDate(quote.target_start_date);

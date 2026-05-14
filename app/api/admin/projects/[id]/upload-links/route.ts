@@ -43,8 +43,13 @@ export async function POST(
     );
   }
 
-  // Generate a short random token
-  const token = crypto.randomUUID().slice(0, 8);
+  // 32-byte (256-bit) random token, base64url-encoded. Tokens are the only
+  // gate on the public /submit-invoice route, so they must not be brute-forceable.
+  const token = Buffer.from(crypto.getRandomValues(new Uint8Array(32)))
+    .toString("base64")
+    .replace(/\+/g, "-")
+    .replace(/\//g, "_")
+    .replace(/=+$/, "");
 
   const { data, error } = await supabase
     .from("invoice_upload_tokens")

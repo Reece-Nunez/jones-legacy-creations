@@ -1,7 +1,7 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useRouter } from "next/navigation";
+import { useState, useCallback, useEffect, useRef } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { ClipboardCheck, Inbox, Phone } from "lucide-react";
 import {
   type Estimate,
@@ -24,7 +24,23 @@ interface Props {
 
 export default function EstimatesClient({ initialEstimates }: Props) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const highlightId = searchParams.get("id");
+  const cardRefs = useRef<Record<string, HTMLDivElement | null>>({});
   const [filter, setFilter] = useState<EstimateStatus | "all">("all");
+
+  // Deep-link from global search: scroll the targeted card into view and flash it.
+  useEffect(() => {
+    if (!highlightId) return;
+    const node = cardRefs.current[highlightId];
+    if (!node) return;
+    node.scrollIntoView({ behavior: "smooth", block: "center" });
+    node.classList.add("ring-2", "ring-indigo-500", "ring-offset-2");
+    const t = setTimeout(() => {
+      node.classList.remove("ring-2", "ring-indigo-500", "ring-offset-2");
+    }, 2500);
+    return () => clearTimeout(t);
+  }, [highlightId]);
 
   // Sort newest first
   const sorted = [...initialEstimates].sort(
@@ -114,11 +130,15 @@ export default function EstimatesClient({ initialEstimates }: Props) {
         ) : (
           <div className="space-y-3">
             {filtered.map((estimate) => (
-              <EstimateCard
+              <div
                 key={estimate.id}
-                estimate={estimate}
-                onUpdate={handleUpdate}
-              />
+                ref={(el) => {
+                  cardRefs.current[estimate.id] = el;
+                }}
+                className="rounded-xl transition-shadow"
+              >
+                <EstimateCard estimate={estimate} onUpdate={handleUpdate} />
+              </div>
             ))}
           </div>
         )}

@@ -4,6 +4,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
 // Simple in-memory rate limit map: token -> last submit timestamp
 const recentSubmissions = new Map<string, number>();
 
+const MAX_FILE_BYTES = 15 * 1024 * 1024; // 15 MB
+const INVOICE_TYPES = new Set([
+  "application/pdf",
+  "image/jpeg",
+  "image/png",
+  "image/heic",
+  "image/heif",
+  "image/webp",
+]);
+const W9_TYPES = new Set(["application/pdf"]);
+
+function sanitizeFilename(name: string): string {
+  // Strip any path separators or traversal sequences.
+  const base = name.replace(/[\\/]/g, "_").replace(/\.{2,}/g, ".");
+  // Cap length to avoid pathological keys.
+  return base.length > 120 ? base.slice(-120) : base;
+}
+
 export async function POST(request: NextRequest) {
   // Public endpoint — uses service-role client to bypass RLS.
   // The upload-token validation below is the trust boundary.
@@ -29,6 +47,35 @@ export async function POST(request: NextRequest) {
 
   if (!file || file.size === 0) {
     return NextResponse.json({ error: "File is required" }, { status: 400 });
+  }
+
+  if (file.size > MAX_FILE_BYTES) {
+    return NextResponse.json(
+      { error: "File is too large (max 15 MB)." },
+      { status: 413 }
+    );
+  }
+
+  if (!INVOICE_TYPES.has(file.type)) {
+    return NextResponse.json(
+      { error: "Unsupported file type. Please upload a PDF or image." },
+      { status: 415 }
+    );
+  }
+
+  if (w9File && w9File.size > 0) {
+    if (w9File.size > MAX_FILE_BYTES) {
+      return NextResponse.json(
+        { error: "W-9 file is too large (max 15 MB)." },
+        { status: 413 }
+      );
+    }
+    if (!W9_TYPES.has(w9File.type)) {
+      return NextResponse.json(
+        { error: "W-9 must be a PDF." },
+        { status: 415 }
+      );
+    }
   }
 
   // Rate limit: prevent double-tap (same token within 60 seconds)
@@ -57,7 +104,7 @@ export async function POST(request: NextRequest) {
   }
 
   // Upload file to Supabase storage
-  const filePath = `payments/${tokenRecord.project_id}/${Date.now()}-${file.name}`;
+  const filePath = `payments/${tokenRecord.project_id}/${Date.now()}-${sanitizeFilename(file.name)}`;
   const { error: uploadError } = await supabase.storage
     .from("project-documents")
     .upload(filePath, file, { contentType: file.type });
@@ -104,22 +151,32 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  // Upload W9 if provided and contractor exists
+  // Upload W9 only if contractor has no W9 on file yet. We never let a
+  // public token overwrite an existing W9 — that would let anyone holding
+  // the token replace the contractor's tax document.
   if (w9File && w9File.size > 0 && tokenRecord.contractor_id) {
-    const w9Path = `w9s/${tokenRecord.contractor_id}/${Date.now()}-${w9File.name}`;
-    const { error: w9UploadError } = await supabase.storage
-      .from("project-documents")
-      .upload(w9Path, w9File, { contentType: w9File.type });
+    const { data: existingContractor } = await supabase
+      .from("contractors")
+      .select("w9_file_url")
+      .eq("id", tokenRecord.contractor_id)
+      .single();
 
-    if (!w9UploadError) {
-      const { data: w9UrlData } = supabase.storage
+    if (existingContractor && !existingContractor.w9_file_url) {
+      const w9Path = `w9s/${tokenRecord.contractor_id}/${Date.now()}-${sanitizeFilename(w9File.name)}`;
+      const { error: w9UploadError } = await supabase.storage
         .from("project-documents")
-        .getPublicUrl(w9Path);
+        .upload(w9Path, w9File, { contentType: w9File.type });
 
-      await supabase
-        .from("contractors")
-        .update({ w9_file_url: w9UrlData.publicUrl, w9_file_name: w9File.name })
-        .eq("id", tokenRecord.contractor_id);
+      if (!w9UploadError) {
+        const { data: w9UrlData } = supabase.storage
+          .from("project-documents")
+          .getPublicUrl(w9Path);
+
+        await supabase
+          .from("contractors")
+          .update({ w9_file_url: w9UrlData.publicUrl, w9_file_name: w9File.name })
+          .eq("id", tokenRecord.contractor_id);
+      }
     }
   }
 

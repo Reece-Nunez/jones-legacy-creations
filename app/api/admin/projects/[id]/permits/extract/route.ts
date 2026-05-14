@@ -12,12 +12,23 @@ export async function POST(
   const { supabase } = gate;
   const { file_url } = await request.json();
 
-  if (!file_url) {
+  if (!file_url || typeof file_url !== "string") {
     return NextResponse.json({ error: "file_url is required" }, { status: 400 });
   }
 
+  // SSRF guard: only fetch from our own Supabase storage. Otherwise an
+  // authenticated admin could turn this route into a proxy against the
+  // internal network or arbitrary external services.
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+  if (!supabaseUrl || !file_url.startsWith(`${supabaseUrl}/storage/v1/object/`)) {
+    return NextResponse.json(
+      { error: "file_url must be a Supabase storage URL" },
+      { status: 400 }
+    );
+  }
+
   try {
-    // Fetch the file from the public URL
+    // Fetch the file from our storage
     const fileRes = await fetch(file_url);
     if (!fileRes.ok) {
       return NextResponse.json({ error: "Failed to fetch file" }, { status: 400 });

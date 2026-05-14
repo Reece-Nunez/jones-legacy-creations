@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { safeIlikeValue } from "@/lib/supabase/filterSafe";
 import { extractInvoiceData } from "@/lib/extract-invoice";
 
 export async function GET(
@@ -150,7 +151,7 @@ export async function POST(
       const { data: exactMatch } = await supabase
         .from("contractors")
         .select("id")
-        .or(`name.ilike.${finalVendor},company.ilike.${finalVendor}`)
+        .or(`name.ilike.${safeIlikeValue(finalVendor)},company.ilike.${safeIlikeValue(finalVendor)}`)
         .limit(1);
       resolvedContractorId = exactMatch?.[0]?.id || null;
     }
