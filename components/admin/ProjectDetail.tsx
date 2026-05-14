@@ -93,6 +93,7 @@ import {
 import type { FinishLevel } from "@/lib/types/database";
 import toast from "react-hot-toast";
 import { formatCurrencyInput, unformatCurrency } from "@/lib/formatters";
+import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
   Card as ShadCard,
@@ -2321,7 +2322,7 @@ function PaymentsTab({
                     )}
                     {p.invoice_file_url && (
                       <button
-                        onClick={() => onPreview(p.invoice_file_url!, p.invoice_file_name ?? "Invoice")}
+                        onClick={() => onPreview(fileDownloadUrl(p.invoice_file_url!), p.invoice_file_name ?? "Invoice")}
                         className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5 cursor-pointer"
                       >
                         <Paperclip className="w-3 h-3" />
@@ -2420,7 +2421,7 @@ function PaymentsTab({
                       if (p.status === "paid_from_draw" && p.receipt_file_url) {
                         return (
                           <button
-                            onClick={() => onPreview(p.receipt_file_url!, p.receipt_file_name ?? "Receipt")}
+                            onClick={() => onPreview(fileDownloadUrl(p.receipt_file_url!), p.receipt_file_name ?? "Receipt")}
                             className="text-xs text-blue-600 hover:underline cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center gap-1"
                             title={p.payment_method ? `Paid via ${p.payment_method}` : "View receipt"}
                           >
@@ -2852,7 +2853,7 @@ function DrawsTab({
           )}
           {p.invoice_file_url && (
             <button
-              onClick={() => onPreview(p.invoice_file_url!, p.invoice_file_name ?? "Invoice")}
+              onClick={() => onPreview(fileDownloadUrl(p.invoice_file_url!), p.invoice_file_name ?? "Invoice")}
               className="inline-flex items-center gap-1 text-xs text-blue-600 hover:underline mt-0.5 cursor-pointer"
             >
               <Paperclip className="w-3 h-3" />
@@ -2941,7 +2942,7 @@ function DrawsTab({
             if (p.status === "paid_from_draw" && p.receipt_file_url) {
               return (
                 <button
-                  onClick={() => onPreview(p.receipt_file_url!, p.receipt_file_name ?? "Receipt")}
+                  onClick={() => onPreview(fileDownloadUrl(p.receipt_file_url!), p.receipt_file_name ?? "Receipt")}
                   className="text-xs text-blue-600 hover:underline cursor-pointer min-h-[44px] px-1 transition-colors inline-flex items-center gap-1"
                   title={p.payment_method ? `Paid via ${p.payment_method}` : "View receipt"}
                 >
@@ -4233,7 +4234,7 @@ function DrawsTab({
                   >
                     <div className="flex-1 min-w-0">
                       <a
-                        href={doc.file_url}
+                        href={fileDownloadUrl(doc.file_url)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="text-sm font-medium text-gray-900 hover:text-blue-600 truncate block transition-colors"
@@ -4556,7 +4557,7 @@ function DrawsTab({
                               </td>
                               <td className="py-2 pr-3 text-xs min-w-0">
                                 <a
-                                  href={doc.file_url}
+                                  href={fileDownloadUrl(doc.file_url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-600 hover:text-blue-800 truncate block max-w-[200px] transition-colors"
@@ -4642,7 +4643,7 @@ function DrawsTab({
                                   )}
                                   {docPayment && docPayment.receipt_file_url ? (
                                     <button
-                                      onClick={() => onPreview(docPayment.receipt_file_url!, docPayment.receipt_file_name ?? "Receipt")}
+                                      onClick={() => onPreview(fileDownloadUrl(docPayment.receipt_file_url!), docPayment.receipt_file_name ?? "Receipt")}
                                       title={docPayment.payment_method ? `View receipt · ${docPayment.payment_method}` : "View receipt"}
                                       aria-label="View receipt"
                                       className="text-blue-500 hover:text-blue-700 cursor-pointer p-1 transition-colors"
@@ -4681,13 +4682,13 @@ function DrawsTab({
                                   <button
                                     aria-label={`Preview ${doc.name}`}
                                     title="Preview"
-                                    onClick={() => onPreview(doc.file_url, doc.name)}
+                                    onClick={() => onPreview(fileDownloadUrl(doc.file_url), doc.name)}
                                     className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
                                   >
                                     <Eye className="w-3.5 h-3.5" />
                                   </button>
                                   <a
-                                    href={doc.file_url}
+                                    href={fileDownloadUrl(doc.file_url)}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     aria-label={`Download ${doc.name}`}
@@ -4818,7 +4819,7 @@ function DrawsTab({
                         <div key={doc.id} className="bg-gray-50 rounded-lg p-3 space-y-1">
                           <div className="flex items-start justify-between gap-2">
                             <a
-                              href={doc.file_url}
+                              href={fileDownloadUrl(doc.file_url)}
                               target="_blank"
                               rel="noopener noreferrer"
                               className="text-xs font-medium text-blue-600 hover:text-blue-800 truncate flex-1 transition-colors"
@@ -4835,13 +4836,13 @@ function DrawsTab({
                               </button>
                               <button
                                 aria-label={`Preview ${doc.name}`}
-                                onClick={() => onPreview(doc.file_url, doc.name)}
+                                onClick={() => onPreview(fileDownloadUrl(doc.file_url), doc.name)}
                                 className="text-gray-400 hover:text-black p-1 cursor-pointer transition-colors"
                               >
                                 <Eye className="w-3.5 h-3.5" />
                               </button>
                               <a
-                                href={doc.file_url}
+                                href={fileDownloadUrl(doc.file_url)}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 aria-label={`Download ${doc.name}`}
@@ -5531,7 +5532,7 @@ function PermitsTab({
                     </div>
                     {p.file_url && (
                       <button
-                        onClick={() => onPreview(p.file_url!, p.file_name || "Permit")}
+                        onClick={() => onPreview(fileDownloadUrl(p.file_url!), p.file_name || "Permit")}
                         className="inline-flex items-center gap-1 text-xs text-blue-600 hover:text-blue-800 mt-0.5 transition-colors cursor-pointer"
                         aria-label={`Preview permit file for ${p.permit_type}`}
                       >
@@ -5893,13 +5894,13 @@ function DocumentsTab({
               <div className="flex items-center gap-2">
                 <button
                   aria-label={`Preview ${doc.name}`}
-                  onClick={() => onPreview(doc.file_url, doc.name)}
+                  onClick={() => onPreview(fileDownloadUrl(doc.file_url), doc.name)}
                   className="text-gray-600 hover:text-black min-h-[44px] min-w-[44px] flex items-center justify-center cursor-pointer transition-colors"
                 >
                   <Eye className="w-4 h-4" />
                 </button>
                 <a
-                  href={doc.file_url}
+                  href={fileDownloadUrl(doc.file_url)}
                   target="_blank"
                   rel="noopener noreferrer"
                   aria-label={`Download ${doc.name}`}
@@ -6053,7 +6054,7 @@ function PhotosTab({
                   <div className="aspect-[4/3] rounded-xl overflow-hidden bg-gray-100 relative">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
-                      src={doc.file_url}
+                      src={fileDownloadUrl(doc.file_url)}
                       alt={doc.name}
                       className="w-full h-full object-cover"
                     />

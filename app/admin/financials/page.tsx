@@ -12,6 +12,7 @@ import {
   sumProjectedProfit,
   type ProjectFinancials,
 } from "@/lib/finance/project-financials";
+import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import {
   DollarSign,
   TrendingUp,
@@ -754,7 +755,7 @@ export default async function FinancialsPage({
                             <td className="py-3">
                               {pm.invoice_file_url ? (
                                 <a
-                                  href={pm.invoice_file_url}
+                                  href={fileDownloadUrl(pm.invoice_file_url)}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500"
@@ -832,7 +833,7 @@ export default async function FinancialsPage({
                         )}
                         {pm.invoice_file_url && (
                           <a
-                            href={pm.invoice_file_url}
+                            href={fileDownloadUrl(pm.invoice_file_url)}
                             target="_blank"
                             rel="noopener noreferrer"
                             className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-indigo-600 hover:text-indigo-500"

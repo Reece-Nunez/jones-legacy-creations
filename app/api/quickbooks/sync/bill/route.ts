@@ -7,6 +7,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { signFromPublicUrl } from "@/lib/supabase/signedUrl";
 import { createBill, createOrUpdateVendor, createBillPayment, qboQuery, uploadBillAttachment } from "@/lib/quickbooks/client";
 import { getValidAccessToken } from "@/lib/quickbooks/auth";
 import { categorizeBill } from "@/lib/quickbooks/ai-categorize";
@@ -199,11 +200,17 @@ export async function POST(request: NextRequest) {
       { onConflict: "entity_type,local_id,realm_id" }
     );
 
-    // Upload invoice PDF as attachment for QBO Autofill
+    // Upload invoice PDF as attachment for QBO Autofill. project-documents
+    // bucket is private; mint a short-lived signed URL for the uploader.
     if (payment.invoice_file_url) {
       try {
         const fileName = payment.invoice_file_name ?? `invoice-${contractorPaymentId}.pdf`;
-        await uploadBillAttachment(qboBill.Id, payment.invoice_file_url, fileName);
+        const signed = await signFromPublicUrl(payment.invoice_file_url, "project-documents", 120);
+        if (signed) {
+          await uploadBillAttachment(qboBill.Id, signed, fileName);
+        } else {
+          console.error("Invoice attachment skipped: could not sign URL");
+        }
       } catch (attachErr) {
         console.error("Invoice attachment upload failed (non-fatal):", attachErr);
       }

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { extractPermitData } from "@/lib/extract-permit";
 
 export async function POST(
@@ -28,15 +30,25 @@ export async function POST(
   }
 
   try {
-    // Fetch the file from our storage
-    const fileRes = await fetch(file_url);
-    if (!fileRes.ok) {
-      return NextResponse.json({ error: "Failed to fetch file" }, { status: 400 });
+    // Bucket is private; download via admin client by storage path.
+    const path = parseStoragePath(file_url, "project-documents");
+    if (!path) {
+      return NextResponse.json(
+        { error: "file_url must be in the project-documents bucket" },
+        { status: 400 }
+      );
+    }
+    const admin = createAdminClient();
+    const { data: blob, error: dlErr } = await admin.storage
+      .from("project-documents")
+      .download(path);
+    if (dlErr || !blob) {
+      return NextResponse.json({ error: dlErr?.message || "Failed to fetch file" }, { status: 400 });
     }
 
-    const buffer = await fileRes.arrayBuffer();
-    const contentType = fileRes.headers.get("content-type") || "application/pdf";
-    const fileName = file_url.split("/").pop() || "permit.pdf";
+    const buffer = await blob.arrayBuffer();
+    const contentType = blob.type || "application/pdf";
+    const fileName = path.split("/").pop() || "permit.pdf";
 
     // Run AI extraction
     const extracted = await extractPermitData(buffer, contentType, fileName);

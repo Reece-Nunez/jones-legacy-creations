@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { PDFDocument } from "pdf-lib";
 
 export async function GET(
@@ -49,12 +51,18 @@ export async function GET(
   );
 
   const merged = await PDFDocument.create();
+  const admin = createAdminClient();
 
   for (const doc of sorted) {
     try {
-      const res = await fetch(doc.file_url);
-      if (!res.ok) continue;
-      const bytes = new Uint8Array(await res.arrayBuffer());
+      // project-documents bucket is private; download via admin client by path.
+      const path = parseStoragePath(doc.file_url, "project-documents");
+      if (!path) continue;
+      const { data: blob, error: dlErr } = await admin.storage
+        .from("project-documents")
+        .download(path);
+      if (dlErr || !blob) continue;
+      const bytes = new Uint8Array(await blob.arrayBuffer());
       const type = (doc.file_type || "").toLowerCase();
       const name = (doc.name || "").toLowerCase();
 

@@ -1,5 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { extractInvoiceData } from "@/lib/extract-invoice";
 
 export async function POST(
@@ -46,18 +48,30 @@ export async function POST(
         continue;
       }
 
-      // 2. Download the file from file_url
-      const fileResponse = await fetch(doc.file_url);
-      if (!fileResponse.ok) {
+      // 2. Download the file via admin client (bucket is private)
+      const docPath = parseStoragePath(doc.file_url, "project-documents");
+      if (!docPath) {
         results.push({
           document_id: docId,
           success: false,
-          error: `Failed to download file: ${fileResponse.status}`,
+          error: "Stored file_url does not match project-documents bucket",
+        });
+        continue;
+      }
+      const admin = createAdminClient();
+      const { data: blob, error: dlErr } = await admin.storage
+        .from("project-documents")
+        .download(docPath);
+      if (dlErr || !blob) {
+        results.push({
+          document_id: docId,
+          success: false,
+          error: dlErr?.message || "Failed to download file",
         });
         continue;
       }
 
-      const fileBuffer = await fileResponse.arrayBuffer();
+      const fileBuffer = await blob.arrayBuffer();
       const fileType = doc.file_type || "application/pdf";
       const fileName = doc.name || "document";
 
