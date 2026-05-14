@@ -565,7 +565,7 @@ export default function ContractorDetail({
                   <div className="flex items-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3">
                     <FileText className="h-5 w-5 text-green-600 shrink-0" />
                     <a
-                      href={contractor.w9_file_url}
+                      href={`/api/admin/contractors/${contractor.id}/w9-download`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="flex-1 text-sm font-medium text-green-700 underline decoration-green-400 underline-offset-2 hover:text-green-900 truncate"
@@ -904,7 +904,7 @@ export default function ContractorDetail({
                             <div className="flex-1 min-w-0">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <a
-                                  href={doc.file_url}
+                                  href={`/api/admin/contractors/${contractor.id}/insurance/${doc.id}/download`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-sm font-medium text-gray-900 hover:underline truncate"
@@ -931,7 +931,7 @@ export default function ContractorDetail({
                                 {doc.policy_number && <span>Policy #{doc.policy_number}</span>}
                                 {doc.expiration_date && <span>Expires {doc.expiration_date}</span>}
                                 <a
-                                  href={doc.file_url}
+                                  href={`/api/admin/contractors/${contractor.id}/insurance/${doc.id}/download`}
                                   target="_blank"
                                   rel="noopener noreferrer"
                                   className="text-blue-600 hover:underline truncate"

@@ -6,6 +6,7 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { signFromPublicUrl } from "@/lib/supabase/signedUrl";
 import { getValidAccessToken } from "@/lib/quickbooks/auth";
 import { uploadVendorAttachment } from "@/lib/quickbooks/client";
 
@@ -51,9 +52,18 @@ export async function POST(request: NextRequest) {
   }
 
   try {
+    // contractor-w9 bucket is private; mint a short-lived signed URL so
+    // the QBO uploader can fetch the file.
+    const signed = await signFromPublicUrl(contractor.w9_file_url, "contractor-w9", 120);
+    if (!signed) {
+      return NextResponse.json(
+        { error: "Failed to sign W9 URL for upload" },
+        { status: 500 }
+      );
+    }
     await uploadVendorAttachment(
       vendorMap.qbo_id,
-      contractor.w9_file_url,
+      signed,
       contractor.w9_file_name ?? `W9_${contractor.name.replace(/\s+/g, "_")}.pdf`
     );
 

@@ -7,6 +7,8 @@
 
 import { NextRequest, NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { getValidAccessToken } from "@/lib/quickbooks/auth";
 import { updateVendorContractorInfo } from "@/lib/quickbooks/client";
 import Anthropic from "@anthropic-ai/sdk";
@@ -125,9 +127,20 @@ export async function POST(
     );
   }
 
-  // Download the W9 file
-  const fileRes = await fetch(contractor.w9_file_url);
-  if (!fileRes.ok) {
+  // Download the W9 file. Bucket is private now, so fetch via the admin
+  // client by storage path instead of the (no-longer-public) URL.
+  const w9Path = parseStoragePath(contractor.w9_file_url, "contractor-w9");
+  if (!w9Path) {
+    return NextResponse.json(
+      { error: "Stored W9 URL does not match the contractor-w9 bucket" },
+      { status: 500 }
+    );
+  }
+  const admin = createAdminClient();
+  const { data: w9Blob, error: w9DlErr } = await admin.storage
+    .from("contractor-w9")
+    .download(w9Path);
+  if (w9DlErr || !w9Blob) {
     return NextResponse.json(
       { error: "Failed to download W9 from storage" },
       { status: 500 }
@@ -135,12 +148,12 @@ export async function POST(
   }
 
   const mimeType =
-    fileRes.headers.get("content-type") ??
+    w9Blob.type ||
     (contractor.w9_file_name?.endsWith(".pdf")
       ? "application/pdf"
       : "image/jpeg");
 
-  const fileBuffer = await fileRes.arrayBuffer();
+  const fileBuffer = await w9Blob.arrayBuffer();
 
   // Extract fields with Claude
   let fields: W9Fields;

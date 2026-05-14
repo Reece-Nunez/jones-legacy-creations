@@ -9,6 +9,8 @@
 
 import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { getValidAccessToken } from "@/lib/quickbooks/auth";
 import { updateVendorContractorInfo } from "@/lib/quickbooks/client";
 import Anthropic from "@anthropic-ai/sdk";
@@ -101,14 +103,22 @@ export async function POST() {
     }
 
     try {
-      const fileRes = await fetch(contractor.w9_file_url!);
-      if (!fileRes.ok) throw new Error(`Failed to download W9: ${fileRes.status}`);
+      // contractor-w9 bucket is private; download via the admin client.
+      const w9Path = parseStoragePath(contractor.w9_file_url!, "contractor-w9");
+      if (!w9Path) {
+        throw new Error("Stored W9 URL does not match contractor-w9 bucket");
+      }
+      const admin = createAdminClient();
+      const { data: blob, error: dlErr } = await admin.storage
+        .from("contractor-w9")
+        .download(w9Path);
+      if (dlErr || !blob) throw new Error(dlErr?.message || "Failed to download W9");
 
       const mimeType =
-        fileRes.headers.get("content-type") ??
+        blob.type ||
         (contractor.w9_file_name?.endsWith(".pdf") ? "application/pdf" : "image/jpeg");
 
-      const fileBuffer = await fileRes.arrayBuffer();
+      const fileBuffer = await blob.arrayBuffer();
       const fields = await extractFromW9(fileBuffer, mimeType);
 
       await updateVendorContractorInfo(vendorMap.qbo_id, {

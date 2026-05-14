@@ -60,12 +60,17 @@ export default function ContractorForm({
   const [w9Required, setW9Required] = useState(contractor?.w9_required ?? true);
   const [w9File, setW9File] = useState<File | null>(null);
   const [w9Uploading, setW9Uploading] = useState(false);
+  // contractor-w9 bucket is private; route the link through the W-9 download
+  // endpoint, which mints a fresh signed URL on each click.
   const [existingW9, setExistingW9] = useState<{
     url: string;
     name: string;
   } | null>(
-    contractor?.w9_file_url
-      ? { url: contractor.w9_file_url, name: contractor.w9_file_name || "W9" }
+    contractor?.w9_file_url && contractor?.id
+      ? {
+          url: `/api/admin/contractors/${contractor.id}/w9-download`,
+          name: contractor.w9_file_name || "W9",
+        }
       : null
   );
   const fileInputRef = useRef<HTMLInputElement>(null);
