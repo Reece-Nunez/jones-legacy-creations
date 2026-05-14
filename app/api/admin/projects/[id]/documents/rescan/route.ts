@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { extractInvoiceData } from "@/lib/extract-invoice";
 
 export async function POST(
@@ -7,7 +7,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const { document_ids } = await request.json();
 
   if (!Array.isArray(document_ids) || document_ids.length === 0) {

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const { data, error } = await supabase
     .from("quote_risk_flags")
@@ -26,7 +28,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const body = await request.json();
 
   // Accept single object or array
@@ -50,7 +54,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const body = await request.json();
 
   // Update a specific risk flag's resolved status

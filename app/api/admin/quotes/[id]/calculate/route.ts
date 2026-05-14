@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function POST(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   // Fetch the quote's pricing controls
   const { data: quote, error: quoteError } = await supabase

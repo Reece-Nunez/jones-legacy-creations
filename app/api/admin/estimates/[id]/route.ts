@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const body = await request.json();
 
   // Only allow updating specific fields
@@ -44,7 +46,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const { error } = await supabase.from("estimates").delete().eq("id", id);
 

@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; tokenId: string }> }
 ) {
   const { id, tokenId } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const { error } = await supabase
     .from("invoice_upload_tokens")

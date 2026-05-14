@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { Resend } from "resend";
 import { ESTIMATE_STAGE_LABELS } from "@/lib/types/quotes";
 
@@ -239,6 +239,9 @@ export async function POST(
 ) {
   try {
     const { id } = await params;
+    const gate = await requireAdmin();
+    if (gate instanceof NextResponse) return gate;
+    const { supabase } = gate;
     const body: SendEmailBody = await request.json();
 
     if (!body.to || !body.items || body.items.length === 0) {
@@ -247,8 +250,6 @@ export async function POST(
         { status: 400 }
       );
     }
-
-    const supabase = await createClient();
 
     // Fetch the quote
     const { data: quote, error: quoteError } = await supabase

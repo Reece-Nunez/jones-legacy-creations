@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 // Map quote job_type_slug → project project_type
 const JOB_TYPE_TO_PROJECT_TYPE: Record<string, string> = {
@@ -23,7 +23,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   // Fetch the quote
   const { data: quote, error: quoteError } = await supabase

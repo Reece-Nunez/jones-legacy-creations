@@ -1,8 +1,10 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function GET() {
-  const supabase = await createClient();
+  // Public gallery — service-role client; the query already filters
+  // to is_public=true photos only.
+  const supabase = createAdminClient();
 
   // Get all public photos with their project info
   const { data, error } = await supabase

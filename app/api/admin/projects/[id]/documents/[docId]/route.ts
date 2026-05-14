@@ -1,12 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
   const { id, docId } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   // Get the document record to find the storage path
   const { data: doc, error: fetchError } = await supabase
@@ -46,7 +48,9 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string; docId: string }> }
 ) {
   const { docId } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const body = await request.json();
 
   const { data, error } = await supabase

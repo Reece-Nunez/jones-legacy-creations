@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function GET() {
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const { data, error } = await supabase
     .from("company_settings")
@@ -38,7 +40,9 @@ const ALLOWED_FIELDS = new Set([
 ]);
 
 export async function PATCH(request: NextRequest) {
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const body = await request.json();
 
   const updates: Record<string, unknown> = {};

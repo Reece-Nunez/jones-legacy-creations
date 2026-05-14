@@ -1,7 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { extractDocumentData } from "@/lib/extract-document";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function POST(request: NextRequest) {
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
 

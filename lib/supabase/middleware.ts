@@ -30,15 +30,23 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  // Protect /admin routes (but not /admin/login)
-  if (
-    request.nextUrl.pathname.startsWith("/admin") &&
-    !request.nextUrl.pathname.startsWith("/admin/login")
-  ) {
+  const path = request.nextUrl.pathname;
+  const isApiAdmin = path.startsWith("/api/admin");
+  const isPageAdmin =
+    path.startsWith("/admin") && !path.startsWith("/admin/login");
+
+  // Protect /admin pages and /api/admin/* routes
+  if (isApiAdmin || isPageAdmin) {
     if (!user) {
+      if (isApiAdmin) {
+        return NextResponse.json(
+          { error: "Not authenticated" },
+          { status: 401 }
+        );
+      }
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
-      url.searchParams.set("next", request.nextUrl.pathname);
+      url.searchParams.set("next", path);
       return NextResponse.redirect(url);
     }
 
@@ -52,6 +60,9 @@ export async function updateSession(request: NextRequest) {
       allowedEmails.length > 0 &&
       !allowedEmails.includes(user.email?.toLowerCase() || "")
     ) {
+      if (isApiAdmin) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
       const url = request.nextUrl.clone();
       url.pathname = "/admin/login";
       url.searchParams.set("error", "unauthorized");

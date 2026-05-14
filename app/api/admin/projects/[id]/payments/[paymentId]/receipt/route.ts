@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { extractReceiptData } from "@/lib/extract-receipt";
 
 export async function POST(
@@ -7,7 +7,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string; paymentId: string }> },
 ) {
   const { id, paymentId } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const formData = await request.formData();
   const file = formData.get("file") as File | null;
@@ -80,7 +82,9 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; paymentId: string }> },
 ) {
   const { id, paymentId } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const { error } = await supabase
     .from("contractor_payments")

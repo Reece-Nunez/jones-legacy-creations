@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { COST_RANGES, PROJECT_TYPE_OPTIONS } from "@/lib/types/database";
 import Anthropic from "@anthropic-ai/sdk";
 import { Resend } from "resend";
@@ -26,7 +26,9 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const supabase = await createClient();
+    // Public form — service-role client bypasses RLS.
+    // Rate limiting + reCAPTCHA gating happen above.
+    const supabase = createAdminClient();
 
     // Basic rate limiting: check if same email submitted in last hour
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();

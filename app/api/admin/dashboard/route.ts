@@ -1,9 +1,11 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import type { ProjectStatus } from "@/lib/types/database";
 
 export async function GET() {
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const [projectsRes, invoicesRes, paymentsRes, tasksRes] = await Promise.all([
     supabase.from("projects").select("*").order("updated_at", { ascending: false }),

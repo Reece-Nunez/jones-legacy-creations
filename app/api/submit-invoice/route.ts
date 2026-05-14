@@ -1,11 +1,13 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 // Simple in-memory rate limit map: token -> last submit timestamp
 const recentSubmissions = new Map<string, number>();
 
 export async function POST(request: NextRequest) {
-  const supabase = await createClient();
+  // Public endpoint — uses service-role client to bypass RLS.
+  // The upload-token validation below is the trust boundary.
+  const supabase = createAdminClient();
 
   let formData: FormData;
   try {

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { PDFDocument } from "pdf-lib";
 
 export async function GET(
@@ -7,7 +7,9 @@ export async function GET(
   { params }: { params: Promise<{ id: string; drawId: string }> },
 ) {
   const { id, drawId } = await params;
-  const supabase = await createClient();
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
 
   const { data: draw, error: drawErr } = await supabase
     .from("draw_requests")

@@ -6,7 +6,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { updateVendorBankDetails, createOrUpdateVendor } from "@/lib/quickbooks/client";
 import { getValidAccessToken } from "@/lib/quickbooks/auth";
 
@@ -26,8 +26,9 @@ export async function POST(
 ) {
   const { token } = await params;
 
-  // Use service-role client for public route (no user session)
-  const supabase = await createClient();
+  // Service-role client — public route bypasses RLS.
+  // The token validation below is the trust boundary.
+  const supabase = createAdminClient();
 
   // ── Validate token ────────────────────────────────────────────────
   const { data: invite, error: inviteError } = await supabase

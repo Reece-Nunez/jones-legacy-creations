@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { extractPermitData } from "@/lib/extract-permit";
 
 export async function POST(
@@ -7,6 +7,9 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
+  const gate = await requireAdmin();
+  if (gate instanceof NextResponse) return gate;
+  const { supabase } = gate;
   const { file_url } = await request.json();
 
   if (!file_url) {
@@ -28,7 +31,6 @@ export async function POST(
     const extracted = await extractPermitData(buffer, contentType, fileName);
 
     // Fetch current project to determine which fields are already filled
-    const supabase = await createClient();
     const { data: project } = await supabase
       .from("projects")
       .select(
