@@ -20,33 +20,8 @@ import {
   ESTIMATE_STATUS_COLORS,
   PROJECT_TYPE_OPTIONS,
 } from "@/lib/types/database";
+import { confirmAction } from "@/lib/confirmAction";
 
-function confirmAction(message: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium">{message}</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => { toast.dismiss(t.id); resolve(true); }}
-              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors"
-            >
-              Yes, Continue
-            </button>
-            <button
-              onClick={() => { toast.dismiss(t.id); resolve(false); }}
-              className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 10000 }
-    );
-  });
-}
 
 const fmt = (amount: number) =>
   new Intl.NumberFormat("en-US", {
@@ -146,7 +121,7 @@ export default function EstimateCard({ estimate, onUpdate }: EstimateCardProps) 
   }
 
   async function handleDecline() {
-    if (!(await confirmAction("Decline this estimate?"))) return;
+    if (!(await confirmAction("Decline this estimate?", { confirmLabel: "Yes, Decline" }))) return;
     setActionLoading("declined");
     try {
       await patchEstimate({ status: "declined" });

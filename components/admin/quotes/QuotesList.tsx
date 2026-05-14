@@ -16,6 +16,7 @@ import {
   formatCurrencyWhole as formatCurrency,
   formatDate as sharedFormatDate,
 } from "@/lib/formatters";
+import { confirmAction } from "@/lib/confirmAction";
 
 interface QuotesListProps {
   quotes: Quote[];
@@ -38,40 +39,6 @@ function getQuoteTotal(quote: Quote): number {
   return 0;
 }
 
-function confirmDelete(quoteNumber: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-2">
-          <span>
-            Delete quote <strong>{quoteNumber}</strong>? This cannot be undone.
-          </span>
-          <div className="flex gap-2 justify-end">
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                resolve(false);
-              }}
-              className="px-3 py-1.5 text-sm rounded hover:bg-gray-100"
-            >
-              Cancel
-            </button>
-            <button
-              onClick={() => {
-                toast.dismiss(t.id);
-                resolve(true);
-              }}
-              className="px-3 py-1.5 text-sm bg-red-600 text-white rounded hover:bg-red-700"
-            >
-              Delete
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: Infinity }
-    );
-  });
-}
 
 export function QuotesList({ quotes, detailBasePath = "/admin/quotes" }: QuotesListProps) {
   const router = useRouter();
@@ -80,7 +47,12 @@ export function QuotesList({ quotes, detailBasePath = "/admin/quotes" }: QuotesL
   async function handleDelete(quote: Quote, e: React.MouseEvent) {
     e.preventDefault();
     e.stopPropagation();
-    if (!(await confirmDelete(quote.quote_number))) return;
+    if (
+      !(await confirmAction(
+        `Delete quote ${quote.quote_number}? This cannot be undone.`
+      ))
+    )
+      return;
     setDeletingId(quote.id);
     try {
       const res = await fetch(`/api/admin/quotes/${quote.id}`, {

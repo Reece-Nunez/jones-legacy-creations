@@ -100,6 +100,7 @@ import {
   formatDate as sharedFormatDate,
 } from "@/lib/formatters";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
+import { confirmAction } from "@/lib/confirmAction";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
   Card as ShadCard,
@@ -155,33 +156,6 @@ function timeAgo(dateStr: string): string {
   return `${months}mo ago`;
 }
 
-/** Toast-based confirmation instead of window.confirm */
-function confirmAction(message: string): Promise<boolean> {
-  return new Promise((resolve) => {
-    toast(
-      (t) => (
-        <div className="flex flex-col gap-3">
-          <p className="text-sm font-medium">{message}</p>
-          <div className="flex gap-2">
-            <button
-              onClick={() => { toast.dismiss(t.id); resolve(true); }}
-              className="px-3 py-1.5 bg-red-600 text-white text-xs font-medium rounded-md hover:bg-red-700 transition-colors"
-            >
-              Yes, Delete
-            </button>
-            <button
-              onClick={() => { toast.dismiss(t.id); resolve(false); }}
-              className="px-3 py-1.5 bg-gray-600 text-white text-xs font-medium rounded-md hover:bg-gray-700 transition-colors"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
-      ),
-      { duration: 10000 }
-    );
-  });
-}
 
 /** Left border color for status-based cards */
 function permitLeftBorder(status: PermitStatus): string {
