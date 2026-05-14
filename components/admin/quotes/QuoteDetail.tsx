@@ -52,6 +52,7 @@ import {
   ITEM_UNIT_LABELS,
   ALLOWANCE_CATEGORY_LABELS,
 } from "@/lib/types/quotes";
+import { formatCurrency as fmt } from "@/lib/formatters";
 
 // ── Types ────────────────────────────────────────────────────────────────────
 
@@ -74,11 +75,6 @@ interface QuoteDetailProps {
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-
-const fmt = (v: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    v
-  );
 
 const fmtDate = (d: string | null) =>
   d ? new Date(d).toLocaleDateString() : "--";

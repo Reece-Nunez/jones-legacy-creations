@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Plus, X, BookOpen } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { JOB_TYPE_TRADE_DEFAULTS } from "@/lib/quote-builder/trade-defaults";
+import { formatCurrency } from "@/lib/formatters";
 import type { JobTypeSlug } from "@/lib/types/quotes";
 
 interface CustomTrade {
@@ -29,14 +30,6 @@ interface SimpleQuoteEditorProps {
   initialItems?: SimpleQuoteItem[];
   onSave: (items: SimpleQuoteItem[]) => Promise<void>;
   onChange?: (items: SimpleQuoteItem[]) => void;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(value);
 }
 
 function parseCurrency(value: string): number {

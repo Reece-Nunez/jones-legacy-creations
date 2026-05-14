@@ -24,23 +24,14 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import {
+  formatCurrencyWhole as fmt,
+  formatDate as sharedFormatDate,
+} from "@/lib/formatters";
 
 // ── Helpers ─────────────────────────────────────────────────
 
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-const fmtDate = (dateStr: string) =>
-  new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+const fmtDate = (dateStr: string) => sharedFormatDate(dateStr) ?? "";
 
 // Status-based left-border colors for project cards
 const STATUS_LEFT_BORDER: Record<ProjectStatus, string> = {

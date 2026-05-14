@@ -27,6 +27,10 @@ import {
   QUOTE_STATUS_COLORS,
 } from "@/lib/types/quotes";
 import type { JobTypeSlug } from "@/lib/types/quotes";
+import {
+  formatCurrency as fmt,
+  formatDate as fmtDate,
+} from "@/lib/formatters";
 
 interface SimpleQuoteDetailProps {
   quoteId: string;
@@ -36,12 +40,6 @@ interface SimpleQuoteDetailProps {
 const STATUS_OPTIONS = Object.entries(QUOTE_STATUS_LABELS).map(
   ([value, label]) => ({ value, label })
 );
-
-const fmt = (v: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(v);
-
-const fmtDate = (d: string | null) =>
-  d ? new Date(d).toLocaleDateString("en-US", { month: "short", day: "numeric", year: "numeric" }) : null;
 
 function readSimpleItems(quote: Quote): SimpleQuoteItem[] {
   const inputs = quote.job_type_inputs as Record<string, unknown> | null;

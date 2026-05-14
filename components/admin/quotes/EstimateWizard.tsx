@@ -12,6 +12,7 @@ import { JOB_TYPE_CONFIGS } from "@/lib/quote-builder/templates";
 import { JobTypeSelector } from "@/components/admin/quotes/JobTypeSelector";
 import { DynamicSectionRenderer } from "@/components/admin/quotes/DynamicSectionRenderer";
 import { SimpleQuoteEditor, type SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
+import { formatCurrency } from "@/lib/formatters";
 
 // Sections to exclude from Job Details per job type
 const EXCLUDED_SECTIONS: Record<string, string[]> = {
@@ -480,21 +481,21 @@ export function EstimateWizard() {
                   <div className="flex justify-between text-sm">
                     <dt className="text-gray-500">Item Costs</dt>
                     <dd className="text-gray-900 font-medium">
-                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(tradeCosts)}
+                      {formatCurrency(tradeCosts)}
                     </dd>
                   </div>
                   {ownerPurchases > 0 && (
                     <div className="flex justify-between text-sm">
                       <dt className="text-gray-500">Owner Purchases</dt>
                       <dd className="text-gray-900 font-medium">
-                        {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(ownerPurchases)}
+                        {formatCurrency(ownerPurchases)}
                       </dd>
                     </div>
                   )}
                   <div className="flex justify-between text-sm pt-1 border-t border-gray-100">
                     <dt className="text-gray-900 font-bold">Total</dt>
                     <dd className="text-gray-900 font-bold">
-                      {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(grandTotal)}
+                      {formatCurrency(grandTotal)}
                     </dd>
                   </div>
                 </dl>
@@ -515,7 +516,7 @@ export function EstimateWizard() {
                         {item.isOwnerPurchase && <span className="ml-2 text-xs text-gray-400">(OP)</span>}
                       </span>
                       <span className="text-gray-900 font-medium">
-                        {new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(item.cost)}
+                        {formatCurrency(item.cost)}
                       </span>
                     </div>
                   ))}

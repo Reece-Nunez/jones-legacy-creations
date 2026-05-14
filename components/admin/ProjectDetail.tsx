@@ -92,7 +92,13 @@ import {
 } from "@/lib/types/database";
 import type { FinishLevel } from "@/lib/types/database";
 import toast from "react-hot-toast";
-import { formatCurrencyInput, unformatCurrency } from "@/lib/formatters";
+import {
+  formatCurrencyInput,
+  unformatCurrency,
+  formatCurrency as fmt,
+  formatCurrencyWhole,
+  formatDate as sharedFormatDate,
+} from "@/lib/formatters";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
@@ -121,19 +127,7 @@ const QBO_CONTRACTOR_PAYMENTS_ENABLED = false;
 // Helpers
 // ---------------------------------------------------------------------------
 
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(
-    n,
-  );
-
-const fmtDate = (d: string | null) => {
-  if (!d) return "--";
-  return new Date(d).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
-};
+const fmtDate = (d: string | null) => sharedFormatDate(d) ?? "--";
 
 const fmtFileSize = (bytes: number | null) => {
   if (!bytes) return "--";
@@ -1161,8 +1155,7 @@ function ProgressCard({
 }) {
   const [expanded, setExpanded] = useState(false);
 
-  const fmt = (n: number) =>
-    new Intl.NumberFormat("en-US", { style: "currency", currency: "USD", maximumFractionDigits: 0 }).format(n);
+  const fmt = formatCurrencyWhole;
 
   // ── Cash job mode ────────────────────────────────────────────────────────
   if (isCashJob) {

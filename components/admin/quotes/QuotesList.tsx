@@ -12,27 +12,18 @@ import {
   QUOTE_STATUS_COLORS,
   JOB_TYPE_LABELS,
 } from "@/lib/types/quotes";
+import {
+  formatCurrencyWhole as formatCurrency,
+  formatDate as sharedFormatDate,
+} from "@/lib/formatters";
 
 interface QuotesListProps {
   quotes: Quote[];
   detailBasePath?: string;
 }
 
-function formatCurrency(amount: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
-
 function formatDate(dateStr: string): string {
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return sharedFormatDate(dateStr) ?? "";
 }
 
 function getQuoteTotal(quote: Quote): number {

@@ -1,9 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { type DrawRequest, DRAW_STATUS_COLORS } from "@/lib/types/database";
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
+import { formatCurrency as fmt } from "@/lib/formatters";
 
 export default async function PendingDrawsPage() {
   const supabase = await createClient();

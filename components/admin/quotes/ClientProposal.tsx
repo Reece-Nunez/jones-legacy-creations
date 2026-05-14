@@ -5,18 +5,12 @@ import toast from "react-hot-toast";
 import type { Quote } from "@/lib/types/quotes";
 import { JOB_TYPE_LABELS } from "@/lib/types/quotes";
 import type { SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
+import { formatCurrency as fmt } from "@/lib/formatters";
 
 interface ClientProposalProps {
   quoteId: string;
   initialQuote: Quote;
 }
-
-const fmt = (v: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(v);
 
 const fmtDate = (d: string | null) =>
   d

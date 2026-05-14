@@ -19,6 +19,7 @@ import {
 import toast from "react-hot-toast";
 import { ROLE_OPTIONS, getRoleLabel, getRole } from "@/lib/roles";
 import type { RoleSlug } from "@/lib/roles";
+import { formatDate as fmtDate } from "@/lib/formatters";
 
 interface TeamMember {
   id: string;
@@ -44,12 +45,7 @@ function getInitials(name: string): string {
 }
 
 function formatDate(dateStr: string | null): string {
-  if (!dateStr) return "Never";
-  return new Date(dateStr).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return fmtDate(dateStr) ?? "Never";
 }
 
 const ROLE_BADGE_COLORS: Record<string, string> = {

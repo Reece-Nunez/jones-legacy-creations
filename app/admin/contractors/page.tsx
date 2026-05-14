@@ -20,12 +20,7 @@ import {
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { ClickStop } from "@/components/ui/click-stop";
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+import { formatCurrency } from "@/lib/formatters";
 
 const TRADE_COLORS: Record<string, string> = {
   General: "bg-gray-100 text-gray-700",

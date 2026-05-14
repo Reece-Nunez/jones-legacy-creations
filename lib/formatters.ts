@@ -99,3 +99,44 @@ export function formatNumber(value: string): string {
 export function unformatNumber(value: string): string {
   return value.replace(/\D/g, "");
 }
+
+// ── Date helpers ──────────────────────────────────────────────────────────────
+// Use these instead of inlining `new Date(s).toLocaleDateString(...)` so the
+// app renders dates consistently everywhere.
+
+/** "May 14, 2026" — for general display. Returns null for null input. */
+export function formatDate(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+}
+
+/** "May 14" — for dense lists where the year is implied. */
+export function formatDateShort(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+  });
+}
+
+/** "May 14, 2026 3:42 PM" — when the time matters (e.g. activity log). */
+export function formatDateTime(value: string | null | undefined): string | null {
+  if (!value) return null;
+  const d = new Date(value);
+  if (isNaN(d.getTime())) return null;
+  return d.toLocaleString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  });
+}

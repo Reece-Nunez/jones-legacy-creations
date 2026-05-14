@@ -26,16 +26,14 @@ import {
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import {
+  formatCurrency as fmt,
+  formatDate as fmtDate,
+} from "@/lib/formatters";
 
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(n);
 
 const pct = (n: number) =>
   new Intl.NumberFormat("en-US", {
@@ -56,12 +54,7 @@ function spokenDollars(n: number): string {
 }
 
 function formatDate(iso: string | null): string {
-  if (!iso) return "--";
-  return new Date(iso).toLocaleDateString("en-US", {
-    month: "short",
-    day: "numeric",
-    year: "numeric",
-  });
+  return fmtDate(iso) ?? "--";
 }
 
 /* Accrued interest is computed by lib/finance/project-financials.ts —

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/Input";
 import { X, Send, Mail } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Quote } from "@/lib/types/quotes";
+import { formatCurrency } from "@/lib/formatters";
 
 interface SendQuoteModalProps {
   isOpen: boolean;
@@ -17,14 +18,6 @@ interface SendQuoteModalProps {
     isOwnerPurchase: boolean;
     note: string;
   }>;
-}
-
-function formatCurrency(value: number): string {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 2,
-  }).format(value);
 }
 
 export function SendQuoteModal({

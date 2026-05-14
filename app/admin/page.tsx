@@ -36,22 +36,13 @@ import {
   computeProjectFinancials,
   sumProjectedProfit,
 } from "@/lib/finance/project-financials";
+import {
+  formatCurrencyWhole as fmt,
+  formatCurrency as fmtFull,
+  formatDateShort,
+} from "@/lib/formatters";
 
 // ── Helpers ─────────────────────────────────────────────────
-
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-
-const fmtFull = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
 
 function daysBetween(dateStr: string, now: Date): number {
   const d = new Date(dateStr);
@@ -842,10 +833,7 @@ export default async function AdminDashboard({
                         </p>
                       ) : null}
                       <p className="text-sm text-gray-500">
-                        {new Date(est.created_at).toLocaleDateString("en-US", {
-                          month: "short",
-                          day: "numeric",
-                        })}
+                        {formatDateShort(est.created_at)}
                       </p>
                     </div>
                     <Badge

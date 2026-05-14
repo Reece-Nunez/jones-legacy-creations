@@ -5,6 +5,7 @@ import { ChevronDown, ChevronRight, Settings2 } from "lucide-react";
 import { DynamicSectionRenderer } from "@/components/admin/quotes/DynamicSectionRenderer";
 import { PRICING_CONTROLS_SECTION } from "@/lib/quote-builder/templates";
 import { cn } from "@/lib/utils";
+import { formatCurrencyWhole } from "@/lib/formatters";
 
 interface PricingControlsFormProps {
   formData: Record<string, unknown>;
@@ -22,12 +23,7 @@ function fmtPct(value: unknown): string {
 
 function fmtCurrency(amount: number): string {
   if (amount === 0) return "--";
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+  return formatCurrencyWhole(amount);
 }
 
 export function PricingControlsForm({

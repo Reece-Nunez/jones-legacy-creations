@@ -17,6 +17,7 @@ import {
   PROJECT_STATUS_LABELS,
   PROJECT_STATUS_COLORS,
 } from "@/lib/types/database";
+import { formatCurrencyWhole as formatCurrency } from "@/lib/formatters";
 
 /* ------------------------------------------------------------------ */
 /*  Types                                                              */
@@ -61,15 +62,6 @@ interface SearchResults {
 /* ------------------------------------------------------------------ */
 /*  Helpers                                                            */
 /* ------------------------------------------------------------------ */
-
-function formatCurrency(amount: number) {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
-}
 
 interface FlatItem {
   href: string;

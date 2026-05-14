@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { X, AlertTriangle, Loader2, Landmark, CheckCircle2 } from "lucide-react";
 import toast from "react-hot-toast";
 import { Button } from "@/components/ui/Button";
+import { formatCurrency as fmt } from "@/lib/formatters";
 
 interface BankAccount {
   Id: string;
@@ -18,9 +19,6 @@ interface Props {
   onClose: () => void;
   onPaid: () => void;
 }
-
-const fmt = (n: number) =>
-  new Intl.NumberFormat("en-US", { style: "currency", currency: "USD" }).format(n);
 
 export default function QBOPayContractorModal({
   contractorPaymentId,
