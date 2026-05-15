@@ -111,6 +111,15 @@ const portfolioImages: PortfolioImage[] = [
   // Rolling Rock Drive - Other
   { filename: "rolling-rock-drive-other-1", category: "Other", description: "Rolling Rock Drive interior", ext: "jpeg", project: "Rolling Rock Drive" },
   { filename: "rolling-rock-drive-other-2", category: "Other", description: "Rolling Rock Drive design detail", ext: "jpeg", project: "Rolling Rock Drive" },
+
+  // Enterprise
+  { filename: "enterprise-living-room-1", category: "Living Rooms", description: "Enterprise great room with stone fireplace", project: "Enterprise" },
+  { filename: "enterprise-living-room-2", category: "Living Rooms", description: "Enterprise open-concept living area", project: "Enterprise" },
+  { filename: "enterprise-kitchen-1", category: "Kitchens", description: "Enterprise kitchen with custom island", project: "Enterprise" },
+  { filename: "enterprise-kitchen-2", category: "Kitchens", description: "Enterprise kitchen details", project: "Enterprise" },
+  { filename: "enterprise-bedroom-1", category: "Bedrooms", description: "Enterprise master bedroom", project: "Enterprise" },
+  { filename: "enterprise-bathroom-1", category: "Bathrooms", description: "Enterprise spa bathroom", project: "Enterprise" },
+  { filename: "enterprise-other-1", category: "Other", description: "Enterprise dining and entry", project: "Enterprise" },
 ];
 
 export default function GalleryPage() {
