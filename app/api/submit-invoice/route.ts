@@ -1,5 +1,16 @@
 import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
+import { Resend } from "resend";
+
+const INVOICE_NOTIFY_RECIPIENTS = [
+  "jch@joneslegacycreations.com",
+  "office@joneslegacycreations.com",
+];
+
+const moneyFmt = new Intl.NumberFormat("en-US", {
+  style: "currency",
+  currency: "USD",
+});
 
 // Simple in-memory rate limit map: token -> last submit timestamp
 const recentSubmissions = new Map<string, number>();
@@ -186,6 +197,44 @@ export async function POST(request: NextRequest) {
     action: "invoice_uploaded",
     description: `Contractor ${tokenRecord.contractor_name} uploaded an invoice`,
   });
+
+  // Fire-and-forget email notification to office. Don't block the success
+  // response or fail the upload if email sending hiccups.
+  if (process.env.RESEND_API_KEY) {
+    try {
+      const resend = new Resend(process.env.RESEND_API_KEY);
+      const origin =
+        process.env.NEXT_PUBLIC_APP_URL ?? request.nextUrl.origin;
+      const projectUrl = `${origin}/admin/projects/${tokenRecord.project_id}`;
+      const amountLabel = moneyFmt.format(isNaN(amount) ? 0 : amount);
+      const refLine = referenceNumber
+        ? `<p style="margin:6px 0;"><strong>Reference:</strong> ${referenceNumber}</p>`
+        : "";
+      const html = `
+        <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 560px; color:#111;">
+          <h2 style="margin:0 0 12px;">New invoice uploaded</h2>
+          <p style="margin:6px 0;"><strong>Contractor:</strong> ${tokenRecord.contractor_name}</p>
+          <p style="margin:6px 0;"><strong>Project:</strong> ${tokenRecord.project_name}</p>
+          <p style="margin:6px 0;"><strong>Amount:</strong> ${amountLabel}</p>
+          <p style="margin:6px 0;"><strong>Description:</strong> ${fullDescription}</p>
+          ${refLine}
+          <p style="margin:18px 0 0;">
+            <a href="${projectUrl}" style="background:#4f46e5;color:#fff;padding:10px 16px;border-radius:8px;text-decoration:none;display:inline-block;">
+              Open project in admin
+            </a>
+          </p>
+        </div>
+      `;
+      await resend.emails.send({
+        from: "Jones Legacy Creations <noreply@joneslegacycreations.com>",
+        to: INVOICE_NOTIFY_RECIPIENTS,
+        subject: `Invoice uploaded — ${tokenRecord.contractor_name} (${tokenRecord.project_name})`,
+        html,
+      });
+    } catch (err) {
+      console.error("Invoice-upload notification email failed:", err);
+    }
+  }
 
   // Mark rate limit
   recentSubmissions.set(token, Date.now());
