@@ -37,6 +37,7 @@ const navLinks = [
   { label: "Financials", href: "/admin/financials", icon: DollarSign },
   { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
   { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
+  { label: "Real Estate Listings", href: "/admin/listings", icon: Home },
 ];
 
 // Bottom tab bar items for mobile (max 5 for thumb-friendly sizing)
@@ -52,7 +53,6 @@ const quickLinks = [
   { label: "Pending Draws", href: "/admin/pending-draws", icon: Banknote },
   { label: "Pending Permits", href: "/admin/pending-permits", icon: FileCheck },
   { label: "Detailed Quotes", href: "/admin/detailedquotes", icon: ClipboardList },
-  { label: "Real Estate Listings", href: "/admin/listings", icon: Home },
   { label: "Back to Site", href: "/", icon: Globe, external: true },
 ];
 
