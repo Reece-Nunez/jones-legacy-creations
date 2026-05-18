@@ -33,12 +33,7 @@ import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-
-const formatCurrency = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-  }).format(amount);
+import { formatCurrency } from "@/lib/formatters";
 
 /** Sanitize filename for Supabase Storage (strip brackets and special chars) */
 const sanitizeFilename = (name: string) =>

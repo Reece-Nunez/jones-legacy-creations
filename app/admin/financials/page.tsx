@@ -13,6 +13,7 @@ import {
   type ProjectFinancials,
 } from "@/lib/finance/project-financials";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
+import { formatPercent } from "@/lib/formatters";
 import {
   DollarSign,
   TrendingUp,
@@ -35,12 +36,7 @@ import {
 /*  Helpers                                                           */
 /* ------------------------------------------------------------------ */
 
-const pct = (n: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "percent",
-    minimumFractionDigits: 1,
-    maximumFractionDigits: 1,
-  }).format(n);
+const pct = (n: number) => formatPercent(n, 1);
 
 function spokenDollars(n: number): string {
   const abs = Math.abs(n);

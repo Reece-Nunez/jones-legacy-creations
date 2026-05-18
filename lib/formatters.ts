@@ -85,6 +85,20 @@ export function formatCurrencyWhole(amount: number): string {
 }
 
 /**
+ * Format a fraction as a percent: 0.12 -> "12.0%"
+ */
+export function formatPercent(
+  value: number,
+  fractionDigits = 1
+): string {
+  return new Intl.NumberFormat("en-US", {
+    style: "percent",
+    minimumFractionDigits: fractionDigits,
+    maximumFractionDigits: fractionDigits,
+  }).format(value);
+}
+
+/**
  * Format square footage with commas: 2,500
  */
 export function formatNumber(value: string): string {

@@ -21,15 +21,7 @@ import {
   PROJECT_TYPE_OPTIONS,
 } from "@/lib/types/database";
 import { confirmAction } from "@/lib/confirmAction";
-
-
-const fmt = (amount: number) =>
-  new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
-    minimumFractionDigits: 0,
-    maximumFractionDigits: 0,
-  }).format(amount);
+import { formatCurrencyWhole as fmt } from "@/lib/formatters";
 
 const STATUS_LABELS: Record<EstimateStatus, string> = {
   new: "New Lead",

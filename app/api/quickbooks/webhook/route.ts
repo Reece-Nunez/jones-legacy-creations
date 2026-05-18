@@ -17,7 +17,7 @@
  *   4. Copy the Verifier Token → QUICKBOOKS_WEBHOOK_VERIFIER_TOKEN in your env
  */
 
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest, NextResponse, after } from "next/server";
 import { createHmac } from "crypto";
 import { createAdminClient } from "@/lib/supabase/admin";
 
@@ -77,51 +77,68 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: "Invalid JSON" }, { status: 400 });
   }
 
-  const supabase = createAdminClient();
-
-  // First pass: claim each event by inserting into qbo_webhook_events with
-  // ON CONFLICT DO NOTHING against the (realm, type, id, op, lastUpdated)
-  // unique index. If the insert returned a row, this is the first time we've
-  // seen this event — keep it for processing. If the conflict swallowed it,
-  // QBO retried a notification we've already handled and we skip it.
-  type ClaimedEvent = { eventId: string; realmId: string; entity: QBOWebhookEntity };
-  const claimed: ClaimedEvent[] = [];
-
+  // Flatten notifications into a single bulk-insertable array. We claim
+  // every event in a single round-trip so the response goes out fast —
+  // QBO retries any response slower than ~2s, which would create duplicates
+  // and amplify load.
+  type EventRow = {
+    realm_id: string;
+    entity_type: string;
+    entity_id: string;
+    operation: string;
+    payload: QBOWebhookEntity;
+  };
+  const rows: EventRow[] = [];
   for (const notification of payload.eventNotifications ?? []) {
     const { realmId, dataChangeEvent } = notification;
-    const entities = dataChangeEvent?.entities ?? [];
-
-    for (const entity of entities) {
-      const { data: inserted, error: insertErr } = await supabase
-        .from("qbo_webhook_events")
-        .insert({
-          realm_id: realmId,
-          entity_type: entity.name,
-          entity_id: entity.id,
-          operation: entity.operation,
-          payload: entity,
-        })
-        // PostgREST: ignoreDuplicates: true returns null rows on conflict
-        .select("id")
-        .maybeSingle();
-
-      if (insertErr) {
-        // 23505 = unique_violation → already processed, skip
-        if (insertErr.code === "23505") continue;
-        console.error("[QBO Webhook] Failed to log event:", insertErr);
-        continue;
-      }
-      if (inserted?.id) {
-        claimed.push({ eventId: inserted.id, realmId, entity });
-      }
+    for (const entity of dataChangeEvent?.entities ?? []) {
+      rows.push({
+        realm_id: realmId,
+        entity_type: entity.name,
+        entity_id: entity.id,
+        operation: entity.operation,
+        payload: entity,
+      });
     }
   }
 
-  // Process claimed events. Each handler is short (a few DB updates), so
-  // we can finish well inside QBO's response window. If a handler throws,
-  // we record the error on the event row but still return 200 — QBO would
-  // otherwise retry indefinitely.
-  for (const { eventId, realmId, entity } of claimed) {
+  const supabase = createAdminClient();
+
+  let claimedIds: string[] = [];
+  if (rows.length > 0) {
+    // Unique constraint on (realm_id, entity_type, entity_id, operation,
+    // payload->>'lastUpdated') means already-seen events return no row.
+    const { data: inserted, error: insertErr } = await supabase
+      .from("qbo_webhook_events")
+      .insert(rows)
+      .select("id");
+
+    if (insertErr && insertErr.code !== "23505") {
+      console.error("[QBO Webhook] Bulk insert failed:", insertErr);
+    } else {
+      claimedIds = (inserted ?? []).map((r) => r.id);
+    }
+  }
+
+  // ACK the webhook NOW; process claimed events in the background. QBO is
+  // happy with a sub-second response, and any handler error gets recorded
+  // on the event row so it can be inspected later.
+  after(() => processClaimedEvents(claimedIds));
+
+  return NextResponse.json({ received: true, claimed: claimedIds.length });
+}
+
+async function processClaimedEvents(eventIds: string[]) {
+  if (eventIds.length === 0) return;
+  const supabase = createAdminClient();
+
+  const { data: events } = await supabase
+    .from("qbo_webhook_events")
+    .select("id, realm_id, payload")
+    .in("id", eventIds);
+
+  for (const ev of events ?? []) {
+    const entity = ev.payload as QBOWebhookEntity;
     let processingError: string | null = null;
 
     try {
@@ -129,12 +146,15 @@ export async function POST(request: NextRequest) {
         entity.name === "BillPayment" &&
         (entity.operation === "Delete" || entity.operation === "Void")
       ) {
-        await handleBillPaymentVoid(supabase, entity.id, realmId);
+        await handleBillPaymentVoid(supabase, entity.id, ev.realm_id);
       }
       // Future: handle Bill updates, Vendor updates, etc.
     } catch (err) {
       processingError = err instanceof Error ? err.message : String(err);
-      console.error(`[QBO Webhook] Failed to process ${entity.name} ${entity.id}:`, err);
+      console.error(
+        `[QBO Webhook] Failed to process ${entity.name} ${entity.id}:`,
+        err
+      );
     }
 
     await supabase
@@ -143,10 +163,8 @@ export async function POST(request: NextRequest) {
         processed_at: new Date().toISOString(),
         error: processingError,
       })
-      .eq("id", eventId);
+      .eq("id", ev.id);
   }
-
-  return NextResponse.json({ received: true });
 }
 
 // ─── Event handlers ───────────────────────────────────────────────────────────
