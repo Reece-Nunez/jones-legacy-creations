@@ -9,6 +9,7 @@ import { realEstateFormSchema, RealEstateFormData } from "@/lib/schemas/real-est
 import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
+import ListingsStrip from "@/components/real-estate/ListingsStrip";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
@@ -174,6 +175,9 @@ export default function RealEstatePage() {
           </div>
         </div>
       </section>
+
+      {/* Current Listings — populated by admins via /admin/listings */}
+      <ListingsStrip />
 
       {/* Our Process Section */}
       <section aria-label="Our realtor process" className="py-20 bg-gray-50">

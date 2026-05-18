@@ -19,10 +19,16 @@ const nextConfig: NextConfig = {
         pathname: "/about-us/**",
       },
       {
-        // Public avatars bucket (the only Supabase bucket still public)
+        // Public avatars bucket
         protocol: "https",
         hostname: "rvyummgsvggjqtjbtqfw.supabase.co",
         pathname: "/storage/v1/object/public/avatars/**",
+      },
+      {
+        // Public real-estate listing photos
+        protocol: "https",
+        hostname: "rvyummgsvggjqtjbtqfw.supabase.co",
+        pathname: "/storage/v1/object/public/real-estate-photos/**",
       },
     ],
   },

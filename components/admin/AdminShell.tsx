@@ -15,6 +15,7 @@ import {
   Banknote,
   FileCheck,
   Globe,
+  Home,
   ExternalLink,
   Menu,
   X,
@@ -51,6 +52,7 @@ const quickLinks = [
   { label: "Pending Draws", href: "/admin/pending-draws", icon: Banknote },
   { label: "Pending Permits", href: "/admin/pending-permits", icon: FileCheck },
   { label: "Detailed Quotes", href: "/admin/detailedquotes", icon: ClipboardList },
+  { label: "Real Estate Listings", href: "/admin/listings", icon: Home },
   { label: "Back to Site", href: "/", icon: Globe, external: true },
 ];
 
