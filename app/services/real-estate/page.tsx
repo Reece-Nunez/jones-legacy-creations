@@ -109,8 +109,15 @@ export default function RealEstatePage() {
     <>
       <Navigation />
 
+      {/* Current Listings — kept at the top so visitors see what's for
+          sale before any other content. Hides itself when there are
+          no active/pending listings. */}
+      <div className="pt-24">
+        <ListingsStrip />
+      </div>
+
       {/* Hero Section */}
-      <section aria-label="Real estate services overview" className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
+      <section aria-label="Real estate services overview" className="pt-16 pb-16 bg-gradient-to-br from-gray-50 to-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -175,9 +182,6 @@ export default function RealEstatePage() {
           </div>
         </div>
       </section>
-
-      {/* Current Listings — populated by admins via /admin/listings */}
-      <ListingsStrip />
 
       {/* Our Process Section */}
       <section aria-label="Our realtor process" className="py-20 bg-gray-50">

@@ -29,14 +29,15 @@ export default function ListingsStrip() {
     };
   }, []);
 
-  // Hide the whole section entirely until we know whether there are listings —
-  // avoids a flash of empty placeholder on first load.
-  if (listings === null) return null;
+  // Hide entirely while loading OR when there are no active listings — the
+  // strip sits at the top of the real-estate page, and an empty "check back
+  // soon" placeholder there would push the hero down for no reason.
+  if (listings === null || listings.length === 0) return null;
 
   return (
     <section
       aria-label="Current real estate listings"
-      className="py-16 sm:py-20 bg-white"
+      className="py-12 sm:py-16 bg-white"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div
@@ -57,28 +58,16 @@ export default function ListingsStrip() {
           </div>
         </motion.div>
 
-        {listings.length === 0 ? (
-          <div className="rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 p-12 text-center">
-            <Home className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-4 text-base font-medium text-gray-700">
-              No active listings right now
-            </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Check back soon — new homes are added regularly.
-            </p>
+        <div className="relative">
+          <div
+            className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
+            style={{ scrollbarWidth: "thin" }}
+          >
+            {listings.map((l) => (
+              <ListingCard key={l.id} listing={l} />
+            ))}
           </div>
-        ) : (
-          <div className="relative">
-            <div
-              className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
-              style={{ scrollbarWidth: "thin" }}
-            >
-              {listings.map((l) => (
-                <ListingCard key={l.id} listing={l} />
-              ))}
-            </div>
-          </div>
-        )}
+        </div>
       </div>
     </section>
   );
