@@ -1,55 +1,77 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { GalleryContent } from "@/components/GalleryContent";
 
 export const metadata = {
   title: "Project Gallery | Jones Legacy Creations",
-  description: "Browse completed construction projects by Jones Legacy Creations in Southern Utah.",
+  description:
+    "Browse completed construction projects by Jones Legacy Creations in Southern Utah.",
 };
 
+export const dynamic = "force-dynamic";
+
+interface RawShowcase {
+  id: string;
+  slug: string;
+  title: string;
+  location: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+  photos: { id: string; url: string; alt: string | null; sort_order: number }[];
+}
+
 export default async function GalleryPage() {
-  const supabase = await createClient();
+  const supabase = createAdminClient();
 
+  // Pull active showcases with their photos. Each showcase becomes a card
+  // that links to its public detail page (/services/construction/projects/<slug>).
   const { data } = await supabase
-    .from("documents")
-    .select("id, file_url, name, project_id, created_at, projects(id, name, city, state, description)")
-    .eq("category", "photo")
-    .eq("is_public", true)
-    .order("created_at", { ascending: true });
+    .from("construction_showcases")
+    .select(
+      `id, slug, title, location, description, cover_image_url,
+       photos:construction_showcase_photos(id, url, alt, sort_order)`
+    )
+    .eq("status", "active")
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: false });
 
-  // Group by project
-  const projectMap = new Map<string, {
-    id: string;
-    name: string;
-    city: string | null;
-    state: string | null;
-    description: string | null;
-    photos: { id: string; file_url: string; name: string }[];
-  }>();
+  const showcases = (data ?? []) as RawShowcase[];
 
-  for (const doc of data ?? []) {
-    const raw = doc.projects;
-    const project = (Array.isArray(raw) ? raw[0] : raw) as { id: string; name: string; city: string | null; state: string | null; description: string | null } | null;
-    if (!project) continue;
-    if (!projectMap.has(project.id)) {
-      projectMap.set(project.id, {
-        id: project.id,
-        name: project.name,
-        city: project.city,
-        state: project.state,
-        description: project.description,
-        photos: [],
-      });
-    }
-    projectMap.get(project.id)!.photos.push({
-      id: doc.id,
-      file_url: doc.file_url,
-      name: doc.name,
-    });
-  }
+  const projects = showcases
+    .map((s) => {
+      const sortedPhotos = (s.photos ?? [])
+        .slice()
+        .sort((a, b) => a.sort_order - b.sort_order);
+      const coverPhotoFile = s.cover_image_url
+        ? { id: `cover-${s.id}`, file_url: s.cover_image_url, name: s.title }
+        : null;
+      // Cover photo always leads if it's not already in the gallery.
+      const photos = coverPhotoFile && !sortedPhotos.some((p) => p.url === s.cover_image_url)
+        ? [coverPhotoFile, ...sortedPhotos.map((p) => ({
+            id: p.id,
+            file_url: p.url,
+            name: p.alt ?? s.title,
+          }))]
+        : sortedPhotos.map((p) => ({
+            id: p.id,
+            file_url: p.url,
+            name: p.alt ?? s.title,
+          }));
 
-  const projects = Array.from(projectMap.values()).filter(p => p.photos.length > 0);
+      return {
+        id: s.id,
+        slug: s.slug,
+        name: s.title,
+        // GalleryContent renders city/state inline; put the whole "Hatch, UT"
+        // string in city since we store location as free text.
+        city: s.location,
+        state: null,
+        description: s.description,
+        photos,
+      };
+    })
+    .filter((p) => p.photos.length > 0);
 
   return (
     <>

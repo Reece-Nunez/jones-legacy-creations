@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -105,6 +105,26 @@ export default function ConstructionPage() {
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [selectedProject, setSelectedProject] = useState<CompletedProject | null>(null);
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+
+  // DB-backed showcases managed via /admin/showcases. Rendered alongside the
+  // hardcoded entries above. Each card links to its dedicated detail page.
+  type DbShowcase = {
+    id: string;
+    slug: string;
+    title: string;
+    location: string | null;
+    description: string | null;
+    cover_image_url: string | null;
+  };
+  const [dbShowcases, setDbShowcases] = useState<DbShowcase[]>([]);
+  useEffect(() => {
+    fetch("/api/construction-showcases")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setDbShowcases(data);
+      })
+      .catch((err) => console.warn("Failed to load showcases", err));
+  }, []);
   const { executeRecaptcha } = useRecaptcha();
 
   const toggleSection = (section: string) => {
@@ -280,6 +300,58 @@ export default function ConstructionPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+            {dbShowcases.map((s, index) => (
+              <motion.div
+                key={s.id}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: index * 0.1 }}
+                viewport={{ once: true }}
+                className="group"
+              >
+                <Link
+                  href={`/services/construction/projects/${s.slug}`}
+                  className="block"
+                >
+                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
+                    <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
+                      {s.cover_image_url ? (
+                        <Image
+                          src={s.cover_image_url}
+                          alt={`${s.title} custom home${s.location ? ` build in ${s.location}` : ""}`}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-2" />
+                          <span className="text-sm text-gray-600">Photos Coming Soon</span>
+                        </div>
+                      )}
+                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                        View Project
+                      </div>
+                    </div>
+                    <div className="p-6">
+                      {s.location && (
+                        <div className="text-sm text-gray-600 mb-2">{s.location}</div>
+                      )}
+                      <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">
+                        {s.title}
+                      </h3>
+                      {s.description && (
+                        <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">
+                          {s.description}
+                        </p>
+                      )}
+                    </div>
+                  </div>
+                </Link>
+              </motion.div>
+            ))}
             {completedBuilds.map((project, index) => (
               <motion.div
                 key={project.id}

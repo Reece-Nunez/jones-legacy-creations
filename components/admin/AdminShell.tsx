@@ -16,6 +16,7 @@ import {
   FileCheck,
   Globe,
   Home,
+  Hammer,
   ExternalLink,
   Menu,
   X,
@@ -38,6 +39,7 @@ const navLinks = [
   { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
   { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
   { label: "Real Estate Listings", href: "/admin/listings", icon: Home },
+  { label: "Showcase Projects", href: "/admin/showcases", icon: Hammer },
 ];
 
 // Bottom tab bar items for mobile (max 5 for thumb-friendly sizing)

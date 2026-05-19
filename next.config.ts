@@ -30,6 +30,12 @@ const nextConfig: NextConfig = {
         hostname: "rvyummgsvggjqtjbtqfw.supabase.co",
         pathname: "/storage/v1/object/public/real-estate-photos/**",
       },
+      {
+        // Public construction-showcase photos
+        protocol: "https",
+        hostname: "rvyummgsvggjqtjbtqfw.supabase.co",
+        pathname: "/storage/v1/object/public/construction-photos/**",
+      },
     ],
   },
   async headers() {
