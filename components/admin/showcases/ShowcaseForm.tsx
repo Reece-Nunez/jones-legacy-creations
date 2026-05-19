@@ -13,6 +13,7 @@ import {
   Star,
   StarOff,
   GripVertical,
+  Sparkles,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { confirmAction } from "@/lib/confirmAction";
@@ -57,6 +58,7 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savingNonPhotoFields, setSavingNonPhotoFields] = useState(false);
+  const [generatingDescription, setGeneratingDescription] = useState(false);
   const photoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const draggingIdRef = useRef<string | null>(null);
@@ -192,6 +194,51 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
     toast.success("Cover photo updated");
   }
 
+  async function generateDescription() {
+    if (!isEdit) {
+      toast.error("Save the showcase first, then generate.");
+      return;
+    }
+    if (photos.length === 0) {
+      toast.error("Upload at least one photo first.");
+      return;
+    }
+    setGeneratingDescription(true);
+    const dismissLoading = toast.loading("Reading the photos…");
+    try {
+      const res = await fetch(
+        `/api/admin/construction-showcases/${showcase!.id}/generate-description`,
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            // Send the current (unsaved) form values so the AI sees what
+            // Blake just typed, not what's still in the DB.
+            title: form.title,
+            location: form.location || null,
+            features,
+            photoUrls: photos.map((p) => p.url),
+          }),
+        }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to generate description");
+      }
+      const { description } = await res.json();
+      if (typeof description !== "string" || !description.trim()) {
+        throw new Error("Got an empty description back");
+      }
+      update("description", description);
+      toast.success("Description drafted — review and tweak before saving.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to generate description");
+    } finally {
+      setGeneratingDescription(false);
+      toast.dismiss(dismissLoading);
+    }
+  }
+
   // Drag-and-drop reorder using HTML5 DnD. Sufficient on desktop; mobile
   // users can edit the sort_order via the form's number field if they need
   // exact ordering.
@@ -221,7 +268,7 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
       );
       if (!res.ok) throw new Error("Reorder failed");
     } catch {
-      toast.error("Could not save new order — reloading");
+      toast.error("Could not save new order. Reloading.");
       setPhotos(showcase?.photos ?? []);
     }
   }
@@ -393,14 +440,39 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
 
       {/* Description */}
       <div>
-        <label className={labelClass}>Description</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelClass + " mb-0"}>Description</label>
+          <button
+            type="button"
+            onClick={generateDescription}
+            disabled={generatingDescription || !isEdit || photos.length === 0}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:hover:bg-transparent"
+            title={
+              !isEdit
+                ? "Save the showcase first"
+                : photos.length === 0
+                ? "Upload at least one photo first"
+                : "Draft a description from the photos"
+            }
+          >
+            {generatingDescription ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {generatingDescription ? "Reading photos…" : "Generate from photos"}
+          </button>
+        </div>
         <textarea
           rows={5}
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
-          placeholder="A warm, custom-built retreat tucked into the mountain town of …"
+          placeholder="What makes this build feel like itself. Add photos and click Generate to draft from them."
           className={inputClass}
         />
+        <p className="mt-1 text-xs text-gray-400">
+          The generated draft is yours to edit before saving.
+        </p>
       </div>
 
       {/* Features chips */}
@@ -539,30 +611,38 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
                       className="object-cover"
                       unoptimized
                     />
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/40 transition-colors" />
+                    <div className="absolute inset-0 bg-black/0 md:group-hover:bg-black/40 transition-colors" />
 
-                    <span className="absolute top-1.5 left-1.5 hidden group-hover:flex h-7 w-7 items-center justify-center rounded-md bg-white/90 text-gray-700">
+                    <span className="hidden md:flex absolute top-1.5 left-1.5 h-9 w-9 items-center justify-center rounded-md bg-white/90 text-gray-700 opacity-0 md:group-hover:opacity-100 transition-opacity">
                       <GripVertical className="h-4 w-4" />
                     </span>
 
+                    {/* Star + X are always visible on touch (mobile/tablet),
+                        hover-reveal on desktop. Wider tap target (h-9 w-9). */}
                     <button
                       type="button"
                       onClick={() => setCoverFromPhoto(p)}
                       title={isCover ? "This is the cover photo" : "Set as cover"}
-                      className={`absolute top-1.5 right-9 h-7 w-7 inline-flex items-center justify-center rounded-md ${
-                        isCover ? "bg-amber-400 text-white" : "bg-white/90 text-gray-700"
-                      } hover:bg-amber-400 hover:text-white transition-colors opacity-0 group-hover:opacity-100 ${
-                        isCover ? "!opacity-100" : ""
+                      aria-label={isCover ? "Cover photo" : "Set as cover"}
+                      className={`absolute top-1.5 right-12 h-9 w-9 inline-flex items-center justify-center rounded-md transition-colors ${
+                        isCover
+                          ? "bg-amber-400 text-white"
+                          : "bg-white/90 text-gray-700 md:opacity-0 md:group-hover:opacity-100 hover:bg-amber-400 hover:text-white"
                       }`}
                     >
-                      {isCover ? <Star className="h-4 w-4 fill-current" /> : <StarOff className="h-4 w-4" />}
+                      {isCover ? (
+                        <Star className="h-4 w-4 fill-current" />
+                      ) : (
+                        <StarOff className="h-4 w-4" />
+                      )}
                     </button>
 
                     <button
                       type="button"
                       onClick={() => deletePhoto(p)}
                       title="Remove photo"
-                      className="absolute top-1.5 right-1.5 h-7 w-7 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors opacity-0 group-hover:opacity-100"
+                      aria-label="Remove photo"
+                      className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
                     >
                       <X className="h-4 w-4" />
                     </button>
