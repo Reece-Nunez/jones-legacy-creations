@@ -1,5 +1,25 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
+import { createAdminClient } from "@/lib/supabase/admin";
+
+const LISTING_PHOTOS_BUCKET = "real-estate-photos";
+
+function storagePathFromUrl(url: string | null, bucket: string): string | null {
+  if (!url) return null;
+  try {
+    const u = new URL(url);
+    const marker = "/storage/v1/object/";
+    const i = u.pathname.indexOf(marker);
+    if (i === -1) return null;
+    let rest = u.pathname.slice(i + marker.length);
+    if (rest.startsWith("public/")) rest = rest.slice("public/".length);
+    if (rest.startsWith("sign/")) rest = rest.slice("sign/".length);
+    if (!rest.startsWith(`${bucket}/`)) return null;
+    return decodeURIComponent(rest.slice(bucket.length + 1));
+  } catch {
+    return null;
+  }
+}
 
 const ALLOWED_FIELDS = [
   "address",
@@ -86,6 +106,18 @@ export async function DELETE(
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
+  // Grab the cover photo path before we delete the row so we can clean it up.
+  const { data: listing } = await supabase
+    .from("real_estate_listings")
+    .select("cover_photo_url")
+    .eq("id", id)
+    .maybeSingle();
+
+  const coverPath = storagePathFromUrl(
+    listing?.cover_photo_url ?? null,
+    LISTING_PHOTOS_BUCKET
+  );
+
   const { error } = await supabase
     .from("real_estate_listings")
     .delete()
@@ -94,5 +126,16 @@ export async function DELETE(
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 });
   }
+
+  // Best-effort storage cleanup. Don't fail the API if storage hiccups.
+  if (coverPath) {
+    try {
+      const admin = createAdminClient();
+      await admin.storage.from(LISTING_PHOTOS_BUCKET).remove([coverPath]);
+    } catch (err) {
+      console.warn("Listing delete: storage cleanup failed", err);
+    }
+  }
+
   return NextResponse.json({ success: true });
 }
