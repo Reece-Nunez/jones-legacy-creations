@@ -5,7 +5,15 @@ import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import toast from "react-hot-toast";
-import { Pencil, Trash2, Copy, Plus, Hammer, ExternalLink } from "lucide-react";
+import {
+  Pencil,
+  Trash2,
+  Copy,
+  Plus,
+  Hammer,
+  ExternalLink,
+  ArrowRightCircle,
+} from "lucide-react";
 import { cn } from "@/lib/utils";
 import { confirmAction } from "@/lib/confirmAction";
 import {
@@ -23,6 +31,35 @@ export default function ShowcasesTable({ showcases }: Props) {
   const router = useRouter();
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [duplicatingId, setDuplicatingId] = useState<string | null>(null);
+  const [convertingId, setConvertingId] = useState<string | null>(null);
+
+  async function handleConvertToListing(s: ConstructionShowcase) {
+    if (
+      !(await confirmAction(
+        `Start a real estate listing draft from "${s.title}"? You'll fill in price, beds/baths, MLS link, and address before publishing.`,
+        { confirmLabel: "Start draft" }
+      ))
+    )
+      return;
+    setConvertingId(s.id);
+    try {
+      const res = await fetch(
+        `/api/admin/construction-showcases/${s.id}/convert-to-listing`,
+        { method: "POST" }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to start listing");
+      }
+      const listing = await res.json();
+      toast.success("Listing draft started. Fill in the rest and publish.");
+      router.push(`/admin/listings/${listing.id}`);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to start listing");
+    } finally {
+      setConvertingId(null);
+    }
+  }
 
   async function handleDelete(s: ConstructionShowcase) {
     if (
@@ -212,6 +249,14 @@ export default function ShowcasesTable({ showcases }: Props) {
               title="Make a copy as a draft"
             >
               <Copy className="h-4 w-4" /> Duplicate
+            </button>
+            <button
+              onClick={() => handleConvertToListing(s)}
+              disabled={convertingId === s.id}
+              className="inline-flex items-center gap-1.5 rounded-lg px-3 py-2 min-h-[40px] text-sm font-medium text-gray-700 hover:bg-gray-100 disabled:opacity-50"
+              title="Start a real estate listing pre-filled from this showcase"
+            >
+              <ArrowRightCircle className="h-4 w-4" /> Start Listing
             </button>
             <button
               onClick={() => handleDelete(s)}
