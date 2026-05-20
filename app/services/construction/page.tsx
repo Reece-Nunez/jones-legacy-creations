@@ -35,30 +35,15 @@ interface CompletedProject {
   images?: { src: string; alt: string }[];
 }
 
-// Completed builds now live in Supabase (construction_showcases). Blake
-// adds and edits them from /admin/showcases. Kept this array as the empty
-// fallback so the in-page modal code below (selectedProject / lightbox)
-// still has a defined shape if it ever ends up rendering legacy data.
+// Completed builds and current projects both live in Supabase
+// (construction_showcases). Blake adds and edits them from /admin/showcases.
+// Kept this array as an empty fallback so the in-page modal code below
+// (selectedProject / lightbox) still has a defined shape if it ever ends up
+// rendering legacy data.
 const completedBuilds: (CompletedProject & {
   coverImage: string;
   images: { src: string; alt: string }[];
 })[] = [];
-
-// Current projects
-const currentProjects = [
-  {
-    id: "dixie-springs-current",
-    title: "New Custom Build",
-    location: "Dixie Springs, UT",
-    status: "Coming Soon",
-  },
-  {
-    id: "gunlock-current",
-    title: "New Custom Build",
-    location: "Gunlock, UT",
-    status: "Coming Soon",
-  },
-];
 
 export default function ConstructionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,8 +52,9 @@ export default function ConstructionPage() {
   const [selectedProject, setSelectedProject] = useState<CompletedProject | null>(null);
   const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
 
-  // DB-backed showcases managed via /admin/showcases. Rendered alongside the
-  // hardcoded entries above. Each card links to its dedicated detail page.
+  // DB-backed showcases managed via /admin/showcases. Each card links to
+  // its dedicated detail page. Split into Current vs Completed for the two
+  // sections on this page.
   type DbShowcase = {
     id: string;
     slug: string;
@@ -76,6 +62,7 @@ export default function ConstructionPage() {
     location: string | null;
     description: string | null;
     cover_image_url: string | null;
+    project_phase: "current" | "completed";
   };
   const [dbShowcases, setDbShowcases] = useState<DbShowcase[]>([]);
   useEffect(() => {
@@ -86,6 +73,8 @@ export default function ConstructionPage() {
       })
       .catch((err) => console.warn("Failed to load showcases", err));
   }, []);
+  const currentShowcases = dbShowcases.filter((s) => s.project_phase === "current");
+  const completedShowcases = dbShowcases.filter((s) => s.project_phase === "completed");
   const { executeRecaptcha } = useRecaptcha();
 
   const toggleSection = (section: string) => {
@@ -214,30 +203,55 @@ export default function ConstructionPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {currentProjects.map((project, index) => (
+            {currentShowcases.map((s, index) => (
               <motion.div
-                key={project.id}
+                key={s.id}
                 initial={{ opacity: 0, y: 20 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.5, delay: index * 0.1 }}
                 viewport={{ once: true }}
-                className="bg-gray-50 rounded-2xl overflow-hidden"
+                className="group"
               >
-                <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative">
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-4" />
-                    <span className="text-2xl font-serif font-bold text-gray-600">Photos Coming Soon</span>
+                <Link
+                  href={`/services/construction/projects/${s.slug}`}
+                  className="block"
+                >
+                  <div className="bg-gray-50 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group-hover:scale-[1.02]">
+                    <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
+                      {s.cover_image_url ? (
+                        <Image
+                          src={s.cover_image_url}
+                          alt={`${s.title}${s.location ? ` in ${s.location}` : ""}`}
+                          fill
+                          sizes="(max-width: 768px) 100vw, 50vw"
+                          className="object-cover group-hover:scale-105 transition-transform duration-500"
+                          loading="lazy"
+                        />
+                      ) : (
+                        <div className="absolute inset-0 flex flex-col items-center justify-center">
+                          <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-4" />
+                          <span className="text-2xl font-serif font-bold text-gray-600">Photos Coming Soon</span>
+                        </div>
+                      )}
+                    </div>
+                    <div className="p-6 text-center">
+                      {s.location && (
+                        <div className="text-sm text-gray-600 mb-2">{s.location}</div>
+                      )}
+                      <h3 className="text-xl font-bold text-gray-900 mb-3">{s.title}</h3>
+                      <div className="inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded-full">
+                        {s.cover_image_url ? "View Project" : "Coming Soon"}
+                      </div>
+                    </div>
                   </div>
-                </div>
-                <div className="p-6 text-center">
-                  <div className="text-sm text-gray-600 mb-2">{project.location}</div>
-                  <h3 className="text-xl font-bold text-gray-900 mb-3">{project.title}</h3>
-                  <div className="inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded-full">
-                    {project.status}
-                  </div>
-                </div>
+                </Link>
               </motion.div>
             ))}
+            {currentShowcases.length === 0 && (
+              <div className="col-span-full text-center text-gray-500 py-10">
+                Nothing under construction at the moment. Check back soon.
+              </div>
+            )}
           </div>
         </div>
       </section>
@@ -261,7 +275,12 @@ export default function ConstructionPage() {
           </motion.div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {dbShowcases.map((s, index) => (
+            {completedShowcases.length === 0 && (
+              <div className="col-span-full text-center text-gray-500 py-10">
+                Recent build photos are on the way.
+              </div>
+            )}
+            {completedShowcases.map((s, index) => (
               <motion.div
                 key={s.id}
                 initial={{ opacity: 0, y: 20 }}

@@ -19,10 +19,13 @@ import { createClient } from "@/lib/supabase/client";
 import { confirmAction } from "@/lib/confirmAction";
 import {
   SHOWCASE_STATUS_LABELS,
+  PROJECT_PHASE_LABELS,
   slugify,
+  slugifyLive,
   type ConstructionShowcase,
   type ShowcasePhoto,
   type ShowcaseStatus,
+  type ProjectPhase,
 } from "@/lib/types/construction-showcase";
 
 interface ShowcaseFormProps {
@@ -49,6 +52,7 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
     cover_image_url: showcase?.cover_image_url ?? "",
     sort_order: showcase?.sort_order?.toString() ?? "0",
     status: (showcase?.status as ShowcaseStatus) ?? "draft",
+    project_phase: (showcase?.project_phase as ProjectPhase) ?? "completed",
   });
   const [features, setFeatures] = useState<string[]>(showcase?.features ?? []);
   const [featureInput, setFeatureInput] = useState("");
@@ -280,13 +284,14 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
     try {
       const payload = {
         title: form.title.trim(),
-        slug: form.slug.trim() || slugify(form.title.trim()),
+        slug: slugify(form.slug.trim() || form.title.trim()),
         location: form.location.trim() || null,
         description: form.description.trim() || null,
         features,
         cover_image_url: form.cover_image_url || null,
         sort_order: form.sort_order ? Number(form.sort_order) : 0,
         status: form.status,
+        project_phase: form.project_phase,
       };
       const url = isEdit
         ? `/api/admin/construction-showcases/${showcase!.id}`
@@ -389,7 +394,8 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
           <input
             type="text"
             value={form.slug}
-            onChange={(e) => update("slug", slugify(e.target.value))}
+            onChange={(e) => update("slug", slugifyLive(e.target.value))}
+            onBlur={(e) => update("slug", slugify(e.target.value))}
             placeholder="haven-hideaway"
             className={inputClass}
           />
@@ -397,8 +403,8 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
         </div>
       </div>
 
-      {/* Location + status + order */}
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+      {/* Location + phase */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Location</label>
           <input
@@ -409,6 +415,30 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
             className={inputClass}
           />
         </div>
+        <div>
+          <label className={labelClass}>Project phase</label>
+          <select
+            value={form.project_phase}
+            onChange={(e) =>
+              update("project_phase", e.target.value as ProjectPhase)
+            }
+            className={inputClass}
+          >
+            {Object.entries(PROJECT_PHASE_LABELS).map(([slug, label]) => (
+              <option key={slug} value={slug}>
+                {label}
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-gray-400">
+            Current shows under &ldquo;Current Projects&rdquo;. Completed
+            shows under &ldquo;Most Recent Builds&rdquo;.
+          </p>
+        </div>
+      </div>
+
+      {/* Status + sort order */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
           <label className={labelClass}>Status</label>
           <select

@@ -62,6 +62,7 @@ export default function ShowcasesTable({ showcases }: Props) {
           cover_image_url: s.cover_image_url,
           sort_order: s.sort_order,
           status: "draft",
+          project_phase: s.project_phase,
         }),
       });
       if (!res.ok) {
@@ -135,14 +136,21 @@ export default function ShowcasesTable({ showcases }: Props) {
                     <p className="text-sm text-gray-500">{s.location}</p>
                   )}
                 </div>
-                <span
-                  className={cn(
-                    "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
-                    SHOWCASE_STATUS_COLORS[s.status]
+                <div className="flex items-center gap-1.5 flex-wrap">
+                  {s.project_phase === "current" && (
+                    <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap">
+                      Current
+                    </span>
                   )}
-                >
-                  {SHOWCASE_STATUS_LABELS[s.status]}
-                </span>
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+                      SHOWCASE_STATUS_COLORS[s.status]
+                    )}
+                  >
+                    {SHOWCASE_STATUS_LABELS[s.status]}
+                  </span>
+                </div>
               </div>
               {s.description && (
                 <p className="text-sm text-gray-600 line-clamp-2">

@@ -1,4 +1,5 @@
 export type ShowcaseStatus = "draft" | "active" | "archived";
+export type ProjectPhase = "current" | "completed";
 
 export interface ConstructionShowcase {
   id: string;
@@ -10,9 +11,15 @@ export interface ConstructionShowcase {
   cover_image_url: string | null;
   sort_order: number;
   status: ShowcaseStatus;
+  project_phase: ProjectPhase;
   created_at: string;
   updated_at: string;
 }
+
+export const PROJECT_PHASE_LABELS: Record<ProjectPhase, string> = {
+  current: "Current (Coming Soon / In Progress)",
+  completed: "Completed Build",
+};
 
 export interface ShowcasePhoto {
   id: string;
@@ -42,6 +49,7 @@ export const SHOWCASE_STATUS_COLORS: Record<ShowcaseStatus, string> = {
 /**
  * Make a URL-safe slug from a title. Lowercases, replaces non-alphanumerics
  * with dashes, collapses multiple dashes, trims leading/trailing dashes.
+ * Use on form SUBMIT or when generating a slug from a title.
  */
 export function slugify(input: string): string {
   return input
@@ -50,5 +58,20 @@ export function slugify(input: string): string {
     .replace(/[̀-ͯ]/g, "")
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "")
+    .slice(0, 80);
+}
+
+/**
+ * Sanitize a slug while the user is still typing it. Keeps trailing and
+ * leading dashes so the user can actually type them mid-word. Final cleanup
+ * (trim dashes) happens on submit via slugify().
+ */
+export function slugifyLive(input: string): string {
+  return input
+    .toLowerCase()
+    .normalize("NFKD")
+    .replace(/[̀-ͯ]/g, "")
+    .replace(/[^a-z0-9-]/g, "-")
+    .replace(/--+/g, "-")
     .slice(0, 80);
 }

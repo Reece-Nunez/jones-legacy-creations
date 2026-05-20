@@ -11,6 +11,7 @@ const ALLOWED_FIELDS = [
   "cover_image_url",
   "sort_order",
   "status",
+  "project_phase",
 ] as const;
 
 export async function GET() {

@@ -11,7 +11,7 @@ export async function GET(request: NextRequest) {
   let query = supabase
     .from("construction_showcases")
     .select(
-      `id, slug, title, location, description, features, cover_image_url, sort_order,
+      `id, slug, title, location, description, features, cover_image_url, sort_order, project_phase,
        photos:construction_showcase_photos(id, url, alt, sort_order)`
     )
     .eq("status", "active");
