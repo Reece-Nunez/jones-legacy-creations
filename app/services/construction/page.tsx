@@ -21,18 +21,6 @@ import Image from "next/image";
 // Extended type for form with honeypot field
 type ConstructionFormWithHoneypot = ConstructionFormData & { honeypot?: string };
 
-// S3 base URL for construction images
-const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/construction";
-
-// Helper function to generate image URLs automatically
-// Images must be named: image1.webp, image2.webp, image3.webp, etc.
-function generateImages(folder: string, imageCount: number, title: string) {
-  return Array.from({ length: imageCount }, (_, i) => ({
-    src: `${S3_BASE_URL}/${folder}/image${i + 1}.webp`,
-    alt: `${title} - Image ${i + 1}`,
-  }));
-}
-
 interface CompletedProject {
   id: string;
   title: string;
@@ -47,41 +35,14 @@ interface CompletedProject {
   images?: { src: string; alt: string }[];
 }
 
-// ============================================================
-// TO ADD MORE IMAGES: Just update imageCount below
-// Images must be named image1.webp, image2.webp, etc in the S3 folder
-// ============================================================
-const completedBuildsData: CompletedProject[] = [
-  {
-    id: "haven-hideaway",
-    title: "Haven Hideaway",
-    location: "Hatch, UT",
-    description: "The Haven Hideaway is a warm, custom-built retreat tucked into the quiet mountain town of Hatch. Designed to take in stunning views in every direction, this cabin features exposed wood, big windows, and a cozy, modern–rustic feel. Built with quality craftsmanship, the layout is simple, inviting, and perfect for relaxing weekends or year-round escape.",
-    folder: "haven-hideaway",
-    imageCount: 42, // Update when images are uploaded
-    coverImageNum: 42, // Which image number to use as the cover
-    features: ["Exposed Wood", "Large Windows", "Mountain Views", "Modern-Rustic Design"],
-  },
-  {
-    id: "peach-grove",
-    title: "Peach Grove Home",
-    location: "Hurricane, UT",
-    description: "This family-friendly home feels warm and welcoming from the moment you walk in. Enjoy a large yard with room to play and relax under the peach trees, then head inside to cozy up by the fire. The layout is comfortable and practical, with an oversized master vanity and inviting spaces designed for everyday living. It's a home made for real families and real moments.",
-    folder: "peach-grove",
-    imageCount: 24, // <-- Just change this number when you add more images
-    coverImageNum: 21, // Which image number to use as the cover
-    features: ["Large Yard", "Oversized Master Vanity", "Family-Friendly Layout"],
-  },
-];
-
-// Auto-generate image URLs from the data above
-const completedBuilds = completedBuildsData.map(project => ({
-  ...project,
-  coverImage: project.imageCount > 0
-    ? `${S3_BASE_URL}/${project.folder}/image${project.coverImageNum || 1}.webp`
-    : "",
-  images: generateImages(project.folder, project.imageCount, project.title),
-}));
+// Completed builds now live in Supabase (construction_showcases). Blake
+// adds and edits them from /admin/showcases. Kept this array as the empty
+// fallback so the in-page modal code below (selectedProject / lightbox)
+// still has a defined shape if it ever ends up rendering legacy data.
+const completedBuilds: (CompletedProject & {
+  coverImage: string;
+  images: { src: string; alt: string }[];
+})[] = [];
 
 // Current projects
 const currentProjects = [
