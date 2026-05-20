@@ -55,7 +55,7 @@ export async function POST(
   }
 
   try {
-    const description = await generateShowcaseDescription({
+    const result = await generateShowcaseDescription({
       title: override.title ?? showcase.title,
       location:
         override.location !== undefined ? override.location : showcase.location,
@@ -64,7 +64,7 @@ export async function POST(
         : (showcase.features ?? []),
       photoUrls,
     });
-    return NextResponse.json({ description });
+    return NextResponse.json(result);
   } catch (err) {
     console.error("Failed to generate showcase description:", err);
     return NextResponse.json(

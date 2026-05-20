@@ -7,6 +7,11 @@ interface GenerateInput {
   photoUrls: string[]; // first N will be used as visual context
 }
 
+export interface GenerateOutput {
+  description: string;
+  features: string[];
+}
+
 const MAX_PHOTOS = 6;
 const MAX_PHOTO_BYTES = 6 * 1024 * 1024; // 6 MB per photo
 
@@ -50,7 +55,7 @@ async function fetchAsBase64(url: string): Promise<
 
 export async function generateShowcaseDescription(
   input: GenerateInput
-): Promise<string> {
+): Promise<GenerateOutput> {
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) {
     throw new Error("ANTHROPIC_API_KEY is not set");
@@ -80,13 +85,17 @@ export async function generateShowcaseDescription(
 
   content.push({
     type: "text",
-    text: `You are writing a short description for a custom home Jones Legacy Creations recently completed. Jones Legacy Creations is a custom home builder in southern Utah, and the writing voice should match the builder, Blake, who is grounded and direct, not florid.
+    text: `You are writing a short description and picking out features for a custom home Jones Legacy Creations recently completed. Jones Legacy Creations is a custom home builder in southern Utah, and the writing voice should match the builder, Blake, who is grounded and direct, not florid.
 
 Project title: ${input.title}
 ${locationLine}
 ${featuresLine}
 
-Look at the photos and write a description of this home in 80 to 130 words. Focus on what makes the home feel like itself, what a buyer or a fan of the builder would notice, and any standout features visible in the photos. Stay grounded. Avoid marketing fluff.
+Look at the photos and produce two things:
+
+1. A description of the home, 80 to 130 words. Focus on what makes the home feel like itself, what a buyer or a fan of the builder would notice, and any standout elements visible in the photos. Stay grounded. Avoid marketing fluff.
+
+2. A list of 4 to 8 short feature labels (each 2 to 4 words) calling out specific things visible in the photos. Examples: "Stone Fireplace", "Vaulted Ceilings", "Custom Cabinetry", "Mountain Views", "Spa Bathroom", "Open Floor Plan", "Wide-Plank Floors", "Quartz Countertops", "Black Window Frames", "Modern Farmhouse Style". Do not repeat the existing features listed above; only add new ones the photos show.
 
 Hard rules for the writing style:
 - No em-dashes or en-dashes. Use commas, periods, or simple hyphens instead.
@@ -99,16 +108,44 @@ Hard rules for the writing style:
 - Write in plain English. Short sentences are fine. Vary the rhythm.
 - Address the reader as "you" only if it sounds natural, never forced.
 
-Return only the description text. No headings, no quotation marks, no preamble.`,
+Return ONLY a single JSON object in this exact shape, with no surrounding text:
+{
+  "description": "...",
+  "features": ["Feature One", "Feature Two", ...]
+}`,
   });
 
   const response = await client.messages.create({
     model: "claude-sonnet-4-5",
-    max_tokens: 600,
+    max_tokens: 800,
     messages: [{ role: "user", content }],
   });
 
   const block = response.content.find((c) => c.type === "text");
-  const raw = block && block.type === "text" ? block.text : "";
-  return stripAIPunctuation(raw);
+  const raw = block && block.type === "text" ? block.text.trim() : "";
+
+  // Extract the JSON object even if the model wrapped it in markdown fences.
+  let parsed: { description?: unknown; features?: unknown } | null = null;
+  try {
+    const start = raw.indexOf("{");
+    const end = raw.lastIndexOf("}");
+    if (start !== -1 && end !== -1) {
+      parsed = JSON.parse(raw.slice(start, end + 1));
+    }
+  } catch {
+    parsed = null;
+  }
+
+  const description = stripAIPunctuation(
+    typeof parsed?.description === "string" ? parsed.description : raw
+  );
+
+  const features = Array.isArray(parsed?.features)
+    ? (parsed.features as unknown[])
+        .filter((f): f is string => typeof f === "string" && f.trim().length > 0)
+        .map((f) => stripAIPunctuation(f).trim())
+        .slice(0, 10)
+    : [];
+
+  return { description, features };
 }
