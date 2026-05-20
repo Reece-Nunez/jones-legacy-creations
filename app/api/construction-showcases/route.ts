@@ -3,18 +3,24 @@ import { createAdminClient } from "@/lib/supabase/admin";
 
 // Public endpoint — returns active showcases (with their photos) for the
 // website. Uses service-role to bypass RLS but explicitly filters by status
-// so drafts never leak.
+// so drafts never leak. Optional ?category=construction|interior_design
+// filter lets each service page fetch only its own showcases.
 export async function GET(request: NextRequest) {
   const supabase = createAdminClient();
   const slug = request.nextUrl.searchParams.get("slug");
+  const category = request.nextUrl.searchParams.get("category");
 
   let query = supabase
     .from("construction_showcases")
     .select(
-      `id, slug, title, location, description, features, cover_image_url, sort_order, project_phase,
+      `id, slug, title, location, description, features, cover_image_url, sort_order, project_phase, category,
        photos:construction_showcase_photos(id, url, alt, sort_order)`
     )
     .eq("status", "active");
+
+  if (category === "construction" || category === "interior_design") {
+    query = query.eq("category", category);
+  }
 
   if (slug) {
     query = query.eq("slug", slug);

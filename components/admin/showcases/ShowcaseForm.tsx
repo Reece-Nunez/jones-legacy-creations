@@ -20,12 +20,14 @@ import { confirmAction } from "@/lib/confirmAction";
 import {
   SHOWCASE_STATUS_LABELS,
   PROJECT_PHASE_LABELS,
+  SHOWCASE_CATEGORY_LABELS,
   slugify,
   slugifyLive,
   type ConstructionShowcase,
   type ShowcasePhoto,
   type ShowcaseStatus,
   type ProjectPhase,
+  type ShowcaseCategory,
 } from "@/lib/types/construction-showcase";
 
 interface ShowcaseFormProps {
@@ -53,6 +55,7 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
     sort_order: showcase?.sort_order?.toString() ?? "0",
     status: (showcase?.status as ShowcaseStatus) ?? "draft",
     project_phase: (showcase?.project_phase as ProjectPhase) ?? "completed",
+    category: (showcase?.category as ShowcaseCategory) ?? "construction",
   });
   const [features, setFeatures] = useState<string[]>(showcase?.features ?? []);
   const [featureInput, setFeatureInput] = useState("");
@@ -292,6 +295,7 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
         sort_order: form.sort_order ? Number(form.sort_order) : 0,
         status: form.status,
         project_phase: form.project_phase,
+        category: form.category,
       };
       const url = isEdit
         ? `/api/admin/construction-showcases/${showcase!.id}`
@@ -401,6 +405,26 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
           />
           <p className="mt-1 text-xs text-gray-400">/services/construction/projects/{form.slug || "…"}</p>
         </div>
+      </div>
+
+      {/* Service category — controls which public page the showcase appears on */}
+      <div>
+        <label className={labelClass}>Service category</label>
+        <select
+          value={form.category}
+          onChange={(e) => update("category", e.target.value as ShowcaseCategory)}
+          className={inputClass}
+        >
+          {Object.entries(SHOWCASE_CATEGORY_LABELS).map(([slug, label]) => (
+            <option key={slug} value={slug}>
+              {label}
+            </option>
+          ))}
+        </select>
+        <p className="mt-1 text-xs text-gray-400">
+          Construction shows on /services/construction. Interior Design shows
+          on /services/interior-design.
+        </p>
       </div>
 
       {/* Location + phase */}

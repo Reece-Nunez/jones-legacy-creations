@@ -22,18 +22,20 @@ export async function generateMetadata({ params }: ShowcasePageProps) {
     .select("title, location, description")
     .eq("slug", slug)
     .eq("status", "active")
-    .eq("category", "construction")
+    .eq("category", "interior_design")
     .maybeSingle();
   if (!data) return { title: "Project | Jones Legacy Creations" };
   return {
     title: `${data.title} | Jones Legacy Creations`,
     description:
       data.description?.slice(0, 160) ??
-      `Custom build by Jones Legacy Creations${data.location ? ` in ${data.location}` : ""}.`,
+      `Interior design by Jones Legacy Creations${data.location ? ` in ${data.location}` : ""}.`,
   };
 }
 
-export default async function ShowcaseProjectPage({ params }: ShowcasePageProps) {
+export default async function InteriorDesignShowcasePage({
+  params,
+}: ShowcasePageProps) {
   const { slug } = await params;
   const supabase = createAdminClient();
 
@@ -42,7 +44,7 @@ export default async function ShowcaseProjectPage({ params }: ShowcasePageProps)
     .select("*")
     .eq("slug", slug)
     .eq("status", "active")
-    .eq("category", "construction")
+    .eq("category", "interior_design")
     .maybeSingle<ConstructionShowcase>();
 
   if (!showcase) notFound();
@@ -62,10 +64,10 @@ export default async function ShowcaseProjectPage({ params }: ShowcasePageProps)
       <main className="pt-24 pb-20 bg-white min-h-screen">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <Link
-            href="/services/construction"
+            href="/services/interior-design"
             className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-4"
           >
-            <ChevronLeft className="h-4 w-4" /> Back to Construction
+            <ChevronLeft className="h-4 w-4" /> Back to Interior Design
           </Link>
           <ShowcaseDetail showcase={showcase} photos={photos} />
         </div>

@@ -11,6 +11,7 @@ import { confirmAction } from "@/lib/confirmAction";
 import {
   SHOWCASE_STATUS_COLORS,
   SHOWCASE_STATUS_LABELS,
+  SHOWCASE_CATEGORY_LABELS,
   type ConstructionShowcase,
 } from "@/lib/types/construction-showcase";
 
@@ -63,6 +64,7 @@ export default function ShowcasesTable({ showcases }: Props) {
           sort_order: s.sort_order,
           status: "draft",
           project_phase: s.project_phase,
+          category: s.category,
         }),
       });
       if (!res.ok) {
@@ -137,6 +139,16 @@ export default function ShowcasesTable({ showcases }: Props) {
                   )}
                 </div>
                 <div className="flex items-center gap-1.5 flex-wrap">
+                  <span
+                    className={cn(
+                      "inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium whitespace-nowrap",
+                      s.category === "interior_design"
+                        ? "bg-purple-100 text-purple-700"
+                        : "bg-orange-100 text-orange-700"
+                    )}
+                  >
+                    {SHOWCASE_CATEGORY_LABELS[s.category]}
+                  </span>
                   {s.project_phase === "current" && (
                     <span className="inline-flex items-center rounded-full bg-blue-100 text-blue-700 px-2.5 py-0.5 text-xs font-medium whitespace-nowrap">
                       Current

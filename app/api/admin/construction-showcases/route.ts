@@ -12,6 +12,7 @@ const ALLOWED_FIELDS = [
   "sort_order",
   "status",
   "project_phase",
+  "category",
 ] as const;
 
 export async function GET() {

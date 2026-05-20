@@ -18,18 +18,19 @@ interface RawShowcase {
   location: string | null;
   description: string | null;
   cover_image_url: string | null;
+  category: "construction" | "interior_design";
   photos: { id: string; url: string; alt: string | null; sort_order: number }[];
 }
 
 export default async function GalleryPage() {
   const supabase = createAdminClient();
 
-  // Pull active showcases with their photos. Each showcase becomes a card
-  // that links to its public detail page (/services/construction/projects/<slug>).
+  // Pull active showcases (construction + interior design) with their photos.
+  // Each card links to its public detail page on the matching service page.
   const { data } = await supabase
     .from("construction_showcases")
     .select(
-      `id, slug, title, location, description, cover_image_url,
+      `id, slug, title, location, description, cover_image_url, category,
        photos:construction_showcase_photos(id, url, alt, sort_order)`
     )
     .eq("status", "active")
@@ -59,9 +60,14 @@ export default async function GalleryPage() {
             name: p.alt ?? s.title,
           }));
 
+      const basePath =
+        s.category === "interior_design"
+          ? "/services/interior-design/projects"
+          : "/services/construction/projects";
       return {
         id: s.id,
         slug: s.slug,
+        detailHref: `${basePath}/${s.slug}`,
         name: s.title,
         // GalleryContent renders city/state inline; put the whole "Hatch, UT"
         // string in city since we store location as free text.

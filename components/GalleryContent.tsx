@@ -14,6 +14,8 @@ interface GalleryPhoto {
 interface GalleryProject {
   id: string;
   slug?: string;
+  /** Where this card should navigate when clicked. */
+  detailHref?: string;
   name: string;
   city: string | null;
   state: string | null;
@@ -97,7 +99,11 @@ export function GalleryContent({ projects }: { projects: GalleryProject[] }) {
                   transition={{ duration: 0.5, delay: index * 0.1 }}
                   viewport={{ once: true }}
                 >
-                  {project.slug ? (
+                  {project.detailHref ? (
+                    <Link href={project.detailHref} className="block">
+                      {card}
+                    </Link>
+                  ) : project.slug ? (
                     <Link
                       href={`/services/construction/projects/${project.slug}`}
                       className="block"

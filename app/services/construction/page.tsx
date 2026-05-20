@@ -66,7 +66,7 @@ export default function ConstructionPage() {
   };
   const [dbShowcases, setDbShowcases] = useState<DbShowcase[]>([]);
   useEffect(() => {
-    fetch("/api/construction-showcases")
+    fetch("/api/construction-showcases?category=construction")
       .then((r) => (r.ok ? r.json() : []))
       .then((data) => {
         if (Array.isArray(data)) setDbShowcases(data);

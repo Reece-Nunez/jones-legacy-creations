@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import Link from "next/link";
 import Image from "next/image";
@@ -41,10 +41,29 @@ const highlightedImages: PortfolioImage[] = [
   { filename: "living-room-12", category: "Living Rooms", description: "Luxury living room" },
 ];
 
+type DbShowcase = {
+  id: string;
+  slug: string;
+  title: string;
+  location: string | null;
+  description: string | null;
+  cover_image_url: string | null;
+};
+
 export default function InteriorDesignPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
   const { executeRecaptcha } = useRecaptcha();
+
+  const [showcases, setShowcases] = useState<DbShowcase[]>([]);
+  useEffect(() => {
+    fetch("/api/construction-showcases?category=interior_design")
+      .then((r) => (r.ok ? r.json() : []))
+      .then((data) => {
+        if (Array.isArray(data)) setShowcases(data);
+      })
+      .catch((err) => console.warn("Failed to load interior design showcases", err));
+  }, []);
 
   const {
     register,
@@ -328,6 +347,83 @@ export default function InteriorDesignPage() {
       </section>
 
       {/* Portfolio Section */}
+      {/* DB-backed featured projects — admins add these via /admin/showcases */}
+      {showcases.length > 0 && (
+        <section aria-label="Featured interior design projects" className="py-20 bg-white">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.8 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
+                Featured Projects
+              </h2>
+              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
+                Recent homes we&apos;ve styled and staged
+              </p>
+            </motion.div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
+              {showcases.map((s, index) => (
+                <motion.div
+                  key={s.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.5, delay: index * 0.1 }}
+                  viewport={{ once: true }}
+                  className="group"
+                >
+                  <Link
+                    href={`/services/interior-design/projects/${s.slug}`}
+                    className="block"
+                  >
+                    <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
+                      <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
+                        {s.cover_image_url ? (
+                          <Image
+                            src={s.cover_image_url}
+                            alt={`${s.title}${s.location ? ` interior design in ${s.location}` : ""}`}
+                            fill
+                            sizes="(max-width: 768px) 100vw, 50vw"
+                            className="object-cover group-hover:scale-105 transition-transform duration-500"
+                            loading="lazy"
+                          />
+                        ) : (
+                          <div className="absolute inset-0 flex flex-col items-center justify-center">
+                            <Palette aria-hidden="true" className="w-16 h-16 text-gray-400 mb-2" />
+                            <span className="text-sm text-gray-600">Photos Coming Soon</span>
+                          </div>
+                        )}
+                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
+                        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                          View Project
+                        </div>
+                      </div>
+                      <div className="p-6">
+                        {s.location && (
+                          <div className="text-sm text-gray-600 mb-2">{s.location}</div>
+                        )}
+                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">
+                          {s.title}
+                        </h3>
+                        {s.description && (
+                          <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">
+                            {s.description}
+                          </p>
+                        )}
+                      </div>
+                    </div>
+                  </Link>
+                </motion.div>
+              ))}
+            </div>
+          </div>
+        </section>
+      )}
+
       <section aria-label="Interior design portfolio" className="py-20 bg-gray-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div

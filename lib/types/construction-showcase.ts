@@ -1,5 +1,6 @@
 export type ShowcaseStatus = "draft" | "active" | "archived";
 export type ProjectPhase = "current" | "completed";
+export type ShowcaseCategory = "construction" | "interior_design";
 
 export interface ConstructionShowcase {
   id: string;
@@ -12,6 +13,7 @@ export interface ConstructionShowcase {
   sort_order: number;
   status: ShowcaseStatus;
   project_phase: ProjectPhase;
+  category: ShowcaseCategory;
   created_at: string;
   updated_at: string;
 }
@@ -19,6 +21,11 @@ export interface ConstructionShowcase {
 export const PROJECT_PHASE_LABELS: Record<ProjectPhase, string> = {
   current: "Current (Coming Soon / In Progress)",
   completed: "Completed Build",
+};
+
+export const SHOWCASE_CATEGORY_LABELS: Record<ShowcaseCategory, string> = {
+  construction: "Construction",
+  interior_design: "Interior Design",
 };
 
 export interface ShowcasePhoto {
