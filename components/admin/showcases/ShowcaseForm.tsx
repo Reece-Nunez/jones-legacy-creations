@@ -326,6 +326,14 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-4xl">
+      {!isEdit && (
+        <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-900">
+          <strong>Heads up:</strong> this form creates the showcase. The
+          gallery uploader for the rest of the photos shows up after you
+          click <em>Create showcase</em> at the bottom.
+        </div>
+      )}
+
       {/* Cover photo */}
       <div>
         <label className={labelClass}>Cover photo</label>
@@ -601,8 +609,26 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
         </button>
       </div>
 
-      {/* Photo gallery manager — only enabled after the showcase exists */}
-      {isEdit && (
+      {/* Photo gallery manager. Hidden on the create form until the showcase
+          is saved (we need a row id to attach photos to). */}
+      {!isEdit ? (
+        <div className="pt-6 border-t border-gray-100">
+          <div className="rounded-xl bg-indigo-50 border border-indigo-100 p-5 flex items-start gap-3">
+            <Hammer className="h-5 w-5 text-indigo-600 mt-0.5 shrink-0" />
+            <div>
+              <h3 className="text-base font-semibold text-gray-900">
+                Photo gallery comes next
+              </h3>
+              <p className="text-sm text-gray-700 mt-1">
+                Once you click <strong>Create showcase</strong> above, the
+                photo gallery uploader appears here. You can bulk-upload as
+                many photos as you want, drag them to reorder, and pick any
+                one of them as the cover image.
+              </p>
+            </div>
+          </div>
+        </div>
+      ) : (
         <div className="pt-6 border-t border-gray-100">
           <div className="flex items-center justify-between mb-3">
             <div>
@@ -641,8 +667,8 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
 
           {photos.length === 0 ? (
             <div className="rounded-xl border-2 border-dashed border-gray-200 p-10 text-center text-gray-500">
-              No photos yet. Click <strong>Add photos</strong> to upload — bulk
-              upload supported.
+              No photos yet. Click <strong>Add photos</strong> above to
+              upload. You can select multiple files at once.
             </div>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
