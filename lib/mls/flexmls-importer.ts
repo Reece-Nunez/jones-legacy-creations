@@ -40,12 +40,15 @@ export async function scrapeFlexmlsListing(
 
   const res = await fetch(url, {
     headers: {
-      // Identify as a generic desktop browser. flexmls's OG-serving path
-      // doesn't gate on UA, but we send a realistic one anyway so we look
-      // like a normal social-card crawler rather than something to flag.
+      // Real desktop Chrome UA. An earlier "JonesLegacyCreations/1.0" UA
+      // tripped flexmls's bot heuristics and got back a CAPTCHA page with
+      // no OG tags. Plain Chrome works (curl-tested) and is honest about
+      // what we are: rendering a public share link to extract its preview.
       "user-agent":
-        "Mozilla/5.0 (compatible; JonesLegacyCreations/1.0; +https://joneslegacycreations.com)",
-      accept: "text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8",
+        "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36",
+      accept:
+        "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
+      "accept-language": "en-US,en;q=0.9",
     },
     redirect: "follow",
   });
@@ -54,12 +57,35 @@ export async function scrapeFlexmlsListing(
   }
   const html = await res.text();
 
+  const ogDescription = extractMeta(html, "og:description");
+  const ogImage = extractMeta(html, "og:image");
+  const ogTitle = extractMeta(html, "og:title");
+
+  // If both signals are missing, hand the caller a snippet so a 422 log can
+  // explain what flexmls actually served back (often a CAPTCHA shell or a
+  // generic landing page). Limit the snippet so it doesn't flood the log.
+  if (!ogDescription && !ogImage) {
+    throw new EmptyOgError(
+      "No OG metadata found on the fetched page",
+      html.replace(/\s+/g, " ").slice(0, 500)
+    );
+  }
+
   return {
-    ogDescription: extractMeta(html, "og:description"),
-    ogImage: extractMeta(html, "og:image"),
-    ogTitle: extractMeta(html, "og:title"),
+    ogDescription,
+    ogImage,
+    ogTitle,
     sourceUrl: url,
   };
+}
+
+export class EmptyOgError extends Error {
+  htmlSnippet: string;
+  constructor(message: string, htmlSnippet: string) {
+    super(message);
+    this.name = "EmptyOgError";
+    this.htmlSnippet = htmlSnippet;
+  }
 }
 
 // Pull a meta property value out of a raw HTML string. Stays case-insensitive

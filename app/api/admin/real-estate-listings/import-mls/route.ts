@@ -4,6 +4,7 @@ import {
   scrapeFlexmlsListing,
   upgradeSparkPhotoResolution,
   isSparkPhotoUrl,
+  EmptyOgError,
 } from "@/lib/mls/flexmls-importer";
 import { extractListingFields } from "@/lib/mls/extract-fields";
 import {
@@ -49,11 +50,27 @@ export async function POST(request: NextRequest) {
 
     console.log(`[mls-import] start url=${url}`);
 
-    // 1. Fetch the flexmls share page and pull its OG meta tags.
+    // 1. Fetch the flexmls share page and pull its OG meta tags. An
+    //    EmptyOgError means flexmls served us a page (200 OK) but without
+    //    listing metadata — usually a CAPTCHA shell or an expired share
+    //    link. Log a snippet so we can see what came back.
     let scraped;
     try {
       scraped = await scrapeFlexmlsListing(url);
     } catch (err) {
+      if (err instanceof EmptyOgError) {
+        console.error(
+          "[mls-import] empty OG response, html snippet:",
+          err.htmlSnippet
+        );
+        return NextResponse.json(
+          {
+            error:
+              "Couldn't read listing data from that flexmls page. The share link may be expired, private, or flexmls served a verification page. Try opening the URL in a private browser window to confirm it loads for anyone.",
+          },
+          { status: 422 }
+        );
+      }
       console.error("[mls-import] fetch error", err);
       return NextResponse.json(
         {
@@ -63,16 +80,6 @@ export async function POST(request: NextRequest) {
               : "Fetch failed",
         },
         { status: 502 }
-      );
-    }
-
-    if (!scraped.ogDescription && !scraped.ogImage) {
-      return NextResponse.json(
-        {
-          error:
-            "Couldn't find a listing on that page. Double-check the share link or paste a different one.",
-        },
-        { status: 422 }
       );
     }
 
