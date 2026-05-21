@@ -40,7 +40,7 @@ export default function ListingsStrip() {
   return (
     <section
       aria-label="Current real estate listings"
-      className="py-12 sm:py-16 bg-white"
+      className="pt-4 pb-12 sm:pb-16 bg-white"
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <motion.div

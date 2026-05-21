@@ -112,19 +112,19 @@ export default function RealEstatePage() {
       {/* Brand title — sets "Blake Jones Realty" as the page's primary
           heading so visitors land on the brand before scanning the
           listings strip and the rest of the services overview. */}
-      <section aria-label="Blake Jones Realty" className="pt-24 pb-6 bg-white">
+      <section aria-label="Blake Jones Realty" className="pt-20 pb-2 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
           >
-            <div className="inline-flex items-center justify-center w-28 h-28 mb-4">
+            <div className="inline-flex items-center justify-center w-20 h-20 mb-2">
               <Image
                 src="/JONES REALTY ICON (2).svg"
                 alt="Blake Jones Realty logo"
-                width={120}
-                height={120}
+                width={80}
+                height={80}
                 className="object-contain"
               />
             </div>
