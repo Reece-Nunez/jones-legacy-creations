@@ -87,42 +87,33 @@ export default function ListingForm({ listing }: ListingFormProps) {
   const [photoUploading, setPhotoUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [savingNonPhotoFields, setSavingNonPhotoFields] = useState(false);
-  const [importingMls, setImportingMls] = useState(false);
+  const [extractingStats, setExtractingStats] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handleMlsImport() {
-    const sourceUrl = form.mls_url.trim();
-    if (!sourceUrl) {
-      toast.error("Paste a flexmls listing URL into the MLS URL field first.");
-      return;
-    }
-    if (!/^https?:\/\/(?:my\.|.*\.)?flexmls\.com\//i.test(sourceUrl)) {
-      toast.error("Only flexmls.com listing share links are supported.");
+  async function handleExtractFromDescription() {
+    const description = form.description.trim();
+    if (!description) {
+      toast.error("Paste the listing description first, then click extract.");
       return;
     }
 
-    setImportingMls(true);
-    const toastId = toast.loading(
-      "Reading MLS listing and pulling the cover photo…"
-    );
+    setExtractingStats(true);
+    const toastId = toast.loading("Reading the description…");
     try {
       const res = await fetch(
-        "/api/admin/real-estate-listings/import-mls",
+        "/api/admin/real-estate-listings/extract-from-description",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            url: sourceUrl,
-            slugHint: form.slug || undefined,
-          }),
+          body: JSON.stringify({ description }),
         }
       );
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
-        throw new Error(body.error || `Import failed (${res.status})`);
+        throw new Error(body.error || `Extraction failed (${res.status})`);
       }
       const data: {
         fields: {
@@ -139,14 +130,11 @@ export default function ListingForm({ listing }: ListingFormProps) {
           description: string | null;
           notes: string | null;
         };
-        coverPhotoUrl: string | null;
-        photos: string[];
-        photoFailures: Array<{ source: string; reason: string }>;
       } = await res.json();
 
-      // Fill empty form fields only — never overwrite what Blake already
-      // typed. He's the QC reviewer; the form is the source of truth once
-      // he's touched a field.
+      // Fill only fields Blake hasn't typed into yet. He's the source of
+      // truth once he's touched a field.
+      let filledCount = 0;
       setForm((prev) => {
         const next = { ...prev };
         const fill = (
@@ -157,6 +145,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
           if (prev[key] !== "" && prev[key] !== "0") return;
           (next as Record<string, unknown>)[key] =
             typeof value === "number" ? value.toString() : value;
+          filledCount++;
         };
         fill("address", data.fields.address);
         fill("city", data.fields.city);
@@ -169,9 +158,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
         fill("lot_size", data.fields.lot_size);
         if (data.fields.property_type && !prev.property_type) {
           next.property_type = data.fields.property_type;
-        }
-        if (data.fields.description && !prev.description.trim()) {
-          next.description = data.fields.description;
+          filledCount++;
         }
         // Auto-derive slug if blank now that we have an address.
         if (!isEdit && !prev.slug && (data.fields.address || next.address)) {
@@ -179,37 +166,27 @@ export default function ListingForm({ listing }: ListingFormProps) {
             [next.address, next.city, next.state].filter(Boolean).join(" ")
           );
         }
-        // Cover photo: use the imported one only when none is set.
-        if (data.coverPhotoUrl && !prev.cover_photo_url) {
-          next.cover_photo_url = data.coverPhotoUrl;
-        }
         return next;
       });
 
       toast.dismiss(toastId);
-      const pieces: string[] = [];
-      if (data.coverPhotoUrl) pieces.push("cover photo set");
-      const filledFields = [
-        data.fields.bedrooms,
-        data.fields.bathrooms,
-        data.fields.square_footage,
-        data.fields.lot_size,
-        data.fields.description,
-      ].filter((v) => v !== null && v !== "").length;
-      if (filledFields > 0) {
-        pieces.push(`${filledFields} field${filledFields === 1 ? "" : "s"} filled`);
-      }
-      const summary = pieces.length > 0 ? pieces.join(", ") : "no data found";
       const noteSuffix = data.fields.notes ? ` — ${data.fields.notes}` : "";
-      toast.success(
-        `${summary}. Add address, price, and gallery photos before saving.${noteSuffix}`,
-        { duration: 7000 }
-      );
+      if (filledCount === 0) {
+        toast(
+          `Nothing new to fill — the description didn't mention any stats not already in the form.${noteSuffix}`,
+          { duration: 6000 }
+        );
+      } else {
+        toast.success(
+          `Filled ${filledCount} field${filledCount === 1 ? "" : "s"} from the description. Review before saving.${noteSuffix}`,
+          { duration: 6000 }
+        );
+      }
     } catch (err) {
       toast.dismiss(toastId);
-      toast.error(err instanceof Error ? err.message : "MLS import failed");
+      toast.error(err instanceof Error ? err.message : "Extraction failed");
     } finally {
-      setImportingMls(false);
+      setExtractingStats(false);
     }
   }
 
@@ -709,29 +686,9 @@ export default function ListingForm({ listing }: ListingFormProps) {
         </div>
       </div>
 
-      {/* MLS link + auto-import */}
+      {/* MLS link */}
       <div>
-        <div className="flex items-center justify-between mb-1">
-          <label className={labelClass + " mb-0"}>MLS listing URL</label>
-          <button
-            type="button"
-            onClick={handleMlsImport}
-            disabled={importingMls || !form.mls_url.trim()}
-            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:hover:bg-transparent"
-            title={
-              !form.mls_url.trim()
-                ? "Paste a flexmls URL first"
-                : "Pull fields and photos from the MLS page"
-            }
-          >
-            {importingMls ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <Sparkles className="h-3.5 w-3.5" />
-            )}
-            {importingMls ? "Importing…" : "Import from MLS"}
-          </button>
-        </div>
+        <label className={labelClass}>MLS listing URL</label>
         <input
           type="url"
           value={form.mls_url}
@@ -740,22 +697,43 @@ export default function ListingForm({ listing }: ListingFormProps) {
           className={inputClass}
         />
         <p className="mt-1 text-xs text-gray-400">
-          Paste a flexmls share link and click <strong>Import from MLS</strong>{" "}
-          to auto-fill the description, stats, and cover photo. Gallery
-          photos still need to be uploaded below. Currently only flexmls.com
-          is supported.
+          Where the &ldquo;View on MLS&rdquo; button will send visitors.
         </p>
       </div>
 
-      {/* Description */}
+      {/* Description + AI auto-fill */}
       <div>
-        <label className={labelClass}>Description (optional)</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelClass + " mb-0"}>Description (optional)</label>
+          <button
+            type="button"
+            onClick={handleExtractFromDescription}
+            disabled={extractingStats || !form.description.trim()}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:hover:bg-transparent"
+            title={
+              !form.description.trim()
+                ? "Paste the description first"
+                : "Pull beds, baths, sqft, and lot size out of the description"
+            }
+          >
+            {extractingStats ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {extractingStats ? "Reading…" : "Auto-fill stats from description"}
+          </button>
+        </div>
         <textarea
-          rows={4}
+          rows={6}
           value={form.description}
           onChange={(e) => update("description", e.target.value)}
+          placeholder="Paste the marketing description from the MLS listing here. Then click Auto-fill stats to pull beds, baths, sq ft, and lot size into the form."
           className={inputClass}
         />
+        <p className="mt-1 text-xs text-gray-400">
+          Auto-fill only sets fields you haven&apos;t already typed in.
+        </p>
       </div>
 
       {/* Visibility / order */}
