@@ -1,6 +1,10 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
+  // Keep the chromium binary out of the lambda tracing/bundling step — it's
+  // resolved at runtime by @sparticuz/chromium and would otherwise blow up
+  // the bundle size for unrelated routes.
+  serverExternalPackages: ["@sparticuz/chromium", "playwright-core"],
   images: {
     remotePatterns: [
       {

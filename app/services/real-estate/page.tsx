@@ -109,23 +109,17 @@ export default function RealEstatePage() {
     <>
       <Navigation />
 
-      {/* Current Listings — kept at the top so visitors see what's for
-          sale before any other content. Hides itself when there are
-          no active/pending listings. */}
-      <div className="pt-24">
-        <ListingsStrip />
-      </div>
-
-      {/* Hero Section */}
-      <section aria-label="Real estate services overview" className="pt-16 pb-16 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      {/* Brand title — sets "Blake Jones Realty" as the page's primary
+          heading so visitors land on the brand before scanning the
+          listings strip and the rest of the services overview. */}
+      <section aria-label="Blake Jones Realty" className="pt-24 pb-6 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="text-center mb-12"
           >
-            <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
+            <div className="inline-flex items-center justify-center w-28 h-28 mb-4">
               <Image
                 src="/JONES REALTY ICON (2).svg"
                 alt="Blake Jones Realty logo"
@@ -134,9 +128,30 @@ export default function RealEstatePage() {
                 className="object-contain"
               />
             </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
-              Real Estate Services
+            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900">
+              Blake Jones Realty
             </h1>
+          </motion.div>
+        </div>
+      </section>
+
+      {/* Current Listings — sits directly under the brand title so
+          visitors see what's for sale before any other content. Hides
+          itself when there are no active/pending listings. */}
+      <ListingsStrip />
+
+      {/* Services overview */}
+      <section aria-label="Real estate services overview" className="pt-8 pb-16 bg-gradient-to-br from-gray-50 to-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.8 }}
+            className="text-center mb-12"
+          >
+            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-6">
+              Real Estate Services
+            </h2>
             <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
               Whether you&apos;re buying your dream home or selling your property, we provide expert guidance every step of the way.
             </p>

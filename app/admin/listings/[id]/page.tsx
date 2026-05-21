@@ -3,7 +3,10 @@ import { notFound } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
 import ListingForm from "@/components/admin/listings/ListingForm";
-import type { RealEstateListing } from "@/lib/types/real-estate";
+import type {
+  RealEstateListing,
+  RealEstateListingPhoto,
+} from "@/lib/types/real-estate";
 
 export default async function EditListingPage({
   params,
@@ -20,6 +23,14 @@ export default async function EditListingPage({
 
   if (!listing) notFound();
 
+  const { data: photos } = await supabase
+    .from("real_estate_listing_photos")
+    .select("*")
+    .eq("listing_id", id)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true })
+    .returns<RealEstateListingPhoto[]>();
+
   return (
     <div className="space-y-6">
       <Link
@@ -34,7 +45,7 @@ export default async function EditListingPage({
           {listing.city}, {listing.state} {listing.zip ?? ""}
         </p>
       </div>
-      <ListingForm listing={listing} />
+      <ListingForm listing={{ ...listing, photos: photos ?? [] }} />
     </div>
   );
 }

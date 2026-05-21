@@ -1,21 +1,34 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { useState, useRef, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import toast from "react-hot-toast";
-import { Upload, Loader2, Save, Home } from "lucide-react";
+import {
+  Upload,
+  Loader2,
+  Save,
+  Home,
+  X,
+  Star,
+  StarOff,
+  GripVertical,
+  Sparkles,
+} from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { confirmAction } from "@/lib/confirmAction";
 import {
   PROPERTY_TYPE_LABELS,
   LISTING_STATUS_LABELS,
   type RealEstateListing,
+  type RealEstateListingPhoto,
   type PropertyType,
   type ListingStatus,
 } from "@/lib/types/real-estate";
+import { slugify, slugifyLive } from "@/lib/types/construction-showcase";
 
 interface ListingFormProps {
-  listing?: RealEstateListing;
+  listing?: RealEstateListing & { photos?: RealEstateListingPhoto[] };
 }
 
 const labelClass = "block text-xs font-medium text-gray-500 mb-1";
@@ -29,9 +42,12 @@ function sanitizeFilename(name: string): string {
 export default function ListingForm({ listing }: ListingFormProps) {
   const router = useRouter();
   const isEdit = !!listing;
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  const coverInputRef = useRef<HTMLInputElement>(null);
+  const photoInputRef = useRef<HTMLInputElement>(null);
+  const draggingIdRef = useRef<string | null>(null);
 
   const [form, setForm] = useState({
+    slug: listing?.slug ?? "",
     address: listing?.address ?? "",
     city: listing?.city ?? "",
     state: listing?.state ?? "UT",
@@ -51,49 +67,376 @@ export default function ListingForm({ listing }: ListingFormProps) {
     listed_at: listing?.listed_at ?? "",
   });
 
-  const [uploading, setUploading] = useState(false);
+  const [photos, setPhotos] = useState<RealEstateListingPhoto[]>(
+    listing?.photos ?? []
+  );
+
+  // Photos picked but not yet uploaded. Used on the create form so Blake
+  // can queue files before the listing row exists; flushed on submit.
+  type PendingPhoto = { id: string; file: File; previewUrl: string };
+  const [pendingPhotos, setPendingPhotos] = useState<PendingPhoto[]>([]);
+  const previewUrlsRef = useRef<string[]>([]);
+  useEffect(() => {
+    return () => {
+      previewUrlsRef.current.forEach((u) => URL.revokeObjectURL(u));
+      previewUrlsRef.current = [];
+    };
+  }, []);
+
+  const [coverUploading, setCoverUploading] = useState(false);
+  const [photoUploading, setPhotoUploading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+  const [savingNonPhotoFields, setSavingNonPhotoFields] = useState(false);
+  const [importingMls, setImportingMls] = useState(false);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  async function handlePhotoUpload(file: File) {
-    if (!file) return;
-    if (file.size > 15 * 1024 * 1024) {
-      toast.error("Photo is too large (max 15 MB).");
+  // Photos already uploaded to Supabase by the MLS import endpoint, but not
+  // yet registered as gallery rows. On create we defer registration until
+  // save (same lifecycle as pendingPhotos); on edit we register immediately.
+  const [importedPhotoUrls, setImportedPhotoUrls] = useState<string[]>([]);
+
+  async function handleMlsImport() {
+    const sourceUrl = form.mls_url.trim();
+    if (!sourceUrl) {
+      toast.error("Paste a flexmls listing URL into the MLS URL field first.");
       return;
+    }
+    if (!/^https?:\/\/(?:my\.|.*\.)?flexmls\.com\//i.test(sourceUrl)) {
+      toast.error("Only flexmls.com listing share links are supported.");
+      return;
+    }
+
+    setImportingMls(true);
+    const toastId = toast.loading(
+      "Rendering MLS page and pulling photos. This can take 30–60 seconds…"
+    );
+    try {
+      const res = await fetch(
+        "/api/admin/real-estate-listings/import-mls",
+        {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            url: sourceUrl,
+            slugHint: form.slug || undefined,
+          }),
+        }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || `Import failed (${res.status})`);
+      }
+      const data: {
+        fields: {
+          address: string | null;
+          city: string | null;
+          state: string | null;
+          zip: string | null;
+          price: number | null;
+          bedrooms: number | null;
+          bathrooms: number | null;
+          square_footage: number | null;
+          lot_size: string | null;
+          property_type: PropertyType | null;
+          description: string | null;
+          notes: string | null;
+        };
+        coverPhotoUrl: string | null;
+        photos: string[];
+        photoFailures: Array<{ source: string; reason: string }>;
+      } = await res.json();
+
+      // Fill empty form fields only — never overwrite what Blake already
+      // typed. He's the QC reviewer; the form is the source of truth once
+      // he's touched a field.
+      setForm((prev) => {
+        const next = { ...prev };
+        const fill = (
+          key: keyof typeof prev,
+          value: string | number | null
+        ) => {
+          if (value === null || value === undefined || value === "") return;
+          if (prev[key] !== "" && prev[key] !== "0") return;
+          (next as Record<string, unknown>)[key] =
+            typeof value === "number" ? value.toString() : value;
+        };
+        fill("address", data.fields.address);
+        fill("city", data.fields.city);
+        fill("state", data.fields.state);
+        fill("zip", data.fields.zip);
+        fill("price", data.fields.price);
+        fill("bedrooms", data.fields.bedrooms);
+        fill("bathrooms", data.fields.bathrooms);
+        fill("square_footage", data.fields.square_footage);
+        fill("lot_size", data.fields.lot_size);
+        if (data.fields.property_type && !prev.property_type) {
+          next.property_type = data.fields.property_type;
+        }
+        if (data.fields.description && !prev.description.trim()) {
+          next.description = data.fields.description;
+        }
+        // Auto-derive slug if blank now that we have an address.
+        if (!isEdit && !prev.slug && (data.fields.address || next.address)) {
+          next.slug = slugify(
+            [next.address, next.city, next.state].filter(Boolean).join(" ")
+          );
+        }
+        // Cover photo: use the imported one only when none is set.
+        if (data.coverPhotoUrl && !prev.cover_photo_url) {
+          next.cover_photo_url = data.coverPhotoUrl;
+        }
+        return next;
+      });
+
+      // Add gallery photos. On edit, register them immediately so they
+      // appear in the photo grid right away. On create, queue the URLs
+      // and register them at save time along with everything else.
+      if (data.photos.length > 0) {
+        if (isEdit) {
+          try {
+            const photoRes = await fetch(
+              `/api/admin/real-estate-listings/${listing!.id}/photos`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  photos: data.photos.map((url) => ({ url })),
+                }),
+              }
+            );
+            if (!photoRes.ok) {
+              const body = await photoRes.json().catch(() => ({}));
+              throw new Error(body.error || "Failed to register photos");
+            }
+            const created: RealEstateListingPhoto[] = await photoRes.json();
+            setPhotos((prev) => [...prev, ...created]);
+          } catch (err) {
+            toast.error(
+              err instanceof Error
+                ? `Photos imported but not linked: ${err.message}`
+                : "Photos imported but not linked"
+            );
+          }
+        } else {
+          setImportedPhotoUrls((prev) => [...prev, ...data.photos]);
+        }
+      }
+
+      toast.dismiss(toastId);
+      const failureNote =
+        data.photoFailures.length > 0
+          ? ` (${data.photoFailures.length} photo${data.photoFailures.length === 1 ? "" : "s"} skipped)`
+          : "";
+      const noteSuffix = data.fields.notes ? ` — ${data.fields.notes}` : "";
+      toast.success(
+        `Imported ${data.photos.length} photo${data.photos.length === 1 ? "" : "s"}${failureNote}. Review the fields before saving.${noteSuffix}`,
+        { duration: 7000 }
+      );
+    } catch (err) {
+      toast.dismiss(toastId);
+      toast.error(err instanceof Error ? err.message : "MLS import failed");
+    } finally {
+      setImportingMls(false);
+    }
+  }
+
+  // Auto-fill the slug from address/city/state on the create form, only as
+  // long as the user hasn't started typing their own. Once they touch the
+  // slug field manually it stops syncing.
+  function onAddressFieldChange(
+    key: "address" | "city" | "state",
+    value: string
+  ) {
+    setForm((prev) => {
+      const next = { ...prev, [key]: value };
+      if (isEdit) return next;
+      const prevDerived = slugify(
+        [prev.address, prev.city, prev.state].filter(Boolean).join(" ")
+      );
+      if (!prev.slug || prev.slug === prevDerived) {
+        next.slug = slugify(
+          [next.address, next.city, next.state].filter(Boolean).join(" ")
+        );
+      }
+      return next;
+    });
+  }
+
+  async function uploadFile(file: File): Promise<string> {
+    const supabase = createClient();
+    if (file.size > 15 * 1024 * 1024) {
+      throw new Error("File too large (max 15 MB)");
     }
     if (!file.type.startsWith("image/")) {
-      toast.error("Please upload an image file.");
-      return;
+      throw new Error("Only image files are supported");
     }
-    setUploading(true);
+    const path = `${Date.now()}-${sanitizeFilename(file.name)}`;
+    const { error } = await supabase.storage
+      .from("real-estate-photos")
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw new Error(error.message);
+    const { data: urlData } = supabase.storage
+      .from("real-estate-photos")
+      .getPublicUrl(path);
+    return urlData.publicUrl;
+  }
+
+  async function handleCoverUpload(file: File) {
+    setCoverUploading(true);
     try {
-      const supabase = createClient();
-      const path = `${Date.now()}-${sanitizeFilename(file.name)}`;
-      const { error: uploadError } = await supabase.storage
-        .from("real-estate-photos")
-        .upload(path, file, { contentType: file.type, upsert: false });
-      if (uploadError) throw new Error(uploadError.message);
-      const { data: urlData } = supabase.storage
-        .from("real-estate-photos")
-        .getPublicUrl(path);
-      update("cover_photo_url", urlData.publicUrl);
-      toast.success("Photo uploaded");
+      const url = await uploadFile(file);
+      update("cover_photo_url", url);
+      toast.success("Cover photo set");
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Photo upload failed");
     } finally {
-      setUploading(false);
-      if (fileInputRef.current) fileInputRef.current.value = "";
+      setCoverUploading(false);
+      if (coverInputRef.current) coverInputRef.current.value = "";
+    }
+  }
+
+  function queuePendingPhotos(files: FileList) {
+    const accepted: PendingPhoto[] = [];
+    for (const f of Array.from(files)) {
+      if (f.size > 15 * 1024 * 1024) {
+        toast.error(`${f.name}: too large (max 15 MB)`);
+        continue;
+      }
+      if (!f.type.startsWith("image/")) {
+        toast.error(`${f.name}: not an image`);
+        continue;
+      }
+      const previewUrl = URL.createObjectURL(f);
+      previewUrlsRef.current.push(previewUrl);
+      accepted.push({ id: crypto.randomUUID(), file: f, previewUrl });
+    }
+    if (accepted.length > 0) {
+      setPendingPhotos((prev) => [...prev, ...accepted]);
+      toast.success(
+        `${accepted.length} photo${accepted.length === 1 ? "" : "s"} queued. They upload when you save.`
+      );
+    }
+  }
+
+  async function handlePhotosUpload(files: FileList) {
+    if (!isEdit) {
+      queuePendingPhotos(files);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+      return;
+    }
+    setPhotoUploading(true);
+    try {
+      const uploads: { url: string }[] = [];
+      for (const f of Array.from(files)) {
+        try {
+          const url = await uploadFile(f);
+          uploads.push({ url });
+        } catch (err) {
+          toast.error(
+            `${f.name}: ${err instanceof Error ? err.message : "failed"}`
+          );
+        }
+      }
+      if (uploads.length > 0) {
+        const res = await fetch(
+          `/api/admin/real-estate-listings/${listing!.id}/photos`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ photos: uploads }),
+          }
+        );
+        if (!res.ok) {
+          const body = await res.json().catch(() => ({}));
+          throw new Error(body.error || "Failed to register photos");
+        }
+        const created: RealEstateListingPhoto[] = await res.json();
+        setPhotos((prev) => [...prev, ...created]);
+        toast.success(
+          `${created.length} photo${created.length === 1 ? "" : "s"} added`
+        );
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Photo upload failed");
+    } finally {
+      setPhotoUploading(false);
+      if (photoInputRef.current) photoInputRef.current.value = "";
+    }
+  }
+
+  function removePendingPhoto(id: string) {
+    setPendingPhotos((prev) => {
+      const target = prev.find((p) => p.id === id);
+      if (target) URL.revokeObjectURL(target.previewUrl);
+      return prev.filter((p) => p.id !== id);
+    });
+  }
+
+  async function deletePhoto(photo: RealEstateListingPhoto) {
+    if (!isEdit) return;
+    if (!(await confirmAction("Remove this photo from the listing?"))) return;
+    try {
+      const res = await fetch(
+        `/api/admin/real-estate-listings/${listing!.id}/photos/${photo.id}`,
+        { method: "DELETE" }
+      );
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        throw new Error(body.error || "Failed to delete photo");
+      }
+      setPhotos((prev) => prev.filter((p) => p.id !== photo.id));
+      if (form.cover_photo_url === photo.url) update("cover_photo_url", "");
+      toast.success("Photo removed");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Failed to delete photo");
+    }
+  }
+
+  function setCoverFromPhoto(photo: RealEstateListingPhoto) {
+    update("cover_photo_url", photo.url);
+    toast.success("Cover photo updated");
+  }
+
+  function onDragStart(id: string) {
+    draggingIdRef.current = id;
+  }
+  async function onDrop(targetId: string) {
+    const dragging = draggingIdRef.current;
+    draggingIdRef.current = null;
+    if (!dragging || dragging === targetId || !isEdit) return;
+    const next = [...photos];
+    const fromIdx = next.findIndex((p) => p.id === dragging);
+    const toIdx = next.findIndex((p) => p.id === targetId);
+    if (fromIdx === -1 || toIdx === -1) return;
+    const [moved] = next.splice(fromIdx, 1);
+    next.splice(toIdx, 0, moved);
+    setPhotos(next);
+    try {
+      const res = await fetch(
+        `/api/admin/real-estate-listings/${listing!.id}/photos`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ order: next.map((p) => p.id) }),
+        }
+      );
+      if (!res.ok) throw new Error("Reorder failed");
+    } catch {
+      toast.error("Could not save new order. Reloading.");
+      setPhotos(listing?.photos ?? []);
     }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setSubmitting(true);
+    setSavingNonPhotoFields(true);
     try {
       const payload = {
+        slug: slugify(form.slug.trim() || `${form.address} ${form.city} ${form.state}`),
         address: form.address.trim(),
         city: form.city.trim(),
         state: form.state.trim() || "UT",
@@ -101,7 +444,9 @@ export default function ListingForm({ listing }: ListingFormProps) {
         price: form.price ? Number(form.price) : null,
         bedrooms: form.bedrooms ? Number(form.bedrooms) : null,
         bathrooms: form.bathrooms ? Number(form.bathrooms) : null,
-        square_footage: form.square_footage ? Number(form.square_footage) : null,
+        square_footage: form.square_footage
+          ? Number(form.square_footage)
+          : null,
         lot_size: form.lot_size.trim() || null,
         property_type: form.property_type || null,
         mls_url: form.mls_url.trim() || null,
@@ -125,19 +470,113 @@ export default function ListingForm({ listing }: ListingFormProps) {
         const body = await res.json().catch(() => ({}));
         throw new Error(body.error || "Failed to save listing");
       }
-      toast.success(isEdit ? "Listing saved" : "Listing created");
-      router.push("/admin/listings");
-      router.refresh();
+      const saved = await res.json();
+      const listingId = saved.id as string;
+
+      // Register any MLS-imported photos (already in storage, just need
+      // gallery rows). On create, this runs after the listing row exists.
+      if (importedPhotoUrls.length > 0) {
+        try {
+          const photoRes = await fetch(
+            `/api/admin/real-estate-listings/${listingId}/photos`,
+            {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                photos: importedPhotoUrls.map((url) => ({ url })),
+              }),
+            }
+          );
+          if (!photoRes.ok) {
+            const failBody = await photoRes.json().catch(() => ({}));
+            throw new Error(failBody.error || "Failed to link imported photos");
+          }
+          setImportedPhotoUrls([]);
+        } catch (err) {
+          toast.error(
+            err instanceof Error
+              ? `Imported photos not linked: ${err.message}`
+              : "Imported photos not linked"
+          );
+        }
+      }
+
+      // Flush queued gallery photos. One sequential pass so progress is
+      // reportable and a single failure doesn't sink the others.
+      let uploadedCount = 0;
+      if (pendingPhotos.length > 0) {
+        setSavingNonPhotoFields(false);
+        const uploadToastId = toast.loading(
+          `Uploading photo 1 of ${pendingPhotos.length}…`
+        );
+        try {
+          const photoUrls: string[] = [];
+          for (let i = 0; i < pendingPhotos.length; i++) {
+            const p = pendingPhotos[i];
+            toast.loading(
+              `Uploading photo ${i + 1} of ${pendingPhotos.length}…`,
+              { id: uploadToastId }
+            );
+            try {
+              const url = await uploadFile(p.file);
+              photoUrls.push(url);
+            } catch (err) {
+              toast.error(
+                `${p.file.name}: ${err instanceof Error ? err.message : "upload failed"}`
+              );
+            }
+          }
+          if (photoUrls.length > 0) {
+            const photoRes = await fetch(
+              `/api/admin/real-estate-listings/${listingId}/photos`,
+              {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                  photos: photoUrls.map((url) => ({ url })),
+                }),
+              }
+            );
+            if (!photoRes.ok) {
+              const body = await photoRes.json().catch(() => ({}));
+              throw new Error(body.error || "Failed to register photos");
+            }
+            uploadedCount = photoUrls.length;
+          }
+          toast.dismiss(uploadToastId);
+          pendingPhotos.forEach((p) => URL.revokeObjectURL(p.previewUrl));
+          setPendingPhotos([]);
+        } catch (err) {
+          toast.dismiss(uploadToastId);
+          toast.error(
+            err instanceof Error ? err.message : "Photo upload failed"
+          );
+        }
+      }
+
+      const baseMsg = isEdit ? "Listing saved" : "Listing created";
+      const photoMsg =
+        uploadedCount > 0
+          ? `. ${uploadedCount} photo${uploadedCount === 1 ? "" : "s"} uploaded.`
+          : "";
+      toast.success(`${baseMsg}${photoMsg}`);
+
+      if (!isEdit) {
+        router.push(`/admin/listings/${listingId}`);
+      } else {
+        router.refresh();
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Failed to save listing");
     } finally {
       setSubmitting(false);
+      setSavingNonPhotoFields(false);
     }
   }
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6 max-w-3xl">
-      {/* Photo upload */}
+      {/* Cover photo */}
       <div>
         <label className={labelClass}>Cover photo</label>
         {form.cover_photo_url ? (
@@ -160,7 +599,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
           </div>
         ) : (
           <label className="flex flex-col items-center justify-center w-full aspect-[4/3] rounded-xl border-2 border-dashed border-gray-300 bg-gray-50 hover:bg-gray-100 cursor-pointer transition-colors">
-            {uploading ? (
+            {coverUploading ? (
               <>
                 <Loader2 className="h-6 w-6 animate-spin text-gray-400" />
                 <p className="mt-2 text-sm text-gray-500">Uploading…</p>
@@ -171,18 +610,20 @@ export default function ListingForm({ listing }: ListingFormProps) {
                 <p className="mt-2 text-sm text-gray-600 font-medium">
                   Upload cover photo
                 </p>
-                <p className="text-xs text-gray-400">JPG, PNG, or WebP up to 15 MB</p>
+                <p className="text-xs text-gray-400">
+                  Or pick one from the photo gallery below
+                </p>
               </>
             )}
             <input
-              ref={fileInputRef}
+              ref={coverInputRef}
               type="file"
               accept="image/*"
               className="hidden"
-              disabled={uploading}
+              disabled={coverUploading}
               onChange={(e) => {
                 const f = e.target.files?.[0];
-                if (f) handlePhotoUpload(f);
+                if (f) handleCoverUpload(f);
               }}
             />
           </label>
@@ -197,7 +638,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
             type="text"
             required
             value={form.address}
-            onChange={(e) => update("address", e.target.value)}
+            onChange={(e) => onAddressFieldChange("address", e.target.value)}
             placeholder="123 Main Street"
             className={inputClass}
           />
@@ -208,7 +649,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
             type="text"
             required
             value={form.city}
-            onChange={(e) => update("city", e.target.value)}
+            onChange={(e) => onAddressFieldChange("city", e.target.value)}
             className={inputClass}
           />
         </div>
@@ -217,7 +658,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
           <input
             type="text"
             value={form.state}
-            onChange={(e) => update("state", e.target.value)}
+            onChange={(e) => onAddressFieldChange("state", e.target.value)}
             className={inputClass}
           />
         </div>
@@ -230,6 +671,22 @@ export default function ListingForm({ listing }: ListingFormProps) {
             className={inputClass}
           />
         </div>
+      </div>
+
+      {/* URL slug — auto-fills from address on create, freely editable */}
+      <div>
+        <label className={labelClass}>URL slug</label>
+        <input
+          type="text"
+          value={form.slug}
+          onChange={(e) => update("slug", slugifyLive(e.target.value))}
+          onBlur={(e) => update("slug", slugify(e.target.value))}
+          placeholder="123-main-st-george-ut"
+          className={inputClass}
+        />
+        <p className="mt-1 text-xs text-gray-400">
+          /services/real-estate/listings/{form.slug || "…"}
+        </p>
       </div>
 
       {/* Price + property type */}
@@ -310,18 +767,40 @@ export default function ListingForm({ listing }: ListingFormProps) {
         </div>
       </div>
 
-      {/* MLS link */}
+      {/* MLS link + auto-import */}
       <div>
-        <label className={labelClass}>MLS listing URL</label>
+        <div className="flex items-center justify-between mb-1">
+          <label className={labelClass + " mb-0"}>MLS listing URL</label>
+          <button
+            type="button"
+            onClick={handleMlsImport}
+            disabled={importingMls || !form.mls_url.trim()}
+            className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-50 disabled:hover:bg-transparent"
+            title={
+              !form.mls_url.trim()
+                ? "Paste a flexmls URL first"
+                : "Pull fields and photos from the MLS page"
+            }
+          >
+            {importingMls ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Sparkles className="h-3.5 w-3.5" />
+            )}
+            {importingMls ? "Importing…" : "Import from MLS"}
+          </button>
+        </div>
         <input
           type="url"
           value={form.mls_url}
           onChange={(e) => update("mls_url", e.target.value)}
-          placeholder="https://www.utahrealestate.com/…"
+          placeholder="https://my.flexmls.com/…/listings/…"
           className={inputClass}
         />
         <p className="mt-1 text-xs text-gray-400">
-          Where the &ldquo;View MLS Listing&rdquo; button will send visitors.
+          Paste a flexmls share link and click <strong>Import from MLS</strong>{" "}
+          to auto-fill fields and pull photos. Currently only flexmls.com is
+          supported.
         </p>
       </div>
 
@@ -400,11 +879,11 @@ export default function ListingForm({ listing }: ListingFormProps) {
         </button>
         <button
           type="submit"
-          disabled={submitting || uploading}
+          disabled={submitting || coverUploading}
           className="inline-flex items-center gap-2 rounded-lg bg-indigo-600 px-5 py-3 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 disabled:opacity-50"
           style={{ minHeight: 44 }}
         >
-          {submitting ? (
+          {savingNonPhotoFields ? (
             <Loader2 className="h-4 w-4 animate-spin" />
           ) : isEdit ? (
             <Save className="h-4 w-4" />
@@ -413,6 +892,174 @@ export default function ListingForm({ listing }: ListingFormProps) {
           )}
           {isEdit ? "Save changes" : "Create listing"}
         </button>
+      </div>
+
+      {/* Photo gallery manager. Always visible — on the create form, files
+          are queued in component state (pendingPhotos) and uploaded on save.
+          On the edit form, they upload immediately and persist via the API. */}
+      <div className="pt-6 border-t border-gray-100">
+        <div className="flex items-center justify-between mb-3">
+          <div>
+            <h3 className="text-base font-semibold text-gray-900">
+              Photo gallery
+            </h3>
+            <p className="text-sm text-gray-500">
+              {isEdit
+                ? "Drag photos to reorder. Click the star to set the cover."
+                : "Pick photos to add to the gallery. They upload when you save."}
+            </p>
+          </div>
+          <label className="inline-flex items-center gap-2 rounded-lg bg-white border border-gray-300 px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 cursor-pointer">
+            {photoUploading ? (
+              <>
+                <Loader2 className="h-4 w-4 animate-spin" /> Uploading…
+              </>
+            ) : (
+              <>
+                <Upload className="h-4 w-4" /> Add photos
+              </>
+            )}
+            <input
+              ref={photoInputRef}
+              type="file"
+              accept="image/*"
+              multiple
+              className="hidden"
+              disabled={photoUploading}
+              onChange={(e) => {
+                if (e.target.files && e.target.files.length > 0) {
+                  handlePhotosUpload(e.target.files);
+                }
+              }}
+            />
+          </label>
+        </div>
+
+        {photos.length === 0 &&
+        pendingPhotos.length === 0 &&
+        importedPhotoUrls.length === 0 ? (
+          <div className="rounded-xl border-2 border-dashed border-gray-200 p-10 text-center text-gray-500">
+            No photos yet. Click <strong>Add photos</strong> above to upload.
+            You can select multiple files at once.
+          </div>
+        ) : (
+          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+            {importedPhotoUrls.map((url) => (
+              <div
+                key={url}
+                className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-indigo-300"
+                title="Imported from MLS — registers when you save"
+              >
+                <Image
+                  src={url}
+                  alt="Imported MLS photo"
+                  fill
+                  sizes="(max-width: 640px) 50vw, 200px"
+                  className="object-cover"
+                  unoptimized
+                />
+                <span className="absolute bottom-1.5 left-1.5 rounded-md bg-indigo-500/95 text-white text-[10px] font-semibold px-1.5 py-0.5">
+                  MLS
+                </span>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setImportedPhotoUrls((prev) =>
+                      prev.filter((u) => u !== url)
+                    )
+                  }
+                  title="Remove from import queue"
+                  aria-label="Remove from import queue"
+                  className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {pendingPhotos.map((p) => (
+              <div
+                key={p.id}
+                className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-amber-300"
+                title="Queued — uploads when you save"
+              >
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={p.previewUrl}
+                  alt={p.file.name}
+                  className="absolute inset-0 w-full h-full object-cover"
+                />
+                <div className="absolute inset-0 bg-black/0 md:group-hover:bg-black/40 transition-colors" />
+                <span className="absolute bottom-1.5 left-1.5 rounded-md bg-amber-400/95 text-white text-[10px] font-semibold px-1.5 py-0.5">
+                  Queued
+                </span>
+                <button
+                  type="button"
+                  onClick={() => removePendingPhoto(p.id)}
+                  title="Remove from queue"
+                  aria-label="Remove from queue"
+                  className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              </div>
+            ))}
+            {photos.map((p) => {
+              const isCover = form.cover_photo_url === p.url;
+              return (
+                <div
+                  key={p.id}
+                  draggable
+                  onDragStart={() => onDragStart(p.id)}
+                  onDragOver={(e) => e.preventDefault()}
+                  onDrop={() => onDrop(p.id)}
+                  className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+                >
+                  <Image
+                    src={p.url}
+                    alt={p.alt ?? "Listing photo"}
+                    fill
+                    sizes="(max-width: 640px) 50vw, 200px"
+                    className="object-cover"
+                    unoptimized
+                  />
+                  <div className="absolute inset-0 bg-black/0 md:group-hover:bg-black/40 transition-colors" />
+
+                  <span className="hidden md:flex absolute top-1.5 left-1.5 h-9 w-9 items-center justify-center rounded-md bg-white/90 text-gray-700 opacity-0 md:group-hover:opacity-100 transition-opacity">
+                    <GripVertical className="h-4 w-4" />
+                  </span>
+
+                  <button
+                    type="button"
+                    onClick={() => setCoverFromPhoto(p)}
+                    title={isCover ? "This is the cover photo" : "Set as cover"}
+                    aria-label={isCover ? "Cover photo" : "Set as cover"}
+                    className={`absolute top-1.5 right-12 h-9 w-9 inline-flex items-center justify-center rounded-md transition-colors ${
+                      isCover
+                        ? "bg-amber-400 text-white"
+                        : "bg-white/90 text-gray-700 md:opacity-0 md:group-hover:opacity-100 hover:bg-amber-400 hover:text-white"
+                    }`}
+                  >
+                    {isCover ? (
+                      <Star className="h-4 w-4 fill-current" />
+                    ) : (
+                      <StarOff className="h-4 w-4" />
+                    )}
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => deletePhoto(p)}
+                    title="Remove photo"
+                    aria-label="Remove photo"
+                    className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                  >
+                    <X className="h-4 w-4" />
+                  </button>
+                </div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </form>
   );

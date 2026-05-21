@@ -22,6 +22,7 @@ function storagePathFromUrl(url: string | null, bucket: string): string | null {
 }
 
 const ALLOWED_FIELDS = [
+  "slug",
   "address",
   "city",
   "state",
@@ -50,7 +51,7 @@ export async function GET(
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
-  const { data, error } = await supabase
+  const { data: listing, error } = await supabase
     .from("real_estate_listings")
     .select("*")
     .eq("id", id)
@@ -62,7 +63,15 @@ export async function GET(
       { status: error.code === "PGRST116" ? 404 : 500 }
     );
   }
-  return NextResponse.json(data);
+
+  const { data: photos } = await supabase
+    .from("real_estate_listing_photos")
+    .select("*")
+    .eq("listing_id", id)
+    .order("sort_order", { ascending: true })
+    .order("created_at", { ascending: true });
+
+  return NextResponse.json({ ...listing, photos: photos ?? [] });
 }
 
 export async function PATCH(
@@ -92,6 +101,12 @@ export async function PATCH(
     .single();
 
   if (error) {
+    if (error.code === "23505") {
+      return NextResponse.json(
+        { error: "A listing with that slug already exists" },
+        { status: 409 }
+      );
+    }
     return NextResponse.json({ error: error.message }, { status: 400 });
   }
   return NextResponse.json(data);
@@ -106,17 +121,31 @@ export async function DELETE(
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
-  // Grab the cover photo path before we delete the row so we can clean it up.
-  const { data: listing } = await supabase
-    .from("real_estate_listings")
-    .select("cover_photo_url")
-    .eq("id", id)
-    .maybeSingle();
+  // Collect every storage path tied to this listing before we delete the
+  // row, so we can clean them up after. Gallery photo rows cascade via FK;
+  // the storage objects need explicit removal.
+  const [{ data: listing }, { data: galleryPhotos }] = await Promise.all([
+    supabase
+      .from("real_estate_listings")
+      .select("cover_photo_url")
+      .eq("id", id)
+      .maybeSingle(),
+    supabase
+      .from("real_estate_listing_photos")
+      .select("url")
+      .eq("listing_id", id),
+  ]);
 
+  const paths = new Set<string>();
   const coverPath = storagePathFromUrl(
     listing?.cover_photo_url ?? null,
     LISTING_PHOTOS_BUCKET
   );
+  if (coverPath) paths.add(coverPath);
+  for (const p of galleryPhotos ?? []) {
+    const path = storagePathFromUrl(p.url, LISTING_PHOTOS_BUCKET);
+    if (path) paths.add(path);
+  }
 
   const { error } = await supabase
     .from("real_estate_listings")
@@ -128,10 +157,10 @@ export async function DELETE(
   }
 
   // Best-effort storage cleanup. Don't fail the API if storage hiccups.
-  if (coverPath) {
+  if (paths.size > 0) {
     try {
       const admin = createAdminClient();
-      await admin.storage.from(LISTING_PHOTOS_BUCKET).remove([coverPath]);
+      await admin.storage.from(LISTING_PHOTOS_BUCKET).remove(Array.from(paths));
     } catch (err) {
       console.warn("Listing delete: storage cleanup failed", err);
     }

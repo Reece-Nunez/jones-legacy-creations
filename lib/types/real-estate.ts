@@ -9,6 +9,7 @@ export type PropertyType =
 
 export interface RealEstateListing {
   id: string;
+  slug: string;
   address: string;
   city: string;
   state: string;
@@ -28,6 +29,16 @@ export interface RealEstateListing {
   listed_at: string | null;
   created_at: string;
   updated_at: string;
+  photos?: RealEstateListingPhoto[];
+}
+
+export interface RealEstateListingPhoto {
+  id: string;
+  listing_id: string;
+  url: string;
+  alt: string | null;
+  sort_order: number;
+  created_at: string;
 }
 
 export const PROPERTY_TYPE_LABELS: Record<PropertyType, string> = {

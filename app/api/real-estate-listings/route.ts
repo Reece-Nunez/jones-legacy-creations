@@ -10,7 +10,7 @@ export async function GET() {
   const { data, error } = await supabase
     .from("real_estate_listings")
     .select(
-      "id, address, city, state, zip, price, bedrooms, bathrooms, square_footage, lot_size, property_type, mls_url, cover_photo_url, description, status, sort_order, featured, listed_at"
+      "id, slug, address, city, state, zip, price, bedrooms, bathrooms, square_footage, lot_size, property_type, mls_url, cover_photo_url, description, status, sort_order, featured, listed_at"
     )
     .in("status", ["active", "pending"])
     .order("featured", { ascending: false })
