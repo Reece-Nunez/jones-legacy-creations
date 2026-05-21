@@ -93,11 +93,6 @@ export default function ListingForm({ listing }: ListingFormProps) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
-  // Photos already uploaded to Supabase by the MLS import endpoint, but not
-  // yet registered as gallery rows. On create we defer registration until
-  // save (same lifecycle as pendingPhotos); on edit we register immediately.
-  const [importedPhotoUrls, setImportedPhotoUrls] = useState<string[]>([]);
-
   async function handleMlsImport() {
     const sourceUrl = form.mls_url.trim();
     if (!sourceUrl) {
@@ -111,7 +106,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
 
     setImportingMls(true);
     const toastId = toast.loading(
-      "Rendering MLS page and pulling photos. This can take 30–60 seconds…"
+      "Reading MLS listing and pulling the cover photo…"
     );
     try {
       const res = await fetch(
@@ -191,48 +186,23 @@ export default function ListingForm({ listing }: ListingFormProps) {
         return next;
       });
 
-      // Add gallery photos. On edit, register them immediately so they
-      // appear in the photo grid right away. On create, queue the URLs
-      // and register them at save time along with everything else.
-      if (data.photos.length > 0) {
-        if (isEdit) {
-          try {
-            const photoRes = await fetch(
-              `/api/admin/real-estate-listings/${listing!.id}/photos`,
-              {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({
-                  photos: data.photos.map((url) => ({ url })),
-                }),
-              }
-            );
-            if (!photoRes.ok) {
-              const body = await photoRes.json().catch(() => ({}));
-              throw new Error(body.error || "Failed to register photos");
-            }
-            const created: RealEstateListingPhoto[] = await photoRes.json();
-            setPhotos((prev) => [...prev, ...created]);
-          } catch (err) {
-            toast.error(
-              err instanceof Error
-                ? `Photos imported but not linked: ${err.message}`
-                : "Photos imported but not linked"
-            );
-          }
-        } else {
-          setImportedPhotoUrls((prev) => [...prev, ...data.photos]);
-        }
-      }
-
       toast.dismiss(toastId);
-      const failureNote =
-        data.photoFailures.length > 0
-          ? ` (${data.photoFailures.length} photo${data.photoFailures.length === 1 ? "" : "s"} skipped)`
-          : "";
+      const pieces: string[] = [];
+      if (data.coverPhotoUrl) pieces.push("cover photo set");
+      const filledFields = [
+        data.fields.bedrooms,
+        data.fields.bathrooms,
+        data.fields.square_footage,
+        data.fields.lot_size,
+        data.fields.description,
+      ].filter((v) => v !== null && v !== "").length;
+      if (filledFields > 0) {
+        pieces.push(`${filledFields} field${filledFields === 1 ? "" : "s"} filled`);
+      }
+      const summary = pieces.length > 0 ? pieces.join(", ") : "no data found";
       const noteSuffix = data.fields.notes ? ` — ${data.fields.notes}` : "";
       toast.success(
-        `Imported ${data.photos.length} photo${data.photos.length === 1 ? "" : "s"}${failureNote}. Review the fields before saving.${noteSuffix}`,
+        `${summary}. Add address, price, and gallery photos before saving.${noteSuffix}`,
         { duration: 7000 }
       );
     } catch (err) {
@@ -472,34 +442,6 @@ export default function ListingForm({ listing }: ListingFormProps) {
       }
       const saved = await res.json();
       const listingId = saved.id as string;
-
-      // Register any MLS-imported photos (already in storage, just need
-      // gallery rows). On create, this runs after the listing row exists.
-      if (importedPhotoUrls.length > 0) {
-        try {
-          const photoRes = await fetch(
-            `/api/admin/real-estate-listings/${listingId}/photos`,
-            {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                photos: importedPhotoUrls.map((url) => ({ url })),
-              }),
-            }
-          );
-          if (!photoRes.ok) {
-            const failBody = await photoRes.json().catch(() => ({}));
-            throw new Error(failBody.error || "Failed to link imported photos");
-          }
-          setImportedPhotoUrls([]);
-        } catch (err) {
-          toast.error(
-            err instanceof Error
-              ? `Imported photos not linked: ${err.message}`
-              : "Imported photos not linked"
-          );
-        }
-      }
 
       // Flush queued gallery photos. One sequential pass so progress is
       // reportable and a single failure doesn't sink the others.
@@ -799,8 +741,9 @@ export default function ListingForm({ listing }: ListingFormProps) {
         />
         <p className="mt-1 text-xs text-gray-400">
           Paste a flexmls share link and click <strong>Import from MLS</strong>{" "}
-          to auto-fill fields and pull photos. Currently only flexmls.com is
-          supported.
+          to auto-fill the description, stats, and cover photo. Gallery
+          photos still need to be uploaded below. Currently only flexmls.com
+          is supported.
         </p>
       </div>
 
@@ -935,47 +878,13 @@ export default function ListingForm({ listing }: ListingFormProps) {
           </label>
         </div>
 
-        {photos.length === 0 &&
-        pendingPhotos.length === 0 &&
-        importedPhotoUrls.length === 0 ? (
+        {photos.length === 0 && pendingPhotos.length === 0 ? (
           <div className="rounded-xl border-2 border-dashed border-gray-200 p-10 text-center text-gray-500">
             No photos yet. Click <strong>Add photos</strong> above to upload.
             You can select multiple files at once.
           </div>
         ) : (
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
-            {importedPhotoUrls.map((url) => (
-              <div
-                key={url}
-                className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-indigo-300"
-                title="Imported from MLS — registers when you save"
-              >
-                <Image
-                  src={url}
-                  alt="Imported MLS photo"
-                  fill
-                  sizes="(max-width: 640px) 50vw, 200px"
-                  className="object-cover"
-                  unoptimized
-                />
-                <span className="absolute bottom-1.5 left-1.5 rounded-md bg-indigo-500/95 text-white text-[10px] font-semibold px-1.5 py-0.5">
-                  MLS
-                </span>
-                <button
-                  type="button"
-                  onClick={() =>
-                    setImportedPhotoUrls((prev) =>
-                      prev.filter((u) => u !== url)
-                    )
-                  }
-                  title="Remove from import queue"
-                  aria-label="Remove from import queue"
-                  className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
-                >
-                  <X className="h-4 w-4" />
-                </button>
-              </div>
-            ))}
             {pendingPhotos.map((p) => (
               <div
                 key={p.id}

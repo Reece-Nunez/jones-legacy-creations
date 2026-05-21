@@ -1,20 +1,6 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  // Keep the chromium binary out of the lambda tracing/bundling step — it's
-  // resolved at runtime by @sparticuz/chromium and would otherwise blow up
-  // the bundle size for unrelated routes.
-  serverExternalPackages: ["@sparticuz/chromium", "playwright-core"],
-  // playwright-core reads browsers.json at runtime and sparticuz extracts a
-  // bundled chromium archive from its own package dir — neither is picked
-  // up by Next's static tracer. Force-include both packages for the MLS
-  // import route only, so this overhead doesn't hit any other lambdas.
-  outputFileTracingIncludes: {
-    "/api/admin/real-estate-listings/import-mls": [
-      "./node_modules/playwright-core/**/*",
-      "./node_modules/@sparticuz/chromium/**/*",
-    ],
-  },
   images: {
     remotePatterns: [
       {

@@ -1,8 +1,0 @@
-{
-  "functions": {
-    "app/api/admin/real-estate-listings/import-mls/route.ts": {
-      "memory": 3009,
-      "maxDuration": 300
-    }
-  }
-}

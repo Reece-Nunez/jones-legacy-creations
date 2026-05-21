@@ -1,11 +1,12 @@
 /**
- * Turn scraped flexmls page text into structured listing fields.
+ * Turn the flexmls listing's OG description (marketing copy) into
+ * structured listing fields.
  *
- * Why use an LLM instead of regex: flexmls renders fields with a hundred
- * different labels depending on the MLS feed ("BR", "Bedrooms Total",
- * "Beds"…). Brittle to script against. Claude reads the text once, returns
- * everything in one shot, and degrades gracefully (nulls when missing)
- * rather than blowing up on an unexpected layout.
+ * Why an LLM instead of regex: the description prose varies wildly per
+ * listing ("3,656 sq ft", "3656 square feet", "5BR/4BA", "five
+ * bedrooms"…). Claude reads it once, returns everything in one shot,
+ * and degrades gracefully (nulls when missing) rather than blowing up
+ * on an unexpected phrasing.
  */
 
 import Anthropic from "@anthropic-ai/sdk";
@@ -37,9 +38,11 @@ export interface ExtractedListingFields {
   notes: string | null;
 }
 
-const SYSTEM_PROMPT = `You are extracting structured real estate listing fields from text scraped from a flexmls.com listing share page. The text is messy (mix of UI labels, navigation, and listing data) but contains everything you need.
+const SYSTEM_PROMPT = `You are extracting structured real estate listing fields from a listing's public marketing description.
 
-Return only the JSON object described in the user message. If a field isn't clearly stated, return null for it. Don't guess.`;
+Most fields (address, price) are typically NOT in marketing prose — return null for those without apology. The fields you'll usually find are: bedrooms, bathrooms, square_footage, lot_size, and the description itself.
+
+Return only the JSON object described in the user message. If a field isn't clearly stated, return null. Don't guess.`;
 
 const RESPONSE_SCHEMA_DESCRIPTION = `Return a single JSON object with these exact keys:
 - address: string | null    // street address only, e.g. "123 N Main St" (no city/state/zip)
@@ -58,22 +61,19 @@ const RESPONSE_SCHEMA_DESCRIPTION = `Return a single JSON object with these exac
 Output the JSON object only. No prose, no markdown fences.`;
 
 export async function extractListingFields(
-  bodyText: string,
-  ogDescription: string | null
+  description: string,
+  ogTitle?: string | null
 ): Promise<ExtractedListingFields> {
-  // Cap the prompt size — flexmls pages run long, but anything past 20k chars
-  // is almost certainly nav chrome, footer links, and shared-link UI bloat.
-  const truncated =
-    bodyText.length > 20000 ? bodyText.slice(0, 20000) : bodyText;
+  if (!description.trim()) {
+    return emptyFields();
+  }
 
   const userContent = [
     RESPONSE_SCHEMA_DESCRIPTION,
     "",
-    "--- Scraped page text ---",
-    truncated,
-    ogDescription
-      ? `\n--- OG description (marketing copy from share metadata) ---\n${ogDescription}`
-      : "",
+    "--- Listing description (marketing copy) ---",
+    description,
+    ogTitle ? `\n--- Listing title hint ---\n${ogTitle}` : "",
   ].join("\n");
 
   const message = await anthropic.messages.create({
@@ -100,6 +100,23 @@ export async function extractListingFields(
   }
 
   return coerce(parsed);
+}
+
+function emptyFields(): ExtractedListingFields {
+  return {
+    address: null,
+    city: null,
+    state: null,
+    zip: null,
+    price: null,
+    bedrooms: null,
+    bathrooms: null,
+    square_footage: null,
+    lot_size: null,
+    property_type: null,
+    description: null,
+    notes: null,
+  };
 }
 
 // Best-effort type coercion. Claude is usually correct but occasionally

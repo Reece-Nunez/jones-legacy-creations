@@ -11,10 +11,10 @@ import {
   sanitizeSlugForFolder,
 } from "@/lib/mls/photo-uploader";
 
-// The headless browser + photo downloads take longer than the default 10s
-// limit. Vercel Pro allows up to 300s; this endpoint is admin-only so the
-// extra cost is bounded.
-export const maxDuration = 300;
+// Plain HTTP fetch + AI extraction — no headless browser, no chromium. The
+// whole thing finishes in 5–10s on a warm cache, well inside any plan's
+// function timeout.
+export const maxDuration = 60;
 export const runtime = "nodejs";
 
 interface ImportRequestBody {
@@ -49,34 +49,43 @@ export async function POST(request: NextRequest) {
 
     console.log(`[mls-import] start url=${url}`);
 
-    // 1. Render the SPA and pull the visible text + photo URLs.
+    // 1. Fetch the flexmls share page and pull its OG meta tags.
     let scraped;
     try {
       scraped = await scrapeFlexmlsListing(url);
     } catch (err) {
-      console.error("[mls-import] render error", err);
+      console.error("[mls-import] fetch error", err);
       return NextResponse.json(
         {
           error:
             err instanceof Error
-              ? `Render failed: ${err.message}`
-              : "Render failed",
+              ? `Fetch failed: ${err.message}`
+              : "Fetch failed",
         },
         { status: 502 }
       );
     }
+
+    if (!scraped.ogDescription && !scraped.ogImage) {
+      return NextResponse.json(
+        {
+          error:
+            "Couldn't find a listing on that page. Double-check the share link or paste a different one.",
+        },
+        { status: 422 }
+      );
+    }
+
     console.log(
-      `[mls-import] rendered text=${scraped.bodyText.length}ch photos=${scraped.photoUrls.length} +${Date.now() - startedAt}ms`
+      `[mls-import] fetched desc=${scraped.ogDescription?.length ?? 0}ch cover=${scraped.ogImage ? "yes" : "no"} +${Date.now() - startedAt}ms`
     );
 
-    // 2. Run the structured-field extractor on the rendered text. Falling
-    //    back to a best-effort empty struct on failure so we can still return
-    //    the photos / OG fields for manual fill-in.
+    // 2. AI-extract structured fields from the description prose.
     let fields;
     try {
       fields = await extractListingFields(
-        scraped.bodyText,
-        scraped.ogDescription
+        scraped.ogDescription ?? "",
+        scraped.ogTitle
       );
     } catch (err) {
       console.error("[mls-import] extract error", err);
@@ -92,55 +101,42 @@ export async function POST(request: NextRequest) {
     }
     console.log(`[mls-import] extracted +${Date.now() - startedAt}ms`);
 
-    // 3. Upgrade thumbnail Spark URLs to a usable resolution and dedupe.
-    //    Always include the OG image even if the gallery scrape missed it.
-    const candidatePhotoUrls = new Set<string>();
+    // 3. Mirror the OG cover image into our own bucket. Flexmls/Spark URLs
+    //    can rotate or hotlink-protect later — owning the file keeps the
+    //    public listing detail page stable.
+    let coverPhotoUrl: string | null = null;
     if (scraped.ogImage && isSparkPhotoUrl(scraped.ogImage)) {
-      candidatePhotoUrls.add(upgradeSparkPhotoResolution(scraped.ogImage));
-    }
-    for (const u of scraped.photoUrls) {
-      if (isSparkPhotoUrl(u)) {
-        candidatePhotoUrls.add(upgradeSparkPhotoResolution(u));
+      const folder = sanitizeSlugForFolder(
+        body.slugHint || `mls-import-${Date.now()}`
+      );
+      const result = await importSparkPhotos(
+        [upgradeSparkPhotoResolution(scraped.ogImage)],
+        folder,
+        { concurrency: 1, maxPhotos: 1 }
+      );
+      if (result.photos[0]) {
+        coverPhotoUrl = result.photos[0].url;
+      } else if (result.failures[0]) {
+        console.warn(
+          "[mls-import] cover photo upload failed",
+          result.failures[0]
+        );
       }
     }
-
-    // 4. Download + re-upload to Supabase. The folder is the slug hint if
-    //    given (matches the listing's slug if it already exists), otherwise
-    //    a timestamp so each import sits in its own namespace.
-    const folder = sanitizeSlugForFolder(
-      body.slugHint || `mls-import-${Date.now()}`
-    );
-
-    const photoResult = await importSparkPhotos(
-      Array.from(candidatePhotoUrls),
-      folder
-    );
     console.log(
-      `[mls-import] photos uploaded=${photoResult.photos.length} failed=${photoResult.failures.length} +${Date.now() - startedAt}ms`
+      `[mls-import] done cover=${coverPhotoUrl ? "yes" : "no"} +${Date.now() - startedAt}ms`
     );
-
-    // The first photo is the most likely cover — prefer the OG image's
-    // imported URL when present, otherwise the first successful import.
-    let coverPhotoUrl: string | null = null;
-    if (scraped.ogImage) {
-      const ogUpgraded = upgradeSparkPhotoResolution(scraped.ogImage);
-      const match = photoResult.photos.find((p) => p.source === ogUpgraded);
-      coverPhotoUrl = match?.url ?? null;
-    }
-    if (!coverPhotoUrl && photoResult.photos.length > 0) {
-      coverPhotoUrl = photoResult.photos[0].url;
-    }
 
     return NextResponse.json({
       fields,
       coverPhotoUrl,
-      photos: photoResult.photos.map((p) => p.url),
-      photoFailures: photoResult.failures,
+      // No gallery — Path A only gets the OG cover. Admin form uploads the
+      // rest manually using the multi-select photo grid.
+      photos: [] as string[],
+      photoFailures: [],
       sourceUrl: scraped.sourceUrl,
     });
   } catch (err) {
-    // Catch-all so the lambda returns a real error body instead of crashing
-    // with a raw 502. Surfaces the message in Vercel function logs too.
     console.error("[mls-import] unhandled error", err);
     return NextResponse.json(
       {
