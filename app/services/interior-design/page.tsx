@@ -195,8 +195,8 @@ export default function InteriorDesignPage() {
         >
           <div className="relative w-full" style={{ height: "min(85vh, 800px)", marginTop: "5rem" }}>
             <Image
-              src={`${S3_BASE_URL}kitchen-1.webp`}
-              alt="A finished kitchen interior by Interiors By Jones"
+              src={`${S3_BASE_URL}rolling-rock-drive-kitchen-9.jpeg`}
+              alt="Rolling Rock Drive luxury kitchen by Interiors By Jones"
               fill
               sizes="100vw"
               className="object-cover"
