@@ -82,7 +82,10 @@ export default async function GalleryPage() {
   return (
     <>
       <Navigation />
-      <main className="min-h-screen bg-gray-50 pt-20">
+      <main
+        className="min-h-screen pt-20"
+        style={{ background: "var(--hm-paper)", color: "var(--hm-ink)" }}
+      >
         <GalleryContent projects={projects} />
       </main>
       <Footer />

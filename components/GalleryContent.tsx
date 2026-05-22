@@ -1,9 +1,17 @@
 "use client";
 
-import { motion } from "framer-motion";
 import Image from "next/image";
 import Link from "next/link";
 import { Building2 } from "lucide-react";
+
+/* Hallmark · genre: editorial · component: gallery grid
+ * design-system: design.md · designed-as-app
+ * theme: Linen · anchor hue: terracotta
+ *
+ * Linen-styled project gallery: left-aligned editorial hero, hairline-
+ * framed project tiles, italic-serif titles, mono-caps location eyebrows.
+ * Replaces the centered "Our Work" hero + shadow-lg rounded-2xl card
+ * template. */
 
 interface GalleryPhoto {
   id: string;
@@ -25,100 +33,189 @@ interface GalleryProject {
 
 export function GalleryContent({ projects }: { projects: GalleryProject[] }) {
   return (
-    <section className="py-20 bg-gray-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.8 }}
-          className="text-center mb-16"
-        >
-          <h1 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-            Our Work
-          </h1>
-          <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-            Quality craftsmanship delivered with care and attention to detail.
-            Tap any project for more details.
+    <section style={{ background: "var(--hm-paper)" }}>
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 pb-24 lg:pt-28 lg:pb-32">
+        <div className="mb-14 max-w-3xl">
+          <p
+            className="font-mono uppercase mb-5"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.22em",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            Project gallery · Southern Utah
           </p>
-        </motion.div>
+          <h1
+            className="font-serif font-normal italic"
+            style={{
+              fontSize: "clamp(2.75rem, 7vw, 6rem)",
+              lineHeight: 0.97,
+              color: "var(--hm-ink)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            The work.
+          </h1>
+          <p
+            className="mt-6 font-sans"
+            style={{
+              fontSize: "var(--hm-text-lede)",
+              color: "var(--hm-ink-2)",
+              lineHeight: 1.55,
+              maxWidth: "55ch",
+            }}
+          >
+            Recent projects across construction and interior design. Tap any
+            one for the full set of photos and the story behind it.
+          </p>
+        </div>
 
         {projects.length === 0 ? (
-          <div className="text-center py-20">
-            <Building2 className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-            <p className="text-gray-500 text-lg">
-              Photos coming soon — check back after our next build!
+          <div
+            className="px-8 py-20 max-w-2xl"
+            style={{
+              background: "var(--hm-paper-2)",
+              borderTop: "1px solid var(--hm-rule)",
+              borderBottom: "1px solid var(--hm-rule)",
+            }}
+          >
+            <Building2
+              aria-hidden="true"
+              className="h-8 w-8"
+              style={{ color: "var(--hm-ink-3)" }}
+            />
+            <p
+              className="mt-5 font-serif italic"
+              style={{
+                fontSize: "var(--hm-text-h3)",
+                color: "var(--hm-ink)",
+                lineHeight: 1.3,
+              }}
+            >
+              Photos coming soon. Check back after our next build.
             </p>
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {projects.map((project, index) => {
-              const card = (
-                <div className="group">
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
-                    <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
-                      <Image
-                        src={project.photos[0].file_url}
-                        alt={`${project.name} - cover photo`}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        View Project ({project.photos.length}{" "}
-                        photo{project.photos.length === 1 ? "" : "s"})
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      {(project.city || project.state) && (
-                        <div className="text-sm text-gray-600 mb-2">
-                          {[project.city, project.state]
-                            .filter(Boolean)
-                            .join(", ")}
-                        </div>
-                      )}
-                      <h2 className="text-2xl font-serif font-bold text-gray-900 mb-2">
-                        {project.name}
-                      </h2>
-                      {project.description && (
-                        <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">
-                          {project.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              );
-
-              return (
-                <motion.div
-                  key={project.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                >
-                  {project.detailHref ? (
-                    <Link href={project.detailHref} className="block">
-                      {card}
-                    </Link>
-                  ) : project.slug ? (
-                    <Link
-                      href={`/services/construction/projects/${project.slug}`}
-                      className="block"
-                    >
-                      {card}
-                    </Link>
-                  ) : (
-                    card
-                  )}
-                </motion.div>
-              );
-            })}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+            {projects.map((project) => (
+              <ProjectTile key={project.id} project={project} />
+            ))}
           </div>
         )}
       </div>
     </section>
   );
+}
+
+function ProjectTile({ project }: { project: GalleryProject }) {
+  const photoCount = project.photos.length;
+  const location =
+    project.city || project.state
+      ? [project.city, project.state].filter(Boolean).join(", ")
+      : null;
+
+  const card = (
+    <article
+      className="group flex flex-col h-full"
+      style={{
+        background: "var(--hm-paper)",
+        border: "1px solid var(--hm-rule)",
+        transition: "border-color var(--hm-dur-short) var(--hm-ease-out)",
+      }}
+    >
+      <div
+        className="relative aspect-[4/3]"
+        style={{ background: "var(--hm-paper-3)" }}
+      >
+        <Image
+          src={project.photos[0].file_url}
+          alt={`${project.name} cover photo`}
+          fill
+          sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+          className="object-cover"
+          loading="lazy"
+        />
+      </div>
+      <div className="p-6 sm:p-7 flex flex-col gap-2 flex-1">
+        {location && (
+          <p
+            className="font-mono uppercase"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.22em",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            {location}
+          </p>
+        )}
+        <h2
+          className="font-serif italic"
+          style={{
+            fontSize: "var(--hm-text-h3)",
+            color: "var(--hm-ink)",
+            fontWeight: 500,
+            lineHeight: 1.2,
+            letterSpacing: "-0.01em",
+          }}
+        >
+          {project.name}
+        </h2>
+        {project.description && (
+          <p
+            className="font-sans line-clamp-2 mt-1"
+            style={{
+              fontSize: "var(--hm-text-body)",
+              color: "var(--hm-ink-2)",
+              lineHeight: 1.55,
+            }}
+          >
+            {project.description}
+          </p>
+        )}
+        <div className="mt-auto pt-4 flex items-baseline justify-between gap-3">
+          <span
+            className="font-mono uppercase transition-colors group-hover:text-[var(--hm-accent)]"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.15em",
+              color: "var(--hm-ink)",
+            }}
+          >
+            View project →
+          </span>
+          <span
+            className="font-mono uppercase"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.18em",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            {photoCount} {photoCount === 1 ? "photo" : "photos"}
+          </span>
+        </div>
+      </div>
+    </article>
+  );
+
+  if (project.detailHref) {
+    return (
+      <Link href={project.detailHref} className="block h-full">
+        {card}
+      </Link>
+    );
+  }
+  if (project.slug) {
+    return (
+      <Link
+        href={`/services/construction/projects/${project.slug}`}
+        className="block h-full"
+      >
+        {card}
+      </Link>
+    );
+  }
+  return card;
 }
