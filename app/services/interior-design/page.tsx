@@ -16,7 +16,16 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Palette, Home, Sparkles, Eye, Ruler, PaintBucket, ArrowRight, Instagram, Facebook, Phone, Check } from "lucide-react";
+import { Palette, ArrowRight, Instagram, Facebook, Phone } from "lucide-react";
+
+/* Hallmark · genre: editorial · macrostructure: Photographic
+ * design-system: design.md · designed-as-app
+ * theme: Linen · anchor hue: terracotta
+ *
+ * The work IS the proof. Hero is a single full-bleed kitchen photo with
+ * the display headline overlaid; the editorial sections sit below a
+ * thick rule. Replaces the centered-icon hero + gradient-bg + dark
+ * benefits bar template. */
 
 // Extended type for form with honeypot field
 type InteriorDesignFormWithHoneypot = InteriorDesignFormData & { honeypot?: string };
@@ -108,29 +117,31 @@ export default function InteriorDesignPage() {
 
   const services = [
     {
-      icon: Palette,
-      title: "Interior Design",
-      description: "Custom interior design services to transform your space into a reflection of your style and personality.",
+      eyebrow: "For the home you live in",
+      title: "Interior design",
+      description:
+        "Custom interior work that turns a house into a place that feels like yours. We handle space planning, color, furniture, custom millwork, lighting, and the finish selections that pull the room together.",
       features: [
-        "Space Planning & Layout",
-        "Color Consultation",
-        "Furniture Selection",
-        "Custom Millwork Design",
-        "Lighting Design",
-        "Material & Finish Selection",
+        "Space planning & layout",
+        "Color consultation",
+        "Furniture selection",
+        "Custom millwork design",
+        "Lighting design",
+        "Material & finish selection",
       ],
     },
     {
-      icon: Home,
-      title: "Home Staging",
-      description: "Professional home staging to help your property sell faster and for maximum value.",
+      eyebrow: "For the home you're selling",
+      title: "Home staging",
+      description:
+        "Staging that helps a property sell faster and for more. Vacant or occupied, full home or pre-listing consultation. We pull together what's already there or bring in what's needed.",
       features: [
-        "Vacant Property Staging",
-        "Occupied Home Staging",
-        "Pre-Listing Consultation",
-        "Furniture Rental",
-        "Accessory Styling",
-        "Curb Appeal Enhancement",
+        "Vacant property staging",
+        "Occupied home staging",
+        "Pre-listing consultation",
+        "Furniture rental",
+        "Accessory styling",
+        "Curb appeal enhancement",
       ],
     },
   ];
@@ -138,405 +149,409 @@ export default function InteriorDesignPage() {
   const process = [
     {
       number: "01",
-      title: "Initial Consultation",
-      description: "We meet to discuss your vision, needs, budget, and timeline. We'll tour the space and take measurements.",
+      title: "Initial consultation",
+      description:
+        "We walk the rooms together and talk through what you want, what you don't, the budget, the timeline. We take measurements.",
     },
     {
       number: "02",
-      title: "Design Concept",
-      description: "We create a comprehensive design concept including mood boards, color palettes, and preliminary layouts.",
+      title: "Design concept",
+      description:
+        "Mood boards, color palettes, and preliminary layouts. The shape of the answer before any orders go out.",
     },
     {
       number: "03",
-      title: "Design Development",
-      description: "We refine the design with detailed plans, 3D renderings, and material selections for your approval.",
+      title: "Design development",
+      description:
+        "Detailed plans, 3D renderings where they help, and material selections for your sign-off before anything is bought.",
     },
     {
       number: "04",
       title: "Implementation",
-      description: "We coordinate with contractors and vendors to bring your design to life, managing every detail.",
+      description:
+        "We coordinate with contractors and vendors and run the day-to-day so you don't have to chase three different schedules.",
     },
     {
       number: "05",
-      title: "Final Styling",
-      description: "We add the finishing touches with accessories, art, and styling to complete your beautiful space.",
+      title: "Final styling",
+      description:
+        "Accessories, art, and the styling pass that takes a finished room from done to done well.",
     },
-  ];
-
-  const benefits = [
-    { icon: Eye, text: "Increase property value and marketability" },
-    { icon: Sparkles, text: "Create stunning, functional spaces" },
-    { icon: Ruler, text: "Maximize space efficiency" },
-    { icon: PaintBucket, text: "Professional color & material expertise" },
   ];
 
   return (
     <>
       <Navigation />
 
-      {/* Hero Section */}
-      <section aria-label="Interior design and home staging overview" className="pt-32 pb-20 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center"
-          >
-            <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
-              <Image
-                src="/JONES Interior Design & Staging ICON (2).svg"
-                alt="Interiors By Jones Custom Homes logo"
-                width={120}
-                height={120}
-                className="object-contain"
-              />
-            </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
-              Interior Design & Home Staging
-            </h1>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto mb-12 leading-relaxed">
-              Transform your space with professional interior design and staging services led by our talented designer.
-            </p>
-
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/contact">
-                <Button size="lg">
-                  Schedule Consultation
-                  <ArrowRight aria-hidden="true" className="w-5 h-5 ml-2" />
-                </Button>
-              </Link>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Why Choose Section */}
-      <section aria-label="Why choose Interiors by Jones Custom Homes" className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-6">
-              Why Choose Interiors by Jones Custom Homes?
-            </h2>
-            <p className="text-xl text-gray-700 leading-relaxed max-w-2xl mx-auto">
-              We transform even the most unique or challenging layouts into beautiful, functional spaces. With creative space solutions, a sharp eye for potential, and trusted industry experience, we highlight every home&apos;s best features—whether you&apos;re preparing to sell or elevating the place you live.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Benefits Bar */}
-      <section aria-label="Key benefits of our design services" className="py-12 bg-gray-900 text-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-8">
-            {benefits.map((benefit, index) => (
-              <motion.div
-                key={benefit.text}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="flex flex-col items-center text-center"
+      <main style={{ background: "var(--hm-paper)", color: "var(--hm-ink)" }}>
+        {/* Photographic hero — full-bleed kitchen photo with mono-caps
+            dateline + italic display headline overlaid. No subhead, no
+            CTA in fold (per Photographic macro spec). Thick rule marks
+            the transition to below-fold content. */}
+        <section
+          aria-label="Interior design and home staging"
+          className="relative"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="relative w-full" style={{ height: "min(85vh, 800px)", marginTop: "5rem" }}>
+            <Image
+              src={`${S3_BASE_URL}kitchen-1.webp`}
+              alt="A finished kitchen interior by Interiors By Jones"
+              fill
+              sizes="100vw"
+              className="object-cover"
+              priority
+            />
+            {/* Subtle gradient at bottom for text contrast against any image */}
+            <div
+              className="absolute inset-0"
+              style={{
+                background:
+                  "linear-gradient(to bottom, rgba(0,0,0,0.25) 0%, rgba(0,0,0,0) 30%, rgba(0,0,0,0) 60%, rgba(0,0,0,0.55) 100%)",
+              }}
+              aria-hidden="true"
+            />
+            <div className="absolute inset-0 flex flex-col justify-between p-6 sm:p-10 lg:p-14">
+              <motion.p
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.8, delay: 0.2 }}
+                className="font-mono uppercase"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.22em",
+                  color: "var(--hm-paper)",
+                }}
               >
-                <div className="w-16 h-16 bg-white text-gray-900 rounded-full flex items-center justify-center mb-4">
-                  <benefit.icon aria-hidden="true" className="w-8 h-8" />
-                </div>
-                <p className="font-medium">{benefit.text}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Services Section */}
-      <section aria-label="Our design and staging services" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Our Services
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Comprehensive design and staging solutions tailored to your needs
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            {services.map((service, index) => (
+                Interiors By Jones · Hurricane, Utah
+              </motion.p>
               <motion.div
-                key={service.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="bg-white p-8 rounded-2xl shadow-lg"
+                initial={{ opacity: 0, y: 16 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               >
-                <div className="flex items-center gap-4 mb-6">
-                  <div className="w-16 h-16 bg-black text-white rounded-full flex items-center justify-center flex-shrink-0">
-                    <service.icon aria-hidden="true" className="w-8 h-8" />
-                  </div>
-                  <h3 className="text-3xl font-serif font-bold text-gray-900">{service.title}</h3>
-                </div>
-                <p className="text-gray-700 mb-6 leading-relaxed">{service.description}</p>
-                <ul className="space-y-3">
-                  {service.features.map((feature) => (
-                    <li key={feature} className="flex items-start gap-3">
-                      <Check aria-hidden="true" className="w-5 h-5 text-black mt-0.5 flex-shrink-0" />
-                      <span className="text-gray-700">{feature}</span>
-                    </li>
-                  ))}
-                </ul>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Process Section */}
-      <section aria-label="Our design process" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Our Process
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              From concept to completion, we guide you through every step
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6 md:gap-8">
-            {process.map((step, index) => (
-              <motion.div
-                key={step.number}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="relative"
-              >
-                <div className="text-6xl font-serif font-bold text-gray-200 mb-4">
-                  {step.number}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-2">{step.title}</h3>
-                <p className="text-sm text-gray-700 leading-relaxed">{step.description}</p>
-
-                {index < process.length - 1 && (
-                  <div className="hidden md:block absolute top-8 left-full w-full h-0.5 bg-gray-200 -z-10" />
-                )}
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Portfolio Section */}
-      {/* DB-backed featured projects — admins add these via /admin/showcases */}
-      {showcases.length > 0 && (
-        <section aria-label="Featured interior design projects" className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.8 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-                Featured Projects
-              </h2>
-              <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-                Recent homes we&apos;ve styled and staged
-              </p>
-            </motion.div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-              {showcases.map((s, index) => (
-                <motion.div
-                  key={s.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  whileInView={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: index * 0.1 }}
-                  viewport={{ once: true }}
-                  className="group"
+                <h1
+                  className="font-serif font-normal italic"
+                  style={{
+                    fontSize: "clamp(2.75rem, 8vw, 7.5rem)",
+                    lineHeight: 0.95,
+                    color: "var(--hm-paper)",
+                    letterSpacing: "-0.02em",
+                    overflowWrap: "anywhere",
+                    minWidth: 0,
+                  }}
                 >
-                  <Link
-                    href={`/services/interior-design/projects/${s.slug}`}
-                    className="block"
-                  >
-                    <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
-                      <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
-                        {s.cover_image_url ? (
-                          <Image
-                            src={s.cover_image_url}
-                            alt={`${s.title}${s.location ? ` interior design in ${s.location}` : ""}`}
-                            fill
-                            sizes="(max-width: 768px) 100vw, 50vw"
-                            className="object-cover group-hover:scale-105 transition-transform duration-500"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="absolute inset-0 flex flex-col items-center justify-center">
-                            <Palette aria-hidden="true" className="w-16 h-16 text-gray-400 mb-2" />
-                            <span className="text-sm text-gray-600">Photos Coming Soon</span>
-                          </div>
-                        )}
-                        <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                        <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                          View Project
-                        </div>
-                      </div>
-                      <div className="p-6">
-                        {s.location && (
-                          <div className="text-sm text-gray-600 mb-2">{s.location}</div>
-                        )}
-                        <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">
-                          {s.title}
-                        </h3>
-                        {s.description && (
-                          <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">
-                            {s.description}
-                          </p>
-                        )}
-                      </div>
-                    </div>
-                  </Link>
-                </motion.div>
+                  Spaces that<br />feel finished.
+                </h1>
+              </motion.div>
+            </div>
+          </div>
+          <hr
+            className="border-0"
+            style={{ borderTop: "3px solid var(--hm-rule-thick)" }}
+          />
+        </section>
+
+        {/* Editorial intro — replaces the centered "Why Choose Us" panel
+            and the dark 4-icon benefits bar. Both sets of content folded
+            into one editorial paragraph. */}
+        <section
+          aria-label="Interior design and staging, in plain terms"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <div
+              className="font-sans space-y-6"
+              style={{
+                fontSize: "var(--hm-text-lede)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.65,
+                maxWidth: "62ch",
+              }}
+            >
+              <p>
+                Hilari runs the design side of the business. Interior design
+                for the place you live in, staging for the place you want to
+                sell. Same eye on both. Most of the work happens in the
+                spaces other people would call unusual: tight kitchens,
+                awkward layouts, the room you never figured out what to do
+                with. That&apos;s the fun part.
+              </p>
+              <p>
+                Sharp eye for potential. Industry-trusted experience. Real
+                color and material expertise. Whether you&apos;re elevating
+                where you live or staging a home to sell faster and for
+                more, we work the same way: walk the rooms, find what they
+                want to be, and make the call.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* Services — two editorial blocks instead of two icon-circle
+            shadow-cards. Mono-caps eyebrow, italic-serif title, prose
+            description, hairline-divided feature list. */}
+        <section
+          aria-label="Services"
+          style={{ background: "var(--hm-paper-2)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <h2
+              className="font-serif font-normal italic mb-3"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              Two sides of the same job.
+            </h2>
+            <p
+              className="font-sans mb-14"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-3)",
+                maxWidth: "55ch",
+              }}
+            >
+              Interior design for the home you live in. Staging for the home
+              you&apos;re ready to sell. Same eye on both.
+            </p>
+
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 lg:gap-8">
+              {services.map((service) => (
+                <ServiceBlock key={service.title} service={service} />
               ))}
             </div>
           </div>
         </section>
-      )}
 
-      <section aria-label="Interior design portfolio" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-12"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Our Portfolio
+        {/* Process — vertical list, mono-caps inline numbers in terracotta.
+            Replaces the 5-col grid with giant grey decorative numerals. */}
+        <section
+          aria-label="Our process"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <h2
+              className="font-serif font-normal italic mb-3"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              How it goes.
             </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Browse our collection of beautiful interior designs and staging projects
+            <p
+              className="font-sans mb-14"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-3)",
+                maxWidth: "55ch",
+              }}
+            >
+              From first walkthrough to the last accessory styled. Five
+              checkpoints.
             </p>
-          </motion.div>
+            <ol className="space-y-10">
+              {process.map((step) => (
+                <li key={step.number}>
+                  <h3
+                    className="font-serif mb-3"
+                    style={{
+                      fontSize: "var(--hm-text-h3)",
+                      color: "var(--hm-ink)",
+                      fontWeight: 500,
+                    }}
+                  >
+                    <span
+                      className="font-mono uppercase tracking-[0.2em] mr-4 align-baseline"
+                      style={{
+                        fontSize: "var(--hm-text-meta)",
+                        color: "var(--hm-accent)",
+                      }}
+                    >
+                      {step.number}
+                    </span>
+                    {step.title}
+                  </h3>
+                  <p
+                    className="font-sans"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      lineHeight: 1.65,
+                      color: "var(--hm-ink-2)",
+                      maxWidth: "62ch",
+                    }}
+                  >
+                    {step.description}
+                  </p>
+                </li>
+              ))}
+            </ol>
+          </div>
+        </section>
 
-          {/* Highlighted Images */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8"
+        {/* Featured Projects (DB-backed) — Linen-styled showcase grid */}
+        {showcases.length > 0 && (
+          <section
+            aria-label="Featured interior design projects"
+            style={{ background: "var(--hm-paper-2)" }}
           >
-            {highlightedImages.map((image, index) => (
-              <motion.div
-                key={image.filename}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                viewport={{ once: true }}
-                className="group"
-              >
-                <Link href={`/services/interior-design/gallery?category=${encodeURIComponent(image.category)}`}>
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer">
-                    <div className="aspect-[4/3] relative overflow-hidden">
-                      <Image
-                        src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
-                        alt={image.description || `${image.category} interior design project`}
-                        fill
-                        sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                    </div>
-                    <div className="p-6">
-                      <div className="text-sm text-gray-600 mb-2">{image.category}</div>
-                      <p className="text-gray-700">{image.description}</p>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-          </motion.div>
+            <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+              <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
+                <h2
+                  className="font-serif font-normal italic"
+                  style={{
+                    fontSize: "var(--hm-text-h2)",
+                    color: "var(--hm-ink)",
+                    letterSpacing: "-0.015em",
+                  }}
+                >
+                  Featured projects.
+                </h2>
+                <span
+                  className="font-mono uppercase"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    letterSpacing: "0.18em",
+                    color: "var(--hm-ink-3)",
+                  }}
+                >
+                  Recent work
+                </span>
+              </div>
 
-          {/* View Full Gallery Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.3 }}
-            viewport={{ once: true }}
-            className="text-center mt-12"
-          >
-            <Link href="/services/interior-design/gallery">
-              <Button size="lg" variant="outline">
-                View Full Gallery
-                <ArrowRight aria-hidden="true" className="w-5 h-5 ml-2" />
-              </Button>
-            </Link>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Form Section */}
-      <section id="contact-form" aria-label="Interior design contact form" className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="mb-12 text-center"
-          >
-            <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
-              Start Your Design Journey
-            </h2>
-            <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
-              Tell us about your project so we can create the perfect design solution for you.
-            </p>
-
-            {/* Contact Method Toggle */}
-            <div className="flex items-center justify-center gap-4">
-              <Button
-                type="button"
-                size="lg"
-                variant={contactMethod === "form" ? "primary" : "outline"}
-                onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
-              >
-                Fill Out Our Form
-              </Button>
-              <span className="text-gray-500 font-medium">or</span>
-              <Button
-                type="button"
-                size="lg"
-                variant={contactMethod === "call" ? "primary" : "outline"}
-                onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
-              >
-                Give Us A Call
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                {showcases.map((s) => (
+                  <ShowcaseCard key={s.id} showcase={s} />
+                ))}
+              </div>
             </div>
-          </motion.div>
+          </section>
+        )}
+
+        {/* Portfolio — six highlighted images. Hairline frame instead of
+            shadow-card, mono-caps category eyebrow, italic-serif caption.
+            Same 3-col layout but the chrome reads editorial, not SaaS. */}
+        <section
+          aria-label="Portfolio"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
+              <h2
+                className="font-serif font-normal italic"
+                style={{
+                  fontSize: "var(--hm-text-h2)",
+                  color: "var(--hm-ink)",
+                  letterSpacing: "-0.015em",
+                }}
+              >
+                The portfolio.
+              </h2>
+              <Link
+                href="/services/interior-design/gallery"
+                className="inline-flex items-center font-mono uppercase transition-colors group"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.18em",
+                  color: "var(--hm-ink)",
+                  borderBottom: "1px solid var(--hm-rule-thick)",
+                  paddingBottom: "2px",
+                }}
+              >
+                View full gallery →
+              </Link>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6">
+              {highlightedImages.map((image) => (
+                <PortfolioTile key={image.filename} image={image} />
+              ))}
+            </div>
+          </div>
+        </section>
+
+        {/* Form — editorial header + chip toggle */}
+        <section
+          id="contact-form"
+          aria-label="Interior design contact form"
+          style={{ background: "var(--hm-paper-2)" }}
+        >
+          <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-28">
+            <div className="mb-12 max-w-3xl">
+              <h2
+                className="font-serif font-normal italic mb-4"
+                style={{
+                  fontSize: "var(--hm-text-h2)",
+                  color: "var(--hm-ink)",
+                  letterSpacing: "-0.015em",
+                }}
+              >
+                Start the conversation.
+              </h2>
+              <p
+                className="font-sans"
+                style={{
+                  fontSize: "var(--hm-text-lede)",
+                  lineHeight: 1.6,
+                  color: "var(--hm-ink-2)",
+                  maxWidth: "62ch",
+                }}
+              >
+                Tell us about your space and what you&apos;re hoping to do
+                with it. Or skip the form and call. Hilari runs the design
+                side of the business and answers her own phone.
+              </p>
+
+              <div className="mt-10 flex flex-wrap items-center gap-3">
+                <span
+                  className="font-mono uppercase tracking-[0.18em] mr-2"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    color: "var(--hm-ink-3)",
+                  }}
+                >
+                  Two ways to start
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
+                  className="inline-flex items-center justify-center px-5 py-2.5 font-sans font-medium border transition-colors duration-200"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    minHeight: 44,
+                    whiteSpace: "nowrap",
+                    borderColor: contactMethod === "form" ? "var(--hm-ink)" : "var(--hm-rule-thick)",
+                    background: contactMethod === "form" ? "var(--hm-ink)" : "transparent",
+                    color: contactMethod === "form" ? "var(--hm-paper)" : "var(--hm-ink)",
+                  }}
+                >
+                  Fill out the form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
+                  className="inline-flex items-center justify-center px-5 py-2.5 font-sans font-medium border transition-colors duration-200"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    minHeight: 44,
+                    whiteSpace: "nowrap",
+                    borderColor: contactMethod === "call" ? "var(--hm-ink)" : "var(--hm-rule-thick)",
+                    background: contactMethod === "call" ? "var(--hm-ink)" : "transparent",
+                    color: contactMethod === "call" ? "var(--hm-paper)" : "var(--hm-ink)",
+                  }}
+                >
+                  Give us a call
+                </button>
+              </div>
+            </div>
 
           <AnimatePresence mode="wait">
             {contactMethod === "call" && (
@@ -548,25 +563,64 @@ export default function InteriorDesignPage() {
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
-                  <Phone aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4">Contact Hilari Jones</h3>
+                <div
+                  className="p-8 sm:p-10 mb-8"
+                  style={{
+                    background: "var(--hm-paper)",
+                    border: "1px solid var(--hm-rule)",
+                    borderLeft: "3px solid var(--hm-accent)",
+                  }}
+                >
+                  <span
+                    className="inline-flex items-center gap-2 font-mono uppercase tracking-[0.18em]"
+                    style={{
+                      fontSize: "var(--hm-text-meta)",
+                      color: "var(--hm-ink-3)",
+                    }}
+                  >
+                    <Phone aria-hidden="true" className="w-3.5 h-3.5" />
+                    Hilari, direct
+                  </span>
                   <a
                     href="tel:+18017357089"
                     aria-label="Call Hilari Jones at (801) 735-7089"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4 min-h-[44px]"
+                    className="block mt-3 font-serif tabular-nums transition-colors"
+                    style={{
+                      fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
+                      color: "var(--hm-ink)",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.05,
+                      minHeight: 44,
+                    }}
                   >
                     (801) 735-7089
                   </a>
                   <a
                     href="mailto:interiors@joneslegacycreations.com"
                     aria-label="Email interiors@joneslegacycreations.com"
-                    className="text-xl text-black hover:text-gray-700 transition-colors min-h-[44px] inline-flex items-center"
+                    className="inline-flex items-center mt-4 font-sans transition-colors"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      borderBottom: "1px solid var(--hm-rule)",
+                      paddingBottom: "1px",
+                      minHeight: 44,
+                    }}
                   >
                     interiors@joneslegacycreations.com
                   </a>
-                  <p className="text-gray-700 mt-4 leading-relaxed">
-                    We&apos;re available to discuss your interior design and staging needs.
+                  <p
+                    className="mt-6 font-sans"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      lineHeight: 1.6,
+                      maxWidth: "55ch",
+                    }}
+                  >
+                    Hilari answers the phone. Call about a design project, a
+                    home you&apos;re staging to sell, or to walk through a
+                    space you can&apos;t figure out what to do with.
                   </p>
                 </div>
               </motion.div>
@@ -586,8 +640,8 @@ export default function InteriorDesignPage() {
                 <HoneypotField register={register} />
 
                 {/* Personal Information */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Contact Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
                       label="Full Name"
@@ -613,8 +667,8 @@ export default function InteriorDesignPage() {
                 </div>
 
                 {/* Service Type */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Service Needed</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Service Needed</h3>
                   <Select
                     label="What service are you interested in?"
                     {...register("serviceType")}
@@ -630,8 +684,8 @@ export default function InteriorDesignPage() {
                 </div>
 
                 {/* Property Information */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Property Information</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Property Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                       <Input
@@ -676,8 +730,8 @@ export default function InteriorDesignPage() {
                 </div>
 
                 {/* Project Details */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Project Details</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Project Details</h3>
                   <Textarea
                     label="Project Description"
                     placeholder="Tell us about your project. What are your goals? What spaces need attention?"
@@ -689,8 +743,8 @@ export default function InteriorDesignPage() {
                 </div>
 
                 {/* Budget & Timeline */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Budget & Timeline</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Budget & Timeline</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Select
                       label="Estimated Budget"
@@ -724,8 +778,8 @@ export default function InteriorDesignPage() {
                 </div>
 
                 {/* Style Preferences */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Style Preferences</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Style Preferences</h3>
                   <div className="space-y-6">
                     <Select
                       label="Preferred Design Style"
@@ -755,8 +809,8 @@ export default function InteriorDesignPage() {
                 </div>
 
                 {/* Additional Information */}
-                <div className="bg-gray-50 p-6 rounded-xl">
-                  <h3 className="text-2xl font-serif font-bold mb-6">Additional Information</h3>
+                <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+                  <h3 className="text-2xl font-serif font-normal italic mb-6">Additional Information</h3>
                   <div className="space-y-6">
                     <Textarea
                       label="Additional Notes"
@@ -781,53 +835,312 @@ export default function InteriorDesignPage() {
                   </div>
                 </div>
 
-                {/* Submit Button */}
-                <div className="flex justify-center pt-6">
-                  <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-64">
-                    Submit Design Request
+                {/* Submit — left-aligned with reply-time note */}
+                <div className="pt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+                  <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-56">
+                    Send my project
                   </Button>
+                  <span
+                    className="font-mono uppercase tracking-[0.18em]"
+                    style={{
+                      fontSize: "var(--hm-text-meta)",
+                      color: "var(--hm-ink-3)",
+                    }}
+                  >
+                    Reply within 24 hours
+                  </span>
                 </div>
               </motion.form>
             )}
           </AnimatePresence>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Social Media Section */}
-      <section aria-label="Social media links" className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">Follow Us On Social Media</h2>
-            <div className="flex items-center justify-center gap-6">
+        {/* Social — inline editorial links, no centered icon-island */}
+        <section
+          aria-label="Social media"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12 lg:py-16">
+            <p
+              className="font-mono uppercase mb-3"
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.22em",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              Follow along
+            </p>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
               <a
                 href="https://www.instagram.com/interiors.by.jch/"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-gray-700 hover:text-black transition-colors min-h-[44px] min-w-[44px] justify-center"
-                aria-label="Follow Interiors by Jones Custom Homes on Instagram"
+                className="inline-flex items-center gap-2 font-sans transition-colors hover:text-[var(--hm-accent)]"
+                style={{
+                  fontSize: "var(--hm-text-lede)",
+                  color: "var(--hm-ink)",
+                  borderBottom: "1px solid var(--hm-rule-thick)",
+                  paddingBottom: "2px",
+                }}
+                aria-label="Follow Interiors By Jones on Instagram"
               >
-                <Instagram aria-hidden="true" className="w-8 h-8" />
+                <Instagram aria-hidden="true" className="w-4 h-4" />
+                Instagram · @interiors.by.jch
               </a>
               <a
                 href="https://www.facebook.com/profile.php?id=61575767564467"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="inline-flex items-center text-gray-700 hover:text-black transition-colors min-h-[44px] min-w-[44px] justify-center"
-                aria-label="Follow Interiors by Jones Custom Homes on Facebook"
+                className="inline-flex items-center gap-2 font-sans transition-colors hover:text-[var(--hm-accent)]"
+                style={{
+                  fontSize: "var(--hm-text-lede)",
+                  color: "var(--hm-ink)",
+                  borderBottom: "1px solid var(--hm-rule-thick)",
+                  paddingBottom: "2px",
+                }}
+                aria-label="Follow Interiors By Jones on Facebook"
               >
-                <Facebook aria-hidden="true" className="w-8 h-8" />
+                <Facebook aria-hidden="true" className="w-4 h-4" />
+                Facebook
               </a>
             </div>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </>
+  );
+}
+
+/* Service block — editorial alternative to the icon-circle shadow-card.
+ * Mono-caps eyebrow, italic-serif title, prose description, plain hairline
+ * feature list. No icons, no checkmarks, no card shadows. */
+function ServiceBlock({
+  service,
+}: {
+  service: {
+    eyebrow: string;
+    title: string;
+    description: string;
+    features: string[];
+  };
+}) {
+  return (
+    <article
+      className="p-7 sm:p-9 h-full flex flex-col"
+      style={{
+        background: "var(--hm-paper)",
+        border: "1px solid var(--hm-rule)",
+      }}
+    >
+      <p
+        className="font-mono uppercase mb-3"
+        style={{
+          fontSize: "10px",
+          letterSpacing: "0.22em",
+          color: "var(--hm-ink-3)",
+        }}
+      >
+        {service.eyebrow}
+      </p>
+      <h3
+        className="font-serif font-normal italic mb-5"
+        style={{
+          fontSize: "var(--hm-text-h3)",
+          color: "var(--hm-ink)",
+          letterSpacing: "-0.015em",
+          lineHeight: 1.15,
+        }}
+      >
+        {service.title}
+      </h3>
+      <p
+        className="font-sans mb-6"
+        style={{
+          fontSize: "var(--hm-text-body)",
+          color: "var(--hm-ink-2)",
+          lineHeight: 1.6,
+          maxWidth: "50ch",
+        }}
+      >
+        {service.description}
+      </p>
+      <ul
+        className="space-y-0 mt-auto pt-2"
+        style={{ borderTop: "1px solid var(--hm-rule)" }}
+      >
+        {service.features.map((feature) => (
+          <li
+            key={feature}
+            className="font-sans py-2.5"
+            style={{
+              fontSize: "var(--hm-text-body)",
+              color: "var(--hm-ink-2)",
+              borderBottom: "1px solid var(--hm-rule)",
+            }}
+          >
+            {feature}
+          </li>
+        ))}
+      </ul>
+    </article>
+  );
+}
+
+/* Showcase card — same Linen pattern as the construction page's. */
+function ShowcaseCard({
+  showcase: s,
+}: {
+  showcase: DbShowcase;
+}) {
+  return (
+    <Link
+      href={`/services/interior-design/projects/${s.slug}`}
+      className="group block"
+      style={{
+        background: "var(--hm-paper)",
+        border: "1px solid var(--hm-rule)",
+        transition: "border-color var(--hm-dur-short) var(--hm-ease-out)",
+      }}
+    >
+      <article className="flex flex-col h-full">
+        <div
+          className="relative w-full aspect-[4/3]"
+          style={{ background: "var(--hm-paper-3)" }}
+        >
+          {s.cover_image_url ? (
+            <Image
+              src={s.cover_image_url}
+              alt={`${s.title}${s.location ? ` in ${s.location}` : ""}`}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <Palette
+                aria-hidden="true"
+                className="w-10 h-10 mb-3"
+                style={{ color: "var(--hm-ink-3)" }}
+              />
+              <span
+                className="font-mono uppercase"
+                style={{
+                  fontSize: "10px",
+                  letterSpacing: "0.22em",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                Photos coming soon
+              </span>
+            </div>
+          )}
+        </div>
+        <div className="p-6 sm:p-7 flex flex-col gap-2 flex-1">
+          {s.location && (
+            <p
+              className="font-mono uppercase"
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.22em",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              {s.location}
+            </p>
+          )}
+          <h3
+            className="font-serif italic"
+            style={{
+              fontSize: "var(--hm-text-h3)",
+              color: "var(--hm-ink)",
+              fontWeight: 500,
+              lineHeight: 1.2,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {s.title}
+          </h3>
+          {s.description && (
+            <p
+              className="font-sans line-clamp-2 mt-1"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.55,
+              }}
+            >
+              {s.description}
+            </p>
+          )}
+          <span
+            className="font-mono uppercase mt-3 transition-colors group-hover:text-[var(--hm-accent)]"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.15em",
+              color: "var(--hm-ink)",
+            }}
+          >
+            View project →
+          </span>
+        </div>
+      </article>
+    </Link>
+  );
+}
+
+/* Portfolio tile — Linen-styled grid card. Hairline frame, no shadow,
+ * mono-caps category eyebrow, italic-serif caption. Clicks through to the
+ * filtered gallery view. */
+function PortfolioTile({ image }: { image: PortfolioImage }) {
+  return (
+    <Link
+      href={`/services/interior-design/gallery?category=${encodeURIComponent(image.category)}`}
+      className="group block"
+      style={{
+        background: "var(--hm-paper)",
+        border: "1px solid var(--hm-rule)",
+        transition: "border-color var(--hm-dur-short) var(--hm-ease-out)",
+      }}
+    >
+      <article className="flex flex-col h-full">
+        <div className="relative aspect-[4/3]" style={{ background: "var(--hm-paper-3)" }}>
+          <Image
+            src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
+            alt={image.description || `${image.category} interior design project`}
+            fill
+            sizes="(max-width: 768px) 100vw, (max-width: 1024px) 50vw, 33vw"
+            className="object-cover"
+            loading="lazy"
+          />
+        </div>
+        <div className="p-5 sm:p-6">
+          <p
+            className="font-mono uppercase mb-2"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.22em",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            {image.category}
+          </p>
+          <p
+            className="font-serif italic"
+            style={{
+              fontSize: "var(--hm-text-body)",
+              color: "var(--hm-ink)",
+              lineHeight: 1.3,
+            }}
+          >
+            {image.description}
+          </p>
+        </div>
+      </article>
+    </Link>
   );
 }

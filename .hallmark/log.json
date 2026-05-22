@@ -1,5 +1,15 @@
 [
   {
+    "date": "2026-05-22",
+    "macrostructure": "Photographic",
+    "theme": "Linen",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "Interior design & staging · Hilari Jones · /services/interior-design",
+    "scope": "page",
+    "target": "app/services/interior-design/page.tsx"
+  },
+  {
     "date": "2026-05-21",
     "macrostructure": "Stat-Led",
     "theme": "Linen",
