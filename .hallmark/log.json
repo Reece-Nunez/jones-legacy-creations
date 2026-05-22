@@ -1,6 +1,16 @@
 [
   {
     "date": "2026-05-21",
+    "macrostructure": "Bento Grid",
+    "theme": "Linen",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "Home page · three-brand umbrella · /",
+    "scope": "page",
+    "target": "app/page.tsx"
+  },
+  {
+    "date": "2026-05-21",
     "macrostructure": "design.md (multi-page)",
     "theme": "Linen",
     "enrichment": "none",

@@ -1,72 +1,59 @@
 import Link from "next/link";
 import Image from "next/image";
-import { ArrowRight, CheckCircle2, Shield, Clock, Users } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/Button";
-import { FadeIn, FadeInView } from "@/components/HomeAnimations";
+
+/* Hallmark · genre: editorial · macrostructure: Bento Grid
+ * design-system: design.md · designed-as-app
+ * theme: Linen · anchor hue: terracotta
+ *
+ * Three sub-brand tiles stay (per client direction), but as varied-size
+ * bento blocks rather than three equal columns — the AI fingerprint of
+ * the previous design. Real Estate carries the largest tile because the
+ * inventory IS the most engaging entry point.
+ */
 
 const companies = [
   {
-    id: "construction",
-    name: "Jones Custom Homes",
-    subtitle: "Custom Construction",
-    description: "From concept to completion, we deliver exceptional construction projects on time and within budget.",
-    iconAlt: "House blueprint icon representing Jones Custom Homes construction services",
-    icon: "/JONES CUSTOM HOMES ICON (2).svg",
-    href: "/services/construction",
-    features: ["Residential Construction", "Commercial Projects", "Renovations", "Project Management"],
-  },
-  {
     id: "realty",
     name: "Blake Jones Realty",
-    subtitle: "Real Estate Services",
-    description: "Find your dream property or let us help you sell. Expert guidance through every step.",
-    iconAlt: "Property key icon representing Blake Jones Realty real estate services",
+    subtitle: "Real estate",
+    description:
+      "Homes in Southern Utah, brokered carefully. Builder's eye for what a property will actually take to live in, and creative financing when the standard path doesn't fit.",
+    iconAlt: "Blake Jones Realty",
     icon: "/JONES REALTY ICON (2).svg",
     href: "/services/real-estate",
-    features: ["Property Search", "Market Analysis", "Buyer/Seller Representation", "Investment Consulting"],
+    cta: "View listings",
+  },
+  {
+    id: "construction",
+    name: "Jones Custom Homes",
+    subtitle: "Custom construction",
+    description:
+      "From concept to closing on a finished home. Residential builds, commercial work, renovations — run with the project management that respects your timeline as much as the build.",
+    iconAlt: "Jones Custom Homes",
+    icon: "/JONES CUSTOM HOMES ICON (2).svg",
+    href: "/services/construction",
+    cta: "See projects",
   },
   {
     id: "interiors",
     name: "Interiors By Jones",
-    subtitle: "Design & Staging",
-    description: "Transform spaces with professional interior design and staging services that captivate.",
-    iconAlt: "Interior design palette icon representing Interiors By Jones design and staging services",
+    subtitle: "Design & staging",
+    description:
+      "The same family eye that finishes the house puts the furniture in it. Interior design, home staging, space planning, and colour consultation.",
+    iconAlt: "Interiors By Jones",
     icon: "/JONES Interior Design & Staging ICON (2).svg",
     href: "/services/interior-design",
-    features: ["Interior Design", "Home Staging", "Space Planning", "Color Consultation"],
+    cta: "See the portfolio",
   },
 ];
 
 const stats = [
-  { value: "100+", label: "Projects Completed" },
-  { value: "10+", label: "Years Experience" },
-  { value: "98%", label: "Client Satisfaction" },
-  { value: "50+", label: "Industry Partners" },
-];
-
-const trustPoints = [
-  {
-    icon: Shield,
-    title: "Licensed & Insured",
-    description: "Fully licensed general contractor with comprehensive insurance coverage for your peace of mind.",
-  },
-  {
-    icon: Clock,
-    title: "On Time & On Budget",
-    description: "We respect your timeline and investment with transparent scheduling and cost management.",
-  },
-  {
-    icon: Users,
-    title: "Local Expertise",
-    description: "Deep roots in Southern Utah with over a decade of trusted relationships and community involvement.",
-  },
-  {
-    icon: CheckCircle2,
-    title: "Quality Guaranteed",
-    description: "Every project is backed by our commitment to craftsmanship and client satisfaction.",
-  },
+  { value: "100+", label: "Projects completed" },
+  { value: "10+", label: "Years experience" },
+  { value: "98%", label: "Client satisfaction" },
+  { value: "50+", label: "Industry partners" },
 ];
 
 export default function HomePage() {
@@ -74,155 +61,378 @@ export default function HomePage() {
     <>
       <Navigation />
 
-      {/* Hero Section */}
-      <section className="min-h-screen bg-gradient-to-br from-slate-50 to-white pt-24 pb-32 flex flex-col justify-center">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeIn className="text-center mb-16">
-            <h1 className="text-4xl md:text-6xl font-serif font-bold text-slate-950 mb-4">
-              Building Legacies,
-              <br />
-              <span className="text-slate-600">One Project at a Time</span>
+      <main style={{ background: "var(--hm-paper)", color: "var(--hm-ink)" }}>
+        {/* Hero — fixed-height centered display per Bento Grid spec. Not
+            full-viewport, no glass cards, no aurora gradient. */}
+        <section
+          aria-label="Jones Legacy Creations"
+          className="pt-28 pb-16 sm:pt-36 sm:pb-24"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 text-center">
+            <p
+              className="font-mono uppercase mb-6"
+              style={{
+                fontSize: "var(--hm-text-meta)",
+                letterSpacing: "0.22em",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              Hurricane, Utah · est. 2014
+            </p>
+            <h1
+              className="font-serif font-normal italic"
+              style={{
+                fontSize: "clamp(2.75rem, 7.5vw, 6.5rem)",
+                lineHeight: 0.98,
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.02em",
+                overflowWrap: "anywhere",
+                minWidth: 0,
+              }}
+            >
+              Three companies,<br />one front door.
             </h1>
-            <p className="text-gray-700 text-lg leading-relaxed max-w-2xl mx-auto mb-8">
-              Three specialized brands working together to deliver your complete home journey in Southern Utah.
+            <p
+              className="mt-8 font-sans mx-auto"
+              style={{
+                fontSize: "var(--hm-text-lede)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.55,
+                maxWidth: "52ch",
+              }}
+            >
+              Custom-home construction, real-estate brokerage, and interior
+              design &amp; staging — all rooted in Southern Utah, all reachable
+              through one phone number.
             </p>
-            <Link href="/estimate">
-              <Button size="lg" className="bg-sky-700 hover:bg-sky-800 text-white shadow-sm min-h-[44px]">
-                Get a Free Estimate
-                <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
-              </Button>
-            </Link>
-          </FadeIn>
-
-          {/* Staggered glass cards */}
-          <div className="relative flex flex-col md:flex-row justify-center items-center gap-8 md:gap-12">
-            {companies.map((company, i) => (
+            <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
               <Link
-                key={company.id}
-                href={company.href}
-                className="w-full md:w-[340px] min-h-[44px]"
-                aria-label={`Learn more about ${company.name} — ${company.subtitle}`}
+                href="/contact"
+                className="inline-flex items-center justify-center font-mono uppercase border bg-[var(--hm-ink)] text-[var(--hm-paper)] border-[var(--hm-ink)] hover:bg-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200 whitespace-nowrap"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.15em",
+                  padding: "0.75rem 1.25rem",
+                  minHeight: 44,
+                }}
               >
-                <FadeIn delay={i * 0.15}>
-                  <div
-                    className={`h-full bg-gradient-to-br from-slate-900 via-gray-900 to-zinc-900 backdrop-blur-xl border border-white/10 rounded-3xl p-8
-                      ${i === 1 ? "md:z-20 md:scale-110 hover:md:scale-[1.15]" : "md:z-10 hover:md:scale-105"}
-                      hover:border-white/20 transition-all duration-500 group cursor-pointer`}
-                  >
-                    <div className="w-20 h-20 flex items-center justify-center mb-6">
-                      <Image src={company.icon} alt={company.iconAlt} width={56} height={56} />
-                    </div>
-                    <h2 className="text-2xl font-serif font-bold text-white mb-1">{company.name}</h2>
-                    <p className="text-white/70 text-sm mb-4">{company.subtitle}</p>
-                    <p className="text-white/80 text-sm leading-relaxed mb-6">{company.description}</p>
-                    <ul className="space-y-2 mb-6">
-                      {company.features.slice(0, 3).map((f) => (
-                        <li key={f} className="text-white/75 text-sm flex items-center gap-2">
-                          <span className="w-1.5 h-1.5 bg-white rounded-full flex-shrink-0" aria-hidden="true" />
-                          {f}
-                        </li>
-                      ))}
-                    </ul>
-                    <span className="inline-flex items-center gap-2 text-white font-medium text-sm group-hover:gap-3 transition-all">
-                      Learn More <ArrowRight className="w-4 h-4" aria-hidden="true" />
-                    </span>
-                  </div>
-                </FadeIn>
+                Start a project
               </Link>
-            ))}
-          </div>
-
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" aria-hidden="true" />
-
-      {/* Why Choose Us Section */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInView className="text-center mb-16">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-950 mb-4">
-              Why Choose Jones Legacy Creations
-            </h2>
-            <p className="text-gray-700 text-lg leading-relaxed max-w-2xl mx-auto">
-              With deep roots in Southern Utah, we bring integrity, expertise, and a personal touch to every project.
-            </p>
-          </FadeInView>
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-            {trustPoints.map((point, index) => (
-              <FadeInView key={point.title} delay={index * 0.1}>
-                <div className="text-center p-6 rounded-2xl bg-slate-50 border border-slate-100">
-                  <div className="w-12 h-12 mx-auto mb-4 flex items-center justify-center rounded-full bg-sky-100 text-sky-700">
-                    <point.icon className="w-6 h-6" aria-hidden="true" />
-                  </div>
-                  <h3 className="text-lg font-serif font-bold text-slate-900 mb-2">{point.title}</h3>
-                  <p className="text-gray-700 text-sm leading-relaxed">{point.description}</p>
-                </div>
-              </FadeInView>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-gray-200 to-transparent" aria-hidden="true" />
-
-      {/* Stats Section */}
-      <section className="py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <FadeInView className="text-center mb-12">
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-slate-950 mb-4">
-              Trusted Across Southern Utah
-            </h2>
-          </FadeInView>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
-            {stats.map((stat, index) => (
-              <FadeInView key={stat.label} delay={index * 0.1} className="text-center">
-                <div className="text-4xl md:text-5xl font-bold font-serif text-slate-950 mb-2">
-                  {stat.value}
-                </div>
-                <div className="text-gray-700 text-sm md:text-base leading-relaxed">
-                  {stat.label}
-                </div>
-              </FadeInView>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Divider */}
-      <div className="h-px bg-gradient-to-r from-transparent via-gray-700 to-transparent" aria-hidden="true" />
-
-      {/* CTA Section */}
-      <section className="py-24 bg-gradient-to-br from-gray-900 to-black text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <FadeInView>
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-              Ready to Start Your Next Project?
-            </h2>
-            <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto mb-10">
-              Let&apos;s discuss how we can help bring your vision to life.
-            </p>
-            <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Link href="/estimate">
-                <Button size="lg" className="bg-sky-700 hover:bg-sky-800 text-white shadow-sm min-h-[44px] w-full sm:w-auto">
-                  Get a Free Estimate
-                  <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
-                </Button>
-              </Link>
-              <Link href="/contact">
-                <Button size="lg" variant="secondary" className="min-h-[44px] w-full sm:w-auto">
-                  Get in Touch
-                  <ArrowRight className="w-5 h-5 ml-2" aria-hidden="true" />
-                </Button>
+              <Link
+                href="/estimate"
+                className="inline-flex items-center justify-center font-mono uppercase border border-[var(--hm-ink)] text-[var(--hm-ink)] hover:text-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200 whitespace-nowrap"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.15em",
+                  padding: "0.75rem 1.25rem",
+                  minHeight: 44,
+                }}
+              >
+                Free estimate →
               </Link>
             </div>
-          </FadeInView>
-        </div>
-      </section>
+          </div>
+        </section>
+
+        {/* Bento mosaic — three brand tiles + stats tile + trust tile.
+            Sizes vary deliberately so the grid breaks the AI 3-equal-columns
+            template. Real Estate takes the largest cell as the most
+            engaging entry point.
+
+            Grid plan (desktop, 12 cols):
+              Row 1: Realty (cols 1-7, rows 1-2)   · Custom Homes (cols 8-12, row 1)
+              Row 2: (realty continues)            · Interiors  (cols 8-12, row 2)
+              Row 3: Stats     (cols 1-7, row 3)   · Trust      (cols 8-12, row 3) */}
+        <section
+          aria-label="What we do"
+          style={{ background: "var(--hm-paper-2)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-4 sm:gap-5">
+              {/* Tile: Blake Jones Realty (large feature) */}
+              <BrandTile
+                company={companies[0]}
+                size="large"
+                className="lg:col-span-7 lg:row-span-2"
+              />
+              {/* Tile: Jones Custom Homes */}
+              <BrandTile
+                company={companies[1]}
+                size="medium"
+                className="lg:col-span-5"
+              />
+              {/* Tile: Interiors By Jones */}
+              <BrandTile
+                company={companies[2]}
+                size="medium"
+                className="lg:col-span-5"
+              />
+
+              {/* Tile: Stats (mono-caps tabular row) */}
+              <article
+                className="p-7 sm:p-8 lg:col-span-7"
+                style={{
+                  background: "var(--hm-paper)",
+                  border: "1px solid var(--hm-rule)",
+                }}
+              >
+                <p
+                  className="font-mono uppercase mb-6"
+                  style={{
+                    fontSize: "10px",
+                    letterSpacing: "0.22em",
+                    color: "var(--hm-ink-3)",
+                  }}
+                >
+                  By the numbers
+                </p>
+                <dl className="grid grid-cols-2 sm:grid-cols-4 gap-x-6 gap-y-6">
+                  {stats.map((stat) => (
+                    <div key={stat.label}>
+                      <dt
+                        className="font-serif tabular-nums"
+                        style={{
+                          fontSize: "clamp(1.875rem, 3vw, 2.5rem)",
+                          color: "var(--hm-ink)",
+                          fontWeight: 500,
+                          letterSpacing: "-0.02em",
+                          lineHeight: 1,
+                        }}
+                      >
+                        {stat.value}
+                      </dt>
+                      <dd
+                        className="font-mono uppercase mt-2"
+                        style={{
+                          fontSize: "10px",
+                          letterSpacing: "0.18em",
+                          color: "var(--hm-ink-3)",
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        {stat.label}
+                      </dd>
+                    </div>
+                  ))}
+                </dl>
+              </article>
+
+              {/* Tile: Trust paragraph (inline, no 4-card grid) */}
+              <article
+                className="p-7 sm:p-8 lg:col-span-5"
+                style={{
+                  background: "var(--hm-paper)",
+                  border: "1px solid var(--hm-rule)",
+                  borderLeft: "3px solid var(--hm-accent)",
+                }}
+              >
+                <p
+                  className="font-mono uppercase mb-4"
+                  style={{
+                    fontSize: "10px",
+                    letterSpacing: "0.22em",
+                    color: "var(--hm-ink-3)",
+                  }}
+                >
+                  Why people stay
+                </p>
+                <p
+                  className="font-serif italic mb-4"
+                  style={{
+                    fontSize: "var(--hm-text-h3)",
+                    color: "var(--hm-ink)",
+                    lineHeight: 1.3,
+                    letterSpacing: "-0.01em",
+                  }}
+                >
+                  Licensed, insured, on-time, on-budget — and still local
+                  enough to answer the phone.
+                </p>
+                <p
+                  className="font-sans"
+                  style={{
+                    fontSize: "var(--hm-text-body)",
+                    color: "var(--hm-ink-2)",
+                    lineHeight: 1.6,
+                  }}
+                >
+                  Fully licensed general contractor with comprehensive
+                  insurance. Transparent schedules and cost management. A
+                  decade-plus of relationships in Hurricane, St. George, and
+                  the rest of Washington County — backed by the family name
+                  on the front of every truck.
+                </p>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        {/* Closing — single short paragraph + chip. No dark gradient bg,
+            no centered button grid. */}
+        <section
+          aria-label="Get in touch"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-28">
+            <p
+              className="font-mono uppercase mb-5"
+              style={{
+                fontSize: "var(--hm-text-meta)",
+                letterSpacing: "0.22em",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              Get in touch
+            </p>
+            <h2
+              className="font-serif font-normal italic mb-6"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              Ready when you are.
+            </h2>
+            <p
+              className="font-sans mb-10"
+              style={{
+                fontSize: "var(--hm-text-lede)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.6,
+                maxWidth: "55ch",
+              }}
+            >
+              Whether you&apos;re buying, building, selling, or staging — tell
+              us about it. Or call <a
+                href="tel:+14352889807"
+                className="text-[var(--hm-ink)] hover:text-[var(--hm-accent)] transition-colors"
+                style={{ borderBottom: "1px solid var(--hm-rule)" }}
+              >
+                (435) 288-9807
+              </a> — Blake answers his phone.
+            </p>
+            <div className="flex flex-wrap items-center gap-3">
+              <Link
+                href="/contact"
+                className="inline-flex items-center justify-center font-mono uppercase border bg-[var(--hm-ink)] text-[var(--hm-paper)] border-[var(--hm-ink)] hover:bg-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200 whitespace-nowrap"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.15em",
+                  padding: "0.75rem 1.25rem",
+                  minHeight: 44,
+                }}
+              >
+                Tell us about your project
+              </Link>
+            </div>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </>
+  );
+}
+
+/* Brand tile — Linen-styled bento cell. NOT the old glass-card / dark-
+ * gradient template. Hairline frame, paper-fill, small inline brand mark,
+ * italic Playfair name, mono-caps subtitle, prose body, terracotta-tinted
+ * tertiary link. Variant on the large tile gets a thicker accent rule. */
+function BrandTile({
+  company,
+  size,
+  className,
+}: {
+  company: (typeof companies)[number];
+  size: "large" | "medium";
+  className?: string;
+}) {
+  const isLarge = size === "large";
+
+  return (
+    <Link
+      href={company.href}
+      aria-label={`${company.name} — ${company.subtitle}`}
+      className={`group block ${className ?? ""}`}
+      style={{
+        background: isLarge ? "var(--hm-paper)" : "var(--hm-paper)",
+        border: "1px solid var(--hm-rule)",
+        borderTop: isLarge ? "3px solid var(--hm-accent)" : "1px solid var(--hm-rule)",
+        transition: "border-color var(--hm-dur-short) var(--hm-ease-out)",
+      }}
+    >
+      <article
+        className={
+          isLarge
+            ? "p-8 sm:p-10 lg:p-12 h-full flex flex-col"
+            : "p-7 sm:p-8 h-full flex flex-col"
+        }
+      >
+        <div className="flex items-start gap-3 mb-5">
+          <Image
+            src={company.icon}
+            alt={company.iconAlt}
+            width={56}
+            height={56}
+            className="object-contain"
+            style={{
+              height: isLarge ? "40px" : "32px",
+              width: "auto",
+              flexShrink: 0,
+            }}
+          />
+          <span
+            className="font-mono uppercase mt-1"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.22em",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            {company.subtitle}
+          </span>
+        </div>
+        <h2
+          className="font-serif font-normal italic mb-4"
+          style={{
+            fontSize: isLarge
+              ? "clamp(1.875rem, 3.5vw, 2.75rem)"
+              : "var(--hm-text-h3)",
+            color: "var(--hm-ink)",
+            letterSpacing: "-0.015em",
+            lineHeight: 1.15,
+          }}
+        >
+          {company.name}
+        </h2>
+        <p
+          className="font-sans"
+          style={{
+            fontSize: isLarge ? "var(--hm-text-lede)" : "var(--hm-text-body)",
+            color: "var(--hm-ink-2)",
+            lineHeight: 1.6,
+            maxWidth: "55ch",
+          }}
+        >
+          {company.description}
+        </p>
+        <div className="mt-auto pt-6">
+          <span
+            className="inline-flex items-center font-mono uppercase transition-colors duration-200 group-hover:text-[var(--hm-accent)]"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.15em",
+              color: "var(--hm-ink)",
+              borderBottom: "1px solid var(--hm-rule-thick)",
+              paddingBottom: "2px",
+            }}
+          >
+            {company.cta} →
+          </span>
+        </div>
+      </article>
+    </Link>
   );
 }
