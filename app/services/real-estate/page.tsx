@@ -426,25 +426,78 @@ export default function RealEstatePage() {
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
-                  <Phone aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4">Contact Us Directly</h3>
+                <div
+                  className="p-8 sm:p-10 mb-8"
+                  style={{
+                    background: "var(--hm-paper)",
+                    border: "1px solid var(--hm-rule)",
+                    borderLeft: "3px solid var(--hm-accent)",
+                  }}
+                >
+                  <span
+                    className="inline-flex items-center gap-2 font-mono uppercase tracking-[0.18em]"
+                    style={{
+                      fontSize: "var(--hm-text-meta)",
+                      color: "var(--hm-ink-3)",
+                    }}
+                  >
+                    <Phone aria-hidden="true" className="w-3.5 h-3.5" />
+                    Direct line
+                  </span>
                   <a
                     href="tel:+14352889807"
                     aria-label="Call us at (435) 288-9807"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4 min-h-[44px]"
+                    className="block mt-3 font-serif tabular-nums transition-colors"
+                    style={{
+                      fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
+                      color: "var(--hm-ink)",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.05,
+                      minHeight: 44,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "var(--hm-accent)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "var(--hm-ink)";
+                    }}
                   >
                     (435) 288-9807
                   </a>
                   <a
                     href="mailto:blakerealty@joneslegacycreations.com"
                     aria-label="Email us at blakerealty@joneslegacycreations.com"
-                    className="text-xl text-black hover:text-gray-700 transition-colors min-h-[44px] inline-flex items-center"
+                    className="inline-flex items-center mt-4 font-sans transition-colors"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      borderBottom: "1px solid var(--hm-rule)",
+                      paddingBottom: "1px",
+                      minHeight: 44,
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.color = "var(--hm-accent)";
+                      e.currentTarget.style.borderColor = "var(--hm-accent)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.color = "var(--hm-ink-2)";
+                      e.currentTarget.style.borderColor = "var(--hm-rule)";
+                    }}
                   >
                     blakerealty@joneslegacycreations.com
                   </a>
-                  <p className="text-gray-700 mt-4 leading-relaxed">
-                    We&apos;re available to discuss your real estate needs and answer any questions.
+                  <p
+                    className="mt-6 font-sans"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      lineHeight: 1.6,
+                      maxWidth: "55ch",
+                    }}
+                  >
+                    Blake answers the phone. Call between 8am and 8pm Mountain Time
+                    — anything you want to know about a listing, a neighbourhood,
+                    or what your situation can support.
                   </p>
                 </div>
               </motion.div>
@@ -464,8 +517,8 @@ export default function RealEstatePage() {
             <HoneypotField register={register} />
 
             {/* Personal Information */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Personal Information</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Full Name"
@@ -491,8 +544,8 @@ export default function RealEstatePage() {
             </div>
 
             {/* Service Type */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">What Are You Looking For?</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">What Are You Looking For?</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Service Type"
@@ -525,8 +578,8 @@ export default function RealEstatePage() {
             </div>
 
             {/* Location Preferences */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Location Preferences</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Location Preferences</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Preferred City"
@@ -565,8 +618,8 @@ export default function RealEstatePage() {
             </div>
 
             {/* Budget */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Budget Range</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Budget Range</h3>
               <Select
                 label="What is your budget range?"
                 {...register("budgetRange")}
@@ -586,8 +639,8 @@ export default function RealEstatePage() {
             </div>
 
             {/* Property Size & Layout */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold text-gray-900 mb-6 flex items-center gap-2">
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic text-gray-900 mb-6 flex items-center gap-2">
                 <Bed aria-hidden="true" className="w-6 h-6" />
                 Property Size & Layout
               </h3>
@@ -656,13 +709,13 @@ export default function RealEstatePage() {
             </div>
 
             {/* Garage & Parking */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("garage")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
+                <h3 className="text-2xl font-serif font-normal italic text-gray-900 flex items-center gap-2">
                   <Car aria-hidden="true" className="w-6 h-6" />
                   Garage & Parking
                 </h3>
@@ -710,13 +763,13 @@ export default function RealEstatePage() {
             </div>
 
             {/* Architectural Style */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("style")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Architectural Style</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Architectural Style</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("style") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -754,13 +807,13 @@ export default function RealEstatePage() {
             </div>
 
             {/* Interior Features */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("interior")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Interior Features</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Interior Features</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("interior") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -840,13 +893,13 @@ export default function RealEstatePage() {
             </div>
 
             {/* Exterior Features */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("exterior")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Exterior Features</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Exterior Features</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("exterior") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -923,13 +976,13 @@ export default function RealEstatePage() {
             </div>
 
             {/* Systems & Utilities */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("systems")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Systems & Utilities</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Systems & Utilities</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("systems") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -993,13 +1046,13 @@ export default function RealEstatePage() {
             </div>
 
             {/* Must-Have Features */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("requirements")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Additional Requirements</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Additional Requirements</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("requirements") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1040,8 +1093,8 @@ export default function RealEstatePage() {
             </div>
 
             {/* Timeline */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Timeline</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Timeline</h3>
               <Select
                 label="When do you want to move?"
                 {...register("moveInTimeline")}
@@ -1059,8 +1112,8 @@ export default function RealEstatePage() {
             </div>
 
             {/* Additional Information */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Additional Information</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Additional Information</h3>
               <div className="space-y-6">
                 <Textarea
                   label="Additional Notes or Questions"
@@ -1103,11 +1156,20 @@ export default function RealEstatePage() {
               </div>
             </div>
 
-            {/* Submit Button */}
-            <div className="flex justify-center pt-6">
-              <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-64">
-                Submit Property Request
+            {/* Submit — left-aligned with a small reply-time note alongside */}
+            <div className="pt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-56">
+                Send my search
               </Button>
+              <span
+                className="font-mono uppercase tracking-[0.18em]"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                Reply within 24 hours
+              </span>
             </div>
               </motion.form>
             )}

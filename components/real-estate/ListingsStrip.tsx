@@ -2,7 +2,6 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import { motion } from "framer-motion";
 import { Bed, Bath, Maximize, ExternalLink, Home } from "lucide-react";
 import {
   type RealEstateListing,
@@ -31,7 +30,7 @@ export default function ListingsStrip() {
 
   // Hide only while the initial fetch is in flight to avoid a flash of the
   // empty state. Once loaded, the section always renders — empty included —
-  // because the brand wants "View Our Current Listings" visible at all times.
+  // because the brand wants the listings section visible at all times.
   if (listings === null) return null;
 
   const hasListings = listings.length > 0;
@@ -39,32 +38,51 @@ export default function ListingsStrip() {
   return (
     <section
       aria-label="Current real estate listings"
-      className="pt-4 pb-12 sm:pb-16 bg-white"
+      style={{ background: "var(--hm-paper)" }}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="mb-8 sm:mb-10 flex items-end justify-between flex-wrap gap-4"
-        >
-          <div>
-            <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900">
-              View Our Current Listings
+      <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-16 pb-20 sm:pt-20 sm:pb-24">
+        <div className="mb-10 sm:mb-12 flex items-baseline justify-between flex-wrap gap-4">
+          <div className="max-w-2xl">
+            <h2
+              className="font-serif font-normal italic"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              Current listings.
             </h2>
-            <p className="mt-2 text-gray-600 max-w-2xl">
+            <p
+              className="mt-3 font-sans"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.6,
+              }}
+            >
               {hasListings
-                ? "Browse our active listings below. Click View on MLS for the full listing details, photos, and contact info."
-                : "We don't have any active listings right now — new homes are added here as soon as they hit the market. Check back soon or reach out below to start your search."}
+                ? "Active homes in Southern Utah. Click through for the full MLS file — photos, schools, history, contact."
+                : "No active listings at the moment. New homes appear here the day they hit the market — or tell us what you're looking for and we'll reach out the moment one lands."}
             </p>
           </div>
-        </motion.div>
+          {hasListings && listings.length > 1 && (
+            <span
+              className="font-mono uppercase tracking-[0.18em]"
+              style={{
+                fontSize: "var(--hm-text-meta)",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              {listings.length} active · scroll →
+            </span>
+          )}
+        </div>
 
         {hasListings ? (
           <div className="relative">
             <div
-              className="flex gap-4 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 sm:mx-0 sm:px-0"
+              className="flex gap-5 sm:gap-6 overflow-x-auto snap-x snap-mandatory pb-4 -mx-6 px-6 sm:mx-0 sm:px-0"
               style={{ scrollbarWidth: "thin" }}
             >
               {listings.map((l) => (
@@ -73,14 +91,39 @@ export default function ListingsStrip() {
             </div>
           </div>
         ) : (
-          <div className="rounded-2xl border border-dashed border-gray-200 bg-gray-50 px-6 py-12 text-center">
-            <Home className="mx-auto h-10 w-10 text-gray-300" />
-            <p className="mt-4 text-base font-medium text-gray-700">
-              New listings coming soon
+          <div
+            className="px-8 py-16 text-left"
+            style={{
+              background: "var(--hm-paper-2)",
+              borderTop: "1px solid var(--hm-rule)",
+              borderBottom: "1px solid var(--hm-rule)",
+            }}
+          >
+            <Home
+              aria-hidden="true"
+              className="h-7 w-7"
+              style={{ color: "var(--hm-ink-3)" }}
+            />
+            <p
+              className="mt-5 font-serif italic"
+              style={{
+                fontSize: "var(--hm-text-h3)",
+                color: "var(--hm-ink)",
+              }}
+            >
+              New listings, coming soon.
             </p>
-            <p className="mt-1 text-sm text-gray-500">
-              Tell us what you&apos;re looking for and we&apos;ll reach out as
-              soon as a match hits the market.
+            <p
+              className="mt-2 font-sans"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-2)",
+                maxWidth: "55ch",
+                lineHeight: 1.6,
+              }}
+            >
+              Tell us what you&apos;re looking for and we&apos;ll reach out the
+              moment a match comes on the market.
             </p>
           </div>
         )}
@@ -94,8 +137,17 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
   const isPending = l.status === "pending";
 
   return (
-    <article className="snap-start shrink-0 w-72 sm:w-80 bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 flex flex-col transition-shadow hover:shadow-lg">
-      <div className="relative w-full aspect-[4/3] bg-gray-100">
+    <article
+      className="snap-start shrink-0 w-72 sm:w-80 flex flex-col"
+      style={{
+        background: "var(--hm-paper-2)",
+        border: "1px solid var(--hm-rule)",
+      }}
+    >
+      <div
+        className="relative w-full aspect-[4/3]"
+        style={{ background: "var(--hm-paper-3)" }}
+      >
         {l.cover_photo_url ? (
           <Image
             src={l.cover_photo_url}
@@ -106,51 +158,103 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
           />
         ) : (
           <div className="flex h-full w-full items-center justify-center">
-            <Home className="h-10 w-10 text-gray-300" />
+            <Home
+              aria-hidden="true"
+              className="h-10 w-10"
+              style={{ color: "var(--hm-ink-3)" }}
+            />
           </div>
         )}
         {isPending && (
-          <span className="absolute top-3 left-3 inline-flex items-center rounded-full bg-amber-500/95 px-3 py-1 text-xs font-semibold text-white shadow">
+          <span
+            className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 font-mono uppercase tracking-[0.15em]"
+            style={{
+              fontSize: "10px",
+              background: "var(--hm-accent)",
+              color: "var(--hm-accent-ink)",
+              letterSpacing: "0.15em",
+            }}
+          >
             {LISTING_STATUS_LABELS.pending}
           </span>
         )}
       </div>
 
-      <div className="p-4 sm:p-5 flex flex-col gap-2 flex-1">
+      <div className="p-5 sm:p-6 flex flex-col gap-3 flex-1">
         {l.price !== null && (
-          <p className="text-2xl font-bold text-gray-900 tracking-tight">
+          <p
+            className="font-serif tabular-nums"
+            style={{
+              fontSize: "1.625rem",
+              lineHeight: 1.1,
+              color: "var(--hm-ink)",
+              fontWeight: 500,
+              letterSpacing: "-0.01em",
+            }}
+          >
             {formatCurrencyWhole(l.price)}
           </p>
         )}
 
         <div>
-          <p className="text-sm font-medium text-gray-900 leading-tight">
+          <p
+            className="font-sans"
+            style={{
+              fontSize: "var(--hm-text-body)",
+              color: "var(--hm-ink)",
+              fontWeight: 500,
+              lineHeight: 1.35,
+            }}
+          >
             {l.address}
           </p>
-          <p className="text-xs text-gray-500">{cityState}</p>
+          <p
+            className="font-sans mt-0.5"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            {cityState}
+          </p>
         </div>
 
-        <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-600 mt-1">
+        <div
+          className="flex items-center gap-4 pt-1 font-sans"
+          style={{
+            fontSize: "var(--hm-text-meta)",
+            color: "var(--hm-ink-2)",
+            borderTop: "1px solid var(--hm-rule)",
+            paddingTop: "0.75rem",
+          }}
+        >
           {l.bedrooms !== null && (
-            <span className="inline-flex items-center gap-1">
-              <Bed className="h-3.5 w-3.5" /> {l.bedrooms} bd
+            <span className="inline-flex items-center gap-1.5">
+              <Bed aria-hidden="true" className="h-3.5 w-3.5" /> {l.bedrooms} bd
             </span>
           )}
           {l.bathrooms !== null && (
-            <span className="inline-flex items-center gap-1">
-              <Bath className="h-3.5 w-3.5" /> {l.bathrooms} ba
+            <span className="inline-flex items-center gap-1.5">
+              <Bath aria-hidden="true" className="h-3.5 w-3.5" /> {l.bathrooms} ba
             </span>
           )}
           {l.square_footage !== null && (
-            <span className="inline-flex items-center gap-1">
-              <Maximize className="h-3.5 w-3.5" />{" "}
+            <span className="inline-flex items-center gap-1.5">
+              <Maximize aria-hidden="true" className="h-3.5 w-3.5" />{" "}
               {l.square_footage.toLocaleString()} sf
             </span>
           )}
         </div>
 
         {l.description && (
-          <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mt-1">
+          <p
+            className="font-sans line-clamp-3"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              color: "var(--hm-ink-2)",
+              lineHeight: 1.55,
+            }}
+          >
             {l.description}
           </p>
         )}
@@ -161,14 +265,38 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
               href={l.mls_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition-colors"
-              style={{ minHeight: 44 }}
+              className="inline-flex w-full items-center justify-between font-mono uppercase tracking-[0.15em] border transition-colors duration-200 group"
+              style={{
+                fontSize: "var(--hm-text-meta)",
+                minHeight: 44,
+                padding: "0.75rem 1rem",
+                borderColor: "var(--hm-ink)",
+                background: "var(--hm-ink)",
+                color: "var(--hm-paper)",
+              }}
+              onMouseEnter={(e) => {
+                e.currentTarget.style.background = "var(--hm-accent)";
+                e.currentTarget.style.borderColor = "var(--hm-accent)";
+              }}
+              onMouseLeave={(e) => {
+                e.currentTarget.style.background = "var(--hm-ink)";
+                e.currentTarget.style.borderColor = "var(--hm-ink)";
+              }}
             >
               View on MLS
-              <ExternalLink className="h-3.5 w-3.5" />
+              <ExternalLink aria-hidden="true" className="h-3.5 w-3.5" />
             </a>
           ) : (
-            <span className="inline-flex w-full items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-400">
+            <span
+              className="inline-flex w-full items-center justify-center font-mono uppercase tracking-[0.15em]"
+              style={{
+                fontSize: "var(--hm-text-meta)",
+                minHeight: 44,
+                padding: "0.75rem 1rem",
+                border: "1px dashed var(--hm-rule)",
+                color: "var(--hm-ink-3)",
+              }}
+            >
               MLS link coming soon
             </span>
           )}
