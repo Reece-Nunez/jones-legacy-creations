@@ -14,8 +14,6 @@ import {
   StarOff,
   GripVertical,
   Sparkles,
-  ChevronUp,
-  ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { confirmAction } from "@/lib/confirmAction";
@@ -85,20 +83,6 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
   const photoInputRef = useRef<HTMLInputElement>(null);
   const coverInputRef = useRef<HTMLInputElement>(null);
   const draggingIdRef = useRef<string | null>(null);
-
-  // Touch-device detection — same pattern as the listings form. On touch
-  // we disable HTML5 drag (it doesn't fire on touch and `draggable` traps
-  // scroll via long-press image-save menus) and lean on the up/down
-  // buttons added below.
-  const [isTouchDevice, setIsTouchDevice] = useState(false);
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const mq = window.matchMedia("(pointer: coarse)");
-    const apply = () => setIsTouchDevice(mq.matches);
-    apply();
-    mq.addEventListener("change", apply);
-    return () => mq.removeEventListener("change", apply);
-  }, []);
 
   // Auto-fill slug from title for new showcases until user types in slug manually.
   function onTitleChange(value: string) {
@@ -360,24 +344,8 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
     if (fromIdx === -1 || toIdx === -1) return;
     const [moved] = next.splice(fromIdx, 1);
     next.splice(toIdx, 0, moved);
-    await persistOrder(next);
-  }
-
-  // Touch-friendly reorder. Same fallback the listings form uses — HTML5
-  // drag-and-drop doesn't work on touch so we offer explicit up/down arrows.
-  async function movePhoto(photoId: string, direction: "up" | "down") {
-    if (!isEdit) return;
-    const idx = photos.findIndex((p) => p.id === photoId);
-    if (idx === -1) return;
-    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
-    if (swapIdx < 0 || swapIdx >= photos.length) return;
-    const next = [...photos];
-    [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
-    await persistOrder(next);
-  }
-
-  async function persistOrder(next: ShowcasePhoto[]) {
     setPhotos(next);
+    // Persist to server in background; on failure, revert.
     try {
       const res = await fetch(
         `/api/admin/construction-showcases/${showcase!.id}/photos`,
@@ -852,24 +820,15 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
                   </button>
                 </div>
               ))}
-              {photos.map((p, idx) => {
+              {photos.map((p) => {
                 const isCover = form.cover_image_url === p.url;
-                const isFirst = idx === 0;
-                const isLast = idx === photos.length - 1;
                 return (
                   <div
                     key={p.id}
-                    // HTML5 drag is desktop only — touch devices fall back
-                    // to the up/down buttons below.
-                    {...(isTouchDevice
-                      ? {}
-                      : {
-                          draggable: true,
-                          onDragStart: () => onDragStart(p.id),
-                          onDragOver: (e: React.DragEvent) =>
-                            e.preventDefault(),
-                          onDrop: () => onDrop(p.id),
-                        })}
+                    draggable
+                    onDragStart={() => onDragStart(p.id)}
+                    onDragOver={(e) => e.preventDefault()}
+                    onDrop={() => onDrop(p.id)}
                     className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
                   >
                     <Image
@@ -886,24 +845,23 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
                       <GripVertical className="h-4 w-4" />
                     </span>
 
-                    {/* Star + X — 44 px touch targets on mobile, 36 px
-                        hover-reveal on desktop. Solid white background so
-                        they pop over any photo. */}
+                    {/* Star + X are always visible on touch (mobile/tablet),
+                        hover-reveal on desktop. Wider tap target (h-9 w-9). */}
                     <button
                       type="button"
                       onClick={() => setCoverFromPhoto(p)}
                       title={isCover ? "This is the cover photo" : "Set as cover"}
                       aria-label={isCover ? "Cover photo" : "Set as cover"}
-                      className={`absolute top-1.5 right-[3.5rem] md:right-12 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md shadow-sm transition-colors ${
+                      className={`absolute top-1.5 right-12 h-9 w-9 inline-flex items-center justify-center rounded-md transition-colors ${
                         isCover
                           ? "bg-amber-400 text-white"
-                          : "bg-white text-gray-900 md:opacity-0 md:group-hover:opacity-100 hover:bg-amber-400 hover:text-white"
+                          : "bg-white/90 text-gray-700 md:opacity-0 md:group-hover:opacity-100 hover:bg-amber-400 hover:text-white"
                       }`}
                     >
                       {isCover ? (
-                        <Star className="h-5 w-5 md:h-4 md:w-4 fill-current" />
+                        <Star className="h-4 w-4 fill-current" />
                       ) : (
-                        <StarOff className="h-5 w-5 md:h-4 md:w-4" />
+                        <StarOff className="h-4 w-4" />
                       )}
                     </button>
 
@@ -912,35 +870,10 @@ export default function ShowcaseForm({ showcase }: ShowcaseFormProps) {
                       onClick={() => deletePhoto(p)}
                       title="Remove photo"
                       aria-label="Remove photo"
-                      className="absolute top-1.5 right-1.5 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-red-600 shadow-sm hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                      className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
                     >
-                      <X className="h-5 w-5 md:h-4 md:w-4" />
+                      <X className="h-4 w-4" />
                     </button>
-
-                    {/* Move up/down — touch-friendly reorder. Always visible
-                        on mobile, hover-reveal on desktop. */}
-                    <div className="absolute bottom-1.5 left-1.5 flex gap-1.5">
-                      <button
-                        type="button"
-                        onClick={() => movePhoto(p.id, "up")}
-                        disabled={isFirst}
-                        title="Move up"
-                        aria-label="Move photo up"
-                        className="h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-900 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
-                      >
-                        <ChevronUp className="h-5 w-5 md:h-4 md:w-4" />
-                      </button>
-                      <button
-                        type="button"
-                        onClick={() => movePhoto(p.id, "down")}
-                        disabled={isLast}
-                        title="Move down"
-                        aria-label="Move photo down"
-                        className="h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-900 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
-                      >
-                        <ChevronDown className="h-5 w-5 md:h-4 md:w-4" />
-                      </button>
-                    </div>
                   </div>
                 );
               })}
