@@ -18,7 +18,7 @@ import { Select } from "@/components/ui/Select";
 
 /* Hallmark · genre: editorial · macrostructure: form-page family
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Form-page pattern from design.md: hairline-divided stacked editorial
  * sections, italic-serif heads, mono-caps eyebrows. Replaces the four
@@ -117,7 +117,7 @@ export default function ContactPage() {
                 Contact · Hurricane, Utah
               </p>
               <h1
-                className="font-serif font-normal italic"
+                className="font-serif font-bold"
                 style={{
                   fontSize: "clamp(3rem, 8vw, 7rem)",
                   lineHeight: 0.96,
@@ -152,7 +152,7 @@ export default function ContactPage() {
         >
           <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <h2
-              className="font-serif font-normal italic mb-3"
+              className="font-serif font-bold mb-3"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -196,7 +196,7 @@ export default function ContactPage() {
                     </p>
                     <div>
                       <p
-                        className="font-serif italic mb-4"
+                        className="font-serif font-bold mb-4"
                         style={{
                           fontSize: "var(--hm-text-h3)",
                           color: "var(--hm-ink)",
@@ -263,7 +263,7 @@ export default function ContactPage() {
         >
           <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <h2
-              className="font-serif font-normal italic mb-3"
+              className="font-serif font-bold mb-3"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",

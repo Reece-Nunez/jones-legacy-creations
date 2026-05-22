@@ -44,7 +44,7 @@ export function Footer() {
               />
             </Link>
             <p
-              className="mt-5 font-serif italic"
+              className="mt-5 font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h3)",
                 color: "var(--hm-ink)",

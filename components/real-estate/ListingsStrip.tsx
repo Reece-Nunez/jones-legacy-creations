@@ -45,7 +45,7 @@ export default function ListingsStrip() {
         <div className="mb-10 sm:mb-12 flex items-baseline justify-between flex-wrap gap-4">
           <div className="max-w-2xl">
             <h2
-              className="font-serif font-normal italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -106,7 +106,7 @@ export default function ListingsStrip() {
               style={{ color: "var(--hm-ink-3)" }}
             />
             <p
-              className="mt-5 font-serif italic"
+              className="mt-5 font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h3)",
                 color: "var(--hm-ink)",

@@ -204,7 +204,7 @@ function GalleryContent() {
             Interiors By Jones · Full archive
           </p>
           <h1
-            className="font-serif font-normal italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "clamp(2.75rem, 7vw, 6rem)",
               lineHeight: 0.97,
@@ -339,7 +339,7 @@ function GalleryContent() {
                       )}
                     </p>
                     <p
-                      className="font-serif italic"
+                      className="font-serif font-bold"
                       style={{
                         fontSize: "var(--hm-text-body)",
                         color: "var(--hm-ink)",
@@ -364,7 +364,7 @@ function GalleryContent() {
               }}
             >
               <p
-                className="font-serif italic"
+                className="font-serif font-bold"
                 style={{
                   fontSize: "var(--hm-text-h3)",
                   color: "var(--hm-ink)",

@@ -20,7 +20,7 @@ import { Palette, ArrowRight, Instagram, Facebook, Phone } from "lucide-react";
 
 /* Hallmark · genre: editorial · macrostructure: Photographic
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * The work IS the proof. Hero is a single full-bleed kitchen photo with
  * the display headline overlaid; the editorial sections sit below a
@@ -231,7 +231,7 @@ export default function InteriorDesignPage() {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
               >
                 <h1
-                  className="font-serif font-normal italic"
+                  className="font-serif font-bold"
                   style={{
                     fontSize: "clamp(2.75rem, 8vw, 7.5rem)",
                     lineHeight: 0.95,
@@ -297,7 +297,7 @@ export default function InteriorDesignPage() {
         >
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <h2
-              className="font-serif font-normal italic mb-3"
+              className="font-serif font-bold mb-3"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -334,7 +334,7 @@ export default function InteriorDesignPage() {
         >
           <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <h2
-              className="font-serif font-normal italic mb-3"
+              className="font-serif font-bold mb-3"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -402,7 +402,7 @@ export default function InteriorDesignPage() {
             <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
               <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
                 <h2
-                  className="font-serif font-normal italic"
+                  className="font-serif font-bold"
                   style={{
                     fontSize: "var(--hm-text-h2)",
                     color: "var(--hm-ink)",
@@ -442,7 +442,7 @@ export default function InteriorDesignPage() {
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
               <h2
-                className="font-serif font-normal italic"
+                className="font-serif font-bold"
                 style={{
                   fontSize: "var(--hm-text-h2)",
                   color: "var(--hm-ink)",
@@ -483,7 +483,7 @@ export default function InteriorDesignPage() {
           <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-28">
             <div className="mb-12 max-w-3xl">
               <h2
-                className="font-serif font-normal italic mb-4"
+                className="font-serif font-bold mb-4"
                 style={{
                   fontSize: "var(--hm-text-h2)",
                   color: "var(--hm-ink)",
@@ -641,7 +641,7 @@ export default function InteriorDesignPage() {
 
                 {/* Personal Information */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Contact Information</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
                       label="Full Name"
@@ -668,7 +668,7 @@ export default function InteriorDesignPage() {
 
                 {/* Service Type */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Service Needed</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Service Needed</h3>
                   <Select
                     label="What service are you interested in?"
                     {...register("serviceType")}
@@ -685,7 +685,7 @@ export default function InteriorDesignPage() {
 
                 {/* Property Information */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Property Information</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Property Information</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div className="md:col-span-2">
                       <Input
@@ -731,7 +731,7 @@ export default function InteriorDesignPage() {
 
                 {/* Project Details */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Project Details</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Project Details</h3>
                   <Textarea
                     label="Project Description"
                     placeholder="Tell us about your project. What are your goals? What spaces need attention?"
@@ -744,7 +744,7 @@ export default function InteriorDesignPage() {
 
                 {/* Budget & Timeline */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Budget & Timeline</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Budget & Timeline</h3>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Select
                       label="Estimated Budget"
@@ -779,7 +779,7 @@ export default function InteriorDesignPage() {
 
                 {/* Style Preferences */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Style Preferences</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Style Preferences</h3>
                   <div className="space-y-6">
                     <Select
                       label="Preferred Design Style"
@@ -810,7 +810,7 @@ export default function InteriorDesignPage() {
 
                 {/* Additional Information */}
                 <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-                  <h3 className="text-2xl font-serif font-normal italic mb-6">Additional Information</h3>
+                  <h3 className="text-2xl font-serif font-bold mb-6">Additional Information</h3>
                   <div className="space-y-6">
                     <Textarea
                       label="Additional Notes"
@@ -947,7 +947,7 @@ function ServiceBlock({
         {service.eyebrow}
       </p>
       <h3
-        className="font-serif font-normal italic mb-5"
+        className="font-serif font-bold mb-5"
         style={{
           fontSize: "var(--hm-text-h3)",
           color: "var(--hm-ink)",
@@ -1054,7 +1054,7 @@ function ShowcaseCard({
             </p>
           )}
           <h3
-            className="font-serif italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "var(--hm-text-h3)",
               color: "var(--hm-ink)",
@@ -1130,7 +1130,7 @@ function PortfolioTile({ image }: { image: PortfolioImage }) {
             {image.category}
           </p>
           <p
-            className="font-serif italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "var(--hm-text-body)",
               color: "var(--hm-ink)",

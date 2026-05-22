@@ -28,7 +28,7 @@ export default function TermsPage() {
             Terms of service · Updated April 15, 2026
           </p>
           <h1
-            className="font-serif font-normal italic mb-12"
+            className="font-serif font-bold mb-12"
             style={{
               fontSize: "clamp(2.5rem, 5.5vw, 4.5rem)",
               lineHeight: 0.98,
@@ -43,7 +43,7 @@ export default function TermsPage() {
 
             {/* 1 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">1. Agreement to Terms</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">1. Agreement to Terms</h2>
               <p className="text-[var(--hm-ink-2)]">
                 These Terms of Service and End-User License Agreement (&quot;Agreement&quot;) are a binding
                 legal agreement between you (&quot;User,&quot; &quot;you,&quot; or &quot;your&quot;) and Jones Legacy
@@ -65,7 +65,7 @@ export default function TermsPage() {
 
             {/* 2 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">2. Description of the Platform</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">2. Description of the Platform</h2>
               <p className="text-gray-700 mb-3">
                 The Platform is a proprietary construction project-management application that enables:
               </p>
@@ -80,7 +80,7 @@ export default function TermsPage() {
 
             {/* 3 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">3. License Grant</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">3. License Grant</h2>
               <p className="text-[var(--hm-ink-2)]">
                 Subject to your compliance with this Agreement, Jones Legacy Creations grants you
                 a limited, non-exclusive, non-transferable, non-sublicensable, revocable license
@@ -95,7 +95,7 @@ export default function TermsPage() {
 
             {/* 4 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">4. Authorized Users</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">4. Authorized Users</h2>
               <p className="text-gray-700 mb-3">
                 Access to the Platform is restricted to individuals who have been granted explicit
                 authorization by Jones Legacy Creations. Authorized users include:
@@ -118,7 +118,7 @@ export default function TermsPage() {
 
             {/* 5 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">5. Prohibited Uses</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">5. Prohibited Uses</h2>
               <p className="text-gray-700 mb-3">You agree not to:</p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>Use the Platform for any unlawful purpose or in violation of any applicable law or regulation</li>
@@ -134,7 +134,7 @@ export default function TermsPage() {
 
             {/* 6 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">6. QuickBooks Online Integration</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">6. QuickBooks Online Integration</h2>
               <p className="text-gray-700 mb-3">
                 The Platform integrates with Intuit&apos;s QuickBooks Online API
                 (&quot;QBO API&quot;) under Intuit&apos;s Developer Terms of Service. By using the QuickBooks
@@ -172,7 +172,7 @@ export default function TermsPage() {
 
             {/* 7 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">7. Sensitive Financial Data — W-9 &amp; Banking Information</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">7. Sensitive Financial Data — W-9 &amp; Banking Information</h2>
               <p className="text-gray-700 mb-3">
                 The Platform collects and processes sensitive financial information including Social
                 Security Numbers (SSN), Employer Identification Numbers (EIN), and bank account
@@ -201,7 +201,7 @@ export default function TermsPage() {
 
             {/* 8 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">8. Intellectual Property</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">8. Intellectual Property</h2>
               <p className="text-[var(--hm-ink-2)]">
                 The Platform, including its software, design, text, graphics, interfaces, and all
                 underlying technology, is the exclusive property of Jones Legacy Creations and its
@@ -220,7 +220,7 @@ export default function TermsPage() {
 
             {/* 9 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">9. Confidentiality</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">9. Confidentiality</h2>
               <p className="text-[var(--hm-ink-2)]">
                 The Platform contains proprietary and confidential information. You agree to treat
                 all non-public information accessed through the Platform — including project
@@ -232,7 +232,7 @@ export default function TermsPage() {
 
             {/* 10 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">10. Availability &amp; Modifications</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">10. Availability &amp; Modifications</h2>
               <p className="text-[var(--hm-ink-2)]">
                 We will make reasonable efforts to keep the Platform available, but we do not
                 guarantee uninterrupted access. We reserve the right to modify, suspend, or
@@ -246,7 +246,7 @@ export default function TermsPage() {
 
             {/* 11 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">11. Disclaimer of Warranties</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">11. Disclaimer of Warranties</h2>
               <p className="text-[var(--hm-ink-2)]">
                 THE PLATFORM IS PROVIDED &quot;AS IS&quot; AND &quot;AS AVAILABLE&quot; WITHOUT WARRANTIES OF ANY
                 KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO WARRANTIES OF
@@ -260,7 +260,7 @@ export default function TermsPage() {
 
             {/* 12 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">12. Limitation of Liability</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">12. Limitation of Liability</h2>
               <p className="text-[var(--hm-ink-2)]">
                 TO THE MAXIMUM EXTENT PERMITTED BY APPLICABLE LAW, IN NO EVENT WILL JONES LEGACY
                 CREATIONS BE LIABLE FOR ANY INDIRECT, INCIDENTAL, SPECIAL, CONSEQUENTIAL, OR
@@ -280,7 +280,7 @@ export default function TermsPage() {
 
             {/* 13 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">13. Indemnification</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">13. Indemnification</h2>
               <p className="text-[var(--hm-ink-2)]">
                 You agree to indemnify, defend, and hold harmless Jones Legacy Creations and its
                 officers, directors, employees, and agents from and against any claims, liabilities,
@@ -293,7 +293,7 @@ export default function TermsPage() {
 
             {/* 14 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">14. Termination</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">14. Termination</h2>
               <p className="text-[var(--hm-ink-2)]">
                 Jones Legacy Creations may suspend or terminate your access to the Platform at
                 any time, with or without cause and with or without notice, including for violation
@@ -307,7 +307,7 @@ export default function TermsPage() {
 
             {/* 15 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">15. Governing Law &amp; Dispute Resolution</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">15. Governing Law &amp; Dispute Resolution</h2>
               <p className="text-[var(--hm-ink-2)]">
                 This Agreement is governed by the laws of the State of Utah, United States, without
                 regard to its conflict-of-law principles. Any dispute arising from or relating to
@@ -322,7 +322,7 @@ export default function TermsPage() {
 
             {/* 16 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">16. Accessibility</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">16. Accessibility</h2>
               <p className="text-[var(--hm-ink-2)]">
                 We are committed to making the Platform and our public website accessible to all
                 users, including those with disabilities, and target conformance with WCAG 2.1
@@ -337,7 +337,7 @@ export default function TermsPage() {
 
             {/* 17 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">17. Miscellaneous</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">17. Miscellaneous</h2>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>
                   <strong>Entire Agreement:</strong> This Agreement and the Privacy Policy constitute
@@ -369,7 +369,7 @@ export default function TermsPage() {
 
             {/* 18 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">18. Contact Us</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">18. Contact Us</h2>
               <p className="text-[var(--hm-ink-2)]">
                 For questions about this Agreement:
               </p>

@@ -4,10 +4,12 @@ A locked design system for the joneslegacycreations.com site. Every page
 redesign reads this file before emitting code. Do not regenerate per
 page — extend or amend this file when the system needs to grow.
 
-> System name: **Linen** · Genre: **editorial** · Anchor hue: **terracotta**
-> Established 2026-05-21 via the real-estate page redesign; locked into
-> a portable system after the user committed to a full-site Hallmark
-> sweep.
+> System name: **House** · Genre: **editorial** · Anchor hue: **none (monochrome)**
+> Established 2026-05-21 as Linen (warm cream + terracotta), then
+> pivoted on 2026-05-22 to House — black/white grayscale matching the
+> JLC logo's classic-print vibe. Hallmark anti-slop discipline
+> (macrostructures, editorial typography, real photos, honest copy)
+> is preserved; only the colour palette and display weight changed.
 
 ## Genre
 
@@ -35,32 +37,36 @@ shape; they vary only in component archetypes within the system.
   contact section — paper-fill section blocks with hairline borders,
   italic-serif section heads, mono-caps eyebrows.
 
-## Theme — Linen
+## Theme — House (custom, monochrome)
 
-Warm off-white paper, terracotta accent, italic-serif display. The
-tokens are declared as `--hm-*` custom properties in
+White paper, black ink, no chromatic accent. Pure grayscale. Matches
+the JLC logo (script wordmark + minimal serif tagline on a white
+field). The tokens are declared as `--hm-*` custom properties in
 [`app/globals.css`](app/globals.css). Pages must reference tokens by
 name — no inline hex / oklch / rgb values, no `font-family` declarations
 outside the token block.
 
-- `--hm-paper`       `oklch(98.5% 0.006 70)` — warm off-white
-- `--hm-paper-2`     `oklch(96.5% 0.012 75)` — cream
-- `--hm-paper-3`     `oklch(93% 0.014 60)`   — tan tint
-- `--hm-ink`         `oklch(20% 0.012 50)`   — warm near-black
-- `--hm-ink-2`       `oklch(42% 0.010 55)`   — warm body gray
-- `--hm-ink-3`       `oklch(62% 0.008 60)`   — muted gray
-- `--hm-rule`        `oklch(85% 0.008 60)`   — hairline
-- `--hm-rule-thick`  `oklch(20% 0.012 50)`   — thick rule (= ink)
-- `--hm-accent`      `oklch(55% 0.155 35)`   — terracotta clay
-- `--hm-accent-ink`  `oklch(99% 0.005 70)`   — off-white on accent
-- `--hm-focus`       `oklch(48% 0.18 30)`    — darker accent for rings
+- `--hm-paper`       `oklch(100% 0 0)` — pure white
+- `--hm-paper-2`     `oklch(97% 0 0)`  — light gray
+- `--hm-paper-3`     `oklch(93% 0 0)`  — slightly darker gray
+- `--hm-ink`         `oklch(14% 0 0)`  — near black
+- `--hm-ink-2`       `oklch(38% 0 0)`  — body gray
+- `--hm-ink-3`       `oklch(58% 0 0)`  — muted gray
+- `--hm-rule`        `oklch(88% 0 0)`  — hairline
+- `--hm-rule-thick`  `oklch(14% 0 0)`  — thick rule (= ink)
+- `--hm-accent`      `oklch(32% 0 0)`  — charcoal half-step from ink, used
+   only for hover/active state shifts. Reads as "slightly lighter
+   black", not a colour.
+- `--hm-accent-ink`  `oklch(100% 0 0)` — paper on accent surfaces
+- `--hm-focus`       `oklch(20% 0 0)`  — dark gray for focus rings
 
 ## Typography
 
-- **Display**: Playfair Display, weight 400, **style italic**. Loaded via
-  `next/font` as `--font-playfair`. Used for all H1/H2/H3, the masthead
-  wordmark, and ornamental tabular-nums (prices, phone numbers).
-  Tracking: −0.015em on headings.
+- **Display**: Playfair Display, weight 700 (bold), roman (not italic).
+  Loaded via `next/font` as `--font-playfair`. Used for all H1/H2/H3
+  and ornamental tabular-nums (prices, phone numbers). Tracking:
+  −0.015 em on headings. Bold + roman matches the classic-print weight
+  the logo wordmark sits at.
 - **Body**: Geist, weight 400 (and 500 for emphasis). Loaded via
   `next/font` as `--font-sans`.
 - **Mono / eyebrow**: Geist Mono via `--font-sans` fallback to system
@@ -106,13 +112,14 @@ Always reference by name; never raw values.
 
 ## CTA voice
 
-- **Primary CTA**: dark ink fill, `--hm-paper` text, mono-caps tracking
-  0.15em, 44px min-height, padding `0.75rem 1rem`. On hover, fill shifts
-  to `--hm-accent` (terracotta). Square corners — no border-radius.
-- **Secondary CTA / chip**: outline only, 1px `--hm-rule-thick` border,
-  same dimensions and typography. Active state fills with ink.
+- **Primary CTA**: black ink fill, white text, mono-caps tracking
+  0.15 em, 44 px min-height, padding `0.75rem 1rem`. On hover, fill
+  shifts to `--hm-accent` (charcoal half-step) — a subtle darkening
+  rather than a colour pop. Square corners — no border-radius.
+- **Secondary CTA / chip**: outline only, 1 px `--hm-rule-thick`
+  border, same dimensions and typography. Active state fills with ink.
 - **Tertiary link**: hairline-underlined sans link in `--hm-ink-2`;
-  underline shifts to `--hm-accent` on hover.
+  underline shifts to `--hm-accent` (charcoal) on hover.
 - **Avoid pills.** No `rounded-full` on buttons. Square chips read
   editorial; pills read SaaS.
 
@@ -131,11 +138,11 @@ Always reference by name; never raw values.
 ## What pages MUST share
 
 - The JLC wordmark / logotype
-- The accent colour (terracotta) and its placement (≤ 5 % per viewport)
-- The display + body fonts (Playfair italic + Geist)
+- The monochrome palette — no chromatic accents anywhere
+- The display + body fonts (Playfair bold + Geist)
 - The CTA voice (square chips, mono-caps tracking, ink fill default,
-  terracotta on hover)
-- Section heading rhythm (italic Playfair H2, optional mono-caps eyebrow
+  charcoal half-step on hover — no colour pop)
+- Section heading rhythm (bold Playfair H2, optional mono-caps eyebrow
   vertically stacked above — never tag-left/header-right two-column
   hangers, which are banned)
 - The 4-pt spacing scale
@@ -160,9 +167,12 @@ Always reference by name; never raw values.
 
 ## Site-wide compliance gates
 
-- No `bg-white` / `bg-black` / pure-grey utility classes on public
-  marketing surfaces — always reference `--hm-paper*` / `--hm-ink*` /
-  `--hm-paper-3`.
+- Reference Linen / House tokens (`--hm-paper*` / `--hm-ink*` /
+  `--hm-paper-3`) rather than Tailwind `bg-white` / `bg-black`. The
+  tokens are now grayscale, so the visual result is the same as the
+  literal Tailwind classes — but the token-by-name discipline means
+  future theme tweaks (lifted accent, darker ink) propagate from a
+  single place.
 - No `text-center` on every section. Bias left, or vary section by
   section.
 - No `whileInView` cascades — single fade-in on first paint per page.

@@ -1,6 +1,16 @@
 [
   {
     "date": "2026-05-22",
+    "macrostructure": "system pivot",
+    "theme": "House (custom · monochrome)",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "Jess (admin) requested classic black-and-white per logo. Linen palette swapped to grayscale; italic Playfair displays reverted to bold roman. Anti-slop discipline (macrostructures, real photos, no card grids, honest copy) preserved.",
+    "scope": "app",
+    "target": "design.md + app/globals.css + 15 page/component files"
+  },
+  {
+    "date": "2026-05-22",
     "macrostructure": "form-page family",
     "theme": "Linen",
     "enrichment": "none",

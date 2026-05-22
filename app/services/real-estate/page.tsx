@@ -123,7 +123,7 @@ export default function RealEstatePage() {
             transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
             <h1
-              className="font-serif font-normal italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-display)",
                 lineHeight: 0.95,
@@ -180,7 +180,7 @@ export default function RealEstatePage() {
       >
         <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
           <h2
-            className="font-serif font-normal italic mb-10"
+            className="font-serif font-bold mb-10"
             style={{
               fontSize: "var(--hm-text-h2)",
               color: "var(--hm-ink)",
@@ -239,7 +239,7 @@ export default function RealEstatePage() {
       >
         <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
           <h2
-            className="font-serif font-normal italic mb-2"
+            className="font-serif font-bold mb-2"
             style={{
               fontSize: "var(--hm-text-h2)",
               color: "var(--hm-ink)",
@@ -346,7 +346,7 @@ export default function RealEstatePage() {
         <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
           <div className="mb-12 max-w-3xl">
             <h2
-              className="font-serif font-normal italic mb-4"
+              className="font-serif font-bold mb-4"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -519,7 +519,7 @@ export default function RealEstatePage() {
 
             {/* Personal Information */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Personal Information</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Personal Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Full Name"
@@ -546,7 +546,7 @@ export default function RealEstatePage() {
 
             {/* Service Type */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">What Are You Looking For?</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">What Are You Looking For?</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Service Type"
@@ -580,7 +580,7 @@ export default function RealEstatePage() {
 
             {/* Location Preferences */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Location Preferences</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Location Preferences</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Preferred City"
@@ -620,7 +620,7 @@ export default function RealEstatePage() {
 
             {/* Budget */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Budget Range</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Budget Range</h3>
               <Select
                 label="What is your budget range?"
                 {...register("budgetRange")}
@@ -641,7 +641,7 @@ export default function RealEstatePage() {
 
             {/* Property Size & Layout */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic text-gray-900 mb-6 flex items-center gap-2">
+              <h3 className="text-2xl font-serif font-bold text-gray-900 mb-6 flex items-center gap-2">
                 <Bed aria-hidden="true" className="w-6 h-6" />
                 Property Size & Layout
               </h3>
@@ -716,7 +716,7 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("garage")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic text-gray-900 flex items-center gap-2">
+                <h3 className="text-2xl font-serif font-bold text-gray-900 flex items-center gap-2">
                   <Car aria-hidden="true" className="w-6 h-6" />
                   Garage & Parking
                 </h3>
@@ -770,7 +770,7 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("style")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Architectural Style</h3>
+                <h3 className="text-2xl font-serif font-bold">Architectural Style</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("style") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -814,7 +814,7 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("interior")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Interior Features</h3>
+                <h3 className="text-2xl font-serif font-bold">Interior Features</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("interior") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -900,7 +900,7 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("exterior")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Exterior Features</h3>
+                <h3 className="text-2xl font-serif font-bold">Exterior Features</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("exterior") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -983,7 +983,7 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("systems")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Systems & Utilities</h3>
+                <h3 className="text-2xl font-serif font-bold">Systems & Utilities</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("systems") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1053,7 +1053,7 @@ export default function RealEstatePage() {
                 onClick={() => toggleSection("requirements")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Additional Requirements</h3>
+                <h3 className="text-2xl font-serif font-bold">Additional Requirements</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("requirements") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1095,7 +1095,7 @@ export default function RealEstatePage() {
 
             {/* Timeline */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Timeline</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Timeline</h3>
               <Select
                 label="When do you want to move?"
                 {...register("moveInTimeline")}
@@ -1114,7 +1114,7 @@ export default function RealEstatePage() {
 
             {/* Additional Information */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Additional Information</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Additional Information</h3>
               <div className="space-y-6">
                 <Textarea
                   label="Additional Notes or Questions"

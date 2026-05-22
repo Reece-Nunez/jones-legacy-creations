@@ -12,7 +12,7 @@ import type {
 
 /* Hallmark · genre: editorial · macrostructure: listing detail
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta */
+ * theme: House · anchor hue: none (monochrome) */
 
 interface ListingPageProps {
   params: Promise<{ slug: string }>;

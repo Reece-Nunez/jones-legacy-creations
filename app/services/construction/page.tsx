@@ -20,7 +20,7 @@ import Image from "next/image";
 
 /* Hallmark · genre: editorial · macrostructure: Stat-Led
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Trust through longevity. Hero anchors on "10+" years; the showcase
  * grids, prose, FAQ, and form sit below. Rotates off Marquee Hero,
@@ -191,7 +191,7 @@ export default function ConstructionPage() {
               <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-baseline">
                 <div className="lg:col-span-7">
                   <h1
-                    className="font-serif font-normal italic tabular-nums"
+                    className="font-serif font-bold tabular-nums"
                     style={{
                       fontSize: "clamp(6rem, 18vw, 14rem)",
                       lineHeight: 0.85,
@@ -202,7 +202,7 @@ export default function ConstructionPage() {
                     10<span style={{ color: "var(--hm-accent)" }}>+</span>
                   </h1>
                   <p
-                    className="mt-6 font-serif italic"
+                    className="mt-6 font-serif font-bold"
                     style={{
                       fontSize: "var(--hm-text-h3)",
                       color: "var(--hm-ink)",
@@ -316,7 +316,7 @@ export default function ConstructionPage() {
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 pb-16 lg:pt-24">
             <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
               <h2
-                className="font-serif font-normal italic"
+                className="font-serif font-bold"
                 style={{
                   fontSize: "var(--hm-text-h2)",
                   color: "var(--hm-ink)",
@@ -357,7 +357,7 @@ export default function ConstructionPage() {
           <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-16 lg:py-20">
             <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
               <h2
-                className="font-serif font-normal italic"
+                className="font-serif font-bold"
                 style={{
                   fontSize: "var(--hm-text-h2)",
                   color: "var(--hm-ink)",
@@ -398,7 +398,7 @@ export default function ConstructionPage() {
         >
           <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <h2
-              className="font-serif font-normal italic mb-8"
+              className="font-serif font-bold mb-8"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -443,7 +443,7 @@ export default function ConstructionPage() {
         >
           <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
             <h2
-              className="font-serif font-normal italic mb-3"
+              className="font-serif font-bold mb-3"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -550,7 +550,7 @@ export default function ConstructionPage() {
           <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-28">
             <div className="mb-12 max-w-3xl">
               <h2
-                className="font-serif font-normal italic mb-4"
+                className="font-serif font-bold mb-4"
                 style={{
                   fontSize: "var(--hm-text-h2)",
                   color: "var(--hm-ink)",
@@ -708,7 +708,7 @@ export default function ConstructionPage() {
 
             {/* Personal Information */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Contact Information</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Full Name"
@@ -740,7 +740,7 @@ export default function ConstructionPage() {
 
             {/* Project Type */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Project Type</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Project Type</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Project Category"
@@ -774,7 +774,7 @@ export default function ConstructionPage() {
 
             {/* Property Information */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Property Information</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Property Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <Input
@@ -819,7 +819,7 @@ export default function ConstructionPage() {
 
             {/* Project Details */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Project Details</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Project Details</h3>
               <div className="space-y-6">
                 <Textarea
                   label="Project Scope & Description"
@@ -857,7 +857,7 @@ export default function ConstructionPage() {
 
             {/* Budget & Timeline */}
             <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
-              <h3 className="text-2xl font-serif font-normal italic mb-6">Budget & Timeline</h3>
+              <h3 className="text-2xl font-serif font-bold mb-6">Budget & Timeline</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Estimated Budget Range"
@@ -910,7 +910,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("permits")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Permits & Compliance</h3>
+                <h3 className="text-2xl font-serif font-bold">Permits & Compliance</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("permits") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -969,7 +969,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("materials")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Materials & Quality Preferences</h3>
+                <h3 className="text-2xl font-serif font-bold">Materials & Quality Preferences</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("materials") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1032,7 +1032,7 @@ export default function ConstructionPage() {
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
                 <div>
-                  <h3 className="text-2xl font-serif font-normal italic">Specific Work Required</h3>
+                  <h3 className="text-2xl font-serif font-bold">Specific Work Required</h3>
                   <p className="text-sm text-gray-600 mt-1">Select which areas of work are needed for your project</p>
                 </div>
                 <ChevronDown className={`w-6 h-6 transition-transform flex-shrink-0 ${expandedSections.includes("work") ? "rotate-180" : ""}`} />
@@ -1146,7 +1146,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("demolition")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Demolition Requirements</h3>
+                <h3 className="text-2xl font-serif font-bold">Demolition Requirements</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("demolition") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1190,7 +1190,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("features")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Special Features & Requirements</h3>
+                <h3 className="text-2xl font-serif font-bold">Special Features & Requirements</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("features") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1249,7 +1249,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("site")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Site Conditions</h3>
+                <h3 className="text-2xl font-serif font-bold">Site Conditions</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("site") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1308,7 +1308,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("services")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Additional Services Needed</h3>
+                <h3 className="text-2xl font-serif font-bold">Additional Services Needed</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("services") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1367,7 +1367,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("insurance")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Insurance & Financing</h3>
+                <h3 className="text-2xl font-serif font-bold">Insurance & Financing</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("insurance") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1414,7 +1414,7 @@ export default function ConstructionPage() {
                 onClick={() => toggleSection("additional")}
                 className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-normal italic">Additional Information</h3>
+                <h3 className="text-2xl font-serif font-bold">Additional Information</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("additional") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1627,7 +1627,7 @@ function ShowcaseCard({
             </p>
           )}
           <h3
-            className="font-serif italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "var(--hm-text-h3)",
               color: "var(--hm-ink)",
@@ -1682,7 +1682,7 @@ function EmptyShowcaseState({ message }: { message: string }) {
         style={{ color: "var(--hm-ink-3)" }}
       />
       <p
-        className="mt-5 font-serif italic"
+        className="mt-5 font-serif font-bold"
         style={{
           fontSize: "var(--hm-text-h3)",
           color: "var(--hm-ink)",

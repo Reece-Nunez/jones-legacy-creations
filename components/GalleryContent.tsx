@@ -6,7 +6,7 @@ import { Building2 } from "lucide-react";
 
 /* Hallmark · genre: editorial · component: gallery grid
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Linen-styled project gallery: left-aligned editorial hero, hairline-
  * framed project tiles, italic-serif titles, mono-caps location eyebrows.
@@ -47,7 +47,7 @@ export function GalleryContent({ projects }: { projects: GalleryProject[] }) {
             Project gallery · Southern Utah
           </p>
           <h1
-            className="font-serif font-normal italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "clamp(2.75rem, 7vw, 6rem)",
               lineHeight: 0.97,
@@ -86,7 +86,7 @@ export function GalleryContent({ projects }: { projects: GalleryProject[] }) {
               style={{ color: "var(--hm-ink-3)" }}
             />
             <p
-              className="mt-5 font-serif italic"
+              className="mt-5 font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h3)",
                 color: "var(--hm-ink)",
@@ -151,7 +151,7 @@ function ProjectTile({ project }: { project: GalleryProject }) {
           </p>
         )}
         <h2
-          className="font-serif italic"
+          className="font-serif font-bold"
           style={{
             fontSize: "var(--hm-text-h3)",
             color: "var(--hm-ink)",

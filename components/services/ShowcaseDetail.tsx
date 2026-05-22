@@ -12,7 +12,7 @@ import type {
 
 /* Hallmark · genre: editorial · component: showcase detail
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Mirrors the listing detail layout but for construction / interior
  * design showcases: hairline-framed cover photo on the left, italic
@@ -138,7 +138,7 @@ export default function ShowcaseDetail({ showcase, photos }: Props) {
             </p>
           )}
           <h1
-            className="font-serif font-normal italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
               lineHeight: 1.05,
@@ -205,7 +205,7 @@ export default function ShowcaseDetail({ showcase, photos }: Props) {
         >
           <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
             <h2
-              className="font-serif font-normal italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",

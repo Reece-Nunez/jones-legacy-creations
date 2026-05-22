@@ -28,7 +28,7 @@ export default function PrivacyPage() {
             Privacy policy · Updated April 15, 2026
           </p>
           <h1
-            className="font-serif font-normal italic mb-12"
+            className="font-serif font-bold mb-12"
             style={{
               fontSize: "clamp(2.75rem, 6vw, 5rem)",
               lineHeight: 0.98,
@@ -43,7 +43,7 @@ export default function PrivacyPage() {
 
             {/* 1 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">1. Who We Are</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">1. Who We Are</h2>
               <p className="text-[var(--hm-ink-2)]">
                 Jones Legacy Creations (&quot;Company,&quot; &quot;we,&quot; &quot;us,&quot; or &quot;our&quot;) is a licensed general
                 contractor headquartered in Southern Utah. We operate a proprietary project-management
@@ -66,16 +66,16 @@ export default function PrivacyPage() {
 
             {/* 2 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">2. Information We Collect</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">2. Information We Collect</h2>
 
-              <h3 className="text-lg font-serif font-normal italic text-[var(--hm-ink)] mb-2">2.1 Account &amp; Staff Information</h3>
+              <h3 className="text-lg font-serif font-bold text-[var(--hm-ink)] mb-2">2.1 Account &amp; Staff Information</h3>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
                 <li>Name, email address, and hashed password (via Supabase Auth)</li>
                 <li>Role and permission level within the Platform</li>
                 <li>IP address and session metadata for security logging</li>
               </ul>
 
-              <h3 className="text-lg font-serif font-normal italic text-[var(--hm-ink)] mb-2 mt-5">2.2 Contractor Data</h3>
+              <h3 className="text-lg font-serif font-bold text-[var(--hm-ink)] mb-2 mt-5">2.2 Contractor Data</h3>
               <p className="text-gray-700 mb-2">
                 Our staff enters contractor records into the Platform. This may include:
               </p>
@@ -94,7 +94,7 @@ export default function PrivacyPage() {
                 <li>Classification (subcontractor, vendor, employee) and 1099 eligibility status</li>
               </ul>
 
-              <h3 className="text-lg font-serif font-normal italic text-[var(--hm-ink)] mb-2 mt-5">2.3 Project &amp; Financial Data</h3>
+              <h3 className="text-lg font-serif font-bold text-[var(--hm-ink)] mb-2 mt-5">2.3 Project &amp; Financial Data</h3>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
                 <li>Project names, addresses, budgets, draw schedules, and progress records</li>
                 <li>Invoices, receipts, and other financial documents uploaded to the Platform</li>
@@ -102,7 +102,7 @@ export default function PrivacyPage() {
                 <li>AI-assisted categorizations generated from uploaded documents</li>
               </ul>
 
-              <h3 className="text-lg font-serif font-normal italic text-[var(--hm-ink)] mb-2 mt-5">2.4 QuickBooks Online Data</h3>
+              <h3 className="text-lg font-serif font-bold text-[var(--hm-ink)] mb-2 mt-5">2.4 QuickBooks Online Data</h3>
               <p className="text-[var(--hm-ink-2)]">
                 When a QBO connection is authorized, we access and write data through the Intuit
                 QuickBooks Online API, including vendor records, bills, and bill payments. We access
@@ -110,14 +110,14 @@ export default function PrivacyPage() {
                 not store raw QBO credentials; instead, we store OAuth 2.0 tokens provided by Intuit.
               </p>
 
-              <h3 className="text-lg font-serif font-normal italic text-[var(--hm-ink)] mb-2 mt-5">2.5 Website &amp; Technical Data</h3>
+              <h3 className="text-lg font-serif font-bold text-[var(--hm-ink)] mb-2 mt-5">2.5 Website &amp; Technical Data</h3>
               <ul className="list-disc pl-6 text-gray-700 space-y-1">
                 <li>Browser type, operating system, referring URL, and pages visited</li>
                 <li>IP address and approximate geographic location (country/state)</li>
                 <li>Cookies and similar session identifiers (see Section 8)</li>
               </ul>
 
-              <h3 className="text-lg font-serif font-normal italic text-[var(--hm-ink)] mb-2 mt-5">2.6 Communications</h3>
+              <h3 className="text-lg font-serif font-bold text-[var(--hm-ink)] mb-2 mt-5">2.6 Communications</h3>
               <p className="text-[var(--hm-ink-2)]">
                 If you contact us via email, contact form, or other means, we retain those
                 communications for customer-service and legal purposes.
@@ -126,7 +126,7 @@ export default function PrivacyPage() {
 
             {/* 3 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">3. How We Use Your Information</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">3. How We Use Your Information</h2>
               <p className="text-gray-700 mb-3">We use the information described above to:</p>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>Operate, maintain, and improve the Platform and website</li>
@@ -150,7 +150,7 @@ export default function PrivacyPage() {
 
             {/* 4 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">4. Legal Basis for Processing (GDPR)</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">4. Legal Basis for Processing (GDPR)</h2>
               <p className="text-gray-700 mb-3">
                 For users in the European Economic Area (EEA) or United Kingdom, our legal bases for
                 processing personal data are:
@@ -177,7 +177,7 @@ export default function PrivacyPage() {
 
             {/* 5 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">5. Information Sharing &amp; Subprocessors</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">5. Information Sharing &amp; Subprocessors</h2>
               <p className="text-gray-700 mb-4">
                 We share personal information only with the service providers necessary to operate the
                 Platform (&quot;Subprocessors&quot;) and as required by law. Each Subprocessor is contractually
@@ -232,7 +232,7 @@ export default function PrivacyPage() {
 
             {/* 6 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">6. Sensitive Data Handling</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">6. Sensitive Data Handling</h2>
               <p className="text-gray-700 mb-3">
                 Certain categories of data we handle are classified as sensitive under applicable law:
               </p>
@@ -258,7 +258,7 @@ export default function PrivacyPage() {
 
             {/* 7 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">7. Data Retention</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">7. Data Retention</h2>
               <ul className="list-disc pl-6 text-gray-700 space-y-2">
                 <li>
                   <strong>Project and financial records</strong> — retained for a minimum of 7 years
@@ -289,7 +289,7 @@ export default function PrivacyPage() {
 
             {/* 8 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">8. Cookies &amp; Tracking Technologies</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">8. Cookies &amp; Tracking Technologies</h2>
               <p className="text-gray-700 mb-3">
                 Our public website and Platform use the following types of cookies and similar
                 technologies:
@@ -324,7 +324,7 @@ export default function PrivacyPage() {
 
             {/* 9 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">9. Security</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">9. Security</h2>
               <p className="text-gray-700 mb-3">
                 We implement administrative, technical, and physical safeguards appropriate to the
                 sensitivity of the data we process, including:
@@ -356,7 +356,7 @@ export default function PrivacyPage() {
 
             {/* 10 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">10. Your Privacy Rights</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">10. Your Privacy Rights</h2>
               <p className="text-gray-700 mb-3">
                 Depending on your location, you may have the following rights regarding your personal
                 information:
@@ -411,7 +411,7 @@ export default function PrivacyPage() {
 
             {/* 11 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">11. Children&apos;s Privacy</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">11. Children&apos;s Privacy</h2>
               <p className="text-[var(--hm-ink-2)]">
                 The Platform is intended solely for use by authorized business personnel and
                 contractors age 18 and older. We do not knowingly collect personal information
@@ -422,7 +422,7 @@ export default function PrivacyPage() {
 
             {/* 12 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">12. Accessibility</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">12. Accessibility</h2>
               <p className="text-[var(--hm-ink-2)]">
                 We are committed to making our website and Platform accessible to all users,
                 including those with disabilities. We target conformance with the Web Content
@@ -437,7 +437,7 @@ export default function PrivacyPage() {
 
             {/* 13 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">13. Changes to This Policy</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">13. Changes to This Policy</h2>
               <p className="text-[var(--hm-ink-2)]">
                 We may update this Privacy Policy to reflect changes to our practices, legal
                 requirements, or services. Material changes will be communicated via email to
@@ -450,7 +450,7 @@ export default function PrivacyPage() {
 
             {/* 14 */}
             <section>
-              <h2 className="text-2xl font-serif font-normal italic text-[var(--hm-ink)] mb-3">14. Contact Us</h2>
+              <h2 className="text-2xl font-serif font-bold text-[var(--hm-ink)] mb-3">14. Contact Us</h2>
               <p className="text-[var(--hm-ink-2)]">
                 For privacy-related questions, requests, or concerns:
               </p>

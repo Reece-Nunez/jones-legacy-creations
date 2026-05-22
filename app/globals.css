@@ -85,30 +85,33 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Hallmark · genre: editorial · theme: Linen · anchor hue: terracotta
+/* Hallmark · genre: editorial · theme: House (custom · monochrome)
  * design-system: design.md · designed-as-app
  * nav: N7 Newspaper masthead · footer: Ft4 Dense colophon
- * pre-emit critique: P5 H5 E4 S5 R5 V5
  *
- * Linen tokens powering the site-wide design system locked at
- * /design.md (2026-05-21). The --hm-* prefix keeps them distinct from
- * shadcn vars above — currently consumed by /services/real-estate plus
- * the shared Navigation + Footer; future page redesigns read design.md
- * and rotate through the marketing/content/form families on these tokens.
+ * House tokens — custom theme pivoted from Linen on 2026-05-22 at Jess's
+ * request. Black-and-white, no chromatic accent, matches the JLC logo's
+ * classic-print vibe. The Hallmark anti-slop discipline (macrostructures,
+ * editorial typography, real photos, honest copy, no card-grid template)
+ * is preserved; only the colour palette and display weight changed.
+ *
+ * Zero-chroma OKLCH throughout — true grayscale.
  */
 :root {
-  /* Linen palette — warm off-white paper, terracotta accent */
-  --hm-paper:       oklch(98.5% 0.006 70);
-  --hm-paper-2:     oklch(96.5% 0.012 75);
-  --hm-paper-3:     oklch(93% 0.014 60);
-  --hm-ink:         oklch(20% 0.012 50);
-  --hm-ink-2:       oklch(42% 0.010 55);
-  --hm-ink-3:       oklch(62% 0.008 60);
-  --hm-rule:        oklch(85% 0.008 60);
-  --hm-rule-thick:  oklch(20% 0.012 50);
-  --hm-accent:      oklch(55% 0.155 35);
-  --hm-accent-ink:  oklch(99% 0.005 70);
-  --hm-focus:       oklch(48% 0.18 30);
+  /* House palette — white paper, black ink, no chromatic accent */
+  --hm-paper:       oklch(100% 0 0);
+  --hm-paper-2:     oklch(97% 0 0);
+  --hm-paper-3:     oklch(93% 0 0);
+  --hm-ink:         oklch(14% 0 0);
+  --hm-ink-2:       oklch(38% 0 0);
+  --hm-ink-3:       oklch(58% 0 0);
+  --hm-rule:        oklch(88% 0 0);
+  --hm-rule-thick:  oklch(14% 0 0);
+  /* Accent is a charcoal half-step from ink — used for hover state shifts
+   * and active markers. Reads as "slightly lighter black", not a colour. */
+  --hm-accent:      oklch(32% 0 0);
+  --hm-accent-ink:  oklch(100% 0 0);
+  --hm-focus:       oklch(20% 0 0);
 
   /* 4-pt spacing */
   --hm-space-3xs: 0.25rem;

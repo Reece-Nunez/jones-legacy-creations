@@ -23,7 +23,7 @@ import {
 
 /* Hallmark · genre: editorial · component: listing detail
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Editorial listing detail in Linen voice. Generous breathing room per
  * Hilari's "less compact" direction — wide measure on the description,
@@ -171,7 +171,7 @@ export default function ListingDetail({ listing, photos }: Props) {
             {cityLine}
           </p>
           <h1
-            className="font-serif font-normal italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "clamp(2rem, 4vw, 3rem)",
               lineHeight: 1.05,
@@ -283,7 +283,7 @@ export default function ListingDetail({ listing, photos }: Props) {
           style={{ borderTop: "1px solid var(--hm-rule)" }}
         >
           <h2
-            className="font-serif font-normal italic mb-8"
+            className="font-serif font-bold mb-8"
             style={{
               fontSize: "var(--hm-text-h2)",
               color: "var(--hm-ink)",
@@ -314,7 +314,7 @@ export default function ListingDetail({ listing, photos }: Props) {
         >
           <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
             <h2
-              className="font-serif font-normal italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",

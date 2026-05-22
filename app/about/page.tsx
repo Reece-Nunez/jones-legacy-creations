@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 
 /* Hallmark · genre: editorial · macrostructure: Long Document
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * About page in letter form. Single column at 60-65ch measure, inline
  * italic section heads emerging from the paragraph flow, the family
@@ -39,7 +39,7 @@ export default function AboutPage() {
             Hurricane, Utah · est. 2014
           </p>
           <h1
-            className="font-serif font-normal italic"
+            className="font-serif font-bold"
             style={{
               fontSize: "clamp(3rem, 9vw, 7.5rem)",
               lineHeight: 0.96,
@@ -50,7 +50,7 @@ export default function AboutPage() {
             About.
           </h1>
           <p
-            className="mt-6 font-serif italic"
+            className="mt-6 font-serif font-bold"
             style={{
               fontSize: "var(--hm-text-h3)",
               color: "var(--hm-ink-2)",
@@ -111,7 +111,7 @@ export default function AboutPage() {
             </figure>
 
             <h2
-              className="font-serif italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h3)",
                 color: "var(--hm-ink)",
@@ -133,7 +133,7 @@ export default function AboutPage() {
             </p>
 
             <h2
-              className="font-serif italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h3)",
                 color: "var(--hm-ink)",
@@ -154,7 +154,7 @@ export default function AboutPage() {
             </p>
 
             <h2
-              className="font-serif italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "var(--hm-text-h3)",
                 color: "var(--hm-ink)",

@@ -5,7 +5,7 @@ import type { Metadata } from "next";
 
 /* Hallmark · genre: editorial · macrostructure: form-page family
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Hero restyled in Linen voice. The EstimateForm wizard below keeps its
  * own visual system for now — it's a multi-step calculator with its own
@@ -47,7 +47,7 @@ export default function EstimatePage() {
               Free estimate · Southern Utah
             </p>
             <h1
-              className="font-serif font-normal italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "clamp(2.75rem, 7vw, 6rem)",
                 lineHeight: 0.97,

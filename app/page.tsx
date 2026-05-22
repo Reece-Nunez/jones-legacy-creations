@@ -5,7 +5,7 @@ import { Footer } from "@/components/Footer";
 
 /* Hallmark · genre: editorial · macrostructure: Bento Grid
  * design-system: design.md · designed-as-app
- * theme: Linen · anchor hue: terracotta
+ * theme: House · anchor hue: none (monochrome)
  *
  * Three sub-brand tiles stay (per client direction), but as varied-size
  * bento blocks rather than three equal columns — the AI fingerprint of
@@ -81,7 +81,7 @@ export default function HomePage() {
               Hurricane, Utah · est. 2014
             </p>
             <h1
-              className="font-serif font-normal italic"
+              className="font-serif font-bold"
               style={{
                 fontSize: "clamp(2.75rem, 7.5vw, 6.5rem)",
                 lineHeight: 0.98,
@@ -238,7 +238,7 @@ export default function HomePage() {
                   Why people stay
                 </p>
                 <p
-                  className="font-serif italic mb-4"
+                  className="font-serif font-bold mb-4"
                   style={{
                     fontSize: "var(--hm-text-h3)",
                     color: "var(--hm-ink)",
@@ -286,7 +286,7 @@ export default function HomePage() {
               Get in touch
             </p>
             <h2
-              className="font-serif font-normal italic mb-6"
+              className="font-serif font-bold mb-6"
               style={{
                 fontSize: "var(--hm-text-h2)",
                 color: "var(--hm-ink)",
@@ -395,7 +395,7 @@ function BrandTile({
           </span>
         </div>
         <h2
-          className="font-serif font-normal italic mb-4"
+          className="font-serif font-bold mb-4"
           style={{
             fontSize: isLarge
               ? "clamp(1.875rem, 3.5vw, 2.75rem)"
