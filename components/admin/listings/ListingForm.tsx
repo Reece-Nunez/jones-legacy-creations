@@ -16,6 +16,8 @@ import {
   Sparkles,
   ChevronUp,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { confirmAction } from "@/lib/confirmAction";
@@ -104,6 +106,33 @@ export default function ListingForm({ listing }: ListingFormProps) {
     mq.addEventListener("change", apply);
     return () => mq.removeEventListener("change", apply);
   }, []);
+
+  // Lightbox state — admins need to actually see the photos at full size
+  // to QC the listing. Tap the photo area on any tile to open.
+  const [lightboxIndex, setLightboxIndex] = useState<number | null>(null);
+  const closeLightbox = () => setLightboxIndex(null);
+  const prevLightbox = () =>
+    setLightboxIndex((i) =>
+      i === null ? null : (i - 1 + photos.length) % photos.length
+    );
+  const nextLightbox = () =>
+    setLightboxIndex((i) => (i === null ? null : (i + 1) % photos.length));
+
+  useEffect(() => {
+    if (lightboxIndex === null) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") closeLightbox();
+      else if (e.key === "ArrowLeft") prevLightbox();
+      else if (e.key === "ArrowRight") nextLightbox();
+    };
+    document.addEventListener("keydown", onKey);
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.body.style.overflow = "";
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [lightboxIndex, photos.length]);
 
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
@@ -541,7 +570,6 @@ export default function ListingForm({ listing }: ListingFormProps) {
               fill
               sizes="(max-width: 768px) 100vw, 768px"
               className="object-cover"
-              unoptimized
             />
             <button
               type="button"
@@ -897,7 +925,7 @@ export default function ListingForm({ listing }: ListingFormProps) {
             You can select multiple files at once.
           </div>
         ) : (
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {pendingPhotos.map((p) => (
               <div
                 key={p.id}
@@ -919,9 +947,9 @@ export default function ListingForm({ listing }: ListingFormProps) {
                   onClick={() => removePendingPhoto(p.id)}
                   title="Remove from queue"
                   aria-label="Remove from queue"
-                  className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                  className="absolute top-1.5 right-1.5 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-red-600 shadow-sm hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
                 >
-                  <X className="h-4 w-4" />
+                  <X className="h-5 w-5 md:h-4 md:w-4" />
                 </button>
               </div>
             ))}
@@ -946,23 +974,35 @@ export default function ListingForm({ listing }: ListingFormProps) {
                       })}
                   className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
                 >
-                  <Image
-                    src={p.url}
-                    alt={p.alt ?? "Listing photo"}
-                    fill
-                    sizes="(max-width: 640px) 50vw, 200px"
-                    className="object-cover"
-                    unoptimized
-                  />
-                  <div className="absolute inset-0 bg-black/0 md:group-hover:bg-black/40 transition-colors" />
+                  {/* The photo itself is a button that opens the lightbox.
+                      Action buttons (star/delete/move) stopPropagation so
+                      they don't trigger the lightbox. */}
+                  <button
+                    type="button"
+                    onClick={() => setLightboxIndex(idx)}
+                    aria-label="View photo full size"
+                    className="absolute inset-0 block focus:outline-none focus-visible:ring-2 focus-visible:ring-indigo-500 focus-visible:ring-offset-2"
+                  >
+                    <Image
+                      src={p.url}
+                      alt={p.alt ?? "Listing photo"}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, (max-width: 1280px) 33vw, 25vw"
+                      className="object-cover"
+                    />
+                  </button>
+                  <div className="pointer-events-none absolute inset-0 bg-black/0 md:group-hover:bg-black/40 transition-colors" />
 
-                  <span className="hidden md:flex absolute top-1.5 left-1.5 h-9 w-9 items-center justify-center rounded-md bg-white/90 text-gray-700 opacity-0 md:group-hover:opacity-100 transition-opacity">
+                  <span className="hidden md:flex absolute top-1.5 left-1.5 h-9 w-9 items-center justify-center rounded-md bg-white/90 text-gray-700 opacity-0 md:group-hover:opacity-100 transition-opacity pointer-events-none">
                     <GripVertical className="h-4 w-4" />
                   </span>
 
                   <button
                     type="button"
-                    onClick={() => setCoverFromPhoto(p)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setCoverFromPhoto(p);
+                    }}
                     title={isCover ? "This is the cover photo" : "Set as cover"}
                     aria-label={isCover ? "Cover photo" : "Set as cover"}
                     className={`absolute top-1.5 right-[3.5rem] md:right-12 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md shadow-sm transition-colors ${
@@ -980,7 +1020,10 @@ export default function ListingForm({ listing }: ListingFormProps) {
 
                   <button
                     type="button"
-                    onClick={() => deletePhoto(p)}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      deletePhoto(p);
+                    }}
                     title="Remove photo"
                     aria-label="Remove photo"
                     className="absolute top-1.5 right-1.5 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-red-600 shadow-sm hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
@@ -995,7 +1038,10 @@ export default function ListingForm({ listing }: ListingFormProps) {
                   <div className="absolute bottom-1.5 left-1.5 flex gap-1.5">
                     <button
                       type="button"
-                      onClick={() => movePhoto(p.id, "up")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        movePhoto(p.id, "up");
+                      }}
                       disabled={isFirst}
                       title="Move up"
                       aria-label="Move photo up"
@@ -1005,7 +1051,10 @@ export default function ListingForm({ listing }: ListingFormProps) {
                     </button>
                     <button
                       type="button"
-                      onClick={() => movePhoto(p.id, "down")}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        movePhoto(p.id, "down");
+                      }}
                       disabled={isLast}
                       title="Move down"
                       aria-label="Move photo down"
@@ -1020,6 +1069,76 @@ export default function ListingForm({ listing }: ListingFormProps) {
           </div>
         )}
       </div>
+
+      {/* Lightbox — full-screen preview of the photo Hilari just tapped.
+          Closes on backdrop click, Escape, or the X button; prev/next via
+          arrow keys or the side buttons. */}
+      {lightboxIndex !== null && photos[lightboxIndex] && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Listing photo viewer"
+          onClick={closeLightbox}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              closeLightbox();
+            }}
+            className="absolute top-4 right-4 h-11 w-11 inline-flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+            aria-label="Close photo viewer"
+          >
+            <X className="h-5 w-5" />
+          </button>
+          {photos.length > 1 && (
+            <>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  prevLightbox();
+                }}
+                className="absolute left-4 top-1/2 -translate-y-1/2 h-12 w-12 inline-flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+                aria-label="Previous photo"
+              >
+                <ChevronLeft className="h-6 w-6" />
+              </button>
+              <button
+                type="button"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  nextLightbox();
+                }}
+                className="absolute right-4 top-1/2 -translate-y-1/2 h-12 w-12 inline-flex items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white"
+                aria-label="Next photo"
+              >
+                <ChevronRight className="h-6 w-6" />
+              </button>
+            </>
+          )}
+          <div
+            className="relative w-full h-full max-w-6xl max-h-[90vh] flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <Image
+              src={photos[lightboxIndex].url}
+              alt={photos[lightboxIndex].alt ?? `Listing photo ${lightboxIndex + 1}`}
+              fill
+              sizes="100vw"
+              className="object-contain"
+              priority
+            />
+          </div>
+          <span
+            className="absolute bottom-4 left-1/2 -translate-x-1/2 px-3 py-1.5 rounded-full text-white text-sm bg-black/40 tabular-nums"
+            aria-live="polite"
+          >
+            {lightboxIndex + 1} / {photos.length}
+          </span>
+        </div>
+      )}
     </form>
   );
 }
