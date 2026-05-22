@@ -61,13 +61,22 @@ export default async function InteriorDesignShowcasePage({
   return (
     <>
       <Navigation />
-      <main className="pt-24 pb-20 bg-white min-h-screen">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <main
+        className="min-h-screen pt-28 pb-20 lg:pt-36 lg:pb-28"
+        style={{ background: "var(--hm-paper)", color: "var(--hm-ink)" }}
+      >
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
           <Link
             href="/services/interior-design"
-            className="inline-flex items-center gap-1 text-sm text-gray-500 hover:text-gray-900 mb-4"
+            className="inline-flex items-center gap-1.5 mb-10 font-mono uppercase transition-colors hover:text-[var(--hm-accent)]"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.18em",
+              color: "var(--hm-ink-3)",
+            }}
           >
-            <ChevronLeft className="h-4 w-4" /> Back to Interior Design
+            <ChevronLeft className="h-3.5 w-3.5" />
+            Back to interior design
           </Link>
           <ShowcaseDetail showcase={showcase} photos={photos} />
         </div>

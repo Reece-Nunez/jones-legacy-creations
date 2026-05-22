@@ -7,7 +7,6 @@ import Link from "next/link";
 import Image from "next/image";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
-import { Button } from "@/components/ui/Button";
 import { ArrowLeft, X, ChevronLeft, ChevronRight } from "lucide-react";
 
 const S3_BASE_URL = "https://jones-legacy-creations.s3.us-east-1.amazonaws.com/interior/";
@@ -175,65 +174,111 @@ function GalleryContent() {
     <>
       <Navigation />
 
-      {/* Header Section */}
-      <section aria-label="Gallery header" className="pt-32 pb-12 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+      <main style={{ background: "var(--hm-paper)", color: "var(--hm-ink)" }}>
+      {/* Header */}
+      <section
+        aria-label="Gallery header"
+        style={{ background: "var(--hm-paper)" }}
+      >
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-12 lg:pt-40">
+          <Link
+            href="/services/interior-design"
+            className="inline-flex items-center gap-1.5 mb-10 font-mono uppercase transition-colors hover:text-[var(--hm-accent)]"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.18em",
+              color: "var(--hm-ink-3)",
+            }}
           >
-            <Link href="/services/interior-design" className="inline-flex items-center text-gray-700 hover:text-black transition-colors mb-8 min-h-[44px]">
-              <ArrowLeft aria-hidden="true" className="w-5 h-5 mr-2" />
-              Back to Interior Design
-            </Link>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
-              Full Gallery
-            </h1>
-            <p className="text-xl text-gray-700 max-w-3xl leading-relaxed">
-              Explore our complete collection of interior designs and staging projects
-            </p>
-          </motion.div>
+            <ArrowLeft className="h-3.5 w-3.5" />
+            Back to interior design
+          </Link>
+          <p
+            className="font-mono uppercase mb-6"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.22em",
+              color: "var(--hm-ink-3)",
+            }}
+          >
+            Interiors By Jones · Full archive
+          </p>
+          <h1
+            className="font-serif font-normal italic"
+            style={{
+              fontSize: "clamp(2.75rem, 7vw, 6rem)",
+              lineHeight: 0.97,
+              color: "var(--hm-ink)",
+              letterSpacing: "-0.02em",
+            }}
+          >
+            The full gallery.
+          </h1>
+          <p
+            className="mt-6 font-sans"
+            style={{
+              fontSize: "var(--hm-text-lede)",
+              color: "var(--hm-ink-2)",
+              lineHeight: 1.55,
+              maxWidth: "55ch",
+            }}
+          >
+            Every interior and staging project on file. Filter by room or
+            browse the whole archive.
+          </p>
         </div>
       </section>
 
-      {/* Gallery Section */}
-      <section aria-label="Interior design photo gallery" className="py-12 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Category Filter Tabs */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="flex flex-wrap justify-center gap-3 mb-12"
+      <section
+        aria-label="Interior design photo gallery"
+        style={{ background: "var(--hm-paper)" }}
+      >
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pb-20">
+          {/* Filter tabs — mono-caps chips with hairline borders */}
+          <div
+            className="flex flex-wrap gap-2 mb-8"
             role="tablist"
             aria-label="Filter gallery by room category"
           >
-            {categories.map((category) => (
-              <button
-                key={category}
-                role="tab"
-                aria-selected={activeCategory === category}
-                onClick={() => setActiveCategory(category)}
-                className={`px-6 py-3 rounded-full font-medium transition-all duration-300 min-h-[44px] ${
-                  activeCategory === category
-                    ? "bg-black text-white shadow-lg"
-                    : "bg-gray-100 text-gray-700 hover:bg-gray-200 border-2 border-gray-200"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </motion.div>
+            {categories.map((category) => {
+              const active = activeCategory === category;
+              return (
+                <button
+                  key={category}
+                  role="tab"
+                  aria-selected={active}
+                  onClick={() => setActiveCategory(category)}
+                  className="inline-flex items-center justify-center font-mono uppercase border transition-colors duration-200"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    letterSpacing: "0.15em",
+                    padding: "0.625rem 1rem",
+                    minHeight: 40,
+                    whiteSpace: "nowrap",
+                    borderColor: active
+                      ? "var(--hm-ink)"
+                      : "var(--hm-rule-thick)",
+                    background: active ? "var(--hm-ink)" : "transparent",
+                    color: active ? "var(--hm-paper)" : "var(--hm-ink)",
+                  }}
+                >
+                  {category}
+                </button>
+              );
+            })}
+          </div>
 
-          {/* Image Count */}
-          <motion.p
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="text-center text-gray-600 mb-8"
+          <p
+            className="font-mono uppercase mb-10"
+            style={{
+              fontSize: "10px",
+              letterSpacing: "0.22em",
+              color: "var(--hm-ink-3)",
+            }}
           >
-            Showing {filteredImages.length} {filteredImages.length === 1 ? 'image' : 'images'}
-          </motion.p>
+            {filteredImages.length}{" "}
+            {filteredImages.length === 1 ? "image" : "images"}
+          </p>
 
           {/* Image Gallery */}
           <AnimatePresence mode="wait">
@@ -245,70 +290,94 @@ function GalleryContent() {
               transition={{ duration: 0.5 }}
               className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-8"
             >
-              {filteredImages.map((image, index) => (
-                <motion.div
+              {filteredImages.map((image) => (
+                <div
                   key={image.filename}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.5, delay: Math.min(index * 0.05, 0.5) }}
-                  className="group"
+                  className="group cursor-pointer flex flex-col h-full"
+                  style={{
+                    background: "var(--hm-paper)",
+                    border: "1px solid var(--hm-rule)",
+                    transition: "border-color var(--hm-dur-short) var(--hm-ease-out)",
+                  }}
+                  onClick={() => setLightboxImage(image)}
+                  role="button"
+                  tabIndex={0}
+                  aria-label={`View ${image.description || image.category + " design"} in full size`}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" || e.key === " ") {
+                      e.preventDefault();
+                      setLightboxImage(image);
+                    }
+                  }}
                 >
                   <div
-                    className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-shadow duration-300 cursor-pointer"
-                    onClick={() => setLightboxImage(image)}
-                    role="button"
-                    tabIndex={0}
-                    aria-label={`View ${image.description || image.category + ' design'} in full size`}
-                    onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setLightboxImage(image); }}}
+                    className="aspect-[4/3] relative overflow-hidden"
+                    style={{ background: "var(--hm-paper-3)" }}
                   >
-                    <div className="aspect-[4/3] relative overflow-hidden">
-                      <Image
-                        src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
-                        alt={image.description || `${image.category} interior design project`}
-                        fill
-                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        style={image.rotate ? { transform: `rotate(${image.rotate}deg)` } : undefined}
-                        loading="lazy"
-                      />
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                    </div>
-                    <div className="p-6">
-                      <div className="text-sm text-gray-600 mb-2">
-                        {image.category}
-                        {image.project && <span className="ml-2 text-gray-600">· {image.project}</span>}
-                      </div>
-                      <p className="text-gray-700">{image.description}</p>
-                    </div>
+                    <Image
+                      src={`${S3_BASE_URL}${image.filename}.${image.ext || "webp"}`}
+                      alt={image.description || `${image.category} interior design project`}
+                      fill
+                      sizes="(max-width: 640px) 100vw, (max-width: 1024px) 50vw, 33vw"
+                      className="object-cover"
+                      style={image.rotate ? { transform: `rotate(${image.rotate}deg)` } : undefined}
+                      loading="lazy"
+                    />
                   </div>
-                </motion.div>
+                  <div className="p-5 sm:p-6 flex flex-col gap-2 flex-1">
+                    <p
+                      className="font-mono uppercase"
+                      style={{
+                        fontSize: "10px",
+                        letterSpacing: "0.22em",
+                        color: "var(--hm-ink-3)",
+                      }}
+                    >
+                      {image.category}
+                      {image.project && (
+                        <span className="ml-2">· {image.project}</span>
+                      )}
+                    </p>
+                    <p
+                      className="font-serif italic"
+                      style={{
+                        fontSize: "var(--hm-text-body)",
+                        color: "var(--hm-ink)",
+                        lineHeight: 1.3,
+                      }}
+                    >
+                      {image.description}
+                    </p>
+                  </div>
+                </div>
               ))}
             </motion.div>
           </AnimatePresence>
 
           {filteredImages.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No images in this category yet.</p>
+            <div
+              className="px-8 py-16 mt-4"
+              style={{
+                background: "var(--hm-paper-2)",
+                borderTop: "1px solid var(--hm-rule)",
+                borderBottom: "1px solid var(--hm-rule)",
+              }}
+            >
+              <p
+                className="font-serif italic"
+                style={{
+                  fontSize: "var(--hm-text-h3)",
+                  color: "var(--hm-ink)",
+                  lineHeight: 1.3,
+                }}
+              >
+                No images in this category yet.
+              </p>
             </div>
           )}
-
-          {/* Back Button */}
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5 }}
-            viewport={{ once: true }}
-            className="text-center mt-16"
-          >
-            <Link href="/services/interior-design">
-              <Button size="lg" variant="outline">
-                <ArrowLeft aria-hidden="true" className="w-5 h-5 mr-2" />
-                Back to Interior Design
-              </Button>
-            </Link>
-          </motion.div>
         </div>
       </section>
+      </main>
 
       {/* Lightbox Modal */}
       <AnimatePresence>
