@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { motion } from "framer-motion";
-import { Bed, Bath, Maximize, ExternalLink, Home, ArrowRight } from "lucide-react";
+import { Bed, Bath, Maximize, ExternalLink, Home } from "lucide-react";
 import {
   type RealEstateListing,
   LISTING_STATUS_LABELS,
@@ -56,7 +55,7 @@ export default function ListingsStrip() {
             </h2>
             <p className="mt-2 text-gray-600 max-w-2xl">
               {hasListings
-                ? "Swipe through our active listings. Tap any home to see the full MLS details."
+                ? "Browse our active listings below. Click View on MLS for the full listing details, photos, and contact info."
                 : "We don't have any active listings right now — new homes are added here as soon as they hit the market. Check back soon or reach out below to start your search."}
             </p>
           </div>
@@ -93,15 +92,10 @@ export default function ListingsStrip() {
 function ListingCard({ listing: l }: { listing: RealEstateListing }) {
   const cityState = `${l.city}, ${l.state}${l.zip ? " " + l.zip : ""}`;
   const isPending = l.status === "pending";
-  const detailHref = `/services/real-estate/listings/${l.slug}`;
 
   return (
     <article className="snap-start shrink-0 w-72 sm:w-80 bg-white rounded-2xl overflow-hidden shadow-md border border-gray-100 flex flex-col transition-shadow hover:shadow-lg">
-      <Link
-        href={detailHref}
-        className="relative w-full aspect-[4/3] bg-gray-100 block"
-        aria-label={`View details for ${l.address}`}
-      >
+      <div className="relative w-full aspect-[4/3] bg-gray-100">
         {l.cover_photo_url ? (
           <Image
             src={l.cover_photo_url}
@@ -120,7 +114,7 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
             {LISTING_STATUS_LABELS.pending}
           </span>
         )}
-      </Link>
+      </div>
 
       <div className="p-4 sm:p-5 flex flex-col gap-2 flex-1">
         {l.price !== null && (
@@ -129,12 +123,12 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
           </p>
         )}
 
-        <Link href={detailHref} className="group">
-          <p className="text-sm font-medium text-gray-900 leading-tight group-hover:underline">
+        <div>
+          <p className="text-sm font-medium text-gray-900 leading-tight">
             {l.address}
           </p>
           <p className="text-xs text-gray-500">{cityState}</p>
-        </Link>
+        </div>
 
         <div className="flex items-center gap-3 sm:gap-4 text-xs text-gray-600 mt-1">
           {l.bedrooms !== null && (
@@ -155,27 +149,29 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
           )}
         </div>
 
-        <div className="mt-auto pt-3 grid grid-cols-1 gap-2">
-          <Link
-            href={detailHref}
-            className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition-colors"
-            style={{ minHeight: 44 }}
-          >
-            View details
-            <ArrowRight className="h-3.5 w-3.5" />
-          </Link>
+        {l.description && (
+          <p className="text-xs text-gray-600 leading-relaxed line-clamp-3 mt-1">
+            {l.description}
+          </p>
+        )}
+
+        <div className="mt-auto pt-3">
           {l.mls_url ? (
             <a
               href={l.mls_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg border border-gray-300 bg-white px-4 py-2.5 text-sm font-medium text-gray-700 hover:bg-gray-50 transition-colors"
+              className="inline-flex w-full items-center justify-center gap-1.5 rounded-lg bg-black px-4 py-2.5 text-sm font-semibold text-white hover:bg-gray-800 transition-colors"
               style={{ minHeight: 44 }}
             >
               View on MLS
               <ExternalLink className="h-3.5 w-3.5" />
             </a>
-          ) : null}
+          ) : (
+            <span className="inline-flex w-full items-center justify-center rounded-lg bg-gray-100 px-4 py-2.5 text-sm font-medium text-gray-400">
+              MLS link coming soon
+            </span>
+          )}
         </div>
       </div>
     </article>

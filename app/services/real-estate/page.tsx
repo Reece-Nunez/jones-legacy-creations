@@ -131,6 +131,9 @@ export default function RealEstatePage() {
             <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900">
               Blake Jones Realty
             </h1>
+            <p className="mt-3 text-lg sm:text-xl text-gray-600">
+              with KW Ascend Keller Williams Realty
+            </p>
           </motion.div>
         </div>
       </section>
