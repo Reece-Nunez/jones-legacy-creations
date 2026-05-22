@@ -15,8 +15,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Home, Bed, Car, CheckCircle, Check, Phone, ChevronDown, DollarSign } from "lucide-react";
-import Image from "next/image";
+import { Bed, Car, Check, Phone, ChevronDown } from "lucide-react";
 
 // Southern Utah cities with zip codes
 const SOUTHERN_UTAH_CITIES = [
@@ -109,226 +108,313 @@ export default function RealEstatePage() {
     <>
       <Navigation />
 
-      {/* Brand title — sets "Blake Jones Realty" as the page's primary
-          heading so visitors land on the brand before scanning the
-          listings strip and the rest of the services overview. */}
-      <section aria-label="Blake Jones Realty" className="pt-20 pb-2 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      {/* Marquee fold — editorial display + brokerage colophon. Hero IS the
+          page above the fold; no subhead, no CTA in fold. The colophon under
+          the rule reads as a publisher's imprint, not a subhead. */}
+      <section
+        aria-label="Blake Jones Realty"
+        className="relative"
+        style={{ background: "var(--hm-paper)" }}
+      >
+        <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-36 pb-16 sm:pt-40 sm:pb-20">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
+            initial={{ opacity: 0, y: 12 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
+            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           >
-            <div className="inline-flex items-center justify-center w-20 h-20 mb-2">
-              <Image
-                src="/JONES REALTY ICON (2).svg"
-                alt="Blake Jones Realty logo"
-                width={80}
-                height={80}
-                className="object-contain"
-              />
-            </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900">
-              Blake Jones Realty
+            <h1
+              className="font-serif font-normal italic"
+              style={{
+                fontSize: "var(--hm-text-display)",
+                lineHeight: 0.95,
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.02em",
+                overflowWrap: "anywhere",
+                minWidth: 0,
+              }}
+            >
+              Blake Jones<br />Realty.
             </h1>
-            <p className="mt-3 text-lg sm:text-xl text-gray-600">
-              with KW Ascend Keller Williams Realty
-            </p>
+            <div
+              className="mt-10 sm:mt-14 pt-5 border-t flex flex-wrap items-baseline gap-x-6 gap-y-2 font-sans uppercase tracking-[0.18em]"
+              style={{
+                borderColor: "var(--hm-rule)",
+                color: "var(--hm-ink-3)",
+                fontSize: "var(--hm-text-meta)",
+              }}
+            >
+              <span>
+                Brokered by{" "}
+                <span style={{ color: "var(--hm-ink)" }}>Blake Jones</span>
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>KW Ascend, Keller Williams Realty</span>
+              <span aria-hidden="true">·</span>
+              <span>Southern Utah</span>
+            </div>
           </motion.div>
         </div>
+        {/* Thick rule marks the transition from marquee to below-fold work */}
+        <hr
+          className="border-0 mx-6 sm:mx-8 lg:mx-12"
+          style={{
+            borderTop: "2px solid var(--hm-rule-thick)",
+          }}
+        />
       </section>
 
-      {/* Current Listings — sits directly under the brand title so
-          visitors see what's for sale before any other content. Hides
-          itself when there are no active/pending listings. */}
-      <ListingsStrip />
+      {/* Listings — the work, sitting directly under the thick rule. The
+          ListingsStrip handles its own internal layout; we just wrap it in
+          the Linen paper background so the colour band is continuous. */}
+      <div style={{ background: "var(--hm-paper)" }}>
+        <ListingsStrip />
+      </div>
 
-      {/* Services overview */}
-      <section aria-label="Real estate services overview" className="pt-8 pb-16 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
+      {/* Editorial prose — replaces the 3-card icon grid AND the black
+          "Why Choose Blake Jones Realty" testimonial bar. One single-column,
+          measure-controlled passage that names the three differentiators
+          inline. No icon cards, no bullets, no centering. */}
+      <section
+        aria-label="What we do"
+        style={{ background: "var(--hm-paper-2)" }}
+      >
+        <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
+          <h2
+            className="font-serif font-normal italic mb-10"
+            style={{
+              fontSize: "var(--hm-text-h2)",
+              color: "var(--hm-ink)",
+              letterSpacing: "-0.015em",
+            }}
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-6">
-              Real Estate Services
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Whether you&apos;re buying your dream home or selling your property, we provide expert guidance every step of the way.
+            What we actually do.
+          </h2>
+          <div
+            className="space-y-6 font-sans"
+            style={{
+              fontSize: "var(--hm-text-lede)",
+              lineHeight: 1.65,
+              color: "var(--hm-ink-2)",
+              maxWidth: "62ch",
+            }}
+          >
+            <p>
+              For buyers moving into Southern Utah, the difference is rarely the
+              house — it&apos;s the path to owning it. The right neighbourhood
+              for the way you want to live. The right inspector for a house this
+              old. The right financing path when the standard one doesn&apos;t
+              fit your situation. We work that path with you, not at you.
             </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-4xl mx-auto mt-12">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.1 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <DollarSign aria-hidden="true" className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Creative Financing</h2>
-              <p className="text-gray-700 leading-relaxed">Access to financing options that open doors to homes you thought were out of reach.</p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.2 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <Home aria-hidden="true" className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Builder Experience</h2>
-              <p className="text-gray-700 leading-relaxed">Deep construction knowledge helps us evaluate properties and see their true potential.</p>
-            </motion.div>
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.5, delay: 0.3 }}
-              className="text-center"
-            >
-              <div className="w-16 h-16 bg-black rounded-full flex items-center justify-center mx-auto mb-4">
-                <CheckCircle aria-hidden="true" className="w-8 h-8 text-white" />
-              </div>
-              <h2 className="text-lg font-bold text-gray-900 mb-2">Industry Connections</h2>
-              <p className="text-gray-700 leading-relaxed">Reliable network of lenders, contractors, and service providers to support your journey.</p>
-            </motion.div>
+            <p>
+              Three things back that up. A{" "}
+              <span style={{ color: "var(--hm-ink)", fontWeight: 500 }}>
+                builder&apos;s eye
+              </span>{" "}
+              — Blake came up through construction, so what a property will
+              actually take to live in isn&apos;t a guess.{" "}
+              <span style={{ color: "var(--hm-ink)", fontWeight: 500 }}>
+                Creative financing
+              </span>{" "}
+              — the lenders and structures that open doors when a conventional
+              loan can&apos;t. A{" "}
+              <span style={{ color: "var(--hm-ink)", fontWeight: 500 }}>
+                network you keep
+              </span>{" "}
+              — the inspectors, contractors, lenders, and trades you&apos;ll
+              still call two years after closing. The handover isn&apos;t the
+              end of the relationship; that&apos;s where it starts.
+            </p>
           </div>
         </div>
       </section>
 
-      {/* Our Process Section */}
-      <section aria-label="Our realtor process" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
+      {/* Process — vertical list, inline numbers as small mono caps. No
+          3-column grid, no giant decorative numerals. Numbers are accent
+          (terracotta) so the eye reads them as ordinal markers, not as the
+          eyebrow-tic the audit flagged. */}
+      <section
+        aria-label="How a sale goes"
+        style={{ background: "var(--hm-paper)" }}
+      >
+        <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
+          <h2
+            className="font-serif font-normal italic mb-2"
+            style={{
+              fontSize: "var(--hm-text-h2)",
+              color: "var(--hm-ink)",
+              letterSpacing: "-0.015em",
+            }}
           >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Our Realtor Process
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              From first consultation to closing day and beyond, we guide you through every step
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            How it goes.
+          </h2>
+          <p
+            className="font-sans mb-14"
+            style={{
+              fontSize: "var(--hm-text-body)",
+              color: "var(--hm-ink-3)",
+              maxWidth: "55ch",
+            }}
+          >
+            From first call to closing day and beyond. Six checkpoints — the
+            ones that actually shape a sale.
+          </p>
+          <ol className="space-y-10">
             {[
               {
                 number: "01",
-                title: "Initial Consultation",
-                description: "We discuss your goals, budget, timeline, and must-haves to understand exactly what you're looking for.",
+                title: "Initial consultation",
+                description:
+                  "We talk through goals, budget, timeline, and the must-haves vs. the nice-to-haves — so we're searching for the same house you are.",
               },
               {
                 number: "02",
-                title: "Pre-Approval",
-                description: "We connect buyers with trusted lenders and ensure your pre-approval letter is ready. Creative financing options available.",
+                title: "Pre-approval",
+                description:
+                  "We connect buyers with trusted lenders and get the pre-approval letter ready. Creative financing options on the table when conventional doesn't fit.",
               },
               {
                 number: "03",
-                title: "Home Search",
-                description: "We set up personalized MLS alerts, schedule tours, and provide neighborhood and market insights. Can't find the right fit? Ask us about custom home build options.",
+                title: "Home search",
+                description:
+                  "Personalised MLS alerts, scheduled tours, and neighbourhood context most search sites can't give you. Can't find the right fit? Ask about a custom build.",
               },
               {
                 number: "04",
-                title: "Make an Offer",
-                description: "We prepare and submit a competitive offer on your behalf, negotiating terms and conditions to get you the best deal.",
+                title: "The offer",
+                description:
+                  "We prepare and submit a competitive offer on your behalf, negotiating terms and conditions to land you the right deal at the right number.",
               },
               {
                 number: "05",
                 title: "Closing",
-                description: "We complete the final walkthrough, coordinate with title, and guide you through signing all closing documents.",
+                description:
+                  "Final walkthrough, title coordination, every document explained. No surprises at the table.",
               },
               {
                 number: "06",
-                title: "After Closing",
-                description: "Our relationship doesn't end at closing. We provide contractor and service referrals as needed and keep you updated for future planning.",
+                title: "After the keys",
+                description:
+                  "We don't disappear at closing. Contractor and service referrals, market updates, and the same number you've been calling all along.",
               },
-            ].map((step, index) => (
-              <motion.div
-                key={step.number}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="text-center"
-              >
-                <div className="text-6xl font-serif font-bold text-gray-200 mb-4">
-                  {step.number}
-                </div>
-                <h3 className="text-xl font-bold text-gray-900 mb-3">{step.title}</h3>
-                <p className="text-gray-700 leading-relaxed">{step.description}</p>
-              </motion.div>
+            ].map((step) => (
+              <li key={step.number}>
+                <h3
+                  className="font-serif mb-3"
+                  style={{
+                    fontSize: "var(--hm-text-h3)",
+                    color: "var(--hm-ink)",
+                    fontWeight: 500,
+                  }}
+                >
+                  <span
+                    className="font-mono uppercase tracking-[0.2em] mr-4 align-baseline"
+                    style={{
+                      fontSize: "var(--hm-text-meta)",
+                      color: "var(--hm-accent)",
+                    }}
+                  >
+                    {step.number}
+                  </span>
+                  {step.title}
+                </h3>
+                <p
+                  className="font-sans"
+                  style={{
+                    fontSize: "var(--hm-text-body)",
+                    lineHeight: 1.65,
+                    color: "var(--hm-ink-2)",
+                    maxWidth: "62ch",
+                  }}
+                >
+                  {step.description}
+                </p>
+              </li>
             ))}
-          </div>
+          </ol>
         </div>
       </section>
 
-      {/* Why Choose Us Section */}
-      <section aria-label="Why choose Blake Jones Realty" className="py-20 bg-black text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-              Why Choose Blake Jones Realty?
+      {/* Contact — editorial heading + left-aligned chip pair. The form
+          fields below are unchanged from the previous version (react-hook-form
+          wiring + reCAPTCHA + every existing field). */}
+      <section
+        id="contact-form"
+        aria-label="Find your home"
+        style={{ background: "var(--hm-paper-2)" }}
+      >
+        <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-32">
+          <div className="mb-12 max-w-3xl">
+            <h2
+              className="font-serif font-normal italic mb-4"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              Find your home.
             </h2>
-            <p className="text-xl text-gray-300 max-w-2xl mx-auto leading-relaxed">
-              We make it easier to discover home options that may not have seemed within reach, combining creative financing solutions with solid builder experience. With reliable industry connections and a keen eye for a property&apos;s potential, let our team help turn your dream into a reality.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Form Section */}
-      <section id="contact-form" aria-label="Dream home contact form" className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="mb-12 text-center"
-          >
-            <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
-              Tell Us About Your Dream Home
-            </h2>
-            <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
-              Fill out this form to help us understand exactly what you&apos;re looking for. The more details you provide, the better we can serve you.
+            <p
+              className="font-sans"
+              style={{
+                fontSize: "var(--hm-text-lede)",
+                lineHeight: 1.6,
+                color: "var(--hm-ink-2)",
+                maxWidth: "62ch",
+              }}
+            >
+              Tell us what you&apos;re looking for and we&apos;ll work the
+              search with you. Or skip the form and call — Blake answers his
+              phone.
             </p>
 
-            {/* Contact Method Toggle */}
-            <div className="flex items-center justify-center gap-4">
-              <Button
+            {/* Contact method chips — left-aligned, outlined. */}
+            <div className="mt-10 flex flex-wrap items-center gap-3">
+              <span
+                className="font-mono uppercase tracking-[0.18em] mr-2"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                Two ways to start
+              </span>
+              <button
                 type="button"
-                size="lg"
-                variant={contactMethod === "form" ? "primary" : "outline"}
                 onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
+                className="inline-flex items-center justify-center px-5 py-2.5 font-sans font-medium border transition-colors duration-200"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  minHeight: 44,
+                  whiteSpace: "nowrap",
+                  borderColor: contactMethod === "form" ? "var(--hm-ink)" : "var(--hm-rule-thick)",
+                  background: contactMethod === "form" ? "var(--hm-ink)" : "transparent",
+                  color: contactMethod === "form" ? "var(--hm-paper)" : "var(--hm-ink)",
+                }}
               >
-                Fill Out Our Form
-              </Button>
-              <span className="text-gray-500 font-medium">or</span>
-              <Button
+                Fill out the form
+              </button>
+              <button
                 type="button"
-                size="lg"
-                variant={contactMethod === "call" ? "primary" : "outline"}
                 onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
+                className="inline-flex items-center justify-center px-5 py-2.5 font-sans font-medium border transition-colors duration-200"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.08em",
+                  textTransform: "uppercase",
+                  minHeight: 44,
+                  whiteSpace: "nowrap",
+                  borderColor: contactMethod === "call" ? "var(--hm-ink)" : "var(--hm-rule-thick)",
+                  background: contactMethod === "call" ? "var(--hm-ink)" : "transparent",
+                  color: contactMethod === "call" ? "var(--hm-paper)" : "var(--hm-ink)",
+                }}
               >
-                Give Us A Call
-              </Button>
+                Give us a call
+              </button>
             </div>
-          </motion.div>
+          </div>
 
           <AnimatePresence mode="wait">
             {contactMethod === "call" && (

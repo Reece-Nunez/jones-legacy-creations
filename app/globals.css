@@ -85,6 +85,54 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Hallmark · macrostructure: Marquee Hero · genre: editorial · theme: Linen
+ * tone: editorial · anchor hue: terracotta (oklch 55% 0.155 35)
+ * nav: untouched (shared site chrome) · footer: untouched
+ * pre-emit critique: P5 H5 E4 S5 R5 V5
+ * Tokens added 2026-05-21 for the real-estate page redesign. Additive only —
+ * existing shadcn vars above remain authoritative. The --hm-* prefix isolates
+ * these to opt-in usage; right now only /services/real-estate consumes them.
+ */
+:root {
+  /* Linen palette — warm off-white paper, terracotta accent */
+  --hm-paper:       oklch(98.5% 0.006 70);
+  --hm-paper-2:     oklch(96.5% 0.012 75);
+  --hm-paper-3:     oklch(93% 0.014 60);
+  --hm-ink:         oklch(20% 0.012 50);
+  --hm-ink-2:       oklch(42% 0.010 55);
+  --hm-ink-3:       oklch(62% 0.008 60);
+  --hm-rule:        oklch(85% 0.008 60);
+  --hm-rule-thick:  oklch(20% 0.012 50);
+  --hm-accent:      oklch(55% 0.155 35);
+  --hm-accent-ink:  oklch(99% 0.005 70);
+  --hm-focus:       oklch(48% 0.18 30);
+
+  /* 4-pt spacing */
+  --hm-space-3xs: 0.25rem;
+  --hm-space-2xs: 0.5rem;
+  --hm-space-xs:  0.75rem;
+  --hm-space-sm:  1rem;
+  --hm-space-md:  1.5rem;
+  --hm-space-lg:  2rem;
+  --hm-space-xl:  3rem;
+  --hm-space-2xl: 4.5rem;
+  --hm-space-3xl: 7rem;
+
+  /* Type scale */
+  --hm-text-display: clamp(3.5rem, 9vw, 8.5rem);
+  --hm-text-h2:      clamp(1.75rem, 3.2vw, 2.75rem);
+  --hm-text-h3:      clamp(1.25rem, 2vw, 1.5rem);
+  --hm-text-lede:    clamp(1.125rem, 1.4vw, 1.375rem);
+  --hm-text-body:    1.0625rem;
+  --hm-text-meta:    0.8125rem;
+
+  /* Motion */
+  --hm-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);
+  --hm-ease-in-out: cubic-bezier(0.65, 0, 0.35, 1);
+  --hm-dur-short:   220ms;
+  --hm-dur-medium:  400ms;
+}
+
 @keyframes slide-down-fade {
   from {
     opacity: 0;

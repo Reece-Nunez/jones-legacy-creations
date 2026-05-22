@@ -1,0 +1,12 @@
+[
+  {
+    "date": "2026-05-21",
+    "macrostructure": "Marquee Hero",
+    "theme": "Linen",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "Blake Jones Realty · Southern Utah real estate · /services/real-estate redesign",
+    "scope": "page",
+    "target": "app/services/real-estate/page.tsx"
+  }
+]
