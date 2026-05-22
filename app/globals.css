@@ -85,13 +85,16 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-/* Hallmark · macrostructure: Marquee Hero · genre: editorial · theme: Linen
- * tone: editorial · anchor hue: terracotta (oklch 55% 0.155 35)
- * nav: untouched (shared site chrome) · footer: untouched
+/* Hallmark · genre: editorial · theme: Linen · anchor hue: terracotta
+ * design-system: design.md · designed-as-app
+ * nav: N7 Newspaper masthead · footer: Ft4 Dense colophon
  * pre-emit critique: P5 H5 E4 S5 R5 V5
- * Tokens added 2026-05-21 for the real-estate page redesign. Additive only —
- * existing shadcn vars above remain authoritative. The --hm-* prefix isolates
- * these to opt-in usage; right now only /services/real-estate consumes them.
+ *
+ * Linen tokens powering the site-wide design system locked at
+ * /design.md (2026-05-21). The --hm-* prefix keeps them distinct from
+ * shadcn vars above — currently consumed by /services/real-estate plus
+ * the shared Navigation + Footer; future page redesigns read design.md
+ * and rotate through the marketing/content/form families on these tokens.
  */
 :root {
   /* Linen palette — warm off-white paper, terracotta accent */

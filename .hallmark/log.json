@@ -1,6 +1,16 @@
 [
   {
     "date": "2026-05-21",
+    "macrostructure": "design.md (multi-page)",
+    "theme": "Linen",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "Lock the Linen system into design.md + redesign shared chrome (Navigation N7, Footer Ft4)",
+    "scope": "app",
+    "target": "design.md + components/Navigation.tsx + components/Footer.tsx"
+  },
+  {
+    "date": "2026-05-21",
     "macrostructure": "Marquee Hero",
     "theme": "Linen",
     "enrichment": "none",
