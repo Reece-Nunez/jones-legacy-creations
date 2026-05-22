@@ -1,6 +1,16 @@
 [
   {
     "date": "2026-05-21",
+    "macrostructure": "Long Document",
+    "theme": "Linen",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "About page · Blake & Hilari Jones letter · /about",
+    "scope": "page",
+    "target": "app/about/page.tsx"
+  },
+  {
+    "date": "2026-05-21",
     "macrostructure": "Bento Grid",
     "theme": "Linen",
     "enrichment": "none",
