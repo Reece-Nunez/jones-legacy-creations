@@ -39,7 +39,8 @@ export function Footer() {
                 alt="Jones Legacy Creations"
                 width={504}
                 height={360}
-                className="h-14 sm:h-16 w-auto object-contain"
+                className="object-contain"
+                style={{ height: "64px", width: "auto" }}
               />
             </Link>
             <p

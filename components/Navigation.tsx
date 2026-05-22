@@ -56,44 +56,21 @@ export function Navigation() {
     >
       <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12">
         <div className="flex items-center justify-between h-16 sm:h-20">
-          {/* Wordmark — left masthead column */}
+          {/* Wordmark — logo image carries the brand name, no redundant tag */}
           <Link
             href="/"
-            className="flex items-center gap-3 group"
+            className="inline-flex items-center group"
             aria-label="Jones Legacy Creations — home"
           >
             <Image
               src="/logo-transparent.png"
               alt="Jones Legacy Creations"
-              width={152}
-              height={152}
-              className="h-10 sm:h-12 w-auto object-contain"
+              width={400}
+              height={400}
+              className="object-contain"
+              style={{ height: "40px", width: "auto" }}
               priority
             />
-            <span
-              className="hidden lg:inline-flex flex-col leading-tight"
-              style={{ color: "var(--hm-ink-3)" }}
-            >
-              <span
-                className="font-mono uppercase"
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.22em",
-                  color: "var(--hm-ink-2)",
-                }}
-              >
-                Jones Legacy Creations
-              </span>
-              <span
-                className="font-mono uppercase mt-0.5"
-                style={{
-                  fontSize: "10px",
-                  letterSpacing: "0.18em",
-                }}
-              >
-                Hurricane · Southern Utah
-              </span>
-            </span>
           </Link>
 
           {/* Right masthead column — service links + secondary + CTA */}
