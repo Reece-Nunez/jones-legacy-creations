@@ -53,7 +53,7 @@ export function Footer() {
                 maxWidth: "32ch",
               }}
             >
-              Real estate, custom homes, and interior design — rooted in
+              Real estate, custom homes, and interior design. Rooted in
               Southern Utah.
             </p>
           </div>

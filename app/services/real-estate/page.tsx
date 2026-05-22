@@ -199,30 +199,31 @@ export default function RealEstatePage() {
             }}
           >
             <p>
-              For buyers moving into Southern Utah, the difference is rarely the
-              house — it&apos;s the path to owning it. The right neighbourhood
-              for the way you want to live. The right inspector for a house this
-              old. The right financing path when the standard one doesn&apos;t
-              fit your situation. We work that path with you, not at you.
+              For buyers moving into Southern Utah, the difference is rarely
+              the house. It&apos;s the path to owning it. The right
+              neighborhood for the way you want to live. The right inspector
+              for a house this old. The right financing path when the
+              standard one doesn&apos;t fit your situation. We work that
+              path with you, not at you.
             </p>
             <p>
               Three things back that up. A{" "}
               <span style={{ color: "var(--hm-ink)", fontWeight: 500 }}>
                 builder&apos;s eye
-              </span>{" "}
-              — Blake came up through construction, so what a property will
+              </span>
+              . Blake came up through construction, so what a property will
               actually take to live in isn&apos;t a guess.{" "}
               <span style={{ color: "var(--hm-ink)", fontWeight: 500 }}>
                 Creative financing
-              </span>{" "}
-              — the lenders and structures that open doors when a conventional
-              loan can&apos;t. A{" "}
+              </span>
+              . The lenders and structures that open doors when a
+              conventional loan can&apos;t. A{" "}
               <span style={{ color: "var(--hm-ink)", fontWeight: 500 }}>
                 network you keep
-              </span>{" "}
-              — the inspectors, contractors, lenders, and trades you&apos;ll
-              still call two years after closing. The handover isn&apos;t the
-              end of the relationship; that&apos;s where it starts.
+              </span>
+              . The inspectors, contractors, lenders, and trades you&apos;ll
+              still call two years after closing. The handover isn&apos;t
+              the end of the relationship. That&apos;s where it starts.
             </p>
           </div>
         </div>
@@ -255,8 +256,8 @@ export default function RealEstatePage() {
               maxWidth: "55ch",
             }}
           >
-            From first call to closing day and beyond. Six checkpoints — the
-            ones that actually shape a sale.
+            From first call to closing day and beyond. Six checkpoints that
+            actually shape a sale.
           </p>
           <ol className="space-y-10">
             {[
@@ -264,25 +265,25 @@ export default function RealEstatePage() {
                 number: "01",
                 title: "Initial consultation",
                 description:
-                  "We talk through goals, budget, timeline, and the must-haves vs. the nice-to-haves — so we're searching for the same house you are.",
+                  "We talk through goals, budget, timeline, and the must-haves versus the nice-to-haves. That way we're searching for the same house you are.",
               },
               {
                 number: "02",
                 title: "Pre-approval",
                 description:
-                  "We connect buyers with trusted lenders and get the pre-approval letter ready. Creative financing options on the table when conventional doesn't fit.",
+                  "We connect buyers with trusted lenders and get the pre-approval letter ready. Creative financing options are on the table when conventional doesn't fit.",
               },
               {
                 number: "03",
                 title: "Home search",
                 description:
-                  "Personalised MLS alerts, scheduled tours, and neighbourhood context most search sites can't give you. Can't find the right fit? Ask about a custom build.",
+                  "Personalized MLS alerts, scheduled tours, and the kind of neighborhood context most search sites can't give you. Can't find the right fit? Ask about a custom build.",
               },
               {
                 number: "04",
                 title: "The offer",
                 description:
-                  "We prepare and submit a competitive offer on your behalf, negotiating terms and conditions to land you the right deal at the right number.",
+                  "We prepare and submit a competitive offer on your behalf and negotiate terms to land you the right deal at the right number.",
               },
               {
                 number: "05",
@@ -364,8 +365,8 @@ export default function RealEstatePage() {
               }}
             >
               Tell us what you&apos;re looking for and we&apos;ll work the
-              search with you. Or skip the form and call — Blake answers his
-              phone.
+              search with you. Or skip the form and call. Blake answers his
+              own phone.
             </p>
 
             {/* Contact method chips — left-aligned, outlined. */}
@@ -495,9 +496,9 @@ export default function RealEstatePage() {
                       maxWidth: "55ch",
                     }}
                   >
-                    Blake answers the phone. Call between 8am and 8pm Mountain Time
-                    — anything you want to know about a listing, a neighbourhood,
-                    or what your situation can support.
+                    Blake answers the phone. Call between 8am and 8pm Mountain
+                    Time about anything: a listing, a neighborhood, or what
+                    your situation can support.
                   </p>
                 </div>
               </motion.div>

@@ -19,7 +19,7 @@ const companies = [
     name: "Blake Jones Realty",
     subtitle: "Real estate",
     description:
-      "Homes in Southern Utah, brokered carefully. Builder's eye for what a property will actually take to live in, and creative financing when the standard path doesn't fit.",
+      "Homes in Southern Utah, brokered carefully. A builder's eye for what a property will actually take to live in. Creative financing when the standard path doesn't fit your situation.",
     iconAlt: "Blake Jones Realty",
     icon: "/JONES REALTY ICON (2).svg",
     href: "/services/real-estate",
@@ -30,7 +30,7 @@ const companies = [
     name: "Jones Custom Homes",
     subtitle: "Custom construction",
     description:
-      "From concept to closing on a finished home. Residential builds, commercial work, renovations — run with the project management that respects your timeline as much as the build.",
+      "From concept to closing on a finished home. Residential builds, commercial work, and renovations. Project management that respects your timeline as much as the build itself.",
     iconAlt: "Jones Custom Homes",
     icon: "/JONES CUSTOM HOMES ICON (2).svg",
     href: "/services/construction",
@@ -41,7 +41,7 @@ const companies = [
     name: "Interiors By Jones",
     subtitle: "Design & staging",
     description:
-      "The same family eye that finishes the house puts the furniture in it. Interior design, home staging, space planning, and colour consultation.",
+      "The same family eye that finishes the house puts the furniture in it. Interior design, home staging, space planning, and color consultation.",
     iconAlt: "Interiors By Jones",
     icon: "/JONES Interior Design & Staging ICON (2).svg",
     href: "/services/interior-design",
@@ -103,7 +103,7 @@ export default function HomePage() {
               }}
             >
               Custom-home construction, real-estate brokerage, and interior
-              design &amp; staging — all rooted in Southern Utah, all reachable
+              design &amp; staging. All rooted in Southern Utah. All reachable
               through one phone number.
             </p>
             <div className="mt-10 flex flex-wrap items-center justify-center gap-3">
@@ -246,8 +246,8 @@ export default function HomePage() {
                     letterSpacing: "-0.01em",
                   }}
                 >
-                  Licensed, insured, on-time, on-budget — and still local
-                  enough to answer the phone.
+                  Licensed, insured, on-time, on-budget. Still local enough
+                  to answer the phone.
                 </p>
                 <p
                   className="font-sans"
@@ -258,10 +258,10 @@ export default function HomePage() {
                   }}
                 >
                   Fully licensed general contractor with comprehensive
-                  insurance. Transparent schedules and cost management. A
-                  decade-plus of relationships in Hurricane, St. George, and
-                  the rest of Washington County — backed by the family name
-                  on the front of every truck.
+                  insurance. Transparent schedules and cost management.
+                  Ten-plus years of relationships in Hurricane, St. George,
+                  and the rest of Washington County. The family name is on
+                  the front of every truck.
                 </p>
               </article>
             </div>
@@ -304,14 +304,14 @@ export default function HomePage() {
                 maxWidth: "55ch",
               }}
             >
-              Whether you&apos;re buying, building, selling, or staging — tell
-              us about it. Or call <a
+              If you&apos;re buying, building, selling, or staging, tell us
+              about it. Or just call <a
                 href="tel:+14352889807"
                 className="text-[var(--hm-ink)] hover:text-[var(--hm-accent)] transition-colors"
                 style={{ borderBottom: "1px solid var(--hm-rule)" }}
               >
                 (435) 288-9807
-              </a> — Blake answers his phone.
+              </a>. Blake answers his own phone.
             </p>
             <div className="flex flex-wrap items-center gap-3">
               <Link

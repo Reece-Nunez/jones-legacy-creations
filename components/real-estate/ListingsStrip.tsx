@@ -62,8 +62,8 @@ export default function ListingsStrip() {
               }}
             >
               {hasListings
-                ? "Active homes in Southern Utah. Click through for the full MLS file — photos, schools, history, contact."
-                : "No active listings at the moment. New homes appear here the day they hit the market — or tell us what you're looking for and we'll reach out the moment one lands."}
+                ? "Active homes in Southern Utah. Click through for the full MLS file: photos, schools, history, contact."
+                : "No active listings at the moment. New homes appear here the day they hit the market. Or tell us what you're looking for and we'll reach out the moment one lands."}
             </p>
           </div>
           {hasListings && listings.length > 1 && (
