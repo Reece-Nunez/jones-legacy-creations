@@ -91,6 +91,20 @@ export default function ListingForm({ listing }: ListingFormProps) {
   const [savingNonPhotoFields, setSavingNonPhotoFields] = useState(false);
   const [extractingStats, setExtractingStats] = useState(false);
 
+  // Touch-device detection. On touch devices we disable HTML5 drag entirely
+  // (it doesn't fire on touch, and `draggable` triggers iOS long-press
+  // image-save menus which also trap scroll). Reorder happens via the
+  // explicit up/down arrow buttons instead.
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const mq = window.matchMedia("(pointer: coarse)");
+    const apply = () => setIsTouchDevice(mq.matches);
+    apply();
+    mq.addEventListener("change", apply);
+    return () => mq.removeEventListener("change", apply);
+  }, []);
+
   function update<K extends keyof typeof form>(key: K, value: (typeof form)[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
@@ -918,16 +932,19 @@ export default function ListingForm({ listing }: ListingFormProps) {
               return (
                 <div
                   key={p.id}
-                  draggable
-                  onDragStart={() => onDragStart(p.id)}
-                  onDragOver={(e) => e.preventDefault()}
-                  onDrop={() => onDrop(p.id)}
+                  // HTML5 drag-and-drop only attached on non-touch devices.
+                  // On touch, the `draggable` attribute itself triggers iOS
+                  // long-press image-save menus and traps scroll. The
+                  // up/down buttons are the touch-friendly reorder path.
+                  {...(isTouchDevice
+                    ? {}
+                    : {
+                        draggable: true,
+                        onDragStart: () => onDragStart(p.id),
+                        onDragOver: (e: React.DragEvent) => e.preventDefault(),
+                        onDrop: () => onDrop(p.id),
+                      })}
                   className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
-                  // touch-action: pan-y lets the user scroll the page
-                  // vertically by touching a draggable tile. Without this,
-                  // mobile browsers intercept the touch as a drag-start
-                  // (which HTML5 D&D can't complete anyway), trapping scroll.
-                  style={{ touchAction: "pan-y" }}
                 >
                   <Image
                     src={p.url}
@@ -948,16 +965,16 @@ export default function ListingForm({ listing }: ListingFormProps) {
                     onClick={() => setCoverFromPhoto(p)}
                     title={isCover ? "This is the cover photo" : "Set as cover"}
                     aria-label={isCover ? "Cover photo" : "Set as cover"}
-                    className={`absolute top-1.5 right-12 h-9 w-9 inline-flex items-center justify-center rounded-md transition-colors ${
+                    className={`absolute top-1.5 right-[3.5rem] md:right-12 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md shadow-sm transition-colors ${
                       isCover
                         ? "bg-amber-400 text-white"
-                        : "bg-white/90 text-gray-700 md:opacity-0 md:group-hover:opacity-100 hover:bg-amber-400 hover:text-white"
+                        : "bg-white text-gray-900 md:opacity-0 md:group-hover:opacity-100 hover:bg-amber-400 hover:text-white"
                     }`}
                   >
                     {isCover ? (
-                      <Star className="h-4 w-4 fill-current" />
+                      <Star className="h-5 w-5 md:h-4 md:w-4 fill-current" />
                     ) : (
-                      <StarOff className="h-4 w-4" />
+                      <StarOff className="h-5 w-5 md:h-4 md:w-4" />
                     )}
                   </button>
 
@@ -966,24 +983,25 @@ export default function ListingForm({ listing }: ListingFormProps) {
                     onClick={() => deletePhoto(p)}
                     title="Remove photo"
                     aria-label="Remove photo"
-                    className="absolute top-1.5 right-1.5 h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-red-600 hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
+                    className="absolute top-1.5 right-1.5 h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-red-600 shadow-sm hover:bg-red-600 hover:text-white transition-colors md:opacity-0 md:group-hover:opacity-100"
                   >
-                    <X className="h-4 w-4" />
+                    <X className="h-5 w-5 md:h-4 md:w-4" />
                   </button>
 
                   {/* Move up/down — always visible on mobile (no hover), hover-
-                      revealed on desktop. The accessible alternative to drag,
-                      since HTML5 D&D doesn't work on touch. */}
-                  <div className="absolute bottom-1.5 left-1.5 flex gap-1">
+                      revealed on desktop. 44 px touch targets on mobile per
+                      iOS guidance; tighter on desktop where hover discloses
+                      them. Solid white background so they pop over any photo. */}
+                  <div className="absolute bottom-1.5 left-1.5 flex gap-1.5">
                     <button
                       type="button"
                       onClick={() => movePhoto(p.id, "up")}
                       disabled={isFirst}
                       title="Move up"
                       aria-label="Move photo up"
-                      className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-gray-700 hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white/90 disabled:hover:text-gray-700 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
+                      className="h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-900 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
                     >
-                      <ChevronUp className="h-4 w-4" />
+                      <ChevronUp className="h-5 w-5 md:h-4 md:w-4" />
                     </button>
                     <button
                       type="button"
@@ -991,9 +1009,9 @@ export default function ListingForm({ listing }: ListingFormProps) {
                       disabled={isLast}
                       title="Move down"
                       aria-label="Move photo down"
-                      className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-gray-700 hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white/90 disabled:hover:text-gray-700 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
+                      className="h-11 w-11 md:h-9 md:w-9 inline-flex items-center justify-center rounded-md bg-white text-gray-900 shadow-sm hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white disabled:hover:text-gray-900 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
                     >
-                      <ChevronDown className="h-4 w-4" />
+                      <ChevronDown className="h-5 w-5 md:h-4 md:w-4" />
                     </button>
                   </div>
                 </div>
