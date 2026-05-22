@@ -14,6 +14,8 @@ import {
   StarOff,
   GripVertical,
   Sparkles,
+  ChevronUp,
+  ChevronDown,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { confirmAction } from "@/lib/confirmAction";
@@ -360,6 +362,25 @@ export default function ListingForm({ listing }: ListingFormProps) {
     if (fromIdx === -1 || toIdx === -1) return;
     const [moved] = next.splice(fromIdx, 1);
     next.splice(toIdx, 0, moved);
+    await persistOrder(next);
+  }
+
+  // Move a photo one slot up or down. HTML5 drag doesn't work on touch
+  // devices, so this is the mobile-accessible reorder path. Buttons stay
+  // visible on desktop too — drag is the discoverable shortcut, arrows
+  // are the explicit affordance.
+  async function movePhoto(photoId: string, direction: "up" | "down") {
+    if (!isEdit) return;
+    const idx = photos.findIndex((p) => p.id === photoId);
+    if (idx === -1) return;
+    const swapIdx = direction === "up" ? idx - 1 : idx + 1;
+    if (swapIdx < 0 || swapIdx >= photos.length) return;
+    const next = [...photos];
+    [next[idx], next[swapIdx]] = [next[swapIdx], next[idx]];
+    await persistOrder(next);
+  }
+
+  async function persistOrder(next: RealEstateListingPhoto[]) {
     setPhotos(next);
     try {
       const res = await fetch(
@@ -890,8 +911,10 @@ export default function ListingForm({ listing }: ListingFormProps) {
                 </button>
               </div>
             ))}
-            {photos.map((p) => {
+            {photos.map((p, idx) => {
               const isCover = form.cover_photo_url === p.url;
+              const isFirst = idx === 0;
+              const isLast = idx === photos.length - 1;
               return (
                 <div
                   key={p.id}
@@ -900,6 +923,11 @@ export default function ListingForm({ listing }: ListingFormProps) {
                   onDragOver={(e) => e.preventDefault()}
                   onDrop={() => onDrop(p.id)}
                   className="group relative aspect-[4/3] rounded-lg overflow-hidden bg-gray-100 border border-gray-200"
+                  // touch-action: pan-y lets the user scroll the page
+                  // vertically by touching a draggable tile. Without this,
+                  // mobile browsers intercept the touch as a drag-start
+                  // (which HTML5 D&D can't complete anyway), trapping scroll.
+                  style={{ touchAction: "pan-y" }}
                 >
                   <Image
                     src={p.url}
@@ -942,6 +970,32 @@ export default function ListingForm({ listing }: ListingFormProps) {
                   >
                     <X className="h-4 w-4" />
                   </button>
+
+                  {/* Move up/down — always visible on mobile (no hover), hover-
+                      revealed on desktop. The accessible alternative to drag,
+                      since HTML5 D&D doesn't work on touch. */}
+                  <div className="absolute bottom-1.5 left-1.5 flex gap-1">
+                    <button
+                      type="button"
+                      onClick={() => movePhoto(p.id, "up")}
+                      disabled={isFirst}
+                      title="Move up"
+                      aria-label="Move photo up"
+                      className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-gray-700 hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white/90 disabled:hover:text-gray-700 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
+                    >
+                      <ChevronUp className="h-4 w-4" />
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => movePhoto(p.id, "down")}
+                      disabled={isLast}
+                      title="Move down"
+                      aria-label="Move photo down"
+                      className="h-9 w-9 inline-flex items-center justify-center rounded-md bg-white/90 text-gray-700 hover:bg-gray-900 hover:text-white transition-colors disabled:opacity-40 disabled:hover:bg-white/90 disabled:hover:text-gray-700 disabled:cursor-not-allowed md:opacity-0 md:group-hover:opacity-100"
+                    >
+                      <ChevronDown className="h-4 w-4" />
+                    </button>
+                  </div>
                 </div>
               );
             })}

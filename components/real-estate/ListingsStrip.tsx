@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import Image from "next/image";
+import Link from "next/link";
 import { Bed, Bath, Maximize, ExternalLink, Home } from "lucide-react";
 import {
   type RealEstateListing,
@@ -135,6 +136,7 @@ export default function ListingsStrip() {
 function ListingCard({ listing: l }: { listing: RealEstateListing }) {
   const cityState = `${l.city}, ${l.state}${l.zip ? " " + l.zip : ""}`;
   const isPending = l.status === "pending";
+  const detailHref = `/services/real-estate/listings/${l.slug}`;
 
   return (
     <article
@@ -144,9 +146,11 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
         border: "1px solid var(--hm-rule)",
       }}
     >
-      <div
-        className="relative w-full aspect-[4/3]"
+      <Link
+        href={detailHref}
+        className="relative w-full aspect-[4/3] block"
         style={{ background: "var(--hm-paper-3)" }}
+        aria-label={`View details for ${l.address}`}
       >
         {l.cover_photo_url ? (
           <Image
@@ -178,7 +182,7 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
             {LISTING_STATUS_LABELS.pending}
           </span>
         )}
-      </div>
+      </Link>
 
       <div className="p-5 sm:p-6 flex flex-col gap-3 flex-1">
         {l.price !== null && (
@@ -196,9 +200,9 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
           </p>
         )}
 
-        <div>
+        <Link href={detailHref} className="group">
           <p
-            className="font-sans"
+            className="font-sans group-hover:text-[var(--hm-accent)] transition-colors"
             style={{
               fontSize: "var(--hm-text-body)",
               color: "var(--hm-ink)",
@@ -217,7 +221,7 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
           >
             {cityState}
           </p>
-        </div>
+        </Link>
 
         <div
           className="flex items-center gap-4 pt-1 font-sans"
@@ -259,28 +263,29 @@ function ListingCard({ listing: l }: { listing: RealEstateListing }) {
           </p>
         )}
 
-        <div className="mt-auto pt-3">
+        <div className="mt-auto pt-3 grid grid-cols-1 gap-2">
+          <Link
+            href={detailHref}
+            className="inline-flex w-full items-center justify-between font-mono uppercase tracking-[0.15em] border bg-[var(--hm-ink)] text-[var(--hm-paper)] border-[var(--hm-ink)] hover:bg-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              minHeight: 44,
+              padding: "0.75rem 1rem",
+            }}
+          >
+            View details
+            <span aria-hidden="true">→</span>
+          </Link>
           {l.mls_url ? (
             <a
               href={l.mls_url}
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex w-full items-center justify-between font-mono uppercase tracking-[0.15em] border transition-colors duration-200 group"
+              className="inline-flex w-full items-center justify-between font-mono uppercase tracking-[0.15em] border border-[var(--hm-rule-thick)] text-[var(--hm-ink)] hover:text-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200"
               style={{
                 fontSize: "var(--hm-text-meta)",
                 minHeight: 44,
                 padding: "0.75rem 1rem",
-                borderColor: "var(--hm-ink)",
-                background: "var(--hm-ink)",
-                color: "var(--hm-paper)",
-              }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.background = "var(--hm-accent)";
-                e.currentTarget.style.borderColor = "var(--hm-accent)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.background = "var(--hm-ink)";
-                e.currentTarget.style.borderColor = "var(--hm-ink)";
               }}
             >
               View on MLS
