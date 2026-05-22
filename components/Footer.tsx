@@ -8,6 +8,10 @@ import Image from "next/image";
  * three short columns (Services · Company · Direct) below, then a fine-print
  * row at the bottom. Replaces the 4-column AI footer template — no Resources
  * / Legal / Products column rhythm, no social-icon row, no centered branding.
+ *
+ * Server Component on purpose — no useState / pathname / handlers needed.
+ * Hover color flips are CSS-only via Tailwind hover: arbitrary-value classes,
+ * so the whole footer can be statically rendered.
  */
 
 export function Footer() {
@@ -54,18 +58,12 @@ export function Footer() {
           </div>
           <Link
             href="/contact"
-            className="inline-flex items-center justify-center font-mono uppercase self-start sm:self-end"
+            className="inline-flex items-center justify-center font-mono uppercase self-start sm:self-end whitespace-nowrap border bg-[var(--hm-ink)] text-[var(--hm-paper)] border-[var(--hm-ink)] hover:bg-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200"
             style={{
               fontSize: "var(--hm-text-meta)",
               letterSpacing: "0.15em",
               padding: "0.75rem 1.25rem",
               minHeight: 44,
-              background: "var(--hm-ink)",
-              color: "var(--hm-paper)",
-              border: "1px solid var(--hm-ink)",
-              whiteSpace: "nowrap",
-              transition:
-                "background var(--hm-dur-short) var(--hm-ease-out), border-color var(--hm-dur-short) var(--hm-ease-out)",
             }}
           >
             Start a project →
@@ -149,25 +147,13 @@ export function Footer() {
           <span className="inline-flex flex-wrap items-baseline gap-x-6">
             <Link
               href="/privacy"
-              style={{ color: "var(--hm-ink-3)" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "var(--hm-ink)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--hm-ink-3)";
-              }}
+              className="text-[var(--hm-ink-3)] hover:text-[var(--hm-ink)] transition-colors duration-200"
             >
               Privacy
             </Link>
             <Link
               href="/terms"
-              style={{ color: "var(--hm-ink-3)" }}
-              onMouseEnter={(e) => {
-                e.currentTarget.style.color = "var(--hm-ink)";
-              }}
-              onMouseLeave={(e) => {
-                e.currentTarget.style.color = "var(--hm-ink-3)";
-              }}
+              className="text-[var(--hm-ink-3)] hover:text-[var(--hm-ink)] transition-colors duration-200"
             >
               Terms
             </Link>
@@ -210,32 +196,17 @@ function ColophonLink({
   children: React.ReactNode;
 }) {
   const isAbsolute = /^(https?:|mailto:|tel:)/.test(href);
-
   const className =
-    "inline-block font-sans transition-colors duration-200";
-  const baseStyle: React.CSSProperties = {
+    "inline-block font-sans text-[var(--hm-ink-2)] hover:text-[var(--hm-accent)] transition-colors duration-200";
+  const style: React.CSSProperties = {
     fontSize: "var(--hm-text-body)",
-    color: "var(--hm-ink-2)",
     lineHeight: 1.5,
-  };
-
-  const onMouseEnter = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.currentTarget.style.color = "var(--hm-accent)";
-  };
-  const onMouseLeave = (e: React.MouseEvent<HTMLAnchorElement>) => {
-    e.currentTarget.style.color = "var(--hm-ink-2)";
   };
 
   if (isAbsolute) {
     return (
       <li>
-        <a
-          href={href}
-          className={className}
-          style={baseStyle}
-          onMouseEnter={onMouseEnter}
-          onMouseLeave={onMouseLeave}
-        >
+        <a href={href} className={className} style={style}>
           {children}
         </a>
       </li>
@@ -243,13 +214,7 @@ function ColophonLink({
   }
   return (
     <li>
-      <Link
-        href={href}
-        className={className}
-        style={baseStyle}
-        onMouseEnter={onMouseEnter}
-        onMouseLeave={onMouseLeave}
-      >
+      <Link href={href} className={className} style={style}>
         {children}
       </Link>
     </li>
@@ -283,17 +248,10 @@ function ColophonExternal({
       href={href}
       target="_blank"
       rel="noopener noreferrer"
-      className="inline-block font-sans transition-colors duration-200"
+      className="inline-block font-sans text-[var(--hm-ink-2)] hover:text-[var(--hm-accent)] transition-colors duration-200"
       style={{
         fontSize: "var(--hm-text-body)",
-        color: "var(--hm-ink-2)",
         lineHeight: 1.5,
-      }}
-      onMouseEnter={(e) => {
-        e.currentTarget.style.color = "var(--hm-accent)";
-      }}
-      onMouseLeave={(e) => {
-        e.currentTarget.style.color = "var(--hm-ink-2)";
       }}
     >
       {children}
