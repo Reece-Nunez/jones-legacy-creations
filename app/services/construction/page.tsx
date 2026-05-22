@@ -14,43 +14,74 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Hammer, ClipboardCheck, Award, Shield, Clock, Instagram, Phone, ChevronDown, CheckCircle, Check, Building2, X, ChevronLeft, ChevronRight, ArrowRight } from "lucide-react";
+import { Instagram, Phone, ChevronDown, Building2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
-// Extended type for form with honeypot field
+/* Hallmark · genre: editorial · macrostructure: Stat-Led
+ * design-system: design.md · designed-as-app
+ * theme: Linen · anchor hue: terracotta
+ *
+ * Trust through longevity. Hero anchors on "10+" years; the showcase
+ * grids, prose, FAQ, and form sit below. Rotates off Marquee Hero,
+ * Bento, and Long Document per design.md's marketing-page family. */
+
 type ConstructionFormWithHoneypot = ConstructionFormData & { honeypot?: string };
 
-interface CompletedProject {
-  id: string;
-  title: string;
-  location: string;
-  description: string;
-  folder: string;
-  imageCount: number;
-  coverImageNum?: number;
-  features?: string[];
-  // Generated fields
-  coverImage?: string;
-  images?: { src: string; alt: string }[];
-}
+const supportingStats = [
+  { value: "100+", label: "Homes built" },
+  { value: "98%", label: "Client satisfaction" },
+  { value: "50+", label: "Trusted trades" },
+];
 
-// Completed builds and current projects both live in Supabase
-// (construction_showcases). Blake adds and edits them from /admin/showcases.
-// Kept this array as an empty fallback so the in-page modal code below
-// (selectedProject / lightbox) still has a defined shape if it ever ends up
-// rendering legacy data.
-const completedBuilds: (CompletedProject & {
-  coverImage: string;
-  images: { src: string; alt: string }[];
-})[] = [];
+const faqs = [
+  {
+    question: "Do you handle permits and inspections?",
+    answer:
+      "Yes. We manage every permit and coordinate inspections all the way through. Full compliance with local building codes and regulations, every project.",
+  },
+  {
+    question: "How long does a typical project take?",
+    answer:
+      "It depends on scope. A full home build runs 6 to 12 months. Renovations range from a few weeks to several months. We work out a real timeline during planning, not a guess at the start.",
+  },
+  {
+    question: "What areas do you serve?",
+    answer:
+      "Hurricane, St. George, Washington, Ivins, and the rest of Southern Utah. If you're nearby and not on that list, call and ask.",
+  },
+  {
+    question: "Do you provide warranties on your work?",
+    answer:
+      "Yes. We stand behind our craftsmanship with comprehensive warranties. Specific terms vary by project type and materials, and are detailed in your contract.",
+  },
+  {
+    question: "Can you work with my architect or designer?",
+    answer:
+      "Yes. We collaborate with your architect, designer, or engineer to bring your vision to life. If you don't have one, Interiors By Jones can pick up that side of the work too.",
+  },
+  {
+    question: "What payment structure do you use?",
+    answer:
+      "Progress payments tied to project milestones. We walk through the schedule with you during the initial consultation so there are no surprises.",
+  },
+  {
+    question: "How do you handle changes during construction?",
+    answer:
+      "Change orders are a normal part of building. We document every change in writing with updated costs and timelines before we proceed. No verbal handshake deals.",
+  },
+  {
+    question: "Are you insured?",
+    answer:
+      "Yes. Full liability insurance and workers' compensation coverage that protects both our team and your property through the entire build.",
+  },
+];
 
 export default function ConstructionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
-  const [selectedProject, setSelectedProject] = useState<CompletedProject | null>(null);
-  const [lightboxImageIndex, setLightboxImageIndex] = useState<number | null>(null);
+  const [openFaq, setOpenFaq] = useState<number | null>(null);
 
   // DB-backed showcases managed via /admin/showcases. Each card links to
   // its dedicated detail page. Split into Current vs Completed for the two
@@ -129,563 +160,465 @@ export default function ConstructionPage() {
     }
   };
 
-  const features = [
-    { icon: Hammer, text: "Expert Craftsmanship" },
-    { icon: ClipboardCheck, text: "Full Project Management" },
-    { icon: Award, text: "Quality Guaranteed" },
-    { icon: Shield, text: "Licensed & Insured" },
-    { icon: Clock, text: "On-Time Delivery" },
-  ];
-
   return (
     <>
       <Navigation />
 
-      {/* Hero Section */}
-      <section aria-label="Construction services overview" className="pt-32 pb-16 bg-gradient-to-br from-gray-50 to-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            className="text-center mb-12"
-          >
-            <div className="inline-flex items-center justify-center w-28 h-28 mb-6">
-              <Image
-                src="/JONES CUSTOM HOMES ICON (2).svg"
-                alt="Jones Custom Homes logo"
-                width={120}
-                height={120}
-                className="object-contain"
-              />
-            </div>
-            <h1 className="text-5xl md:text-6xl font-serif font-bold text-gray-900 mb-6">
-              Construction Services
-            </h1>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              From new builds to renovations, we deliver exceptional construction projects with precision and care.
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-4 sm:gap-6 max-w-4xl mx-auto">
-            {features.map((feature, index) => (
-              <motion.div
-                key={feature.text}
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                className="flex flex-col items-center text-center p-4"
-              >
-                <feature.icon aria-hidden="true" className="w-8 h-8 mb-2" />
-                <p className="text-sm font-medium text-gray-900">{feature.text}</p>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Current Projects Section */}
-      <section aria-label="Current construction projects" className="py-20 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Current Projects
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              See what we&apos;re building right now
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {currentShowcases.map((s, index) => (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="group"
-              >
-                <Link
-                  href={`/services/construction/projects/${s.slug}`}
-                  className="block"
-                >
-                  <div className="bg-gray-50 rounded-2xl overflow-hidden shadow-sm hover:shadow-lg transition-all duration-300 group-hover:scale-[1.02]">
-                    <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
-                      {s.cover_image_url ? (
-                        <Image
-                          src={s.cover_image_url}
-                          alt={`${s.title}${s.location ? ` in ${s.location}` : ""}`}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-4" />
-                          <span className="text-2xl font-serif font-bold text-gray-600">Photos Coming Soon</span>
-                        </div>
-                      )}
-                    </div>
-                    <div className="p-6 text-center">
-                      {s.location && (
-                        <div className="text-sm text-gray-600 mb-2">{s.location}</div>
-                      )}
-                      <h3 className="text-xl font-bold text-gray-900 mb-3">{s.title}</h3>
-                      <div className="inline-block px-4 py-2 bg-black text-white text-sm font-medium rounded-full">
-                        {s.cover_image_url ? "View Project" : "Coming Soon"}
-                      </div>
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-            {currentShowcases.length === 0 && (
-              <div className="col-span-full text-center text-gray-500 py-10">
-                Nothing under construction at the moment. Check back soon.
-              </div>
-            )}
-          </div>
-        </div>
-      </section>
-
-      {/* Most Recent Builds Section */}
-      <section aria-label="Most recent construction builds" className="py-20 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Most Recent Builds
-            </h2>
-            <p className="text-xl text-gray-700 max-w-3xl mx-auto leading-relaxed">
-              Quality craftsmanship delivered with care and attention to detail
-            </p>
-          </motion.div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-8 max-w-4xl mx-auto">
-            {completedShowcases.length === 0 && (
-              <div className="col-span-full text-center text-gray-500 py-10">
-                Recent build photos are on the way.
-              </div>
-            )}
-            {completedShowcases.map((s, index) => (
-              <motion.div
-                key={s.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="group"
-              >
-                <Link
-                  href={`/services/construction/projects/${s.slug}`}
-                  className="block"
-                >
-                  <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
-                    <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
-                      {s.cover_image_url ? (
-                        <Image
-                          src={s.cover_image_url}
-                          alt={`${s.title} custom home${s.location ? ` build in ${s.location}` : ""}`}
-                          fill
-                          sizes="(max-width: 768px) 100vw, 50vw"
-                          className="object-cover group-hover:scale-105 transition-transform duration-500"
-                          loading="lazy"
-                        />
-                      ) : (
-                        <div className="absolute inset-0 flex flex-col items-center justify-center">
-                          <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-2" />
-                          <span className="text-sm text-gray-600">Photos Coming Soon</span>
-                        </div>
-                      )}
-                      <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                      <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                        View Project
-                      </div>
-                    </div>
-                    <div className="p-6">
-                      {s.location && (
-                        <div className="text-sm text-gray-600 mb-2">{s.location}</div>
-                      )}
-                      <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">
-                        {s.title}
-                      </h3>
-                      {s.description && (
-                        <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">
-                          {s.description}
-                        </p>
-                      )}
-                    </div>
-                  </div>
-                </Link>
-              </motion.div>
-            ))}
-            {completedBuilds.map((project, index) => (
-              <motion.div
-                key={project.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.1 }}
-                viewport={{ once: true }}
-                className="group cursor-pointer"
-                onClick={() => setSelectedProject(project)}
-              >
-                <div className="bg-white rounded-2xl overflow-hidden shadow-lg hover:shadow-2xl transition-all duration-300 group-hover:scale-[1.02]">
-                  <div className="aspect-[4/3] bg-gradient-to-br from-gray-200 to-gray-300 relative overflow-hidden">
-                    {project.coverImage ? (
-                      <Image
-                        src={project.coverImage}
-                        alt={`${project.title} custom home build in ${project.location}`}
-                        fill
-                        sizes="(max-width: 768px) 100vw, 50vw"
-                        className="object-cover group-hover:scale-105 transition-transform duration-500"
-                        loading="lazy"
-                      />
-                    ) : (
-                      <div className="absolute inset-0 flex flex-col items-center justify-center">
-                        <Building2 aria-hidden="true" className="w-16 h-16 text-gray-400 mb-2" />
-                        <span className="text-sm text-gray-600">Photos Coming Soon</span>
-                      </div>
-                    )}
-                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-all duration-300" />
-                    <div className="absolute bottom-4 right-4 bg-white/90 backdrop-blur-sm px-3 py-1.5 rounded-full text-sm font-medium opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                      View Details
-                    </div>
-                  </div>
-                  <div className="p-6">
-                    <div className="text-sm text-gray-600 mb-2">{project.location}</div>
-                    <h3 className="text-2xl font-serif font-bold text-gray-900 mb-2">{project.title}</h3>
-                    <p className="text-gray-700 text-sm line-clamp-2 leading-relaxed">{project.description}</p>
-                  </div>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Project Detail Modal */}
-      <AnimatePresence>
-        {selectedProject && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-50 flex items-center justify-center bg-black/80 p-4 overflow-y-auto"
-            onClick={() => setSelectedProject(null)}
-          >
+      <main style={{ background: "var(--hm-paper)", color: "var(--hm-ink)" }}>
+        {/* Stat-Led hero — "10+ years" as the visual anchor. The number
+            carries trust. The showcase grids below carry the proof. */}
+        <section
+          aria-label="Jones Custom Homes"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-32 pb-20 sm:pt-40 sm:pb-24">
             <motion.div
-              initial={{ opacity: 0, scale: 0.95, y: 20 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.95, y: 20 }}
-              transition={{ duration: 0.3 }}
-              className="bg-white rounded-2xl max-w-4xl w-full max-h-[90vh] overflow-y-auto my-8"
-              onClick={(e) => e.stopPropagation()}
+              initial={{ opacity: 0, y: 12 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
             >
-              {/* Close Button */}
-              <button
-                onClick={() => setSelectedProject(null)}
-                className="absolute top-4 right-4 z-10 w-10 h-10 flex items-center justify-center bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors"
-                aria-label="Close"
+              <p
+                className="font-mono uppercase mb-8"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.22em",
+                  color: "var(--hm-ink-3)",
+                }}
               >
-                <X aria-hidden="true" className="w-5 h-5" />
-              </button>
+                Building · Southern Utah · since 2014
+              </p>
 
-              {/* Cover Image */}
-              <div className="aspect-[16/9] bg-gradient-to-br from-gray-200 to-gray-300 relative">
-                {selectedProject.coverImage ? (
-                  <Image
-                    src={selectedProject.coverImage}
-                    alt={`${selectedProject.title} cover photo - custom home in ${selectedProject.location}`}
-                    fill
-                    sizes="(max-width: 768px) 100vw, 896px"
-                    className="object-cover"
-                  />
-                ) : (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center">
-                    <Building2 aria-hidden="true" className="w-20 h-20 text-gray-400 mb-4" />
-                    <span className="text-xl text-gray-600">Photos Coming Soon</span>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div className="p-8">
-                <div className="text-sm text-gray-600 mb-2">{selectedProject.location}</div>
-                <h2 className="text-3xl md:text-4xl font-serif font-bold text-gray-900 mb-4">{selectedProject.title}</h2>
-                <p className="text-lg text-gray-700 mb-6 leading-relaxed">{selectedProject.description}</p>
-
-                {/* Features */}
-                {selectedProject.features && selectedProject.features.length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-bold mb-3">Features</h3>
-                    <div className="flex flex-wrap gap-2">
-                      {selectedProject.features.map((feature) => (
-                        <span
-                          key={feature}
-                          className="px-3 py-1.5 bg-gray-100 text-gray-700 text-sm rounded-full"
-                        >
-                          {feature}
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Image Gallery */}
-                {selectedProject.images && selectedProject.images.length > 0 && (
-                  <div className="mb-8">
-                    <h3 className="text-lg font-bold mb-4">Gallery</h3>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                      {selectedProject.images.map((image, index) => (
-                        <div
-                          key={index}
-                          className="aspect-[4/3] relative rounded-2xl overflow-hidden cursor-pointer hover:shadow-md transition-shadow"
-                          onClick={() => setLightboxImageIndex(index)}
-                        >
-                          <Image
-                            src={image.src}
-                            alt={image.alt}
-                            fill
-                            sizes="(max-width: 768px) 50vw, 33vw"
-                            className="object-cover"
-                            loading="lazy"
-                          />
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Interest CTA */}
-                <div className="bg-gray-50 rounded-xl p-6 text-center">
-                  <h3 className="text-xl font-serif font-bold text-gray-900 mb-2">Interested in a Similar Build?</h3>
-                  <p className="text-gray-700 mb-4 leading-relaxed">
-                    Love this layout? Let us know and we can discuss how to customize it for your needs.
+              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-baseline">
+                <div className="lg:col-span-7">
+                  <h1
+                    className="font-serif font-normal italic tabular-nums"
+                    style={{
+                      fontSize: "clamp(6rem, 18vw, 14rem)",
+                      lineHeight: 0.85,
+                      color: "var(--hm-ink)",
+                      letterSpacing: "-0.04em",
+                    }}
+                  >
+                    10<span style={{ color: "var(--hm-accent)" }}>+</span>
+                  </h1>
+                  <p
+                    className="mt-6 font-serif italic"
+                    style={{
+                      fontSize: "var(--hm-text-h3)",
+                      color: "var(--hm-ink)",
+                      lineHeight: 1.25,
+                      maxWidth: "32ch",
+                    }}
+                  >
+                    Years building custom homes in Hurricane and the
+                    surrounding county.
                   </p>
-                  <Link href="#contact-form" onClick={() => setSelectedProject(null)}>
-                    <Button size="lg">
-                      Request This Layout
-                      <ArrowRight aria-hidden="true" className="w-5 h-5 ml-2" />
-                    </Button>
-                  </Link>
+                </div>
+
+                <div className="lg:col-span-5 lg:pt-12">
+                  <p
+                    className="font-sans"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      lineHeight: 1.65,
+                      maxWidth: "44ch",
+                    }}
+                  >
+                    Custom homes, additions, renovations, and commercial work.
+                    Run by Blake out of Hurricane. Same number you call to
+                    quote a build is the number you call when the dishwasher
+                    needs an electrician two years later.
+                  </p>
+
+                  {/* Supporting stats in tabular row */}
+                  <dl
+                    className="mt-10 grid grid-cols-3 gap-5"
+                    style={{
+                      borderTop: "1px solid var(--hm-rule)",
+                      paddingTop: "1.5rem",
+                    }}
+                  >
+                    {supportingStats.map((s) => (
+                      <div key={s.label}>
+                        <dt
+                          className="font-serif tabular-nums"
+                          style={{
+                            fontSize: "clamp(1.5rem, 2.5vw, 2rem)",
+                            color: "var(--hm-ink)",
+                            fontWeight: 500,
+                            letterSpacing: "-0.02em",
+                            lineHeight: 1,
+                          }}
+                        >
+                          {s.value}
+                        </dt>
+                        <dd
+                          className="font-mono uppercase mt-2"
+                          style={{
+                            fontSize: "10px",
+                            letterSpacing: "0.18em",
+                            color: "var(--hm-ink-3)",
+                            lineHeight: 1.3,
+                          }}
+                        >
+                          {s.label}
+                        </dd>
+                      </div>
+                    ))}
+                  </dl>
+
+                  <div className="mt-10 flex flex-wrap gap-3">
+                    <Link
+                      href="#contact-form"
+                      className="inline-flex items-center justify-center font-mono uppercase border bg-[var(--hm-ink)] text-[var(--hm-paper)] border-[var(--hm-ink)] hover:bg-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200 whitespace-nowrap"
+                      style={{
+                        fontSize: "var(--hm-text-meta)",
+                        letterSpacing: "0.15em",
+                        padding: "0.75rem 1.25rem",
+                        minHeight: 44,
+                      }}
+                    >
+                      Start a project
+                    </Link>
+                    <Link
+                      href="#projects"
+                      className="inline-flex items-center justify-center font-mono uppercase border border-[var(--hm-ink)] text-[var(--hm-ink)] hover:text-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200 whitespace-nowrap"
+                      style={{
+                        fontSize: "var(--hm-text-meta)",
+                        letterSpacing: "0.15em",
+                        padding: "0.75rem 1.25rem",
+                        minHeight: 44,
+                      }}
+                    >
+                      See the work ↓
+                    </Link>
+                  </div>
                 </div>
               </div>
             </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Image Lightbox */}
-      <AnimatePresence>
-        {selectedProject && lightboxImageIndex !== null && selectedProject.images && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-[60] flex items-center justify-center bg-black/95 p-4"
-            onClick={() => setLightboxImageIndex(null)}
-          >
-            <button
-              onClick={() => setLightboxImageIndex(null)}
-              className="absolute top-4 right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-              aria-label="Close lightbox"
-            >
-              <X aria-hidden="true" className="w-6 h-6 text-white" />
-            </button>
-
-            {lightboxImageIndex > 0 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightboxImageIndex(lightboxImageIndex - 1);
-                }}
-                className="absolute left-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                aria-label="Previous image"
-              >
-                <ChevronLeft aria-hidden="true" className="w-6 h-6 text-white" />
-              </button>
-            )}
-
-            {lightboxImageIndex < (selectedProject.images?.length ?? 0) - 1 && (
-              <button
-                onClick={(e) => {
-                  e.stopPropagation();
-                  setLightboxImageIndex(lightboxImageIndex + 1);
-                }}
-                className="absolute right-4 z-50 w-12 h-12 flex items-center justify-center bg-white/10 hover:bg-white/20 rounded-full transition-colors"
-                aria-label="Next image"
-              >
-                <ChevronRight aria-hidden="true" className="w-6 h-6 text-white" />
-              </button>
-            )}
-
-            <div
-              className="relative max-w-7xl max-h-[90vh] w-full h-full flex items-center justify-center"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <div className="relative w-full h-full">
-                {selectedProject.images && (
-                  <Image
-                    src={selectedProject.images[lightboxImageIndex].src}
-                    alt={selectedProject.images[lightboxImageIndex].alt}
-                    fill
-                    className="object-contain"
-                    priority
-                  />
-                )}
-              </div>
-              <div className="absolute bottom-4 left-0 right-0 text-center">
-                <p className="text-white text-sm">
-                  {lightboxImageIndex + 1} / {selectedProject.images.length}
-                </p>
-              </div>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Why Choose Us Section */}
-      <section aria-label="Why choose Jones Custom Homes" className="py-24 bg-gradient-to-br from-gray-900 to-black text-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold mb-6">
-              Why Choose Jones Custom Homes?
-            </h2>
-            <p className="text-xl text-gray-300 leading-relaxed max-w-2xl mx-auto">
-              We make building feel simple and personal. With a patient, approachable team and creative financing options, we help make custom homes more achievable. Our streamlined process allows for a faster build without compromising quality—so you can enjoy a well-crafted home, sooner and with confidence.
-            </p>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* FAQ Section */}
-      <section aria-label="Frequently asked questions" className="py-20 bg-gray-50">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="text-center mb-16"
-          >
-            <h2 className="text-4xl md:text-5xl font-serif font-bold text-gray-900 mb-4">
-              Frequently Asked Questions
-            </h2>
-            <p className="text-xl text-gray-700 leading-relaxed">
-              Common questions about our construction services
-            </p>
-          </motion.div>
-
-          <div className="space-y-6">
-            {[
-              {
-                question: "Do you handle permits and inspections?",
-                answer: "Yes, we manage all necessary permits and coordinate inspections throughout the construction process. We ensure full compliance with local building codes and regulations.",
-              },
-              {
-                question: "How long does a typical construction project take?",
-                answer: "Timeline varies based on project scope. A complete home build typically takes 6-12 months, while renovations can range from a few weeks to several months. We provide detailed timelines during the planning phase.",
-              },
-              {
-                question: "What areas do you serve?",
-                answer: "We primarily serve Hurricane, St. George, Washington, Ivins, and the surrounding Southern Utah area. Contact us to confirm service availability for your location.",
-              },
-              {
-                question: "Do you provide warranties on your work?",
-                answer: "Yes, we stand behind our craftsmanship with comprehensive warranties. Specific warranty terms vary by project type and materials used, and are detailed in your contract.",
-              },
-              {
-                question: "Can you work with my architect or designer?",
-                answer: "Absolutely! We're happy to collaborate with your architect, designer, or engineer to bring your vision to life. We can also provide design services if needed.",
-              },
-              {
-                question: "What payment structure do you use?",
-                answer: "We typically work on a progress payment schedule, with payments tied to project milestones. We'll discuss payment terms in detail during our initial consultation.",
-              },
-              {
-                question: "How do you handle changes during construction?",
-                answer: "Change orders are a normal part of construction. We document all changes in writing with updated costs and timelines before proceeding to ensure transparency.",
-              },
-              {
-                question: "Are you insured?",
-                answer: "Yes, we maintain full liability insurance and workers' compensation coverage to protect both our team and your property throughout the construction process.",
-              },
-            ].map((faq, index) => (
-              <motion.div
-                key={index}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5, delay: index * 0.05 }}
-                viewport={{ once: true }}
-                className="bg-white p-6 rounded-xl"
-              >
-                <h3 className="text-lg font-bold text-gray-900 mb-3">{faq.question}</h3>
-                <p className="text-gray-700 leading-relaxed">{faq.answer}</p>
-              </motion.div>
-            ))}
           </div>
-        </div>
-      </section>
 
-      {/* Form Section */}
-      <section id="contact-form" aria-label="Construction project contact form" className="py-20 bg-white">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-            className="mb-12 text-center"
-          >
-            <h2 className="text-4xl font-serif font-bold text-gray-900 mb-4">
-              Tell Us About Your Construction Project
+          <hr
+            className="border-0 mx-6 sm:mx-8 lg:mx-12"
+            style={{ borderTop: "2px solid var(--hm-rule-thick)" }}
+          />
+        </section>
+
+        {/* Current projects — Linen-styled showcase grid. Hairline-framed
+            cards, terracotta "In progress" badge on the cover, italic-serif
+            titles. */}
+        <section
+          id="projects"
+          aria-label="Current construction projects"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 pt-20 pb-16 lg:pt-24">
+            <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
+              <h2
+                className="font-serif font-normal italic"
+                style={{
+                  fontSize: "var(--hm-text-h2)",
+                  color: "var(--hm-ink)",
+                  letterSpacing: "-0.015em",
+                }}
+              >
+                Currently building.
+              </h2>
+              <span
+                className="font-mono uppercase"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.18em",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                In progress
+              </span>
+            </div>
+
+            {currentShowcases.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                {currentShowcases.map((s) => (
+                  <ShowcaseCard key={s.id} showcase={s} phase="current" />
+                ))}
+              </div>
+            ) : (
+              <EmptyShowcaseState message="Nothing actively under construction at the moment. Check back soon, or tell us what you're thinking of building." />
+            )}
+          </div>
+        </section>
+
+        {/* Recent builds — completed showcase grid */}
+        <section
+          aria-label="Recent construction builds"
+          style={{ background: "var(--hm-paper-2)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-16 lg:py-20">
+            <div className="mb-10 flex items-baseline justify-between flex-wrap gap-4">
+              <h2
+                className="font-serif font-normal italic"
+                style={{
+                  fontSize: "var(--hm-text-h2)",
+                  color: "var(--hm-ink)",
+                  letterSpacing: "-0.015em",
+                }}
+              >
+                Recent builds.
+              </h2>
+              <span
+                className="font-mono uppercase"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  letterSpacing: "0.18em",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                Completed
+              </span>
+            </div>
+
+            {completedShowcases.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5 sm:gap-6">
+                {completedShowcases.map((s) => (
+                  <ShowcaseCard key={s.id} showcase={s} phase="completed" />
+                ))}
+              </div>
+            ) : (
+              <EmptyShowcaseState message="Recent build photos are on the way. In the meantime, tell us what you're hoping to build." />
+            )}
+          </div>
+        </section>
+
+        {/* Editorial prose — replaces the centered black "Why Choose Us"
+            gradient. Trust points named inline. */}
+        <section
+          aria-label="What we stand on"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <h2
+              className="font-serif font-normal italic mb-8"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              What we stand on.
             </h2>
-            <p className="text-lg text-gray-700 mb-8 leading-relaxed max-w-2xl mx-auto">
-              Provide detailed information about your project so we can give you an accurate quote and timeline.
+            <div
+              className="font-sans space-y-6"
+              style={{
+                fontSize: "var(--hm-text-lede)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.65,
+                maxWidth: "62ch",
+              }}
+            >
+              <p>
+                We build with patience. A custom home is a one-shot kind of
+                project. It deserves the time to get the kitchen right, the
+                framing square, and the punch list actually punched. Faster
+                isn&apos;t the goal. Right is.
+              </p>
+              <p>
+                We&apos;re licensed, fully insured, and run by Blake out of
+                Hurricane. Project management you can read on one page.
+                Creative financing options through Blake Jones Realty when
+                the standard loan path doesn&apos;t fit. Honest pricing and
+                clear schedules, in writing, before the first stake goes in
+                the ground.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        {/* FAQ — Linen accordion. One question expanded at a time. Numbered
+            mono-caps eyebrow inline with the italic question text. Hairline
+            divider between rows; no card-shaped chunks. */}
+        <section
+          aria-label="Frequently asked questions"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-3xl mx-auto px-6 sm:px-8 lg:px-12 py-20 lg:py-24">
+            <h2
+              className="font-serif font-normal italic mb-3"
+              style={{
+                fontSize: "var(--hm-text-h2)",
+                color: "var(--hm-ink)",
+                letterSpacing: "-0.015em",
+              }}
+            >
+              The questions we get most.
+            </h2>
+            <p
+              className="font-sans mb-12"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-3)",
+                maxWidth: "55ch",
+              }}
+            >
+              Eight short answers. Anything else, just call.
             </p>
 
-            {/* Contact Method Toggle */}
-            <div className="flex items-center justify-center gap-4">
-              <Button
-                type="button"
-                size="lg"
-                variant={contactMethod === "form" ? "primary" : "outline"}
-                onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
+            <ul
+              className="border-t"
+              style={{ borderColor: "var(--hm-rule)" }}
+            >
+              {faqs.map((faq, idx) => {
+                const isOpen = openFaq === idx;
+                const num = String(idx + 1).padStart(2, "0");
+                return (
+                  <li
+                    key={faq.question}
+                    style={{ borderBottom: "1px solid var(--hm-rule)" }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaq(isOpen ? null : idx)}
+                      className="w-full flex items-baseline justify-between gap-6 text-left py-6"
+                      aria-expanded={isOpen}
+                    >
+                      <h3
+                        className="font-serif"
+                        style={{
+                          fontSize: "var(--hm-text-h3)",
+                          color: "var(--hm-ink)",
+                          fontWeight: 500,
+                          lineHeight: 1.3,
+                        }}
+                      >
+                        <span
+                          className="font-mono uppercase tracking-[0.2em] mr-4 align-baseline"
+                          style={{
+                            fontSize: "var(--hm-text-meta)",
+                            color: "var(--hm-accent)",
+                          }}
+                        >
+                          {num}
+                        </span>
+                        {faq.question}
+                      </h3>
+                      <ChevronDown
+                        aria-hidden="true"
+                        className={`w-5 h-5 transition-transform flex-shrink-0 mt-2 ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                        style={{ color: "var(--hm-ink-3)" }}
+                      />
+                    </button>
+                    <AnimatePresence>
+                      {isOpen && (
+                        <motion.div
+                          initial={{ height: 0, opacity: 0 }}
+                          animate={{ height: "auto", opacity: 1 }}
+                          exit={{ height: 0, opacity: 0 }}
+                          transition={{ duration: 0.3, ease: [0.16, 1, 0.3, 1] }}
+                          className="overflow-hidden"
+                        >
+                          <p
+                            className="font-sans pb-7 pr-10 pl-12"
+                            style={{
+                              fontSize: "var(--hm-text-body)",
+                              color: "var(--hm-ink-2)",
+                              lineHeight: 1.65,
+                              maxWidth: "62ch",
+                            }}
+                          >
+                            {faq.answer}
+                          </p>
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </li>
+                );
+              })}
+            </ul>
+          </div>
+        </section>
+
+        {/* Contact — editorial heading + left-aligned chip pair. The form
+            fields below are unchanged (react-hook-form wiring + reCAPTCHA +
+            every existing field). */}
+        <section
+          id="contact-form"
+          aria-label="Construction project contact form"
+          style={{ background: "var(--hm-paper-2)" }}
+        >
+          <div className="max-w-4xl mx-auto px-6 sm:px-8 lg:px-12 py-24 lg:py-28">
+            <div className="mb-12 max-w-3xl">
+              <h2
+                className="font-serif font-normal italic mb-4"
+                style={{
+                  fontSize: "var(--hm-text-h2)",
+                  color: "var(--hm-ink)",
+                  letterSpacing: "-0.015em",
+                }}
               >
-                Fill Out Our Form
-              </Button>
-              <span className="text-gray-500 font-medium">or</span>
-              <Button
-                type="button"
-                size="lg"
-                variant={contactMethod === "call" ? "primary" : "outline"}
-                onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
+                Tell us about your build.
+              </h2>
+              <p
+                className="font-sans"
+                style={{
+                  fontSize: "var(--hm-text-lede)",
+                  lineHeight: 1.6,
+                  color: "var(--hm-ink-2)",
+                  maxWidth: "62ch",
+                }}
               >
-                Give Us A Call
-              </Button>
+                The more you can tell us up front, the more accurate the quote
+                and the schedule will be. Or skip the form and call. Blake
+                answers his own phone.
+              </p>
+
+              <div className="mt-10 flex flex-wrap items-center gap-3">
+                <span
+                  className="font-mono uppercase tracking-[0.18em] mr-2"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    color: "var(--hm-ink-3)",
+                  }}
+                >
+                  Two ways to start
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setContactMethod(contactMethod === "form" ? null : "form")}
+                  className="inline-flex items-center justify-center px-5 py-2.5 font-sans font-medium border transition-colors duration-200"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    minHeight: 44,
+                    whiteSpace: "nowrap",
+                    borderColor: contactMethod === "form" ? "var(--hm-ink)" : "var(--hm-rule-thick)",
+                    background: contactMethod === "form" ? "var(--hm-ink)" : "transparent",
+                    color: contactMethod === "form" ? "var(--hm-paper)" : "var(--hm-ink)",
+                  }}
+                >
+                  Fill out the form
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setContactMethod(contactMethod === "call" ? null : "call")}
+                  className="inline-flex items-center justify-center px-5 py-2.5 font-sans font-medium border transition-colors duration-200"
+                  style={{
+                    fontSize: "var(--hm-text-meta)",
+                    letterSpacing: "0.08em",
+                    textTransform: "uppercase",
+                    minHeight: 44,
+                    whiteSpace: "nowrap",
+                    borderColor: contactMethod === "call" ? "var(--hm-ink)" : "var(--hm-rule-thick)",
+                    background: contactMethod === "call" ? "var(--hm-ink)" : "transparent",
+                    color: contactMethod === "call" ? "var(--hm-paper)" : "var(--hm-ink)",
+                  }}
+                >
+                  Give us a call
+                </button>
+              </div>
             </div>
-          </motion.div>
 
           <AnimatePresence mode="wait">
             {contactMethod === "call" && (
@@ -697,25 +630,64 @@ export default function ConstructionPage() {
                 transition={{ duration: 0.5, ease: "easeInOut" }}
                 className="overflow-hidden"
               >
-                <div className="bg-gray-50 p-12 rounded-xl text-center mb-8">
-                  <Phone aria-hidden="true" className="w-16 h-16 mx-auto mb-6 text-gray-700" />
-                  <h3 className="text-2xl font-serif font-bold text-gray-900 mb-4">Contact Us Directly</h3>
+                <div
+                  className="p-8 sm:p-10 mb-8"
+                  style={{
+                    background: "var(--hm-paper)",
+                    border: "1px solid var(--hm-rule)",
+                    borderLeft: "3px solid var(--hm-accent)",
+                  }}
+                >
+                  <span
+                    className="inline-flex items-center gap-2 font-mono uppercase tracking-[0.18em]"
+                    style={{
+                      fontSize: "var(--hm-text-meta)",
+                      color: "var(--hm-ink-3)",
+                    }}
+                  >
+                    <Phone aria-hidden="true" className="w-3.5 h-3.5" />
+                    Construction direct
+                  </span>
                   <a
                     href="tel:+14354148701"
                     aria-label="Call us at (435) 414-8701"
-                    className="text-4xl font-bold text-black hover:text-gray-700 transition-colors block mb-4 min-h-[44px]"
+                    className="block mt-3 font-serif tabular-nums transition-colors"
+                    style={{
+                      fontSize: "clamp(2.25rem, 5vw, 3.5rem)",
+                      color: "var(--hm-ink)",
+                      letterSpacing: "-0.02em",
+                      lineHeight: 1.05,
+                      minHeight: 44,
+                    }}
                   >
                     (435) 414-8701
                   </a>
                   <a
                     href="mailto:jch@joneslegacycreations.com"
                     aria-label="Email us at jch@joneslegacycreations.com"
-                    className="text-xl text-black hover:text-gray-700 transition-colors min-h-[44px] inline-flex items-center"
+                    className="inline-flex items-center mt-4 font-sans transition-colors"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      borderBottom: "1px solid var(--hm-rule)",
+                      paddingBottom: "1px",
+                      minHeight: 44,
+                    }}
                   >
                     jch@joneslegacycreations.com
                   </a>
-                  <p className="text-gray-700 mt-4 leading-relaxed">
-                    We&apos;re available to discuss your project and answer any questions.
+                  <p
+                    className="mt-6 font-sans"
+                    style={{
+                      fontSize: "var(--hm-text-body)",
+                      color: "var(--hm-ink-2)",
+                      lineHeight: 1.6,
+                      maxWidth: "55ch",
+                    }}
+                  >
+                    Blake answers the phone. Call between 8am and 8pm Mountain
+                    Time about a build, a renovation, a permit question, or
+                    just to talk through what you&apos;re considering.
                   </p>
                 </div>
               </motion.div>
@@ -735,8 +707,8 @@ export default function ConstructionPage() {
             <HoneypotField register={register} />
 
             {/* Personal Information */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Contact Information</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Contact Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Input
                   label="Full Name"
@@ -767,8 +739,8 @@ export default function ConstructionPage() {
             </div>
 
             {/* Project Type */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Project Type</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Project Type</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Project Category"
@@ -801,8 +773,8 @@ export default function ConstructionPage() {
             </div>
 
             {/* Property Information */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Property Information</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Property Information</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <Input
@@ -846,8 +818,8 @@ export default function ConstructionPage() {
             </div>
 
             {/* Project Details */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Project Details</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Project Details</h3>
               <div className="space-y-6">
                 <Textarea
                   label="Project Scope & Description"
@@ -884,8 +856,8 @@ export default function ConstructionPage() {
             </div>
 
             {/* Budget & Timeline */}
-            <div className="bg-gray-50 p-6 rounded-xl">
-              <h3 className="text-2xl font-serif font-bold mb-6">Budget & Timeline</h3>
+            <div className="p-6 sm:p-7 bg-[var(--hm-paper)] border border-[var(--hm-rule)]">
+              <h3 className="text-2xl font-serif font-normal italic mb-6">Budget & Timeline</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Estimated Budget Range"
@@ -932,13 +904,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Permits & Compliance */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("permits")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Permits & Compliance</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Permits & Compliance</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("permits") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -991,13 +963,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Materials & Quality */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("materials")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Materials & Quality Preferences</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Materials & Quality Preferences</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("materials") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1053,14 +1025,14 @@ export default function ConstructionPage() {
             </div>
 
             {/* Specific Work Areas */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("work")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
                 <div>
-                  <h3 className="text-2xl font-serif font-bold">Specific Work Required</h3>
+                  <h3 className="text-2xl font-serif font-normal italic">Specific Work Required</h3>
                   <p className="text-sm text-gray-600 mt-1">Select which areas of work are needed for your project</p>
                 </div>
                 <ChevronDown className={`w-6 h-6 transition-transform flex-shrink-0 ${expandedSections.includes("work") ? "rotate-180" : ""}`} />
@@ -1168,13 +1140,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Demolition */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("demolition")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Demolition Requirements</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Demolition Requirements</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("demolition") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1212,13 +1184,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Special Features */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("features")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Special Features & Requirements</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Special Features & Requirements</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("features") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1271,13 +1243,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Site Conditions */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("site")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Site Conditions</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Site Conditions</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("site") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1330,13 +1302,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Additional Services */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("services")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Additional Services Needed</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Additional Services Needed</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("services") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1389,13 +1361,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Insurance & Financing */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("insurance")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Insurance & Financing</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Insurance & Financing</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("insurance") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1436,13 +1408,13 @@ export default function ConstructionPage() {
             </div>
 
             {/* Additional Information */}
-            <div className="bg-gray-50 rounded-xl overflow-hidden">
+            <div className="bg-[var(--hm-paper)] border border-[var(--hm-rule)] overflow-hidden">
               <button
                 type="button"
                 onClick={() => toggleSection("additional")}
-                className="w-full p-6 flex items-center justify-between text-left hover:bg-gray-100 transition-colors cursor-pointer"
+                className="w-full p-6 flex items-center justify-between text-left hover:bg-[var(--hm-paper-3)] transition-colors cursor-pointer"
               >
-                <h3 className="text-2xl font-serif font-bold">Additional Information</h3>
+                <h3 className="text-2xl font-serif font-normal italic">Additional Information</h3>
                 <ChevronDown aria-hidden="true" className={`w-6 h-6 transition-transform ${expandedSections.includes("additional") ? "rotate-180" : ""}`} />
               </button>
               <AnimatePresence>
@@ -1505,42 +1477,220 @@ export default function ConstructionPage() {
               </AnimatePresence>
             </div>
 
-            {/* Submit Button */}
-            <div className="flex justify-center pt-6">
-              <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-64">
-                Submit Project Request
+            {/* Submit — left-aligned with a reply-time note */}
+            <div className="pt-6 flex flex-wrap items-center gap-x-6 gap-y-3">
+              <Button type="submit" size="lg" isLoading={isSubmitting} className="min-w-56">
+                Send my project
               </Button>
+              <span
+                className="font-mono uppercase tracking-[0.18em]"
+                style={{
+                  fontSize: "var(--hm-text-meta)",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                Reply within 24-48 hours
+              </span>
             </div>
               </motion.form>
             )}
           </AnimatePresence>
-        </div>
-      </section>
+          </div>
+        </section>
 
-      {/* Social Media Section */}
-      <section aria-label="Social media links" className="py-16 bg-gray-50">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.8 }}
-            viewport={{ once: true }}
-          >
-            <h2 className="text-2xl font-serif font-bold text-gray-900 mb-6">Follow Us On Social Media</h2>
+        {/* Social — inline line, no centered icon island */}
+        <section
+          aria-label="Social media"
+          style={{ background: "var(--hm-paper)" }}
+        >
+          <div className="max-w-7xl mx-auto px-6 sm:px-8 lg:px-12 py-12 lg:py-16">
+            <p
+              className="font-mono uppercase mb-3"
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.22em",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              Follow along
+            </p>
             <a
               href="https://www.instagram.com/jonescustomhomes/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center justify-center text-gray-700 hover:text-black transition-colors min-h-[44px] min-w-[44px]"
+              className="inline-flex items-center gap-2 font-sans transition-colors"
+              style={{
+                fontSize: "var(--hm-text-lede)",
+                color: "var(--hm-ink)",
+                borderBottom: "1px solid var(--hm-rule-thick)",
+                paddingBottom: "2px",
+              }}
               aria-label="Follow Jones Custom Homes on Instagram"
             >
-              <Instagram aria-hidden="true" className="w-8 h-8" />
+              <Instagram aria-hidden="true" className="w-4 h-4" />
+              Instagram · @jonescustomhomes
             </a>
-          </motion.div>
-        </div>
-      </section>
+          </div>
+        </section>
+      </main>
 
       <Footer />
     </>
+  );
+}
+
+/* Showcase card — Linen-styled showcase tile. Hairline frame, paper-2
+ * fill, italic-serif title, mono-caps location, terracotta "In progress"
+ * badge for current builds. */
+function ShowcaseCard({
+  showcase: s,
+  phase,
+}: {
+  showcase: {
+    id: string;
+    slug: string;
+    title: string;
+    location: string | null;
+    description: string | null;
+    cover_image_url: string | null;
+  };
+  phase: "current" | "completed";
+}) {
+  const isCurrent = phase === "current";
+  return (
+    <Link
+      href={`/services/construction/projects/${s.slug}`}
+      className="group block"
+      style={{
+        background: "var(--hm-paper)",
+        border: "1px solid var(--hm-rule)",
+        transition: "border-color var(--hm-dur-short) var(--hm-ease-out)",
+      }}
+    >
+      <article className="flex flex-col h-full">
+        <div
+          className="relative w-full aspect-[4/3]"
+          style={{ background: "var(--hm-paper-3)" }}
+        >
+          {s.cover_image_url ? (
+            <Image
+              src={s.cover_image_url}
+              alt={`${s.title}${s.location ? ` in ${s.location}` : ""}`}
+              fill
+              sizes="(max-width: 768px) 100vw, 50vw"
+              className="object-cover"
+              loading="lazy"
+            />
+          ) : (
+            <div className="absolute inset-0 flex flex-col items-center justify-center">
+              <Building2
+                aria-hidden="true"
+                className="w-10 h-10 mb-3"
+                style={{ color: "var(--hm-ink-3)" }}
+              />
+              <span
+                className="font-mono uppercase"
+                style={{
+                  fontSize: "10px",
+                  letterSpacing: "0.22em",
+                  color: "var(--hm-ink-3)",
+                }}
+              >
+                Photos coming soon
+              </span>
+            </div>
+          )}
+          {isCurrent && (
+            <span
+              className="absolute top-3 left-3 inline-flex items-center px-2.5 py-1 font-mono uppercase tracking-[0.15em]"
+              style={{
+                fontSize: "10px",
+                background: "var(--hm-accent)",
+                color: "var(--hm-accent-ink)",
+              }}
+            >
+              In progress
+            </span>
+          )}
+        </div>
+        <div className="p-6 sm:p-7 flex flex-col gap-2 flex-1">
+          {s.location && (
+            <p
+              className="font-mono uppercase"
+              style={{
+                fontSize: "10px",
+                letterSpacing: "0.22em",
+                color: "var(--hm-ink-3)",
+              }}
+            >
+              {s.location}
+            </p>
+          )}
+          <h3
+            className="font-serif italic"
+            style={{
+              fontSize: "var(--hm-text-h3)",
+              color: "var(--hm-ink)",
+              fontWeight: 500,
+              lineHeight: 1.2,
+              letterSpacing: "-0.01em",
+            }}
+          >
+            {s.title}
+          </h3>
+          {s.description && (
+            <p
+              className="font-sans line-clamp-2 mt-1"
+              style={{
+                fontSize: "var(--hm-text-body)",
+                color: "var(--hm-ink-2)",
+                lineHeight: 1.55,
+              }}
+            >
+              {s.description}
+            </p>
+          )}
+          <span
+            className="font-mono uppercase mt-3 transition-colors group-hover:text-[var(--hm-accent)]"
+            style={{
+              fontSize: "var(--hm-text-meta)",
+              letterSpacing: "0.15em",
+              color: "var(--hm-ink)",
+            }}
+          >
+            View project →
+          </span>
+        </div>
+      </article>
+    </Link>
+  );
+}
+
+function EmptyShowcaseState({ message }: { message: string }) {
+  return (
+    <div
+      className="px-8 py-16"
+      style={{
+        background: "var(--hm-paper-2)",
+        borderTop: "1px solid var(--hm-rule)",
+        borderBottom: "1px solid var(--hm-rule)",
+      }}
+    >
+      <Building2
+        aria-hidden="true"
+        className="h-7 w-7"
+        style={{ color: "var(--hm-ink-3)" }}
+      />
+      <p
+        className="mt-5 font-serif italic"
+        style={{
+          fontSize: "var(--hm-text-h3)",
+          color: "var(--hm-ink)",
+          lineHeight: 1.3,
+        }}
+      >
+        {message}
+      </p>
+    </div>
   );
 }
