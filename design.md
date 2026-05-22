@@ -62,16 +62,24 @@ outside the token block.
 
 ## Typography
 
-- **Display**: Playfair Display, weight 700 (bold), roman (not italic).
-  Loaded via `next/font` as `--font-playfair`. Used for all H1/H2/H3
-  and ornamental tabular-nums (prices, phone numbers). Tracking:
-  −0.015 em on headings. Bold + roman matches the classic-print weight
-  the logo wordmark sits at.
-- **Body**: Geist, weight 400 (and 500 for emphasis). Loaded via
-  `next/font` as `--font-sans`.
-- **Mono / eyebrow**: Geist Mono via `--font-sans` fallback to system
-  mono. Used for uppercase eyebrows, dateline meta, "View on MLS" CTAs,
-  status flags, and any tabular meta. Tracking: 0.18em.
+Brand fonts come from Jess — they match the physical signage she makes
+for JLC. Both are geometric sans.
+
+- **Display**: League Spartan, weights 400/500/700/800. Loaded via
+  `next/font` as `--font-display`. Used for all H1/H2/H3 and
+  ornamental tabular-nums (prices, phone numbers). Tracking:
+  −0.015 em on big headings; League Spartan also works very well
+  uppercase with positive tracking for mono-caps eyebrows. The
+  Tailwind `font-serif` class is remapped to this variable in
+  `globals.css` (the class name is legacy; the font is sans).
+- **Body**: Montserrat, weights 400/500/600/700. Loaded as
+  `--font-sans`. Used for everything not display — paragraphs, form
+  labels, link text, button text.
+- **Mono / eyebrow**: legacy `font-mono` falls back to the system
+  monospace stack since the project no longer loads Geist Mono.
+  Mono-caps eyebrows can use League Spartan with `letter-spacing:
+  0.18em` instead — same uppercase aesthetic, one fewer font in the
+  page weight budget.
 - **Hero headline** (Marquee Hero family): `--hm-text-display`
   `clamp(3.5rem, 9vw, 8.5rem)`, italic Playfair, line-height 0.95.
 - **H2 (section heads)**: `--hm-text-h2` `clamp(1.75rem, 3.2vw, 2.75rem)`.

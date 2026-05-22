@@ -1,25 +1,29 @@
 import type { Metadata, Viewport } from "next";
-import { Open_Sans, Playfair_Display, Geist } from "next/font/google";
+import { Montserrat, League_Spartan } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/Toaster";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
 import { OrganizationJsonLd } from "@/components/JsonLd";
 import { cn } from "@/lib/utils";
 
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+/* Brand fonts: League Spartan + Montserrat, per Jess. These match the
+ * fonts she uses on the JLC physical signage. League Spartan is the
+ * display face (big headlines, mono-caps eyebrows); Montserrat is body. */
 
-const openSans = Open_Sans({
-  variable: "--font-open-sans",
+const montserrat = Montserrat({
+  variable: "--font-sans",
   subsets: ["latin"],
   display: "swap",
+  weight: ["400", "500", "600", "700"],
   fallback: ["system-ui", "arial"],
 });
 
-const playfair = Playfair_Display({
-  variable: "--font-playfair",
+const leagueSpartan = League_Spartan({
+  variable: "--font-display",
   subsets: ["latin"],
   display: "swap",
-  fallback: ["Georgia", "serif"],
+  weight: ["400", "500", "700", "800"],
+  fallback: ["Helvetica", "Arial", "sans-serif"],
 });
 
 export const viewport: Viewport = {
@@ -83,9 +87,9 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={cn("scroll-smooth", "font-sans", geist.variable)}>
+    <html lang="en" className={cn("scroll-smooth", "font-sans", montserrat.variable)}>
       <body
-        className={`${openSans.variable} ${playfair.variable} font-sans antialiased`}
+        className={`${leagueSpartan.variable} font-sans antialiased`}
       >
         <OrganizationJsonLd />
         <GoogleAnalytics />
