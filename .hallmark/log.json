@@ -1,6 +1,16 @@
 [
   {
     "date": "2026-05-22",
+    "macrostructure": "form-page family",
+    "theme": "Linen",
+    "enrichment": "none",
+    "genre": "editorial",
+    "brief": "Contact page · routed to departments · /contact",
+    "scope": "page",
+    "target": "app/contact/page.tsx"
+  },
+  {
+    "date": "2026-05-22",
     "macrostructure": "Photographic",
     "theme": "Linen",
     "enrichment": "none",
