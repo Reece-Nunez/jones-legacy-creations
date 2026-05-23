@@ -386,7 +386,7 @@ export default function ContactPage() {
               <OfficeBlock label="General email">
                 <a
                   href="mailto:office@joneslegacycreations.com"
-                  className="transition-colors hover:text-[var(--hm-accent)]"
+                  className="transition-colors hover:text-[var(--hm-accent)] break-all"
                   style={{
                     color: "var(--hm-ink)",
                     borderBottom: "1px solid var(--hm-rule)",
@@ -446,7 +446,10 @@ function OfficeBlock({
   children: React.ReactNode;
 }) {
   return (
-    <div>
+    // min-width: 0 lets the grid column shrink and wrap long content
+    // (otherwise the email address forces the column wider than its
+    // share, which is what was making it run into the next column).
+    <div style={{ minWidth: 0 }}>
       <p
         className="font-mono uppercase mb-3"
         style={{
