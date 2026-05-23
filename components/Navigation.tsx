@@ -68,7 +68,10 @@ export function Navigation() {
               width={400}
               height={400}
               className="object-contain"
-              style={{ height: "40px", width: "auto" }}
+              // Fluid sizing: 48 px floor on phones, scales up to 64 px on
+              // wide screens. Fits inside the existing h-16 (mobile) /
+              // h-20 (desktop) nav without changing the layout.
+              style={{ height: "clamp(48px, 5.5vw, 64px)", width: "auto" }}
               priority
             />
           </Link>
