@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { createAdminClient } from "@/lib/supabase/admin";
 import { COST_RANGES, PROJECT_TYPE_OPTIONS } from "@/lib/types/database";
 import { Resend } from "resend";
+import { checkSpamProtection } from "@/lib/spam-protection";
 import {
   generateEstimateWithAI,
   EstimateAIError,
@@ -31,17 +32,44 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Spam protection: IP rate limit + content validation, plus optional
+    // honeypot / reCAPTCHA if the client sent them. Matches the pattern
+    // used by /api/contact and /api/construction.
+    const spamCheck = await checkSpamProtection({
+      request,
+      recaptchaToken: body.recaptchaToken,
+      recaptchaAction: "estimate_form",
+      honeypotValue: body.honeypot,
+      contentCheck: {
+        name: client_name,
+        message: description,
+        minMessageWords: 3,
+      },
+    });
+
+    if (!spamCheck.passed) {
+      console.log("[estimate] spam check failed:", spamCheck.error);
+      return NextResponse.json(
+        { error: "Unable to process request" },
+        { status: 429 }
+      );
+    }
+
     // Public form — service-role client bypasses RLS.
-    // Rate limiting + reCAPTCHA gating happen above.
     const supabase = createAdminClient();
 
-    // Basic rate limiting: same email within the last hour gets bounced.
+    // Second-layer rate limit: same email within the last hour gets bounced.
+    // (IP rate limit above catches bursts; this catches resubmits across IPs.)
     const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000).toISOString();
-    const { data: recentEstimates } = await supabase
+    const { data: recentEstimates, error: recentLookupError } = await supabase
       .from("estimates")
       .select("id")
       .eq("client_email", client_email)
       .gte("created_at", oneHourAgo);
+
+    if (recentLookupError) {
+      console.error("[estimate] recent-estimate lookup failed:", recentLookupError);
+    }
 
     if (recentEstimates && recentEstimates.length > 0) {
       return NextResponse.json(
@@ -150,7 +178,7 @@ export async function POST(request: NextRequest) {
     const finalMin = aiEstimateMin ?? fallbackMin;
     const finalMax = aiEstimateMax ?? fallbackMax;
 
-    await supabase
+    const { error: updateErr } = await supabase
       .from("estimates")
       .update({
         ai_estimate_min: aiEstimateMin,
@@ -161,6 +189,16 @@ export async function POST(request: NextRequest) {
         estimated_max: finalMax,
       })
       .eq("id", estimateRecord.id);
+
+    if (updateErr) {
+      // Don't fail the request — the user already has their estimate in-hand
+      // via the response. But surface it: without this, /admin/estimates
+      // shows the static fallback while the user saw AI numbers.
+      console.error(
+        `[estimate] failed to persist AI results to estimate ${estimateRecord.id}:`,
+        updateErr
+      );
+    }
 
     // Admin notification email
     if (process.env.RESEND_API_KEY) {
