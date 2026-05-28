@@ -1,5 +1,6 @@
 import Link from "next/link";
 import Image from "next/image";
+import { NewsletterSignup } from "@/components/NewsletterSignup";
 
 /* Hallmark · genre: editorial · component: footer · archetype: Ft4 Dense colophon
  * design-system: design.md · designed-as-app
@@ -76,6 +77,13 @@ export function Footer() {
           className="border-0 mt-12"
           style={{ borderTop: "1px solid var(--hm-rule-thick)" }}
         />
+
+        {/* Newsletter signup — site-wide capture for visitors who
+          * aren't ready to fill the full lead form. Single opt-in,
+          * dual-writes to the leads table with source='newsletter'. */}
+        <div className="mt-2">
+          <NewsletterSignup source="footer" />
+        </div>
 
         {/* Three colophon columns */}
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-10 sm:gap-12 pt-12">

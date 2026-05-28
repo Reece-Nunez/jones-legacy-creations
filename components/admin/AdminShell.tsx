@@ -39,6 +39,7 @@ const navLinks = [
   { label: "Contractors & Vendors", href: "/admin/contractors", icon: Users, badgeKey: "w9" },
   { label: "Financials", href: "/admin/financials", icon: DollarSign },
   { label: "Leads", href: "/admin/leads", icon: Mail },
+  { label: "Subscribers", href: "/admin/subscribers", icon: Mail },
   { label: "Testimonials", href: "/admin/testimonials", icon: Star },
   { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
   { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
