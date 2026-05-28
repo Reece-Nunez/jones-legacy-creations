@@ -470,20 +470,17 @@ export default function ProjectDetail({
     salePrice,
     loanAmount,
     downPayment,
+    drawsFunded,
     originationFeePercent,
     originationFee,
     interestRate,
     accruedInterest,
     saleClosingCosts,
+    hasSaleSettlement,
     miscCharges: miscChargesTotal,
+    hasLoanLedger,
     projectedProfit,
   } = pf;
-  // The "Total Lender Cost" tile in FinancialSummary used to display
-  // origination + interest. With the new profit formula, origination is
-  // bundled inside down_payment (Blake's cash at construction-loan closing
-  // includes title fees), so we surface the actual cash-out-of-pocket
-  // impact instead: down_payment + interest + sale_closing_costs + misc.
-  const totalLenderCost = downPayment + accruedInterest + saleClosingCosts + miscChargesTotal;
   const profitMargin = pf.profitMargin * 100;
 
   // ---- generic mutation helper -------------------------------------------
@@ -557,15 +554,18 @@ export default function ProjectDetail({
           <FinancialSummary
             salePrice={salePrice}
             totalCosts={totalCosts}
-            loanAmount={loanAmount}
+            drawsFunded={drawsFunded}
             downPayment={downPayment}
+            loanAmount={loanAmount}
             lenderName={project.lender_name}
             originationFee={originationFee}
             originationFeePercent={originationFeePercent}
             accruedInterest={accruedInterest}
             interestRate={interestRate}
             saleClosingCosts={saleClosingCosts}
-            totalLenderCost={totalLenderCost}
+            miscCharges={miscChargesTotal}
+            hasLoanLedger={hasLoanLedger}
+            hasSaleSettlement={hasSaleSettlement}
             projectedProfit={projectedProfit}
             profitMargin={profitMargin}
           />
@@ -899,6 +899,27 @@ function MiscChargesSection({
     await mutate(`/api/admin/projects/${projectId}/misc-charges/${id}`, "DELETE");
   }
 
+  // Empty state collapses to a single inline button so it doesn't
+  // pad the project overview when no misc charges exist. Only when the
+  // user clicks "+ Add" or there are existing charges do we render the
+  // full section.
+  if (charges.length === 0 && !showAdd) {
+    return (
+      <div className="mt-3 flex items-center gap-2">
+        <CreditCard className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+        <button
+          onClick={() => setShowAdd(true)}
+          className="text-xs text-gray-500 hover:text-indigo-600 cursor-pointer"
+        >
+          + Add misc charge
+          <span className="ml-1 text-gray-400">
+            (buyer credits, lender fees, etc.)
+          </span>
+        </button>
+      </div>
+    );
+  }
+
   return (
     <ShadCard className="mt-4 overflow-hidden">
       <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100">
@@ -908,9 +929,7 @@ function MiscChargesSection({
             Misc Charges
           </span>
           <span className="text-xs text-gray-500">
-            {charges.length === 0
-              ? "No items"
-              : `${charges.length} item${charges.length !== 1 ? "s" : ""} · ${fmt(total)}`}
+            {`${charges.length} item${charges.length !== 1 ? "s" : ""} · ${fmt(total)}`}
           </span>
         </div>
         <button
@@ -922,11 +941,6 @@ function MiscChargesSection({
       </div>
 
       <CardContent className="p-3 sm:p-4 space-y-2">
-        <p className="text-[11px] text-gray-500">
-          One-off costs that don&apos;t fit elsewhere — buyer rate buy-downs,
-          lender fees rolled into interest, late fees, etc. Subtracted from
-          Projected Profit.
-        </p>
 
         {showAdd && (
           <div className="bg-rose-50/40 border border-rose-200 rounded-lg p-3 space-y-2">
@@ -1112,38 +1126,50 @@ function MiscChargesSection({
 function FinancialSummary({
   salePrice,
   totalCosts,
-  loanAmount,
+  drawsFunded,
   downPayment,
+  loanAmount,
   lenderName,
   originationFee,
   originationFeePercent,
   accruedInterest,
   interestRate,
   saleClosingCosts,
-  totalLenderCost,
+  miscCharges,
+  hasLoanLedger,
+  hasSaleSettlement,
   projectedProfit,
   profitMargin,
 }: {
   salePrice: number;
   totalCosts: number;
-  loanAmount: number;
+  drawsFunded: number;
   downPayment: number;
+  loanAmount: number;
   lenderName: string | null;
   originationFee: number;
   originationFeePercent: number;
   accruedInterest: number;
   interestRate: number;
   saleClosingCosts: number;
-  totalLenderCost: number;
+  miscCharges: number;
+  hasLoanLedger: boolean;
+  hasSaleSettlement: boolean;
   projectedProfit: number;
   profitMargin: number;
 }) {
-  // When down_payment > 0, the origination fee is bundled inside it (per the
-  // user data-entry convention). Showing both as separate cost tiles would
-  // imply double-subtraction — hide the origination tile in that case and
-  // keep down_payment as the single "cash Blake brought to closing" line.
+  // When down_payment > 0, origination is bundled in (per the user
+  // data-entry convention). Showing both would imply double-subtraction.
   const showOriginationTile = downPayment <= 0 && originationFee > 0;
   const [expanded, setExpanded] = useState(true);
+  const [mathOpen, setMathOpen] = useState(false);
+
+  // Lender-side loan reality: how much of the loan has actually been
+  // drawn. Replaces the static `loan_amount` commitment number which
+  // doesn't change after origination and isn't a useful at-a-glance.
+  const loanDrawn = drawsFunded + downPayment;
+  const loanUtilization =
+    loanAmount > 0 ? Math.min(loanDrawn / loanAmount, 1) : 0;
 
   const profitColor = projectedProfit >= 0 ? "text-green-600" : "text-red-600";
   const profitBg = projectedProfit >= 0 ? "bg-green-50 border-green-200" : "bg-red-50 border-red-200";
@@ -1181,53 +1207,51 @@ function FinancialSummary({
 
       {expanded && (
         <CardContent className="px-4 pb-4 pt-0 space-y-3">
-          {/* Row 1: Project Overview */}
+          {/* Row 1: Revenue side + loan utilization */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-3">
             <MiniCard
               icon={<DollarSign className="w-3.5 h-3.5 text-blue-500" />}
               label="Sale Price"
               value={fmt(salePrice)}
-              className="text-gray-900"
             />
             <MiniCard
               icon={<CreditCard className="w-3.5 h-3.5 text-orange-500" />}
               label="Total Costs"
               value={fmt(totalCosts)}
-              className="text-gray-900"
             />
             <MiniCard
               icon={<Landmark className="w-3.5 h-3.5 text-indigo-500" />}
-              label="Loan Amount"
-              value={fmt(loanAmount)}
-              className="text-gray-900"
+              label="Loan Drawn"
+              value={fmt(loanDrawn)}
+              caption={
+                loanAmount > 0
+                  ? `${(loanUtilization * 100).toFixed(0)}% of ${fmt(loanAmount)}`
+                  : undefined
+              }
             />
             <MiniCard
               icon={<Banknote className="w-3.5 h-3.5 text-emerald-500" />}
               label="Down Payment"
               value={fmt(downPayment)}
-              className="text-gray-900"
             />
           </div>
 
           {/* Row 2: Costs subtracted from projected profit.
              *
-             * The formula (see lib/finance/project-financials.ts) is:
-             *   profit = sale_price − total_costs
-             *          − accrued_interest
-             *          − sale_closing_costs
-             *          − down_payment   (which already includes origination
-             *                            for the typical Blake-entered case)
+             * Formula (lib/finance/project-financials.ts):
+             *   profit = sale_price − total_costs − accrued_interest
+             *          − sale_closing_costs − down_payment − misc_charges
              *
-             * Show origination as its own tile only when down_payment is 0
-             * (rare — happens for projects entered with separate origination
-             * but no closing-day cash). Otherwise it's bundled. */}
+             * Origination shows only when down_payment is 0 (rare —
+             * normally origination is rolled into down_payment per the
+             * data-entry convention). Source badges tell Blake whether
+             * a number is from lender actuals, the ALTA, or a formula. */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
             {showOriginationTile ? (
               <MiniCard
                 icon={<Percent className="w-3.5 h-3.5 text-purple-500" />}
                 label={`Origination Fee (${originationFeePercent}%)`}
                 value={fmt(originationFee)}
-                className="text-gray-900"
               />
             ) : (
               <MiniCard
@@ -1235,19 +1259,20 @@ function FinancialSummary({
                 label="Sale Closing Costs"
                 value={fmt(saleClosingCosts)}
                 className={saleClosingCosts > 0 ? "text-gray-900" : "text-gray-400"}
+                badge={hasSaleSettlement ? "ALTA" : saleClosingCosts > 0 ? "estimate" : undefined}
               />
             )}
             <MiniCard
               icon={<TrendingUp className="w-3.5 h-3.5 text-amber-500" />}
               label={`Accrued Interest (${interestRate}%)`}
               value={fmt(accruedInterest)}
-              className="text-gray-900"
+              badge={hasLoanLedger ? "lender" : accruedInterest > 0 ? "formula" : undefined}
             />
             <MiniCard
-              icon={<Building className="w-3.5 h-3.5 text-red-500" />}
-              label="Total Cost to Blake"
-              value={fmt(totalLenderCost)}
-              className="text-red-600 font-bold"
+              icon={<CreditCard className="w-3.5 h-3.5 text-rose-500" />}
+              label="Misc Charges"
+              value={fmt(miscCharges)}
+              className={miscCharges > 0 ? "text-gray-900" : "text-gray-400"}
             />
           </div>
 
@@ -1276,9 +1301,77 @@ function FinancialSummary({
               </div>
             </div>
           </div>
+
+          {/* Profit math — collapsible plain-English breakdown of how
+           *  the headline number was derived. Useful when a tile reads
+           *  different from what Blake expected and he wants to verify
+           *  the subtraction. */}
+          <button
+            onClick={() => setMathOpen((v) => !v)}
+            className="w-full flex items-center justify-between text-xs text-gray-600 hover:text-gray-900 cursor-pointer pt-1"
+          >
+            <span className="font-medium">
+              {mathOpen ? "Hide" : "Show"} profit math
+            </span>
+            {mathOpen ? (
+              <ChevronUp className="w-3.5 h-3.5" />
+            ) : (
+              <ChevronDown className="w-3.5 h-3.5" />
+            )}
+          </button>
+          {mathOpen && (
+            <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-1 text-xs tabular-nums">
+              <MathRow label="Sale Price" value={salePrice} sign="+" />
+              <MathRow label="Total Costs (contractors)" value={totalCosts} sign="−" />
+              <MathRow
+                label={`Accrued Interest${hasLoanLedger ? " (lender ledger)" : ""}`}
+                value={accruedInterest}
+                sign="−"
+              />
+              <MathRow
+                label={`Sale Closing Costs${hasSaleSettlement ? " (from ALTA)" : ""}`}
+                value={saleClosingCosts}
+                sign="−"
+              />
+              <MathRow label="Down Payment" value={downPayment} sign="−" />
+              <MathRow label="Misc Charges" value={miscCharges} sign="−" />
+              {showOriginationTile && (
+                <MathRow
+                  label={`Origination Fee (${originationFeePercent}%)`}
+                  value={originationFee}
+                  sign="−"
+                />
+              )}
+              <div className="border-t border-gray-300 pt-1 mt-1 flex items-center justify-between">
+                <span className="font-bold text-gray-900">Projected Profit</span>
+                <span className={`font-bold ${profitColor}`}>
+                  {fmt(projectedProfit)}
+                </span>
+              </div>
+            </div>
+          )}
         </CardContent>
       )}
     </ShadCard>
+  );
+}
+
+function MathRow({
+  label,
+  value,
+  sign,
+}: {
+  label: string;
+  value: number;
+  sign: "+" | "−";
+}) {
+  return (
+    <div className="flex items-center justify-between">
+      <span className="text-gray-700">{label}</span>
+      <span className="text-gray-900">
+        {sign} {fmt(value)}
+      </span>
+    </div>
   );
 }
 
@@ -1287,21 +1380,43 @@ function MiniCard({
   label,
   value,
   className,
+  caption,
+  badge,
 }: {
   icon: React.ReactNode;
   label: string;
   value: string;
   className?: string;
+  caption?: string;
+  /** Small tag indicating the source of the number — "ALTA",
+   *  "lender", "estimate", etc. Color is derived from content. */
+  badge?: string;
 }) {
+  const badgeColor =
+    badge === "ALTA" || badge === "lender"
+      ? "bg-emerald-100 text-emerald-700"
+      : badge === "estimate" || badge === "formula"
+        ? "bg-amber-100 text-amber-700"
+        : "bg-gray-100 text-gray-600";
   return (
     <div className="bg-gray-50 rounded-lg p-2.5">
       <div className="flex items-center gap-1.5 mb-0.5">
         {icon}
         <span className="text-[11px] text-gray-500 font-medium">{label}</span>
+        {badge && (
+          <span
+            className={`ml-auto rounded-full px-1.5 py-0.5 text-[9px] font-semibold uppercase tracking-wide ${badgeColor}`}
+          >
+            {badge}
+          </span>
+        )}
       </div>
       <p className={`text-sm font-semibold tabular-nums ${className ?? "text-gray-900"}`}>
         {value}
       </p>
+      {caption && (
+        <p className="text-[10px] text-gray-400 mt-0.5">{caption}</p>
+      )}
     </div>
   );
 }

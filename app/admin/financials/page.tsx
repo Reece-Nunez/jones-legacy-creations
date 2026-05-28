@@ -301,49 +301,48 @@ export default async function FinancialsPage({
               </p>
             ) : (
               <>
-                {/* Desktop table */}
+                {/* Desktop table.
+                  *
+                  * Columns chosen to match the profit formula 1:1 —
+                  * every column is something Blake either receives
+                  * (Sale Price) or pays out (Costs, Interest, Closing,
+                  * Down, Misc), so the user can mentally subtract
+                  * across the row and arrive at Profit.
+                  *
+                  * Removed since the QC audit:
+                  *   - Loan Amount (commitment number, not a cost)
+                  *   - Origination (bundled in Down Payment for nearly
+                  *     all projects — showing it implies an extra
+                  *     subtraction that doesn't happen)
+                  *
+                  * Added:
+                  *   - Down Payment, Closing, Misc — these were
+                  *     invisible at the portfolio level despite each
+                  *     being a real profit driver.
+                  *   - Tiny "📒" indicator next to Interest if backed
+                  *     by the lender ledger (rather than a formula
+                  *     estimate). "🏠" next to Closing if from ALTA. */}
                 <div className="hidden overflow-x-auto lg:block">
                   <table className="w-full text-sm">
                     <thead>
                       <tr className="border-b text-left">
-                        <th scope="col" className="pb-3 pr-4 font-semibold text-gray-900">
-                          Project
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Sale Price
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Total Costs
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Loan Amount
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Draws Funded
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Origination
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Interest
-                        </th>
-                        <th scope="col" className="pb-3 pr-4 text-right font-semibold text-gray-900">
-                          Projected Profit
-                        </th>
-                        <th scope="col" className="pb-3 text-right font-semibold text-gray-900">
-                          Margin
-                        </th>
+                        <th scope="col" className="pb-3 pr-3 font-semibold text-gray-900">Project</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Sale Price</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Build Cost</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Interest</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Closing</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Down</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Misc</th>
+                        <th scope="col" className="pb-3 pr-3 text-right font-semibold text-gray-900">Profit</th>
+                        <th scope="col" className="pb-3 text-right font-semibold text-gray-900">Margin</th>
                       </tr>
                     </thead>
                     <tbody>
                       {projectFinancials.map((pf) => {
                         const profitable = pf.projectedProfit >= 0;
                         return (
-                          <tr
-                            key={pf.project.id}
-                            className="border-b last:border-0"
-                          >
-                            <td className="py-3 pr-4">
+                          <tr key={pf.project.id} className="border-b last:border-0">
+                            <td className="py-3 pr-3">
                               <Link
                                 href={`/admin/projects/${pf.project.id}`}
                                 className="font-medium text-indigo-600 hover:text-indigo-500"
@@ -351,63 +350,46 @@ export default async function FinancialsPage({
                                 {pf.project.name}
                               </Link>
                             </td>
-                            <td
-                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
-                              aria-label={spokenDollars(pf.salePrice)}
-                            >
+                            <td className="py-3 pr-3 text-right tabular-nums text-gray-700">
                               {pf.salePrice > 0 ? fmt(pf.salePrice) : "--"}
                             </td>
-                            <td
-                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
-                              aria-label={spokenDollars(pf.totalCosts)}
-                            >
+                            <td className="py-3 pr-3 text-right tabular-nums text-gray-700">
                               {fmt(pf.totalCosts)}
                             </td>
-                            <td
-                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
-                              aria-label={spokenDollars(pf.loanAmount)}
-                            >
-                              {pf.loanAmount > 0 ? fmt(pf.loanAmount) : "--"}
-                            </td>
-                            <td className="py-3 pr-4 text-right tabular-nums text-gray-700">
-                              {fmt(pf.drawsFunded)}
-                              {pf.drawsTotal > 0 && (
-                                <span className="ml-1 text-xs text-gray-400">
-                                  / {fmt(pf.drawsTotal)}
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
-                              aria-label={spokenDollars(pf.originationFee)}
-                            >
-                              {fmt(pf.originationFee)}
-                              {pf.originationFeePercent > 0 && (
-                                <span className="ml-1 text-xs text-gray-400">
-                                  ({pf.originationFeePercent}%)
-                                </span>
-                              )}
-                            </td>
-                            <td
-                              className="py-3 pr-4 text-right tabular-nums text-gray-700"
-                              aria-label={spokenDollars(pf.accruedInterest)}
-                            >
+                            <td className="py-3 pr-3 text-right tabular-nums text-gray-700">
                               {fmt(pf.accruedInterest)}
-                              {pf.interestRate > 0 && (
-                                <span className="ml-1 text-xs text-gray-400">
-                                  ({pf.interestRate}%)
+                              {pf.hasLoanLedger && (
+                                <span
+                                  className="ml-1 text-[10px] text-emerald-600"
+                                  title="Sourced from lender ledger (actuals)"
+                                >
+                                  📒
                                 </span>
                               )}
                             </td>
+                            <td className="py-3 pr-3 text-right tabular-nums text-gray-700">
+                              {fmt(pf.saleClosingCosts)}
+                              {pf.hasSaleSettlement && (
+                                <span
+                                  className="ml-1 text-[10px] text-emerald-600"
+                                  title="Derived from ALTA settlement"
+                                >
+                                  🏠
+                                </span>
+                              )}
+                            </td>
+                            <td className="py-3 pr-3 text-right tabular-nums text-gray-700">
+                              {fmt(pf.downPayment)}
+                            </td>
+                            <td className="py-3 pr-3 text-right tabular-nums text-gray-700">
+                              {pf.miscCharges > 0 ? fmt(pf.miscCharges) : "--"}
+                            </td>
                             <td
-                              className={`py-3 pr-4 text-right tabular-nums font-semibold ${
+                              className={`py-3 pr-3 text-right tabular-nums font-semibold ${
                                 profitable ? "text-green-700" : "text-red-700"
                               }`}
-                              aria-label={spokenDollars(pf.projectedProfit)}
                             >
-                              {pf.salePrice > 0
-                                ? fmt(pf.projectedProfit)
-                                : "--"}
+                              {pf.salePrice > 0 ? fmt(pf.projectedProfit) : "--"}
                             </td>
                             <td
                               className={`py-3 text-right tabular-nums font-semibold ${
@@ -464,41 +446,37 @@ export default async function FinancialsPage({
                             </p>
                           </div>
                           <div>
-                            <span className="text-gray-500">Total Costs</span>
+                            <span className="text-gray-500">Build Cost</span>
                             <p className="tabular-nums font-medium text-gray-900">
                               {fmt(pf.totalCosts)}
                             </p>
                           </div>
                           <div>
-                            <span className="text-gray-500">Loan Amount</span>
-                            <p className="tabular-nums font-medium text-gray-900">
-                              {pf.loanAmount > 0 ? fmt(pf.loanAmount) : "--"}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">Draws Funded</span>
-                            <p className="tabular-nums font-medium text-gray-900">
-                              {fmt(pf.drawsFunded)}
-                            </p>
-                          </div>
-                          <div>
                             <span className="text-gray-500">
-                              Origination
-                              {pf.originationFeePercent > 0 &&
-                                ` (${pf.originationFeePercent}%)`}
-                            </span>
-                            <p className="tabular-nums font-medium text-gray-900">
-                              {fmt(pf.originationFee)}
-                            </p>
-                          </div>
-                          <div>
-                            <span className="text-gray-500">
-                              Interest
-                              {pf.interestRate > 0 &&
-                                ` (${pf.interestRate}%)`}
+                              Interest {pf.hasLoanLedger && <span title="From lender ledger">📒</span>}
                             </span>
                             <p className="tabular-nums font-medium text-gray-900">
                               {fmt(pf.accruedInterest)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">
+                              Closing {pf.hasSaleSettlement && <span title="From ALTA">🏠</span>}
+                            </span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {fmt(pf.saleClosingCosts)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Down Payment</span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {fmt(pf.downPayment)}
+                            </p>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Misc</span>
+                            <p className="tabular-nums font-medium text-gray-900">
+                              {pf.miscCharges > 0 ? fmt(pf.miscCharges) : "--"}
                             </p>
                           </div>
                         </div>
