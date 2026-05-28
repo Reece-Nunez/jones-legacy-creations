@@ -3,6 +3,7 @@ import { Montserrat, League_Spartan } from "next/font/google";
 import "./globals.css";
 import { Toaster } from "@/components/Toaster";
 import { GoogleAnalytics } from "@/components/GoogleAnalytics";
+import { MetaPixel } from "@/components/MetaPixel";
 import { OrganizationJsonLd } from "@/components/JsonLd";
 import { cn } from "@/lib/utils";
 
@@ -93,6 +94,7 @@ export default function RootLayout({
       >
         <OrganizationJsonLd />
         <GoogleAnalytics />
+        <MetaPixel />
         {children}
         <script
           dangerouslySetInnerHTML={{

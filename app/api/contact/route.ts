@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 import { checkSpamProtection } from '@/lib/spam-protection';
 import { contactSubmissionSchema, ContactFormData } from '@/lib/schemas/contact';
+import { captureLead } from '@/lib/leads/capture';
 
 const getClientEmail = (data: ContactFormData) => `
 <!DOCTYPE html>
@@ -126,7 +127,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Process form submission
+    // 3. Persist the lead BEFORE doing anything else. Even if Resend
+    //    blows up below, we still have the customer's contact info.
+    const captured = await captureLead({
+      source: 'contact',
+      request,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      subject: data.subject,
+      message: data.message,
+      rawPayload: data as unknown as Record<string, unknown>,
+    });
+
+    // 4. Process form submission
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     const clientEmailResult = await resend.emails.send({
@@ -154,7 +168,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: businessEmailResult.error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, leadId: captured?.id ?? null });
   } catch (error) {
     console.error('Error sending emails:', error);
     const message = error instanceof Error ? error.message : 'Failed to send emails';

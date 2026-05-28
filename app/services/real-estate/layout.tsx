@@ -2,12 +2,31 @@ import type { Metadata } from "next";
 import { ServiceJsonLd, BreadcrumbJsonLd } from "@/components/JsonLd";
 
 export const metadata: Metadata = {
-  title: "Real Estate Services in Southern Utah",
-  description: "Blake Jones Realty offers expert real estate services across Southern Utah. Buy, sell, or invest in properties in Hurricane, St. George, Washington, Ivins, Cedar City, and beyond.",
+  title: "Real Estate Agent in Hurricane & St. George, UT",
+  description:
+    "Blake Jones Realty — buy, sell, or invest in Hurricane, St. George, Washington, Ivins, Cedar City. Local Southern Utah real estate expertise. Get current listings + market analysis.",
+  keywords: [
+    "real estate Hurricane UT",
+    "real estate St George UT",
+    "Southern Utah homes for sale",
+    "Hurricane realtor",
+    "Washington County real estate",
+    "Blake Jones Realty",
+  ],
   openGraph: {
-    title: "Real Estate Services | Blake Jones Realty",
-    description: "Expert real estate services across Southern Utah. Buy, sell, or invest with experienced local guidance in Hurricane, St. George, and beyond.",
+    title: "Real Estate Agent in Hurricane & St. George, UT | Blake Jones Realty",
+    description:
+      "Buy, sell, or invest in Southern Utah real estate with local expertise. Hurricane, St. George, Washington, Ivins, Cedar City.",
     url: "https://www.joneslegacycreations.com/services/real-estate",
+    type: "website",
+    images: [
+      {
+        url: "/services-real-estate-og.jpg",
+        width: 1200,
+        height: 630,
+        alt: "Blake Jones Realty — Southern Utah real estate",
+      },
+    ],
   },
   alternates: {
     canonical: "https://www.joneslegacycreations.com/services/real-estate",

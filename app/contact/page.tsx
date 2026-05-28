@@ -7,6 +7,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { contactFormSchema, ContactFormData } from "@/lib/schemas/contact";
+import { trackLead } from "@/lib/analytics";
 import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
@@ -78,6 +79,14 @@ export default function ContactPage() {
         body: JSON.stringify({ ...data, recaptchaToken }),
       });
       if (!response.ok) throw new Error("Failed to send form");
+      // Fire conversion to GA4 + Meta Pixel. Value is rough EV (Blake's
+      // average contact-form lead converting to a project; tune later).
+      const json = await response.json().catch(() => null);
+      trackLead({
+        source: "contact",
+        leadId: json?.leadId ?? null,
+        value: 500,
+      });
       toast.success("Thanks. We'll get back to you within 24 hours.");
       reset();
     } catch (error) {

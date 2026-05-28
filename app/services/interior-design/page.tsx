@@ -8,6 +8,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { interiorDesignFormSchema, InteriorDesignFormData } from "@/lib/schemas/interior-design";
+import { trackLead } from "@/lib/analytics";
 import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
@@ -104,6 +105,13 @@ export default function InteriorDesignPage() {
       if (!response.ok) {
         throw new Error('Failed to send form');
       }
+
+      const json = await response.json().catch(() => null);
+      trackLead({
+        source: 'interior_design',
+        leadId: json?.leadId ?? null,
+        value: 800,
+      });
 
       toast.success("Thank you! We'll be in touch within 24 hours to discuss your design project.");
       reset();

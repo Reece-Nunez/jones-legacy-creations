@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { constructionFormSchema, ConstructionFormData } from "@/lib/schemas/construction";
+import { trackLead } from "@/lib/analytics";
 import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
@@ -149,6 +150,17 @@ export default function ConstructionPage() {
       if (!response.ok) {
         throw new Error('Failed to send form');
       }
+
+      // Construction leads are the highest-EV bucket — a single converted
+      // build is ~$200k profit on a Peach Springs-sized job. Use 5000 as
+      // the per-lead value for ad-spend optimization (rough EV after
+      // close rate).
+      const json = await response.json().catch(() => null);
+      trackLead({
+        source: 'construction',
+        leadId: json?.leadId ?? null,
+        value: 5000,
+      });
 
       toast.success("Thank you! We'll review your project details and contact you within 24-48 hours.");
       reset();

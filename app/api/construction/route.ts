@@ -1,6 +1,7 @@
 import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 import { checkSpamProtection } from '@/lib/spam-protection';
+import { captureLead } from '@/lib/leads/capture';
 import { constructionSubmissionSchema, ConstructionFormData } from '@/lib/schemas/construction';
 
 // Email template for client confirmation
@@ -176,7 +177,20 @@ export async function POST(request: Request) {
       );
     }
 
-    // 3. Process form submission
+    // 3. Persist the lead BEFORE Resend so a downstream email failure
+    //    doesn't lose the customer's contact info.
+    const captured = await captureLead({
+      source: 'construction',
+      request,
+      fullName: data.fullName,
+      email: data.email,
+      phone: data.phone,
+      subject: `${data.projectCategory || ''} — ${data.projectType || ''}`.trim() || null,
+      message: data.projectScope,
+      rawPayload: data as unknown as Record<string, unknown>,
+    });
+
+    // 4. Process form submission
     const resend = new Resend(process.env.RESEND_API_KEY);
 
     // Send confirmation email to client
@@ -206,7 +220,7 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: businessEmailResult.error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ success: true });
+    return NextResponse.json({ success: true, leadId: captured?.id ?? null });
   } catch (error) {
     console.error('Error sending emails:', error);
     const message = error instanceof Error ? error.message : 'Failed to send emails';

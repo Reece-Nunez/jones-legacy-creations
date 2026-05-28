@@ -6,6 +6,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import toast from "react-hot-toast";
 import { realEstateFormSchema, RealEstateFormData } from "@/lib/schemas/real-estate";
+import { trackLead } from "@/lib/analytics";
 import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
@@ -93,6 +94,13 @@ export default function RealEstatePage() {
       if (!response.ok) {
         throw new Error('Failed to send form');
       }
+
+      const json = await response.json().catch(() => null);
+      trackLead({
+        source: 'real_estate',
+        leadId: json?.leadId ?? null,
+        value: 2000,
+      });
 
       toast.success("Thank you! We'll be in touch within 24 hours to discuss your dream home.");
       reset();
