@@ -158,12 +158,20 @@ export default async function FinancialsPage({
               Construction loan tracking, draw requests, and projected profit
             </p>
           </div>
-          <Link
-            href="/admin"
-            className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
-          >
-            Back to Dashboard
-          </Link>
+          <div className="flex items-center gap-4">
+            <Link
+              href="/admin/financials/cashflow"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Cash Flow →
+            </Link>
+            <Link
+              href="/admin"
+              className="text-sm font-medium text-indigo-600 hover:text-indigo-500"
+            >
+              Back to Dashboard
+            </Link>
+          </div>
         </div>
 
         {/* ── A. Summary Cards ──────────────────────────────────── */}

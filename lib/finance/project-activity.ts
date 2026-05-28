@@ -52,6 +52,9 @@ export interface ActivityEvent {
   /** Original row id so the UI can navigate to / edit / delete the source. */
   sourceTable: "contractor_payments" | "loan_ledger" | "project_settlements" | "project_misc_charges";
   sourceRowId: string;
+  /** Which project this event belongs to — needed for the portfolio
+   *  cross-project view to keep events linked to their owner project. */
+  projectId: string;
 }
 
 const PAYMENT_STATUS_LABEL: Record<string, string> = {
@@ -129,6 +132,7 @@ export function buildProjectActivity(opts: {
       detail: statusLabel,
       sourceTable: "contractor_payments",
       sourceRowId: p.id,
+      projectId: p.project_id,
     });
   }
 
@@ -152,6 +156,7 @@ export function buildProjectActivity(opts: {
           : null),
       sourceTable: "loan_ledger",
       sourceRowId: l.id,
+      projectId: l.project_id,
     });
   }
 
@@ -175,6 +180,7 @@ export function buildProjectActivity(opts: {
         detail: `ALTA ${s.document_name ?? "settlement"}`,
         sourceTable: "project_settlements",
         sourceRowId: s.id,
+        projectId: s.project_id,
       });
     } else if (!isSale && s.cash_to_close != null) {
       events.push({
@@ -188,6 +194,7 @@ export function buildProjectActivity(opts: {
         detail: `ALTA ${s.document_name ?? "settlement"}`,
         sourceTable: "project_settlements",
         sourceRowId: s.id,
+        projectId: s.project_id,
       });
     }
 
@@ -223,6 +230,7 @@ export function buildProjectActivity(opts: {
         detail: isSale ? "Sale ALTA" : "Purchase ALTA",
         sourceTable: "project_settlements",
         sourceRowId: s.id,
+        projectId: s.project_id,
       });
     }
 
@@ -243,6 +251,7 @@ export function buildProjectActivity(opts: {
         detail: isSale ? "Sale ALTA" : "Purchase ALTA",
         sourceTable: "project_settlements",
         sourceRowId: s.id,
+        projectId: s.project_id,
       });
     }
   }
@@ -261,6 +270,7 @@ export function buildProjectActivity(opts: {
       detail: m.category,
       sourceTable: "project_misc_charges",
       sourceRowId: m.id,
+      projectId: m.project_id,
     });
   }
 
