@@ -20,6 +20,7 @@ import {
   type RealEstateListing,
   type RealEstateListingPhoto,
 } from "@/lib/types/real-estate";
+import { ListingInquiryForm } from "@/components/services/ListingInquiryForm";
 
 /* Hallmark · genre: editorial · component: listing detail
  * design-system: design.md · designed-as-app
@@ -362,6 +363,14 @@ export default function ListingDetail({ listing, photos }: Props) {
           </div>
         </section>
       )}
+
+      {/* Inquiry capture — the conversion mechanism the page used to
+       *  be missing. "View on MLS" and "Call" target high-intent
+       *  visitors; this targets the rest. */}
+      <ListingInquiryForm
+        listingId={listing.id}
+        listingAddress={`${listing.address}, ${listing.city}`}
+      />
 
       {/* Lightbox — full-screen image viewer with keyboard nav */}
       {lightboxIndex !== null && visiblePhotos[lightboxIndex] && (
