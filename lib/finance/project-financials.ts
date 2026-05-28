@@ -60,6 +60,7 @@ import type {
   DrawRequest,
   FinancingType,
   Project,
+  ProjectMiscCharge,
 } from "@/lib/types/database";
 
 export interface ProjectFinancials {
@@ -77,6 +78,9 @@ export interface ProjectFinancials {
   interestRate: number;
   accruedInterest: number;
   saleClosingCosts: number;
+  /** Sum of project_misc_charges.amount for this project. Always
+   *  subtracted from projected_profit regardless of financing type. */
+  miscCharges: number;
   /** Combined effect of financing on profit (negative for external_loan,
    *  positive for seller_financed, near-zero for cash). Equal to
    *  (projectedProfit − (salePrice − totalCosts)) — kept as its own field
@@ -164,16 +168,20 @@ export function computeAccruedInterest(
 /**
  * Compute the full financial picture for one project. Pass in the global
  * payments and draws arrays — this function filters to the project itself.
+ * `allMiscCharges` is optional for backward compat with callers that
+ * haven't been updated yet; new code should always pass it.
  * Pass `asOf` to compute "interest as of that date" for time-travel views.
  */
 export function computeProjectFinancials(
   project: Project,
   allPayments: Pick<ContractorPayment, "project_id" | "amount">[],
   allDraws: DrawRequest[],
+  allMiscCharges: Pick<ProjectMiscCharge, "project_id" | "amount">[] = [],
   asOf: Date = new Date(),
 ): ProjectFinancials {
   const projPayments = allPayments.filter((p) => p.project_id === project.id);
   const projDraws = allDraws.filter((d) => d.project_id === project.id);
+  const projMisc = allMiscCharges.filter((m) => m.project_id === project.id);
 
   const financingType = resolveFinancingType(project);
   const salePrice = Number(project.sale_price ?? 0);
@@ -184,6 +192,7 @@ export function computeProjectFinancials(
   const saleClosingCosts = Number(project.sale_closing_costs ?? 0);
 
   const totalCosts = projPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const miscCharges = projMisc.reduce((s, m) => s + Number(m.amount || 0), 0);
 
   const drawsFunded = projDraws
     .filter((d) => d.status === "funded")
@@ -210,6 +219,9 @@ export function computeProjectFinancials(
   //                     proceeds.
   //
   //   cash            — only sale_closing_costs applies.
+  //
+  // miscCharges is always a cost regardless of financing type — it's the
+  // catch-all for one-off items that don't fit anywhere else.
   let financingImpact = 0;
   if (financingType === "external_loan") {
     financingImpact = -(downPayment + accruedInterest + saleClosingCosts);
@@ -219,7 +231,7 @@ export function computeProjectFinancials(
     financingImpact = -saleClosingCosts;
   }
 
-  const projectedProfit = salePrice - totalCosts + financingImpact;
+  const projectedProfit = salePrice - totalCosts + financingImpact - miscCharges;
   const profitMargin = salePrice > 0 ? projectedProfit / salePrice : 0;
 
   return {
@@ -237,6 +249,7 @@ export function computeProjectFinancials(
     interestRate,
     accruedInterest,
     saleClosingCosts,
+    miscCharges,
     financingImpact,
     projectedProfit,
     profitMargin,

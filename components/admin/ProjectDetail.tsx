@@ -72,6 +72,7 @@ import type {
   DocumentCategory,
   InvoiceUploadToken,
   DrawLineItem,
+  ProjectMiscCharge,
 } from "@/lib/types/database";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 
@@ -213,6 +214,7 @@ interface Props {
   drawRequests: DrawRequest[];
   activityLog: ActivityLogEntry[];
   contractors: Contractor[];
+  miscCharges: ProjectMiscCharge[];
 }
 
 // ---------------------------------------------------------------------------
@@ -328,6 +330,7 @@ export default function ProjectDetail({
   drawRequests,
   activityLog,
   contractors,
+  miscCharges,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -451,7 +454,7 @@ export default function ProjectDetail({
   // See lib/finance/project-financials.ts for the formula + rationale.
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
-  const pf = computeProjectFinancials(project, payments, drawRequests);
+  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges);
   const {
     salePrice,
     loanAmount,
@@ -461,14 +464,15 @@ export default function ProjectDetail({
     interestRate,
     accruedInterest,
     saleClosingCosts,
+    miscCharges: miscChargesTotal,
     projectedProfit,
   } = pf;
   // The "Total Lender Cost" tile in FinancialSummary used to display
   // origination + interest. With the new profit formula, origination is
   // bundled inside down_payment (Blake's cash at construction-loan closing
   // includes title fees), so we surface the actual cash-out-of-pocket
-  // impact instead: down_payment + interest + sale_closing_costs.
-  const totalLenderCost = downPayment + accruedInterest + saleClosingCosts;
+  // impact instead: down_payment + interest + sale_closing_costs + misc.
+  const totalLenderCost = downPayment + accruedInterest + saleClosingCosts + miscChargesTotal;
   const profitMargin = pf.profitMargin * 100;
 
   // ---- generic mutation helper -------------------------------------------
@@ -602,6 +606,18 @@ export default function ProjectDetail({
               colored
             />
           </div>
+        )}
+
+        {/* Misc Charges — one-off items not captured by other buckets
+         *  (buyer rate buy-downs, anomalous lender fees, etc.). The sum
+         *  is subtracted from projected_profit in the helper. */}
+        {!project.is_cash_job && hasLoanFields && (
+          <MiscChargesSection
+            projectId={project.id}
+            charges={miscCharges}
+            mutate={mutate}
+            loading={loading}
+          />
         )}
 
         {/* Quick Actions */}
@@ -750,6 +766,306 @@ function FinancialCard({
         <p className={`text-lg sm:text-xl font-bold tabular-nums ${colorClass}`}>
           {fmt(value)}
         </p>
+      </CardContent>
+    </ShadCard>
+  );
+}
+
+// ===========================================================================
+// Misc Charges
+// ===========================================================================
+// One-off costs that don't fit any other bucket — buyer rate buy-downs,
+// lender fees rolled into first-month interest, late fees, etc. Sum is
+// subtracted from projected_profit (see lib/finance/project-financials.ts).
+// Kept inline in ProjectDetail.tsx so the section can share the mutate()
+// helper and refresh state on edits.
+
+function MiscChargesSection({
+  projectId,
+  charges,
+  mutate,
+  loading,
+}: {
+  projectId: string;
+  charges: ProjectMiscCharge[];
+  mutate: (
+    url: string,
+    method: string,
+    body?: Record<string, unknown> | FormData,
+  ) => Promise<Response | undefined>;
+  loading: boolean;
+}) {
+  const [showAdd, setShowAdd] = useState(false);
+  const [addForm, setAddForm] = useState({
+    description: "",
+    amount: "",
+    charge_date: "",
+    category: "",
+  });
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editForm, setEditForm] = useState({
+    description: "",
+    amount: "",
+    charge_date: "",
+    category: "",
+  });
+
+  const total = charges.reduce((s, c) => s + Number(c.amount || 0), 0);
+
+  async function addCharge() {
+    if (!addForm.description.trim() || !addForm.amount) {
+      toast.error("Description and amount are required");
+      return;
+    }
+    const amount = parseFloat(unformatCurrency(addForm.amount));
+    if (!(amount > 0)) {
+      toast.error("Amount must be greater than zero");
+      return;
+    }
+    await mutate(`/api/admin/projects/${projectId}/misc-charges`, "POST", {
+      description: addForm.description.trim(),
+      amount,
+      charge_date: addForm.charge_date || null,
+      category: addForm.category.trim() || null,
+    });
+    setAddForm({ description: "", amount: "", charge_date: "", category: "" });
+    setShowAdd(false);
+  }
+
+  function startEdit(c: ProjectMiscCharge) {
+    setEditingId(c.id);
+    setEditForm({
+      description: c.description,
+      amount: formatCurrencyInput(String(c.amount)),
+      charge_date: c.charge_date ?? "",
+      category: c.category ?? "",
+    });
+  }
+
+  async function saveEdit(id: string) {
+    if (!editForm.description.trim() || !editForm.amount) {
+      toast.error("Description and amount are required");
+      return;
+    }
+    await mutate(
+      `/api/admin/projects/${projectId}/misc-charges/${id}`,
+      "PATCH",
+      {
+        description: editForm.description.trim(),
+        amount: parseFloat(unformatCurrency(editForm.amount)),
+        charge_date: editForm.charge_date || null,
+        category: editForm.category.trim() || null,
+      },
+    );
+    setEditingId(null);
+  }
+
+  async function deleteCharge(id: string) {
+    if (!(await confirmAction("Delete this misc charge?"))) return;
+    await mutate(`/api/admin/projects/${projectId}/misc-charges/${id}`, "DELETE");
+  }
+
+  return (
+    <ShadCard className="mt-4 overflow-hidden">
+      <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100">
+        <div className="flex items-center gap-2">
+          <CreditCard className="w-4 h-4 text-rose-500 shrink-0" />
+          <span className="text-sm font-semibold text-gray-900">
+            Misc Charges
+          </span>
+          <span className="text-xs text-gray-500">
+            {charges.length === 0
+              ? "No items"
+              : `${charges.length} item${charges.length !== 1 ? "s" : ""} · ${fmt(total)}`}
+          </span>
+        </div>
+        <button
+          onClick={() => setShowAdd((v) => !v)}
+          className="self-start text-xs font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
+        >
+          {showAdd ? "Cancel" : "+ Add Charge"}
+        </button>
+      </div>
+
+      <CardContent className="p-3 sm:p-4 space-y-2">
+        <p className="text-[11px] text-gray-500">
+          One-off costs that don&apos;t fit elsewhere — buyer rate buy-downs,
+          lender fees rolled into interest, late fees, etc. Subtracted from
+          Projected Profit.
+        </p>
+
+        {showAdd && (
+          <div className="bg-rose-50/40 border border-rose-200 rounded-lg p-3 space-y-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <div>
+                <label className="block text-[11px] text-gray-600 font-medium mb-1">
+                  Description
+                </label>
+                <input
+                  value={addForm.description}
+                  onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
+                  placeholder="e.g. Buyer rate buy-down credit"
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-600 font-medium mb-1">Amount</label>
+                <input
+                  type="text"
+                  inputMode="decimal"
+                  value={addForm.amount}
+                  onChange={(e) => setAddForm({ ...addForm, amount: formatCurrencyInput(e.target.value) })}
+                  placeholder="$0.00"
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-600 font-medium mb-1">Date</label>
+                <input
+                  type="date"
+                  value={addForm.charge_date}
+                  onChange={(e) => setAddForm({ ...addForm, charge_date: e.target.value })}
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+              <div>
+                <label className="block text-[11px] text-gray-600 font-medium mb-1">Category (optional)</label>
+                <input
+                  value={addForm.category}
+                  onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
+                  placeholder="e.g. buyer_credit, lender_fee"
+                  className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                />
+              </div>
+            </div>
+            <div className="flex gap-2">
+              <button
+                disabled={loading}
+                onClick={addCharge}
+                className="bg-black text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+              >
+                {loading ? "Saving..." : "Save Charge"}
+              </button>
+              <button
+                onClick={() => setShowAdd(false)}
+                className="text-xs text-gray-600 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+              >
+                Cancel
+              </button>
+            </div>
+          </div>
+        )}
+
+        {charges.length === 0 && !showAdd ? (
+          <p className="text-xs text-gray-400 italic py-2">
+            No misc charges recorded.
+          </p>
+        ) : (
+          <div className="divide-y divide-gray-100">
+            {charges.map((c) =>
+              editingId === c.id ? (
+                <div key={c.id} className="bg-gray-50 rounded-lg p-3 my-2 space-y-2">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    <div>
+                      <label className="block text-[11px] text-gray-600 font-medium mb-1">Description</label>
+                      <input
+                        value={editForm.description}
+                        onChange={(e) => setEditForm({ ...editForm, description: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 font-medium mb-1">Amount</label>
+                      <input
+                        type="text"
+                        inputMode="decimal"
+                        value={editForm.amount}
+                        onChange={(e) => setEditForm({ ...editForm, amount: formatCurrencyInput(e.target.value) })}
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 font-medium mb-1">Date</label>
+                      <input
+                        type="date"
+                        value={editForm.charge_date}
+                        onChange={(e) => setEditForm({ ...editForm, charge_date: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[11px] text-gray-600 font-medium mb-1">Category</label>
+                      <input
+                        value={editForm.category}
+                        onChange={(e) => setEditForm({ ...editForm, category: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                      />
+                    </div>
+                  </div>
+                  <div className="flex gap-2">
+                    <button
+                      disabled={loading}
+                      onClick={() => saveEdit(c.id)}
+                      className="bg-black text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
+                    >
+                      {loading ? "Saving..." : "Save"}
+                    </button>
+                    <button
+                      onClick={() => setEditingId(null)}
+                      className="text-xs text-gray-600 px-3 py-1.5 border border-gray-300 rounded-lg hover:bg-gray-50 cursor-pointer"
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div key={c.id} className="flex flex-col gap-1 py-2 sm:flex-row sm:items-center sm:gap-3">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 truncate">
+                      {c.description}
+                    </p>
+                    <p className="text-[11px] text-gray-500 flex flex-wrap items-center gap-1.5">
+                      {c.charge_date && (
+                        <span>{fmtDate(c.charge_date)}</span>
+                      )}
+                      {c.category && (
+                        <span className="inline-flex items-center rounded-full bg-gray-100 px-1.5 py-0.5 text-[10px] font-medium text-gray-600 uppercase">
+                          {c.category}
+                        </span>
+                      )}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2 sm:gap-3">
+                    <span className="text-sm font-semibold tabular-nums text-rose-700">
+                      {fmt(Number(c.amount))}
+                    </span>
+                    <button
+                      onClick={() => startEdit(c)}
+                      className="text-xs font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
+                    >
+                      Edit
+                    </button>
+                    <button
+                      onClick={() => deleteCharge(c.id)}
+                      className="text-xs font-medium text-red-600 hover:text-red-500 cursor-pointer"
+                    >
+                      Delete
+                    </button>
+                  </div>
+                </div>
+              ),
+            )}
+          </div>
+        )}
+
+        {charges.length > 0 && (
+          <div className="flex items-center justify-between border-t border-gray-200 pt-2 mt-2">
+            <span className="text-xs font-semibold text-gray-700">Total</span>
+            <span className="text-sm font-bold tabular-nums text-rose-700">
+              {fmt(total)}
+            </span>
+          </div>
+        )}
       </CardContent>
     </ShadCard>
   );

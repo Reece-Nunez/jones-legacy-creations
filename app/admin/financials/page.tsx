@@ -5,6 +5,7 @@ import type {
   ContractorPayment,
   DrawRequest,
   DrawRequestStatus,
+  ProjectMiscCharge,
 } from "@/lib/types/database";
 import { DRAW_STATUS_COLORS } from "@/lib/types/database";
 import {
@@ -69,18 +70,20 @@ export default async function FinancialsPage({
 
   const supabase = await createClient();
 
-  const [projectsRes, paymentsRes, drawsRes] = await Promise.all([
+  const [projectsRes, paymentsRes, drawsRes, miscRes] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
       .order("updated_at", { ascending: false }),
     supabase.from("contractor_payments").select("*"),
     supabase.from("draw_requests").select("*"),
+    supabase.from("project_misc_charges").select("*"),
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
   const payments: ContractorPayment[] = paymentsRes.data ?? [];
   const draws: DrawRequest[] = drawsRes.data ?? [];
+  const miscCharges: ProjectMiscCharge[] = miscRes.data ?? [];
 
   // ── Maps ─────────────────────────────────────────────────────────
   const projectMap = new Map(projects.map((p) => [p.id, p]));
@@ -90,7 +93,7 @@ export default async function FinancialsPage({
 
   // ── Per-project financials (uses shared helper — do not inline) ─
   const projectFinancials: ProjectFinancials[] = activeProjects.map((p) =>
-    computeProjectFinancials(p, payments, draws),
+    computeProjectFinancials(p, payments, draws, miscCharges),
   );
 
   // Sort: projects with activity first, then by profit descending

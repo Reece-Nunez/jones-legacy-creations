@@ -152,6 +152,21 @@ export interface ContractorPayment {
   created_at: string;
 }
 
+/** One-off project cost not captured elsewhere (buyer credits, lender
+ *  fees rolled into first-month interest, prepayment penalties, etc.).
+ *  Sum subtracted from projected_profit in lib/finance/project-financials.ts. */
+export interface ProjectMiscCharge {
+  id: string;
+  project_id: string;
+  description: string;
+  amount: number;
+  charge_date: string | null;
+  category: string | null;
+  notes: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface DrawRequest {
   id: string;
   project_id: string;
