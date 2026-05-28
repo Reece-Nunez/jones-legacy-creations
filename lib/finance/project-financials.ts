@@ -62,6 +62,8 @@ import type {
   LoanLedgerEntry,
   Project,
   ProjectMiscCharge,
+  ProjectSettlement,
+  SettlementOtherFee,
 } from "@/lib/types/database";
 
 export interface ProjectFinancials {
@@ -79,6 +81,10 @@ export interface ProjectFinancials {
   interestRate: number;
   accruedInterest: number;
   saleClosingCosts: number;
+  /** True when a sale settlement record exists and provided itemized
+   *  closing costs. UI uses this to surface "from ALTA" vs "estimated"
+   *  labels next to the closing-cost number. */
+  hasSaleSettlement: boolean;
   /** Sum of project_misc_charges.amount for this project. Always
    *  subtracted from projected_profit regardless of financing type. */
   miscCharges: number;
@@ -190,11 +196,26 @@ export function computeProjectFinancials(
   allMiscCharges: Pick<ProjectMiscCharge, "project_id" | "amount">[] = [],
   asOf: Date = new Date(),
   allLoanLedger: Pick<LoanLedgerEntry, "project_id" | "entry_type" | "amount" | "entry_date">[] = [],
+  allSettlements: Pick<
+    ProjectSettlement,
+    | "project_id"
+    | "settlement_type"
+    | "seller_concessions"
+    | "title_insurance"
+    | "escrow_fee"
+    | "recording_fees"
+    | "prorated_taxes"
+    | "other_fees"
+    | "settlement_date"
+  >[] = [],
 ): ProjectFinancials {
   const projPayments = allPayments.filter((p) => p.project_id === project.id);
   const projDraws = allDraws.filter((d) => d.project_id === project.id);
   const projMisc = allMiscCharges.filter((m) => m.project_id === project.id);
   const projLedger = allLoanLedger.filter((l) => l.project_id === project.id);
+  const projSaleSettlements = allSettlements
+    .filter((s) => s.project_id === project.id && s.settlement_type === "sale")
+    .sort((a, b) => b.settlement_date.localeCompare(a.settlement_date));
 
   const financingType = resolveFinancingType(project);
   const salePrice = Number(project.sale_price ?? 0);
@@ -202,7 +223,33 @@ export function computeProjectFinancials(
   const downPayment = Number(project.down_payment ?? 0);
   const originationFeePercent = Number(project.origination_fee_percent ?? 0);
   const interestRate = Number(project.interest_rate ?? 0);
-  const saleClosingCosts = Number(project.sale_closing_costs ?? 0);
+
+  // Sale closing costs: prefer the most recent sale settlement's
+  // itemized breakdown when one exists. Falls back to the manual
+  // projects.sale_closing_costs field for projects without a settlement
+  // record (in-progress or legacy). This automates the data flow —
+  // upload an ALTA, Claude extracts the line items, the helper picks
+  // them up. No re-keying of sale_closing_costs needed.
+  const hasSaleSettlement = projSaleSettlements.length > 0;
+  let saleClosingCosts: number;
+  if (hasSaleSettlement) {
+    const s = projSaleSettlements[0];
+    const otherFeesSum = Array.isArray(s.other_fees)
+      ? (s.other_fees as SettlementOtherFee[]).reduce(
+          (acc, f) => acc + Number(f?.amount || 0),
+          0,
+        )
+      : 0;
+    saleClosingCosts =
+      Number(s.seller_concessions ?? 0) +
+      Number(s.title_insurance ?? 0) +
+      Number(s.escrow_fee ?? 0) +
+      Number(s.recording_fees ?? 0) +
+      Number(s.prorated_taxes ?? 0) +
+      otherFeesSum;
+  } else {
+    saleClosingCosts = Number(project.sale_closing_costs ?? 0);
+  }
 
   const totalCosts = projPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
   const miscCharges = projMisc.reduce((s, m) => s + Number(m.amount || 0), 0);
@@ -279,6 +326,7 @@ export function computeProjectFinancials(
     interestRate,
     accruedInterest,
     saleClosingCosts,
+    hasSaleSettlement,
     miscCharges,
     hasLoanLedger,
     financingImpact,

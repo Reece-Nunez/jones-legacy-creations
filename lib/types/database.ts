@@ -152,6 +152,54 @@ export interface ContractorPayment {
   created_at: string;
 }
 
+/** Itemized line item on an ALTA settlement other_fees JSONB array.
+ *  Used for one-off charges that don't fit the typed columns (HOA dues,
+ *  warranty, special inspections, etc.). */
+export interface SettlementOtherFee {
+  label: string;
+  amount: number;
+}
+
+/** ALTA Settlement Statement record. One row per closing event —
+ *  typically one 'purchase' (construction loan origination) and one
+ *  'sale' per project. When a 'sale' settlement exists, the helper
+ *  derives sale_closing_costs from its itemized line items instead of
+ *  using the manual projects.sale_closing_costs field. */
+export type ProjectSettlementType = "purchase" | "sale";
+
+export interface ProjectSettlement {
+  id: string;
+  project_id: string;
+  settlement_date: string;
+  settlement_type: ProjectSettlementType;
+
+  // Sale-side fields
+  sale_price: number | null;
+  seller_concessions: number | null;
+  title_insurance: number | null;
+  escrow_fee: number | null;
+  recording_fees: number | null;
+  prorated_taxes: number | null;
+  other_fees: SettlementOtherFee[];
+  loan_payoff: number | null;
+  net_to_seller: number | null;
+
+  // Purchase-side fields
+  purchase_price: number | null;
+  earnest_money: number | null;
+  loan_amount: number | null;
+  cash_to_close: number | null;
+
+  // Audit
+  document_url: string | null;
+  document_name: string | null;
+  notes: string | null;
+  ai_extracted: boolean;
+  user_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 /** Event-per-row record of every lender-side transaction. Source of
  *  truth for loan cost when entries exist — helper falls back to
  *  formula-based estimates otherwise. See loan_ledger migration for the

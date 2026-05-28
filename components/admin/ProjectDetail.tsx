@@ -74,6 +74,7 @@ import type {
   DrawLineItem,
   ProjectMiscCharge,
   LoanLedgerEntry,
+  ProjectSettlement,
 } from "@/lib/types/database";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 
@@ -119,6 +120,7 @@ import SmartUpload from "@/components/admin/SmartUpload";
 import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
 import { computeProjectFinancials } from "@/lib/finance/project-financials";
 import LoanLedgerTab from "@/components/admin/LoanLedgerTab";
+import SettlementsSection from "@/components/admin/SettlementsSection";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -219,6 +221,7 @@ interface Props {
   contractors: Contractor[];
   miscCharges: ProjectMiscCharge[];
   loanLedger: LoanLedgerEntry[];
+  settlements: ProjectSettlement[];
 }
 
 // ---------------------------------------------------------------------------
@@ -336,6 +339,7 @@ export default function ProjectDetail({
   contractors,
   miscCharges,
   loanLedger,
+  settlements,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -459,7 +463,7 @@ export default function ProjectDetail({
   // See lib/finance/project-financials.ts for the formula + rationale.
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
-  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger);
+  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger, settlements);
   const {
     salePrice,
     loanAmount,
@@ -622,6 +626,16 @@ export default function ProjectDetail({
             charges={miscCharges}
             mutate={mutate}
             loading={loading}
+          />
+        )}
+
+        {/* Settlements — ALTA closing statements. Upload the PDF, Claude
+         *  extracts the line items. When a sale settlement exists the
+         *  helper derives sale_closing_costs from it automatically. */}
+        {!project.is_cash_job && (
+          <SettlementsSection
+            projectId={project.id}
+            settlements={settlements}
           />
         )}
 

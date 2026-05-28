@@ -142,6 +142,7 @@ export default async function AdminDashboard({
     paymentsRes,
     miscChargesRes,
     loanLedgerRes,
+    settlementsRes,
     estimatesRes,
     contractorsRes,
   ] = await Promise.all([
@@ -155,6 +156,7 @@ export default async function AdminDashboard({
     supabase.from("contractor_payments").select("project_id, amount"),
     supabase.from("project_misc_charges").select("project_id, amount"),
     supabase.from("loan_ledger").select("project_id, entry_type, amount, entry_date"),
+    supabase.from("project_settlements").select("project_id, settlement_type, seller_concessions, title_insurance, escrow_fee, recording_fees, prorated_taxes, other_fees, settlement_date"),
     supabase
       .from("estimates")
       .select("*")
@@ -176,6 +178,7 @@ export default async function AdminDashboard({
   const payments: { project_id: string; amount: number }[] = paymentsRes.data ?? [];
   const miscCharges: { project_id: string; amount: number }[] = miscChargesRes.data ?? [];
   const loanLedger: { project_id: string; entry_type: string; amount: number; entry_date: string }[] = loanLedgerRes.data ?? [];
+  const settlements: { project_id: string; settlement_type: string; seller_concessions: number | null; title_insurance: number | null; escrow_fee: number | null; recording_fees: number | null; prorated_taxes: number | null; other_fees: { label: string; amount: number }[]; settlement_date: string }[] = settlementsRes.data ?? [];
   const estimates: Estimate[] = estimatesRes.data ?? [];
   const contractorsMissingW9: Pick<Contractor, "id" | "name" | "company">[] = contractorsRes.data ?? [];
 
@@ -204,7 +207,15 @@ export default async function AdminDashboard({
   // shared helper so the dashboard can't drift from the Financials page.
   // See lib/finance/project-financials.ts for the formula and invariants.
   const activeFinancials = activeProjects.map((p) =>
-    computeProjectFinancials(p, payments, draws, miscCharges, now, loanLedger as Parameters<typeof computeProjectFinancials>[5]),
+    computeProjectFinancials(
+      p,
+      payments,
+      draws,
+      miscCharges,
+      now,
+      loanLedger as Parameters<typeof computeProjectFinancials>[5],
+      settlements as Parameters<typeof computeProjectFinancials>[6],
+    ),
   );
   const totalProjectedProfit = sumProjectedProfit(activeFinancials);
   const projectsWithProfit = activeFinancials.filter((f) => f.salePrice > 0).length;

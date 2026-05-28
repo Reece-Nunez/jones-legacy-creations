@@ -22,6 +22,7 @@ export default async function ProjectDetailPage({
     { data: contractors },
     { data: miscCharges },
     { data: loanLedger },
+    { data: settlements },
   ] = await Promise.all([
     supabase.from("projects").select("*").eq("id", id).single(),
     supabase
@@ -72,6 +73,11 @@ export default async function ProjectDetailPage({
       .eq("project_id", id)
       .order("entry_date", { ascending: true })
       .order("created_at", { ascending: true }),
+    supabase
+      .from("project_settlements")
+      .select("*")
+      .eq("project_id", id)
+      .order("settlement_date", { ascending: true }),
   ]);
 
   if (!project) {
@@ -91,6 +97,7 @@ export default async function ProjectDetailPage({
       contractors={contractors ?? []}
       miscCharges={miscCharges ?? []}
       loanLedger={loanLedger ?? []}
+      settlements={settlements ?? []}
     />
   );
 }
