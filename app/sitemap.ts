@@ -1,8 +1,28 @@
 import type { MetadataRoute } from "next";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 const BASE_URL = "https://www.joneslegacycreations.com";
 
-export default function sitemap(): MetadataRoute.Sitemap {
+// Sitemap is re-generated on each deploy + at most every hour at
+// runtime so newly-published posts appear in Google's index within
+// a single recrawl window without forcing a redeploy.
+export const revalidate = 3600;
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
+  const supabase = createAdminClient();
+  const { data: blogPosts } = await supabase
+    .from("blog_posts")
+    .select("slug, updated_at, published_at")
+    .eq("status", "published")
+    .order("published_at", { ascending: false });
+
+  const blogRoutes: MetadataRoute.Sitemap = (blogPosts ?? []).map((p) => ({
+    url: `${BASE_URL}/blog/${p.slug}`,
+    lastModified: new Date(p.updated_at || p.published_at || Date.now()),
+    changeFrequency: "monthly",
+    priority: 0.7,
+  }));
+
   return [
     {
       url: BASE_URL,
@@ -46,6 +66,13 @@ export default function sitemap(): MetadataRoute.Sitemap {
       changeFrequency: "weekly",
       priority: 0.7,
     },
+    {
+      url: `${BASE_URL}/blog`,
+      lastModified: new Date(),
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    ...blogRoutes,
     {
       url: `${BASE_URL}/privacy`,
       lastModified: new Date(),
