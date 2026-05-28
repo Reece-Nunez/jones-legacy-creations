@@ -121,6 +121,7 @@ import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
 import { computeProjectFinancials } from "@/lib/finance/project-financials";
 import LoanLedgerTab from "@/components/admin/LoanLedgerTab";
 import SettlementsSection from "@/components/admin/SettlementsSection";
+import CashFlowTab from "@/components/admin/CashFlowTab";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -196,6 +197,7 @@ const ALL_TABS = [
   { key: "payments",   label: "Payments",  icon: CreditCard,      cashJob: true,  onlyCashJob: true  },
   { key: "draws",      label: "Draws",     icon: Banknote,        cashJob: false, onlyCashJob: false },
   { key: "loan",       label: "Loan",      icon: Landmark,        cashJob: false, onlyCashJob: false },
+  { key: "cashflow",   label: "Cash Flow", icon: TrendingUp,      cashJob: true,  onlyCashJob: false },
   { key: "budget",     label: "Budget",    icon: Wallet,          cashJob: true,  onlyCashJob: false },
   { key: "tasks",      label: "Tasks",     icon: CheckSquare,     cashJob: true,  onlyCashJob: false },
   { key: "permits",    label: "Permits",   icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
@@ -712,6 +714,16 @@ export default function ProjectDetail({
           </TabsContent>
           <TabsContent value="loan">
             <LoanLedgerTab projectId={project.id} entries={loanLedger} />
+          </TabsContent>
+          <TabsContent value="cashflow">
+            <CashFlowTab
+              projectId={project.id}
+              projectName={project.name}
+              payments={payments}
+              loanLedger={loanLedger}
+              settlements={settlements}
+              miscCharges={miscCharges}
+            />
           </TabsContent>
           <TabsContent value="permits">
             <PermitsTab
