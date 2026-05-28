@@ -11,6 +11,7 @@ import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -80,7 +81,11 @@ const faqs = [
 
 export default function ConstructionPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
+  // Default to 'form' so the inquiry form is visible immediately —
+  // the previous behavior (null) required the user to click "Fill out
+  // the form" before any field appeared. That extra click measurably
+  // tanks conversion on lead-gen pages.
+  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>("form");
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const [openFaq, setOpenFaq] = useState<number | null>(null);
 
@@ -1546,6 +1551,11 @@ export default function ConstructionPage() {
         </section>
       </main>
 
+      <TestimonialsSection
+        service="construction"
+        heading="What our clients say"
+        subheading="Hand-picked words from the families and developers we've built for across Southern Utah."
+      />
       <Footer />
     </>
   );

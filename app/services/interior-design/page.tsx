@@ -13,6 +13,7 @@ import { HoneypotField } from "@/components/ui/HoneypotField";
 import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -62,7 +63,10 @@ type DbShowcase = {
 
 export default function InteriorDesignPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
+  // Default to 'form' so the inquiry form is visible immediately —
+  // the previous behavior (null) required the user to click "Fill out
+  // the form" before any field appeared. Extra click = lost lead.
+  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>("form");
   const { executeRecaptcha } = useRecaptcha();
 
   const [showcases, setShowcases] = useState<DbShowcase[]>([]);
@@ -918,6 +922,11 @@ export default function InteriorDesignPage() {
         </section>
       </main>
 
+      <TestimonialsSection
+        service="interior_design"
+        heading="What our clients say"
+        subheading="Spaces and stagings that have helped homeowners across Southern Utah."
+      />
       <Footer />
     </>
   );

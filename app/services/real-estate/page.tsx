@@ -12,6 +12,7 @@ import { useRecaptcha } from "@/components/ReCaptchaProvider";
 import { Navigation } from "@/components/Navigation";
 import ListingsStrip from "@/components/real-estate/ListingsStrip";
 import { Footer } from "@/components/Footer";
+import { TestimonialsSection } from "@/components/TestimonialsSection";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
@@ -39,7 +40,10 @@ type RealEstateFormWithHoneypot = RealEstateFormData & { honeypot?: string };
 
 export default function RealEstatePage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>(null);
+  // Default to 'form' so the inquiry form is visible immediately —
+  // the previous behavior (null) required the user to click "Fill out
+  // the form" before any field appeared. Extra click = lost lead.
+  const [contactMethod, setContactMethod] = useState<"form" | "call" | null>("form");
   const [expandedSections, setExpandedSections] = useState<string[]>([]);
   const { executeRecaptcha } = useRecaptcha();
 
@@ -1186,6 +1190,11 @@ export default function RealEstatePage() {
         </div>
       </section>
 
+      <TestimonialsSection
+        service="real_estate"
+        heading="What our clients say"
+        subheading="From first-time buyers to seasoned investors across Hurricane and St. George."
+      />
       <Footer />
     </>
   );
