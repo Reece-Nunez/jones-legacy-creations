@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { Fragment, useState, useEffect } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { usePathname, useRouter } from "next/navigation";
@@ -34,19 +34,63 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
 
-const navLinks = [
-  { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
-  { label: "Projects", href: "/admin/projects", icon: FolderOpen, badgeKey: "details" },
-  { label: "Contractors & Vendors", href: "/admin/contractors", icon: Users, badgeKey: "w9" },
-  { label: "Financials", href: "/admin/financials", icon: DollarSign },
-  { label: "Leads", href: "/admin/leads", icon: Mail },
-  { label: "Subscribers", href: "/admin/subscribers", icon: Mail },
-  { label: "Blog Posts", href: "/admin/posts", icon: FileText },
-  { label: "Testimonials", href: "/admin/testimonials", icon: Star },
-  { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
-  { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
-  { label: "Real Estate Listings", href: "/admin/listings", icon: Home },
-  { label: "Showcase Projects", href: "/admin/showcases", icon: Hammer },
+// Sidebar grouped into two product surfaces:
+//
+//   Construction — daily project-management work (jobs, vendors, money).
+//   Website      — the public-facing JLC site (leads, content, listings).
+//
+// Grouping by section keeps the daily-construction work visually
+// distinct from the marketing/content side, which was getting crowded
+// after the lead-gen build-out. The "Dashboard" entry sits above the
+// groups with no header (it's the overview, not a category).
+//
+// The Quick Links block below still aggregates cross-surface utilities
+// (Pending Draws / Permits, "Back to Site") so daily one-offs don't
+// disappear into the section split.
+
+type NavLink = {
+  label: string;
+  href: string;
+  icon: React.ElementType;
+  exact?: boolean;
+  badgeKey?: string;
+};
+
+type NavSection = {
+  /** Header label shown above the section in expanded views. Omitted
+   *  for the leading Dashboard group so "Dashboard" sits flush at the
+   *  top of the nav without a "(unsectioned)" header. */
+  header?: string;
+  links: NavLink[];
+};
+
+const navSections: NavSection[] = [
+  {
+    links: [
+      { label: "Dashboard", href: "/admin", icon: LayoutDashboard, exact: true },
+    ],
+  },
+  {
+    header: "Construction",
+    links: [
+      { label: "Projects", href: "/admin/projects", icon: FolderOpen, badgeKey: "details" },
+      { label: "Contractors & Vendors", href: "/admin/contractors", icon: Users, badgeKey: "w9" },
+      { label: "Financials", href: "/admin/financials", icon: DollarSign },
+      { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
+      { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
+    ],
+  },
+  {
+    header: "Website",
+    links: [
+      { label: "Leads", href: "/admin/leads", icon: Mail },
+      { label: "Subscribers", href: "/admin/subscribers", icon: Mail },
+      { label: "Blog Posts", href: "/admin/posts", icon: FileText },
+      { label: "Testimonials", href: "/admin/testimonials", icon: Star },
+      { label: "Real Estate Listings", href: "/admin/listings", icon: Home },
+      { label: "Showcase Projects", href: "/admin/showcases", icon: Hammer },
+    ],
+  },
 ];
 
 // Bottom tab bar items for mobile (max 5 for thumb-friendly sizing)
@@ -224,26 +268,37 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </div>
 
       <nav className="flex-1 px-3 space-y-1" aria-label="Admin navigation">
-        {navLinks.map((link) => {
-          const Icon = link.icon;
-          const active = isActive(link.href, link.exact);
-          return (
-            <Link
-              key={link.href}
-              href={link.href}
-              onClick={() => setSidebarOpen(false)}
-              title={getNavTitle(link.label, link.badgeKey)}
-              aria-current={active ? "page" : undefined}
-              className={`flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
-                active ? "bg-slate-700/80 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
-              }`}
-            >
-              <Icon className="h-5 w-5 shrink-0" />
-              {link.label}
-              {renderBadge(link.badgeKey)}
-            </Link>
-          );
-        })}
+        {navSections.map((section, sectionIndex) => (
+          <Fragment key={section.header ?? `section-${sectionIndex}`}>
+            {section.header && (
+              <p
+                className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500"
+              >
+                {section.header}
+              </p>
+            )}
+            {section.links.map((link) => {
+              const Icon = link.icon;
+              const active = isActive(link.href, link.exact);
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setSidebarOpen(false)}
+                  title={getNavTitle(link.label, link.badgeKey)}
+                  aria-current={active ? "page" : undefined}
+                  className={`flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
+                    active ? "bg-slate-700/80 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  }`}
+                >
+                  <Icon className="h-5 w-5 shrink-0" />
+                  {link.label}
+                  {renderBadge(link.badgeKey)}
+                </Link>
+              );
+            })}
+          </Fragment>
+        ))}
 
         <Separator className="!my-4 bg-slate-700" />
 
@@ -322,26 +377,34 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
               </Link>
             </div>
 
-            {/* Nav icons */}
+            {/* Nav icons — section headers can't show without labels,
+              * so we use a thin separator between groups instead. */}
             <nav className="flex-1 px-2 space-y-1">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const active = isActive(link.href, link.exact);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    title={getNavTitle(link.label, link.badgeKey)}
-                    aria-current={active ? "page" : undefined}
-                    className={`relative flex items-center justify-center h-10 w-full rounded-lg transition-colors duration-150 ${
-                      active ? "bg-slate-700/80 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5" />
-                    {renderCollapsedBadgeDot(link.badgeKey)}
-                  </Link>
-                );
-              })}
+              {navSections.map((section, sectionIndex) => (
+                <Fragment key={section.header ?? `section-${sectionIndex}`}>
+                  {sectionIndex > 0 && (
+                    <div className="my-2 mx-2 border-t border-slate-700" />
+                  )}
+                  {section.links.map((link) => {
+                    const Icon = link.icon;
+                    const active = isActive(link.href, link.exact);
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        title={getNavTitle(link.label, link.badgeKey)}
+                        aria-current={active ? "page" : undefined}
+                        className={`relative flex items-center justify-center h-10 w-full rounded-lg transition-colors duration-150 ${
+                          active ? "bg-slate-700/80 text-white" : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5" />
+                        {renderCollapsedBadgeDot(link.badgeKey)}
+                      </Link>
+                    );
+                  })}
+                </Fragment>
+              ))}
 
               <div className="my-3 border-t border-slate-700" />
 
@@ -432,25 +495,36 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
             </div>
 
             <nav className="flex-1 px-3 space-y-1" aria-label="Admin navigation">
-              {navLinks.map((link) => {
-                const Icon = link.icon;
-                const active = isActive(link.href, link.exact);
-                return (
-                  <Link
-                    key={link.href}
-                    href={link.href}
-                    title={getNavTitle(link.label, link.badgeKey)}
-                    aria-current={active ? "page" : undefined}
-                    className={`flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
-                      active ? "bg-slate-700/80 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
-                    }`}
-                  >
-                    <Icon className="h-5 w-5 shrink-0" />
-                    {link.label}
-                    {renderBadge(link.badgeKey)}
-                  </Link>
-                );
-              })}
+              {navSections.map((section, sectionIndex) => (
+                <Fragment key={section.header ?? `section-${sectionIndex}`}>
+                  {section.header && (
+                    <p
+                      className="px-3 pt-4 pb-1 text-[10px] font-semibold uppercase tracking-[0.18em] text-slate-500"
+                    >
+                      {section.header}
+                    </p>
+                  )}
+                  {section.links.map((link) => {
+                    const Icon = link.icon;
+                    const active = isActive(link.href, link.exact);
+                    return (
+                      <Link
+                        key={link.href}
+                        href={link.href}
+                        title={getNavTitle(link.label, link.badgeKey)}
+                        aria-current={active ? "page" : undefined}
+                        className={`flex items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium transition-colors duration-150 ${
+                          active ? "bg-slate-700/80 text-white" : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                        }`}
+                      >
+                        <Icon className="h-5 w-5 shrink-0" />
+                        {link.label}
+                        {renderBadge(link.badgeKey)}
+                      </Link>
+                    );
+                  })}
+                </Fragment>
+              ))}
 
               <Separator className="!my-4 bg-slate-700" />
 
