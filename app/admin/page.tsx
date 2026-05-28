@@ -140,6 +140,7 @@ export default async function AdminDashboard({
     tasksRes,
     drawsRes,
     paymentsRes,
+    miscChargesRes,
     estimatesRes,
     contractorsRes,
   ] = await Promise.all([
@@ -151,6 +152,7 @@ export default async function AdminDashboard({
     supabase.from("tasks").select("*"),
     supabase.from("draw_requests").select("*"),
     supabase.from("contractor_payments").select("project_id, amount"),
+    supabase.from("project_misc_charges").select("project_id, amount"),
     supabase
       .from("estimates")
       .select("*")
@@ -170,6 +172,7 @@ export default async function AdminDashboard({
   const tasks: Task[] = tasksRes.data ?? [];
   const draws: DrawRequest[] = drawsRes.data ?? [];
   const payments: { project_id: string; amount: number }[] = paymentsRes.data ?? [];
+  const miscCharges: { project_id: string; amount: number }[] = miscChargesRes.data ?? [];
   const estimates: Estimate[] = estimatesRes.data ?? [];
   const contractorsMissingW9: Pick<Contractor, "id" | "name" | "company">[] = contractorsRes.data ?? [];
 
@@ -198,7 +201,7 @@ export default async function AdminDashboard({
   // shared helper so the dashboard can't drift from the Financials page.
   // See lib/finance/project-financials.ts for the formula and invariants.
   const activeFinancials = activeProjects.map((p) =>
-    computeProjectFinancials(p, payments, draws, now),
+    computeProjectFinancials(p, payments, draws, miscCharges, now),
   );
   const totalProjectedProfit = sumProjectedProfit(activeFinancials);
   const projectsWithProfit = activeFinancials.filter((f) => f.salePrice > 0).length;
