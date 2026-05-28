@@ -2567,6 +2567,9 @@ function DrawsTab({
     draw_number: "",
     description: "",
     amount: "",
+    status: "draft" as DrawRequestStatus,
+    submitted_date: "",
+    funded_date: "",
   });
 
   // ---- Payments management state (merged from PaymentsTab) ---------------
@@ -3219,12 +3222,16 @@ function DrawsTab({
     const drawNum = form.draw_number ? parseInt(form.draw_number) : nextDrawNumber;
     const amount = form.amount ? parseFloat(unformatCurrency(form.amount)) : 0;
 
-    // Create the draw first
+    // Create the draw. The user can override status and dates here for
+    // historical entry — accrued_interest accrues from funded_date, so
+    // recording the actual lender disbursement date matters for accuracy.
     const res = await mutate(`/api/admin/projects/${projectId}/draws`, "POST", {
       draw_number: drawNum,
       description: form.description || null,
       amount,
-      status: "draft",
+      status: form.status,
+      submitted_date: form.submitted_date || null,
+      funded_date: form.status === "funded" ? (form.funded_date || null) : (form.funded_date || null),
       notes: null,
     });
 
@@ -3314,7 +3321,14 @@ function DrawsTab({
     setNewDrawFiles([]);
     setNewDrawLineItems({});
     setNewDrawContractors({});
-    setForm({ draw_number: "", description: "", amount: "" });
+    setForm({
+      draw_number: "",
+      description: "",
+      amount: "",
+      status: "draft",
+      submitted_date: "",
+      funded_date: "",
+    });
     setShowForm(false);
   }
 
@@ -3335,7 +3349,14 @@ function DrawsTab({
   }
 
   const [editingDraw, setEditingDraw] = useState<string | null>(null);
-  const [editDrawForm, setEditDrawForm] = useState({ draw_number: "", amount: "", description: "", notes: "" });
+  const [editDrawForm, setEditDrawForm] = useState({
+    draw_number: "",
+    amount: "",
+    description: "",
+    notes: "",
+    submitted_date: "",
+    funded_date: "",
+  });
 
   function startEditDraw(draw: DrawRequest) {
     setEditingDraw(draw.id);
@@ -3344,15 +3365,21 @@ function DrawsTab({
       amount: formatCurrencyInput(String(draw.amount)),
       description: draw.description || "",
       notes: draw.notes || "",
+      submitted_date: draw.submitted_date ?? "",
+      funded_date: draw.funded_date ?? "",
     });
   }
 
   async function saveEditDraw(drawId: string) {
+    // submitted_date / funded_date sent as null when cleared so the
+    // accrued-interest calc respects "not yet funded" state.
     await mutate(`/api/admin/projects/${projectId}/draws/${drawId}`, "PATCH", {
       draw_number: parseInt(editDrawForm.draw_number),
       amount: parseFloat(unformatCurrency(editDrawForm.amount)),
       description: editDrawForm.description || null,
       notes: editDrawForm.notes || null,
+      submitted_date: editDrawForm.submitted_date || null,
+      funded_date: editDrawForm.funded_date || null,
     });
     setEditingDraw(null);
   }
@@ -4000,6 +4027,55 @@ function DrawsTab({
                     className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                     value={form.description}
                     onChange={(e) => setForm({ ...form, description: e.target.value })}
+                  />
+                </div>
+              </div>
+              {/* Status + dates — defaults are the new-draw happy path
+               *  (draft, both dates blank), but the user can record
+               *  historical draws by setting status=funded and entering
+               *  the actual disbursement date. accrued_interest accrues
+               *  from funded_date, so entering it accurately matters for
+               *  the projected_profit number. */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div>
+                  <label htmlFor="draw-status" className="block text-sm text-gray-700 font-medium mb-1">
+                    Status
+                  </label>
+                  <select
+                    id="draw-status"
+                    value={form.status}
+                    onChange={(e) => setForm({ ...form, status: e.target.value as DrawRequestStatus })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black bg-white cursor-pointer"
+                  >
+                    <option value="draft">Draft</option>
+                    <option value="submitted">Submitted</option>
+                    <option value="approved">Approved</option>
+                    <option value="funded">Funded</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="draw-submitted-date" className="block text-sm text-gray-700 font-medium mb-1">
+                    Submitted Date
+                  </label>
+                  <input
+                    id="draw-submitted-date"
+                    type="date"
+                    value={form.submitted_date}
+                    onChange={(e) => setForm({ ...form, submitted_date: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                  />
+                </div>
+                <div>
+                  <label htmlFor="draw-funded-date" className="block text-sm text-gray-700 font-medium mb-1">
+                    Funded Date{" "}
+                    <span className="text-[10px] text-gray-500 font-normal">(drives interest)</span>
+                  </label>
+                  <input
+                    id="draw-funded-date"
+                    type="date"
+                    value={form.funded_date}
+                    onChange={(e) => setForm({ ...form, funded_date: e.target.value })}
+                    className="w-full border border-gray-300 rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                   />
                 </div>
               </div>
@@ -5065,6 +5141,34 @@ function DrawsTab({
                             type="text"
                             value={editDrawForm.description}
                             onChange={(e) => setEditDrawForm({ ...editDrawForm, description: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                      </div>
+                      {/* Dates — funded_date drives the accrued_interest
+                       *  calc, so this is the place to correct a draw that
+                       *  was recorded after the fact with the wrong date. */}
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                        <div>
+                          <label className="block text-xs text-gray-600 font-medium mb-1">
+                            Submitted Date
+                          </label>
+                          <input
+                            type="date"
+                            value={editDrawForm.submitted_date}
+                            onChange={(e) => setEditDrawForm({ ...editDrawForm, submitted_date: e.target.value })}
+                            className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
+                          />
+                        </div>
+                        <div>
+                          <label className="block text-xs text-gray-600 font-medium mb-1">
+                            Funded Date{" "}
+                            <span className="text-[10px] text-gray-500 font-normal">(drives interest)</span>
+                          </label>
+                          <input
+                            type="date"
+                            value={editDrawForm.funded_date}
+                            onChange={(e) => setEditDrawForm({ ...editDrawForm, funded_date: e.target.value })}
                             className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                           />
                         </div>
