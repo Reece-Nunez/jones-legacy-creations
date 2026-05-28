@@ -36,6 +36,14 @@ shape; they vary only in component archetypes within the system.
   `/estimate`. Match the pattern landed on `/services/real-estate`'s
   contact section — paper-fill section blocks with hairline borders,
   italic-serif section heads, mono-caps eyebrows.
+- **Blog pages**: index uses a hero-then-cards rhythm (one full-width
+  hero card, three-column grid below — closest to Photographic but
+  smaller imagery). Detail uses Long Document — single column,
+  generous measure (62 ch), no tag-left/header-right. A single
+  post-end newsletter capture is allowed (it is the only marketing
+  apparatus permitted in this family — the entire purpose of the
+  blog is top-of-funnel conversion). Cover images, when present,
+  use a 16:9 ratio on detail and 4:3 on cards.
 
 ## Theme — House (custom, monochrome)
 
@@ -81,7 +89,10 @@ for JLC. Both are geometric sans.
   0.18em` instead — same uppercase aesthetic, one fewer font in the
   page weight budget.
 - **Hero headline** (Marquee Hero family): `--hm-text-display`
-  `clamp(3.5rem, 9vw, 8.5rem)`, italic Playfair, line-height 0.95.
+  `clamp(3.5rem, 9vw, 8.5rem)`, line-height 0.95. Display weight 700–800.
+- **Article H1 / post titles** (Blog detail): `--hm-text-display-s`
+  `clamp(2.25rem, 6vw, 4.5rem)`, line-height 1.02. Smaller than the
+  marquee hero so an article doesn't shout louder than the homepage.
 - **H2 (section heads)**: `--hm-text-h2` `clamp(1.75rem, 3.2vw, 2.75rem)`.
 - **H3**: `--hm-text-h3` `clamp(1.25rem, 2vw, 1.5rem)`.
 - **Lede**: `--hm-text-lede` `clamp(1.125rem, 1.4vw, 1.375rem)`.

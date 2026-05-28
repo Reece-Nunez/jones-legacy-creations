@@ -367,24 +367,27 @@ Because typing in markdown is faster than wrestling a rich-text WYSIWYG, and the
         )}
       </div>
 
-      {/* Preview styling */}
+      {/* Preview styling — mirrors the public /blog/[slug] rendering
+        * so writers see what will ship. Tokens by name per design.md;
+        * admin is technically out of scope for the system but matching
+        * tokens here keeps the preview honest. */}
       <style>{`
-        .post-preview h1 { font-family: Georgia, serif; font-weight: 700; font-size: 1.875rem; margin: 1.25rem 0 0.75rem; line-height: 1.15; }
-        .post-preview h2 { font-family: Georgia, serif; font-weight: 700; font-size: 1.5rem; margin: 1.75rem 0 0.75rem; line-height: 1.2; }
-        .post-preview h3 { font-family: Georgia, serif; font-weight: 700; font-size: 1.25rem; margin: 1.5rem 0 0.5rem; }
-        .post-preview p { margin: 0 0 1rem; line-height: 1.65; color: #374151; font-size: 0.9375rem; }
-        .post-preview a { color: #1a1a1a; text-decoration: underline; text-underline-offset: 2px; }
+        .post-preview h1 { font-family: var(--font-display); font-weight: 700; font-size: 1.875rem; margin: 1.25rem 0 0.75rem; line-height: 1.15; color: var(--hm-ink); }
+        .post-preview h2 { font-family: var(--font-display); font-weight: 700; font-size: 1.5rem; margin: 1.75rem 0 0.75rem; line-height: 1.2; color: var(--hm-ink); }
+        .post-preview h3 { font-family: var(--font-display); font-weight: 700; font-size: 1.25rem; margin: 1.5rem 0 0.5rem; color: var(--hm-ink); }
+        .post-preview p { margin: 0 0 1rem; line-height: 1.65; color: var(--hm-ink-2); font-size: 0.9375rem; }
+        .post-preview a { color: var(--hm-ink); text-decoration: underline; text-underline-offset: 2px; }
         .post-preview ul, .post-preview ol { margin: 0 0 1rem 1.25rem; padding: 0; }
-        .post-preview li { margin: 0 0 0.375rem; font-size: 0.9375rem; color: #374151; }
-        .post-preview blockquote { border-left: 3px solid #cbd5e1; padding: 0.125rem 1rem; margin: 1rem 0; font-style: italic; color: #475569; }
-        .post-preview code { background: #f1f5f9; padding: 0.125rem 0.375rem; border-radius: 3px; font-size: 0.85em; }
-        .post-preview pre { background: #f1f5f9; padding: 0.875rem; border-radius: 4px; overflow-x: auto; margin: 1rem 0; }
-        .post-preview pre code { background: transparent; padding: 0; }
+        .post-preview li { margin: 0 0 0.375rem; font-size: 0.9375rem; color: var(--hm-ink-2); }
+        .post-preview blockquote { border-left: 3px solid var(--hm-rule-thick); padding: 0.125rem 1rem; margin: 1rem 0; color: var(--hm-ink); }
+        .post-preview code { background: var(--hm-paper-2); padding: 0.125rem 0.375rem; font-size: 0.85em; }
+        .post-preview pre { background: var(--hm-paper-2); border: 1px solid var(--hm-rule); padding: 0.875rem; overflow-x: auto; margin: 1rem 0; }
+        .post-preview pre code { background: transparent; padding: 0; border: 0; }
         .post-preview img { max-width: 100%; height: auto; margin: 1rem 0; }
-        .post-preview hr { border: 0; border-top: 1px solid #e5e7eb; margin: 2rem 0; }
+        .post-preview hr { border: 0; border-top: 1px solid var(--hm-rule); margin: 2rem 0; }
         .post-preview table { width: 100%; border-collapse: collapse; margin: 1rem 0; }
-        .post-preview th, .post-preview td { border: 1px solid #e5e7eb; padding: 0.5rem 0.75rem; text-align: left; font-size: 0.875rem; }
-        .post-preview th { background: #f8fafc; font-weight: 600; }
+        .post-preview th, .post-preview td { border: 1px solid var(--hm-rule); padding: 0.5rem 0.75rem; text-align: left; font-size: 0.875rem; }
+        .post-preview th { background: var(--hm-paper-2); font-weight: 600; }
       `}</style>
     </div>
   );

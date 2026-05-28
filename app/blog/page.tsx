@@ -1,8 +1,13 @@
-/**
- * /blog — public blog index. Server-rendered editorial grid of
- * published posts. The traffic engine for "custom home builder
- * Hurricane UT" and similar long-tail searches once Blake writes
- * cornerstone content.
+/* Hallmark · genre: editorial · macrostructure: Blog index
+ * design-system: design.md · designed-as-app
+ * theme: House · anchor hue: none (monochrome)
+ *
+ * Blog family (see design.md § Macrostructure family): hero-then-cards
+ * rhythm — one full-width hero card for the latest post, three-column
+ * grid below for the rest. The hero headline ("Notes from the build.")
+ * uses the marquee hero token; per-post cards step down through h2 →
+ * h3. Token-by-name throughout — no inline clamps, no raw colors,
+ * no hardcoded easings.
  */
 
 import Link from "next/link";
@@ -71,8 +76,8 @@ export default async function BlogIndexPage() {
             <h1
               className="font-serif font-bold"
               style={{
-                fontSize: "clamp(2.75rem, 7vw, 6rem)",
-                lineHeight: 0.97,
+                fontSize: "var(--hm-text-display)",
+                lineHeight: 0.95,
                 color: "var(--hm-ink)",
                 letterSpacing: "-0.02em",
               }}
@@ -146,7 +151,8 @@ function HeroCard({ post }: { post: PostSummary }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block border-t border-black/30 pt-8 lg:pt-12"
+      className="group block border-t pt-8 lg:pt-12"
+      style={{ borderColor: "var(--hm-rule-thick)" }}
     >
       <div className="grid grid-cols-1 lg:grid-cols-[1.2fr_1fr] gap-8 lg:gap-16">
         <div className="order-2 lg:order-1">
@@ -156,15 +162,21 @@ function HeroCard({ post }: { post: PostSummary }) {
             tags={post.tags}
           />
           <h2
-            className="font-serif font-bold mt-3 group-hover:text-[var(--hm-accent)] transition-colors"
+            className="font-serif font-bold mt-3"
             style={{
-              fontSize: "clamp(2rem, 4.5vw, 3.5rem)",
+              fontSize: "var(--hm-text-display-s)",
               lineHeight: 1.05,
               color: "var(--hm-ink)",
               letterSpacing: "-0.015em",
+              transition: "color var(--hm-dur-short) var(--hm-ease-out)",
             }}
           >
-            {post.title}
+            <span
+              className="group-hover:text-[var(--hm-accent)]"
+              style={{ transition: "color var(--hm-dur-short) var(--hm-ease-out)" }}
+            >
+              {post.title}
+            </span>
           </h2>
           {post.excerpt && (
             <p
@@ -198,7 +210,7 @@ function HeroCard({ post }: { post: PostSummary }) {
             <img
               src={post.cover_image_url}
               alt={post.cover_image_alt ?? post.title}
-              className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+              className="absolute inset-0 w-full h-full object-cover"
             />
           </div>
         )}
@@ -211,7 +223,8 @@ function PostCard({ post }: { post: PostSummary }) {
   return (
     <Link
       href={`/blog/${post.slug}`}
-      className="group block border-t border-black pt-6"
+      className="group block border-t pt-6"
+      style={{ borderColor: "var(--hm-rule-thick)" }}
     >
       {post.cover_image_url && (
         <div className="relative aspect-[4/3] overflow-hidden mb-5">
@@ -219,7 +232,7 @@ function PostCard({ post }: { post: PostSummary }) {
           <img
             src={post.cover_image_url}
             alt={post.cover_image_alt ?? post.title}
-            className="absolute inset-0 w-full h-full object-cover group-hover:scale-[1.02] transition-transform duration-700"
+            className="absolute inset-0 w-full h-full object-cover"
           />
         </div>
       )}
@@ -229,12 +242,13 @@ function PostCard({ post }: { post: PostSummary }) {
         tags={post.tags}
       />
       <h3
-        className="font-serif font-bold mt-2 group-hover:text-[var(--hm-accent)] transition-colors"
+        className="font-serif font-bold mt-2 group-hover:text-[var(--hm-accent)]"
         style={{
           fontSize: "var(--hm-text-h3)",
           color: "var(--hm-ink)",
           letterSpacing: "-0.01em",
           lineHeight: 1.15,
+          transition: "color var(--hm-dur-short) var(--hm-ease-out)",
         }}
       >
         {post.title}

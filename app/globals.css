@@ -131,12 +131,16 @@
   --hm-space-3xl: 7rem;
 
   /* Type scale */
-  --hm-text-display: clamp(3.5rem, 9vw, 8.5rem);
-  --hm-text-h2:      clamp(1.75rem, 3.2vw, 2.75rem);
-  --hm-text-h3:      clamp(1.25rem, 2vw, 1.5rem);
-  --hm-text-lede:    clamp(1.125rem, 1.4vw, 1.375rem);
-  --hm-text-body:    1.0625rem;
-  --hm-text-meta:    0.8125rem;
+  --hm-text-display:   clamp(3.5rem, 9vw, 8.5rem);
+  /* Small display — between display and h2. Used for Blog detail H1
+     and any other "article-level" hero that shouldn't shout as loud
+     as a homepage marquee. See design.md § Typography. */
+  --hm-text-display-s: clamp(2.25rem, 6vw, 4.5rem);
+  --hm-text-h2:        clamp(1.75rem, 3.2vw, 2.75rem);
+  --hm-text-h3:        clamp(1.25rem, 2vw, 1.5rem);
+  --hm-text-lede:      clamp(1.125rem, 1.4vw, 1.375rem);
+  --hm-text-body:      1.0625rem;
+  --hm-text-meta:      0.8125rem;
 
   /* Motion */
   --hm-ease-out:    cubic-bezier(0.16, 1, 0.3, 1);

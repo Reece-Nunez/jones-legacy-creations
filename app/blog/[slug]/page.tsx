@@ -1,11 +1,18 @@
-/**
- * /blog/[slug] — public blog post detail.
+/* Hallmark · genre: editorial · macrostructure: Long Document
+ * design-system: design.md · designed-as-app
+ * theme: House · anchor hue: none (monochrome)
+ *
+ * Blog family (see design.md § Macrostructure family · Blog pages):
+ * single column, generous 62-ch measure, mono-caps eyebrow over an
+ * article-level H1 (--hm-text-display-s, NOT the marquee --hm-text-
+ * display — an article shouldn't shout louder than the homepage).
+ * One post-end NewsletterSignup is the only marketing apparatus
+ * permitted in this family.
  *
  * Server-rendered: markdown body parsed via marked to HTML at request
  * time and emitted as static HTML so Google indexes the rendered
  * content directly. JSON-LD BlogPosting schema embedded for rich
- * results. Per-page metadata pulled from the row (title, excerpt,
- * og:image).
+ * results.
  */
 
 import { notFound } from "next/navigation";
@@ -164,7 +171,7 @@ export default async function BlogPostPage({ params }: PageProps) {
             <h1
               className="font-serif font-bold"
               style={{
-                fontSize: "clamp(2.25rem, 6vw, 4.5rem)",
+                fontSize: "var(--hm-text-display-s)",
                 lineHeight: 1.02,
                 color: "var(--hm-ink)",
                 letterSpacing: "-0.02em",
@@ -226,65 +233,85 @@ export default async function BlogPostPage({ params }: PageProps) {
 
           {/* Inline CSS for headings / lists / links inside the rendered
             * markdown. Scoped via the .blog-content wrapper above so it
-            * doesn't leak. */}
+            * doesn't leak. Token-by-name throughout per design.md. */}
           <style>{`
             .blog-content h2 {
-              font-family: Georgia, serif;
+              font-family: var(--font-display);
               font-weight: 700;
-              font-size: 2rem;
+              font-size: var(--hm-text-h2);
               line-height: 1.15;
               letter-spacing: -0.015em;
               color: var(--hm-ink);
-              margin: 3rem 0 1rem;
+              margin: var(--hm-space-xl) 0 var(--hm-space-sm);
             }
             .blog-content h3 {
-              font-family: Georgia, serif;
+              font-family: var(--font-display);
               font-weight: 700;
-              font-size: 1.5rem;
+              font-size: var(--hm-text-h3);
               line-height: 1.2;
               color: var(--hm-ink);
-              margin: 2.25rem 0 0.875rem;
+              margin: var(--hm-space-lg) 0 var(--hm-space-xs);
             }
-            .blog-content p { margin: 0 0 1.25rem; }
+            .blog-content p { margin: 0 0 var(--hm-space-sm); }
             .blog-content a {
               color: var(--hm-ink);
               text-decoration: underline;
               text-underline-offset: 3px;
+              transition: color var(--hm-dur-short) var(--hm-ease-out);
             }
             .blog-content a:hover { color: var(--hm-accent); }
             .blog-content ul, .blog-content ol {
-              margin: 0 0 1.5rem 1.25rem;
+              margin: 0 0 var(--hm-space-md) 1.25rem;
               padding: 0;
             }
-            .blog-content li { margin: 0 0 0.5rem; }
+            .blog-content li { margin: 0 0 var(--hm-space-2xs); }
             .blog-content blockquote {
               border-left: 3px solid var(--hm-rule-thick);
-              padding: 0.25rem 1.25rem;
-              margin: 1.5rem 0;
-              font-style: italic;
+              padding: var(--hm-space-3xs) var(--hm-space-sm);
+              margin: var(--hm-space-md) 0;
               color: var(--hm-ink);
             }
             .blog-content img {
               max-width: 100%;
               height: auto;
-              margin: 1.5rem 0;
+              margin: var(--hm-space-md) 0;
             }
             .blog-content code {
-              background: rgba(0,0,0,0.05);
+              background: var(--hm-paper-2);
               padding: 0.125rem 0.375rem;
-              border-radius: 3px;
               font-size: 0.9em;
             }
             .blog-content pre {
-              background: rgba(0,0,0,0.05);
-              padding: 1rem;
-              border-radius: 4px;
+              background: var(--hm-paper-2);
+              border: 1px solid var(--hm-rule);
+              padding: var(--hm-space-sm);
               overflow-x: auto;
-              margin: 1.5rem 0;
+              margin: var(--hm-space-md) 0;
             }
             .blog-content pre code {
               background: transparent;
               padding: 0;
+              border: 0;
+            }
+            .blog-content hr {
+              border: 0;
+              border-top: 1px solid var(--hm-rule);
+              margin: var(--hm-space-lg) 0;
+            }
+            .blog-content table {
+              width: 100%;
+              border-collapse: collapse;
+              margin: var(--hm-space-md) 0;
+              font-size: var(--hm-text-body);
+            }
+            .blog-content th, .blog-content td {
+              border: 1px solid var(--hm-rule);
+              padding: var(--hm-space-2xs) var(--hm-space-xs);
+              text-align: left;
+            }
+            .blog-content th {
+              background: var(--hm-paper-2);
+              font-weight: 600;
             }
           `}</style>
         </article>
