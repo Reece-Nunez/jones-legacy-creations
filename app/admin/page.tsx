@@ -141,6 +141,7 @@ export default async function AdminDashboard({
     drawsRes,
     paymentsRes,
     miscChargesRes,
+    loanLedgerRes,
     estimatesRes,
     contractorsRes,
   ] = await Promise.all([
@@ -153,6 +154,7 @@ export default async function AdminDashboard({
     supabase.from("draw_requests").select("*"),
     supabase.from("contractor_payments").select("project_id, amount"),
     supabase.from("project_misc_charges").select("project_id, amount"),
+    supabase.from("loan_ledger").select("project_id, entry_type, amount, entry_date"),
     supabase
       .from("estimates")
       .select("*")
@@ -173,6 +175,7 @@ export default async function AdminDashboard({
   const draws: DrawRequest[] = drawsRes.data ?? [];
   const payments: { project_id: string; amount: number }[] = paymentsRes.data ?? [];
   const miscCharges: { project_id: string; amount: number }[] = miscChargesRes.data ?? [];
+  const loanLedger: { project_id: string; entry_type: string; amount: number; entry_date: string }[] = loanLedgerRes.data ?? [];
   const estimates: Estimate[] = estimatesRes.data ?? [];
   const contractorsMissingW9: Pick<Contractor, "id" | "name" | "company">[] = contractorsRes.data ?? [];
 
@@ -201,7 +204,7 @@ export default async function AdminDashboard({
   // shared helper so the dashboard can't drift from the Financials page.
   // See lib/finance/project-financials.ts for the formula and invariants.
   const activeFinancials = activeProjects.map((p) =>
-    computeProjectFinancials(p, payments, draws, miscCharges, now),
+    computeProjectFinancials(p, payments, draws, miscCharges, now, loanLedger as Parameters<typeof computeProjectFinancials>[5]),
   );
   const totalProjectedProfit = sumProjectedProfit(activeFinancials);
   const projectsWithProfit = activeFinancials.filter((f) => f.salePrice > 0).length;

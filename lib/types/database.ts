@@ -152,6 +152,37 @@ export interface ContractorPayment {
   created_at: string;
 }
 
+/** Event-per-row record of every lender-side transaction. Source of
+ *  truth for loan cost when entries exist — helper falls back to
+ *  formula-based estimates otherwise. See loan_ledger migration for the
+ *  meaning of each entry_type. */
+export type LoanLedgerEntryType =
+  | "disbursement"
+  | "interest_accrual"
+  | "interest_payment"
+  | "principal_payment"
+  | "fee"
+  | "payoff";
+
+export interface LoanLedgerEntry {
+  id: string;
+  project_id: string;
+  entry_date: string;
+  entry_type: LoanLedgerEntryType;
+  description: string | null;
+  amount: number;
+  running_balance: number | null;
+  payment_method: string | null;
+  related_draw_id: string | null;
+  related_ledger_id: string | null;
+  notes: string | null;
+  source_document_url: string | null;
+  ai_extracted: boolean;
+  user_verified: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
 /** One-off project cost not captured elsewhere (buyer credits, lender
  *  fees rolled into first-month interest, prepayment penalties, etc.).
  *  Sum subtracted from projected_profit in lib/finance/project-financials.ts. */

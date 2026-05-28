@@ -73,6 +73,7 @@ import type {
   InvoiceUploadToken,
   DrawLineItem,
   ProjectMiscCharge,
+  LoanLedgerEntry,
 } from "@/lib/types/database";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 
@@ -117,6 +118,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SmartUpload from "@/components/admin/SmartUpload";
 import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
 import { computeProjectFinancials } from "@/lib/finance/project-financials";
+import LoanLedgerTab from "@/components/admin/LoanLedgerTab";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -191,6 +193,7 @@ const ALL_TABS = [
   { key: "photos",     label: "Photos",    icon: Camera,          cashJob: true,  onlyCashJob: false },
   { key: "payments",   label: "Payments",  icon: CreditCard,      cashJob: true,  onlyCashJob: true  },
   { key: "draws",      label: "Draws",     icon: Banknote,        cashJob: false, onlyCashJob: false },
+  { key: "loan",       label: "Loan",      icon: Landmark,        cashJob: false, onlyCashJob: false },
   { key: "budget",     label: "Budget",    icon: Wallet,          cashJob: true,  onlyCashJob: false },
   { key: "tasks",      label: "Tasks",     icon: CheckSquare,     cashJob: true,  onlyCashJob: false },
   { key: "permits",    label: "Permits",   icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
@@ -215,6 +218,7 @@ interface Props {
   activityLog: ActivityLogEntry[];
   contractors: Contractor[];
   miscCharges: ProjectMiscCharge[];
+  loanLedger: LoanLedgerEntry[];
 }
 
 // ---------------------------------------------------------------------------
@@ -331,6 +335,7 @@ export default function ProjectDetail({
   activityLog,
   contractors,
   miscCharges,
+  loanLedger,
 }: Props) {
   const router = useRouter();
   const searchParams = useSearchParams();
@@ -454,7 +459,7 @@ export default function ProjectDetail({
   // See lib/finance/project-financials.ts for the formula + rationale.
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
-  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges);
+  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger);
   const {
     salePrice,
     loanAmount,
@@ -690,6 +695,9 @@ export default function ProjectDetail({
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
             />
+          </TabsContent>
+          <TabsContent value="loan">
+            <LoanLedgerTab projectId={project.id} entries={loanLedger} />
           </TabsContent>
           <TabsContent value="permits">
             <PermitsTab

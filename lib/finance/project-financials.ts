@@ -59,6 +59,7 @@ import type {
   ContractorPayment,
   DrawRequest,
   FinancingType,
+  LoanLedgerEntry,
   Project,
   ProjectMiscCharge,
 } from "@/lib/types/database";
@@ -81,6 +82,11 @@ export interface ProjectFinancials {
   /** Sum of project_misc_charges.amount for this project. Always
    *  subtracted from projected_profit regardless of financing type. */
   miscCharges: number;
+  /** True when this project has at least one loan_ledger entry — the
+   *  helper has used the ledger's actuals for accruedInterest instead of
+   *  the running-balance formula. UI can use this to show "lender actuals"
+   *  vs "estimated" labels. */
+  hasLoanLedger: boolean;
   /** Combined effect of financing on profit (negative for external_loan,
    *  positive for seller_financed, near-zero for cash). Equal to
    *  (projectedProfit − (salePrice − totalCosts)) — kept as its own field
@@ -167,10 +173,15 @@ export function computeAccruedInterest(
 
 /**
  * Compute the full financial picture for one project. Pass in the global
- * payments and draws arrays — this function filters to the project itself.
- * `allMiscCharges` is optional for backward compat with callers that
- * haven't been updated yet; new code should always pass it.
- * Pass `asOf` to compute "interest as of that date" for time-travel views.
+ * payments, draws, misc charges, and loan-ledger arrays — this function
+ * filters each to the project itself.
+ *
+ * Trailing args are optional for backward compat. `asOf` controls
+ * time-travel calcs for interest-to-date. `allLoanLedger`, when present,
+ * makes the helper use lender-actuals (sum of interest_accrual entries +
+ * fees) instead of the running-balance formula. This is the "lender
+ * statement is the source of truth" mode and is preferred for any
+ * project with full ledger entry.
  */
 export function computeProjectFinancials(
   project: Project,
@@ -178,10 +189,12 @@ export function computeProjectFinancials(
   allDraws: DrawRequest[],
   allMiscCharges: Pick<ProjectMiscCharge, "project_id" | "amount">[] = [],
   asOf: Date = new Date(),
+  allLoanLedger: Pick<LoanLedgerEntry, "project_id" | "entry_type" | "amount" | "entry_date">[] = [],
 ): ProjectFinancials {
   const projPayments = allPayments.filter((p) => p.project_id === project.id);
   const projDraws = allDraws.filter((d) => d.project_id === project.id);
   const projMisc = allMiscCharges.filter((m) => m.project_id === project.id);
+  const projLedger = allLoanLedger.filter((l) => l.project_id === project.id);
 
   const financingType = resolveFinancingType(project);
   const salePrice = Number(project.sale_price ?? 0);
@@ -203,7 +216,24 @@ export function computeProjectFinancials(
   const drawsTotal = projDraws.reduce((s, d) => s + Number(d.amount || 0), 0);
 
   const originationFee = (loanAmount * originationFeePercent) / 100;
-  const accruedInterest = computeAccruedInterest(project, projDraws, asOf);
+
+  // Prefer ledger-actuals when present. Ledger represents what the
+  // lender actually charged — including anomalies like first-month fee-
+  // rolled interest that the simple-interest formula can't reproduce.
+  // We sum accruals + fees because both are interest-equivalent costs to
+  // Blake (origination fee, late fees, etc.).
+  //
+  // When ledger is empty, fall back to the formula. Both branches end
+  // here so callers don't have to know which mode they're in.
+  const hasLoanLedger = projLedger.length > 0;
+  let accruedInterest: number;
+  if (hasLoanLedger) {
+    accruedInterest = projLedger
+      .filter((l) => l.entry_type === "interest_accrual" || l.entry_type === "fee")
+      .reduce((s, l) => s + Number(l.amount || 0), 0);
+  } else {
+    accruedInterest = computeAccruedInterest(project, projDraws, asOf);
+  }
 
   // How financing affects profit. See file header for the rationale.
   //
@@ -250,6 +280,7 @@ export function computeProjectFinancials(
     accruedInterest,
     saleClosingCosts,
     miscCharges,
+    hasLoanLedger,
     financingImpact,
     projectedProfit,
     profitMargin,

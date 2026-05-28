@@ -5,6 +5,7 @@ import type {
   ContractorPayment,
   DrawRequest,
   DrawRequestStatus,
+  LoanLedgerEntry,
   ProjectMiscCharge,
 } from "@/lib/types/database";
 import { DRAW_STATUS_COLORS } from "@/lib/types/database";
@@ -70,7 +71,7 @@ export default async function FinancialsPage({
 
   const supabase = await createClient();
 
-  const [projectsRes, paymentsRes, drawsRes, miscRes] = await Promise.all([
+  const [projectsRes, paymentsRes, drawsRes, miscRes, ledgerRes] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
@@ -78,12 +79,14 @@ export default async function FinancialsPage({
     supabase.from("contractor_payments").select("*"),
     supabase.from("draw_requests").select("*"),
     supabase.from("project_misc_charges").select("*"),
+    supabase.from("loan_ledger").select("*"),
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
   const payments: ContractorPayment[] = paymentsRes.data ?? [];
   const draws: DrawRequest[] = drawsRes.data ?? [];
   const miscCharges: ProjectMiscCharge[] = miscRes.data ?? [];
+  const loanLedger: LoanLedgerEntry[] = ledgerRes.data ?? [];
 
   // ── Maps ─────────────────────────────────────────────────────────
   const projectMap = new Map(projects.map((p) => [p.id, p]));
@@ -93,7 +96,7 @@ export default async function FinancialsPage({
 
   // ── Per-project financials (uses shared helper — do not inline) ─
   const projectFinancials: ProjectFinancials[] = activeProjects.map((p) =>
-    computeProjectFinancials(p, payments, draws, miscCharges),
+    computeProjectFinancials(p, payments, draws, miscCharges, new Date(), loanLedger),
   );
 
   // Sort: projects with activity first, then by profit descending
