@@ -472,11 +472,14 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
                 key={i}
                 title={`Entry ${i + 1}`}
                 form={e}
-                setForm={(next) => {
+                setForm={(next: React.SetStateAction<AddForm>) => {
                   setReviewEntries((prev) => {
                     if (!prev) return prev;
                     const copy = [...prev];
-                    copy[i] = typeof next === "function" ? next(prev[i]) : next;
+                    copy[i] =
+                      typeof next === "function"
+                        ? (next as (prev: AddForm) => AddForm)(prev[i])
+                        : next;
                     return copy;
                   });
                 }}
