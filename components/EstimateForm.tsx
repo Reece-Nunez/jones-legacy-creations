@@ -83,6 +83,13 @@ export default function EstimateForm() {
   const [countertopPref, setCountertopPref] = useState("");
   const [cabinetPref, setCabinetPref] = useState("");
   const [showMaterials, setShowMaterials] = useState(false);
+  // Restructured Step 2: optional fields hidden behind this toggle so
+  // the visible form is description + sqft + finish + budget (the
+  // fields that genuinely move the AI's estimate). Address/timeline/
+  // bedrooms/bathrooms live in here — useful but not load-bearing on
+  // the estimate quality, and putting them all up front created a
+  // 7-section scroll that tanked mobile completion.
+  const [showAdditionalDetails, setShowAdditionalDetails] = useState(false);
 
   // Step 3
   const [clientName, setClientName] = useState("");
@@ -374,10 +381,46 @@ export default function EstimateForm() {
             Tell us about your project
           </h2>
           <p className="text-gray-600 mb-8">
-            The more detail you provide, the more accurate your estimate will be.
+            Just the basics for a starting number — you can refine below
+            for a tighter estimate.
           </p>
 
           <div className="space-y-6">
+            {/* Description — required, moved to the top so the only
+              * field the user MUST fill is the first thing they see.
+              * Pre-refactor this was at the bottom under 6 optional
+              * field groups, which hurt mobile completion. */}
+            <div>
+              <label
+                htmlFor="description"
+                className="block text-sm font-medium text-gray-700 mb-1.5"
+              >
+                Tell us about your project{" "}
+                <span className="text-red-500">*</span>
+              </label>
+              <textarea
+                id="description"
+                rows={4}
+                aria-required="true"
+                value={description}
+                onChange={(e) => {
+                  setDescription(e.target.value);
+                  if (stepErrors.description) setStepErrors({});
+                }}
+                placeholder="What are you looking to build or renovate? Any special requirements, materials preferences, or design ideas…"
+                className={`w-full rounded-lg border px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 ${
+                  stepErrors.description
+                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
+                    : "border-gray-300 focus:border-black focus:ring-black"
+                }`}
+              />
+              {stepErrors.description && (
+                <p className="mt-1 text-sm text-red-600" role="alert">
+                  {stepErrors.description}
+                </p>
+              )}
+            </div>
+
             {/* Square Footage */}
             <div>
               <label htmlFor="squareFootage" className="block text-sm font-medium text-gray-700 mb-1.5">
@@ -396,67 +439,6 @@ export default function EstimateForm() {
                 Used to calculate your cost estimate. Leave blank if unsure.
               </p>
             </div>
-
-            {/* Bedrooms & Bathrooms — only for applicable project types */}
-            {SHOWS_BEDROOMS_BATHROOMS.includes(projectType) && (
-              <>
-                <div>
-                  <label id="bedroomsLabel" className="block text-sm font-medium text-gray-700 mb-3">
-                    Bedrooms
-                  </label>
-                  <div
-                    className="flex flex-wrap gap-2"
-                    role="radiogroup"
-                    aria-labelledby="bedroomsLabel"
-                  >
-                    {BEDROOM_OPTIONS.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        role="radio"
-                        aria-checked={bedrooms === opt}
-                        onClick={() => setBedrooms(opt)}
-                        className={`rounded-lg border min-h-[44px] min-w-[52px] px-4 py-3 text-sm font-medium transition-all ${
-                          bedrooms === opt
-                            ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label id="bathroomsLabel" className="block text-sm font-medium text-gray-700 mb-3">
-                    Bathrooms
-                  </label>
-                  <div
-                    className="flex flex-wrap gap-2"
-                    role="radiogroup"
-                    aria-labelledby="bathroomsLabel"
-                  >
-                    {BATHROOM_OPTIONS.map((opt) => (
-                      <button
-                        key={opt}
-                        type="button"
-                        role="radio"
-                        aria-checked={bathrooms === opt}
-                        onClick={() => setBathrooms(opt)}
-                        className={`rounded-lg border min-h-[44px] min-w-[52px] px-4 py-3 text-sm font-medium transition-all ${
-                          bathrooms === opt
-                            ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
-                            : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                        }`}
-                      >
-                        {opt}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </>
-            )}
 
             {/* Finish Level */}
             <div>
@@ -494,57 +476,6 @@ export default function EstimateForm() {
               </div>
             </div>
 
-            {/* Address */}
-            <div>
-              <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Project Address
-              </label>
-              <input
-                id="address"
-                type="text"
-                value={address}
-                onChange={(e) => setAddress(e.target.value)}
-                placeholder="Street address"
-                className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-              />
-              <div className="mt-3 grid grid-cols-3 gap-3">
-                <div>
-                  <label htmlFor="city" className="sr-only">City</label>
-                  <input
-                    id="city"
-                    type="text"
-                    value={city}
-                    onChange={(e) => setCity(e.target.value)}
-                    placeholder="City"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="state" className="sr-only">State</label>
-                  <input
-                    id="state"
-                    type="text"
-                    value="UT"
-                    readOnly
-                    disabled
-                    className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-gray-500 cursor-not-allowed"
-                  />
-                </div>
-                <div>
-                  <label htmlFor="zip" className="sr-only">ZIP Code</label>
-                  <input
-                    id="zip"
-                    type="text"
-                    inputMode="numeric"
-                    value={zip}
-                    onChange={(e) => setZip(e.target.value)}
-                    placeholder="ZIP"
-                    className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
-                  />
-                </div>
-              </div>
-            </div>
-
             {/* Budget Range */}
             <div>
               <label id="budgetRangeLabel" className="block text-sm font-medium text-gray-700 mb-3">
@@ -574,33 +505,168 @@ export default function EstimateForm() {
               </div>
             </div>
 
-            {/* Timeline */}
+            {/* Additional details — bedrooms/bathrooms/address/timeline
+              * tucked behind one toggle. These move the AI's estimate
+              * less than budget+finish+sqft, so hiding them by default
+              * cuts the visible scroll without hurting accuracy. */}
             <div>
-              <label id="timelineLabel" className="block text-sm font-medium text-gray-700 mb-3">
-                Desired Timeline
-              </label>
-              <div
-                className="grid grid-cols-2 gap-2 sm:grid-cols-3"
-                role="radiogroup"
-                aria-labelledby="timelineLabel"
+              <button
+                type="button"
+                onClick={() => setShowAdditionalDetails(!showAdditionalDetails)}
+                className="flex items-center gap-2 text-sm font-medium text-blue-600 hover:text-blue-700 transition-colors"
               >
-                {TIMELINE_OPTIONS.map((opt) => (
-                  <button
-                    key={opt}
-                    type="button"
-                    role="radio"
-                    aria-checked={timeline === opt}
-                    onClick={() => setTimeline(opt)}
-                    className={`rounded-lg border min-h-[44px] px-4 py-3 text-sm font-medium transition-all ${
-                      timeline === opt
-                        ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
-                        : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
-                    }`}
-                  >
-                    {opt}
-                  </button>
-                ))}
-              </div>
+                {showAdditionalDetails ? (
+                  <ChevronUp className="h-4 w-4" />
+                ) : (
+                  <ChevronDown className="h-4 w-4" />
+                )}
+                Additional details (optional)
+              </button>
+
+              {showAdditionalDetails && (
+                <div className="mt-4 space-y-6 rounded-xl border border-gray-200 bg-gray-50 p-5">
+                  {/* Bedrooms & Bathrooms — only for applicable project types */}
+                  {SHOWS_BEDROOMS_BATHROOMS.includes(projectType) && (
+                    <>
+                      <div>
+                        <label id="bedroomsLabel" className="block text-sm font-medium text-gray-700 mb-3">
+                          Bedrooms
+                        </label>
+                        <div
+                          className="flex flex-wrap gap-2"
+                          role="radiogroup"
+                          aria-labelledby="bedroomsLabel"
+                        >
+                          {BEDROOM_OPTIONS.map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              role="radio"
+                              aria-checked={bedrooms === opt}
+                              onClick={() => setBedrooms(opt)}
+                              className={`rounded-lg border min-h-[44px] min-w-[52px] px-4 py-3 text-sm font-medium transition-all ${
+                                bedrooms === opt
+                                  ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
+                                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div>
+                        <label id="bathroomsLabel" className="block text-sm font-medium text-gray-700 mb-3">
+                          Bathrooms
+                        </label>
+                        <div
+                          className="flex flex-wrap gap-2"
+                          role="radiogroup"
+                          aria-labelledby="bathroomsLabel"
+                        >
+                          {BATHROOM_OPTIONS.map((opt) => (
+                            <button
+                              key={opt}
+                              type="button"
+                              role="radio"
+                              aria-checked={bathrooms === opt}
+                              onClick={() => setBathrooms(opt)}
+                              className={`rounded-lg border min-h-[44px] min-w-[52px] px-4 py-3 text-sm font-medium transition-all ${
+                                bathrooms === opt
+                                  ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
+                                  : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                              }`}
+                            >
+                              {opt}
+                            </button>
+                          ))}
+                        </div>
+                      </div>
+                    </>
+                  )}
+
+                  {/* Address */}
+                  <div>
+                    <label htmlFor="address" className="block text-sm font-medium text-gray-700 mb-1.5">
+                      Project Address
+                    </label>
+                    <input
+                      id="address"
+                      type="text"
+                      value={address}
+                      onChange={(e) => setAddress(e.target.value)}
+                      placeholder="Street address"
+                      className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                    />
+                    <div className="mt-3 grid grid-cols-3 gap-3">
+                      <div>
+                        <label htmlFor="city" className="sr-only">City</label>
+                        <input
+                          id="city"
+                          type="text"
+                          value={city}
+                          onChange={(e) => setCity(e.target.value)}
+                          placeholder="City"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="state" className="sr-only">State</label>
+                        <input
+                          id="state"
+                          type="text"
+                          value="UT"
+                          readOnly
+                          disabled
+                          className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-gray-500 cursor-not-allowed"
+                        />
+                      </div>
+                      <div>
+                        <label htmlFor="zip" className="sr-only">ZIP Code</label>
+                        <input
+                          id="zip"
+                          type="text"
+                          inputMode="numeric"
+                          value={zip}
+                          onChange={(e) => setZip(e.target.value)}
+                          placeholder="ZIP"
+                          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Timeline */}
+                  <div>
+                    <label id="timelineLabel" className="block text-sm font-medium text-gray-700 mb-3">
+                      Desired Timeline
+                    </label>
+                    <div
+                      className="grid grid-cols-2 gap-2 sm:grid-cols-3"
+                      role="radiogroup"
+                      aria-labelledby="timelineLabel"
+                    >
+                      {TIMELINE_OPTIONS.map((opt) => (
+                        <button
+                          key={opt}
+                          type="button"
+                          role="radio"
+                          aria-checked={timeline === opt}
+                          onClick={() => setTimeline(opt)}
+                          className={`rounded-lg border min-h-[44px] px-4 py-3 text-sm font-medium transition-all ${
+                            timeline === opt
+                              ? "border-2 border-blue-600 bg-blue-50 text-gray-900"
+                              : "border-gray-200 bg-white text-gray-700 hover:border-gray-400"
+                          }`}
+                        >
+                          {opt}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Material Preferences — collapsible */}
@@ -674,31 +740,6 @@ export default function EstimateForm() {
               )}
             </div>
 
-            {/* Description */}
-            <div>
-              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1.5">
-                Tell us about your project <span className="text-red-500">*</span>
-              </label>
-              <textarea
-                id="description"
-                rows={4}
-                aria-required="true"
-                value={description}
-                onChange={(e) => {
-                  setDescription(e.target.value);
-                  if (stepErrors.description) setStepErrors({});
-                }}
-                placeholder="What are you looking to build or renovate? Include any special requirements, materials preferences, or design ideas..."
-                className={`w-full rounded-lg border px-4 py-3 text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-1 ${
-                  stepErrors.description
-                    ? "border-red-300 focus:border-red-500 focus:ring-red-500"
-                    : "border-gray-300 focus:border-black focus:ring-black"
-                }`}
-              />
-              {stepErrors.description && (
-                <p className="mt-1 text-sm text-red-600" role="alert">{stepErrors.description}</p>
-              )}
-            </div>
           </div>
         </div>
       )}
