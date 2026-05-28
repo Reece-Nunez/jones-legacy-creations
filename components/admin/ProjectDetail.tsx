@@ -713,7 +713,11 @@ export default function ProjectDetail({
             />
           </TabsContent>
           <TabsContent value="loan">
-            <LoanLedgerTab projectId={project.id} entries={loanLedger} />
+            <LoanLedgerTab
+              projectId={project.id}
+              entries={loanLedger}
+              draws={drawRequests}
+            />
           </TabsContent>
           <TabsContent value="cashflow">
             <CashFlowTab

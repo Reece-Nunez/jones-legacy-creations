@@ -28,14 +28,11 @@ import {
   Banknote,
   Calendar,
   Check,
-  ChevronDown,
-  ChevronUp,
-  CreditCard,
+  Copy,
   Edit3,
-  FileUp,
+  Link2,
   Loader2,
   Plus,
-  RefreshCw,
   Sparkles,
   Trash2,
   TriangleAlert,
@@ -48,9 +45,14 @@ import {
 } from "@/lib/formatters";
 import { confirmAction } from "@/lib/confirmAction";
 import type {
+  DrawRequest,
   LoanLedgerEntry,
   LoanLedgerEntryType,
 } from "@/lib/types/database";
+import {
+  reconcileIncoming,
+  type ReconcileAnnotation,
+} from "@/lib/finance/loan-ledger-reconcile";
 
 // ────────────────────────────────────────────────────────────────────────
 // Display labels + balance impact per entry_type. amount is always
@@ -103,9 +105,23 @@ const EMPTY_ADD: AddForm = {
 interface Props {
   projectId: string;
   entries: LoanLedgerEntry[];
+  /** Existing draw_requests for this project. Used to suggest
+   *  related_draw_id auto-links when the AI extractor returns a
+   *  disbursement matching a funded draw. */
+  draws: DrawRequest[];
 }
 
-export default function LoanLedgerTab({ projectId, entries }: Props) {
+interface ReviewEntry {
+  form: AddForm;
+  reconcile: ReconcileAnnotation;
+  /** User decision for this row: include (default), skip, or replace
+   *  the existing matched ledger entry. Defaults differ by reconcile
+   *  status — duplicates default to skip, conflicts default to skip
+   *  (Blake decides), new entries default to include. */
+  action: "include" | "skip" | "replace";
+}
+
+export default function LoanLedgerTab({ projectId, entries, draws }: Props) {
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [showAdd, setShowAdd] = useState(false);
@@ -114,7 +130,7 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
   const [editForm, setEditForm] = useState<AddForm>(EMPTY_ADD);
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const [extracting, setExtracting] = useState(false);
-  const [reviewEntries, setReviewEntries] = useState<AddForm[] | null>(null);
+  const [reviewEntries, setReviewEntries] = useState<ReviewEntry[] | null>(null);
   const [reviewSummary, setReviewSummary] = useState<string>("");
 
   // ── Totals ─────────────────────────────────────────────────────────
@@ -319,18 +335,50 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
         summary: string;
       } = await res.json();
       setReviewSummary(data.summary || "");
-      setReviewEntries(
-        data.entries.map((e) => ({
+
+      // Reconcile incoming against existing ledger + draws so the UI
+      // can show duplicate/conflict status and suggest related_draw
+      // links before persisting anything.
+      const annotations = reconcileIncoming(data.entries, entries, draws);
+
+      const reviewItems: ReviewEntry[] = data.entries.map((e, i) => ({
+        form: {
           entry_date: e.entry_date,
           entry_type: e.entry_type,
           description: e.description ?? "",
           amount: formatCurrencyInput(String(e.amount)),
-          running_balance: e.running_balance != null ? formatCurrencyInput(String(e.running_balance)) : "",
+          running_balance:
+            e.running_balance != null
+              ? formatCurrencyInput(String(e.running_balance))
+              : "",
           payment_method: e.payment_method ?? "",
           notes: e.notes ?? "",
-        })),
-      );
-      toast.success(`Claude extracted ${data.entries.length} entries — review and confirm`);
+        },
+        reconcile: annotations[i],
+        // Defaults:
+        //   duplicate → skip (already in ledger, don't re-add)
+        //   conflict  → skip (Blake should decide which value is right)
+        //   new       → include
+        action:
+          annotations[i].status === "new"
+            ? "include"
+            : "skip",
+      }));
+      setReviewEntries(reviewItems);
+
+      const newCount = annotations.filter((a) => a.status === "new").length;
+      const dupCount = annotations.filter((a) => a.status === "duplicate").length;
+      const conflictCount = annotations.filter((a) => a.status === "conflict").length;
+      const linkCount = annotations.filter((a) => a.suggestedDrawId).length;
+      const summary = [
+        `${newCount} new`,
+        dupCount > 0 ? `${dupCount} duplicate` : null,
+        conflictCount > 0 ? `${conflictCount} conflict` : null,
+        linkCount > 0 ? `${linkCount} auto-linked to draws` : null,
+      ]
+        .filter(Boolean)
+        .join(", ");
+      toast.success(`Extracted ${data.entries.length} entries — ${summary}`);
     } catch {
       toast.error("Extraction failed");
     } finally {
@@ -341,20 +389,57 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
 
   async function saveReviewEntries() {
     if (!reviewEntries) return;
-    const payload = reviewEntries.map((f) => ({
-      ...packForm(f),
-      ai_extracted: true,
-      user_verified: true,
-    }));
-    const ok = await apiCall(
-      `/api/admin/projects/${projectId}/loan-ledger`,
-      "POST",
-      payload,
+
+    // Apply user actions:
+    //   include → POST new ledger row
+    //   replace → PATCH the matched existing row with the new values
+    //   skip    → drop the row, no API call
+    const toInsert = reviewEntries.filter((r) => r.action === "include");
+    const toReplace = reviewEntries.filter(
+      (r) => r.action === "replace" && r.reconcile.matchedEntry,
     );
-    if (ok) {
-      setReviewEntries(null);
-      setReviewSummary("");
-      toast.success(`Saved ${payload.length} entries to the ledger`);
+
+    let saved = 0;
+    let updated = 0;
+
+    if (toInsert.length > 0) {
+      const payload = toInsert.map((r) => ({
+        ...packForm(r.form),
+        related_draw_id: r.reconcile.suggestedDrawId,
+        ai_extracted: true,
+        user_verified: true,
+      }));
+      const ok = await apiCall(
+        `/api/admin/projects/${projectId}/loan-ledger`,
+        "POST",
+        payload,
+      );
+      if (ok) saved = payload.length;
+    }
+
+    for (const r of toReplace) {
+      const ok = await apiCall(
+        `/api/admin/projects/${projectId}/loan-ledger/${r.reconcile.matchedEntry!.id}`,
+        "PATCH",
+        {
+          ...packForm(r.form),
+          related_draw_id: r.reconcile.suggestedDrawId,
+          ai_extracted: true,
+          user_verified: true,
+        },
+      );
+      if (ok) updated += 1;
+    }
+
+    setReviewEntries(null);
+    setReviewSummary("");
+    if (saved + updated > 0) {
+      const parts = [];
+      if (saved > 0) parts.push(`saved ${saved} new`);
+      if (updated > 0) parts.push(`updated ${updated} existing`);
+      toast.success(parts.join(", "));
+    } else {
+      toast("No entries were applied", { icon: "ℹ️" });
     }
   }
 
@@ -441,7 +526,7 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
         />
       )}
 
-      {/* AI review queue */}
+      {/* AI review queue with reconcile annotations */}
       {reviewEntries && (
         <div className="rounded-lg border border-indigo-300 bg-indigo-50/40 p-4">
           <div className="flex items-start justify-between gap-3 mb-3">
@@ -449,7 +534,8 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
               <Sparkles className="w-4 h-4 mt-0.5 text-indigo-600 shrink-0" />
               <div>
                 <p className="text-sm font-semibold text-indigo-900">
-                  Review {reviewEntries.length} extracted {reviewEntries.length === 1 ? "entry" : "entries"}
+                  Review {reviewEntries.length} extracted{" "}
+                  {reviewEntries.length === 1 ? "entry" : "entries"}
                 </p>
                 {reviewSummary && (
                   <p className="text-xs text-indigo-700 mt-0.5">{reviewSummary}</p>
@@ -466,20 +552,34 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
               Discard all
             </button>
           </div>
+
+          {/* Reconcile legend */}
+          <div className="mb-3 flex flex-wrap items-center gap-2 text-[10px] text-gray-700">
+            <span className="inline-flex items-center gap-1 rounded-full bg-emerald-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-emerald-700">
+              <Plus className="w-2.5 h-2.5" /> New
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-gray-200 px-2 py-0.5 font-semibold uppercase tracking-wide text-gray-700">
+              <Copy className="w-2.5 h-2.5" /> Duplicate
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-amber-800">
+              <TriangleAlert className="w-2.5 h-2.5" /> Conflict
+            </span>
+            <span className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 font-semibold uppercase tracking-wide text-indigo-700">
+              <Link2 className="w-2.5 h-2.5" /> Auto-link
+            </span>
+          </div>
+
           <div className="space-y-2 mb-3">
-            {reviewEntries.map((e, i) => (
-              <EntryEditor
+            {reviewEntries.map((r, i) => (
+              <ReviewRow
                 key={i}
-                title={`Entry ${i + 1}`}
-                form={e}
-                setForm={(next: React.SetStateAction<AddForm>) => {
+                reviewEntry={r}
+                index={i}
+                onUpdate={(patch) => {
                   setReviewEntries((prev) => {
                     if (!prev) return prev;
                     const copy = [...prev];
-                    copy[i] =
-                      typeof next === "function"
-                        ? (next as (prev: AddForm) => AddForm)(prev[i])
-                        : next;
+                    copy[i] = { ...prev[i], ...patch };
                     return copy;
                   });
                 }}
@@ -488,18 +588,20 @@ export default function LoanLedgerTab({ projectId, entries }: Props) {
                     prev ? prev.filter((_, j) => j !== i) : prev,
                   );
                 }}
-                compact
               />
             ))}
           </div>
-          <div className="flex items-center gap-2">
+
+          <div className="flex flex-wrap items-center gap-2">
             <button
               onClick={saveReviewEntries}
               disabled={loading || reviewEntries.length === 0}
               className="inline-flex items-center gap-1.5 px-3 py-2 min-h-[40px] text-sm font-medium text-white bg-indigo-600 rounded-lg hover:bg-indigo-500 disabled:opacity-50 cursor-pointer transition-colors"
             >
               <Check className="w-4 h-4" />
-              Save {reviewEntries.length} {reviewEntries.length === 1 ? "entry" : "entries"}
+              Apply{" "}
+              {reviewEntries.filter((r) => r.action !== "skip").length} of{" "}
+              {reviewEntries.length}
             </button>
             <button
               onClick={() => {
@@ -801,6 +903,113 @@ function EntryEditor({
               <Trash2 className="w-3 h-3 inline" /> Remove
             </button>
           )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ────────────────────────────────────────────────────────────────────────
+// Review-queue row — wraps EntryEditor with reconcile status badges
+// and per-row action controls (include / skip / replace).
+
+function ReviewRow({
+  reviewEntry,
+  index,
+  onUpdate,
+  onRemove,
+}: {
+  reviewEntry: ReviewEntry;
+  index: number;
+  onUpdate: (patch: Partial<ReviewEntry>) => void;
+  onRemove: () => void;
+}) {
+  const { form, reconcile, action } = reviewEntry;
+  const isMatched = reconcile.matchedEntry != null;
+
+  const statusBadge =
+    reconcile.status === "new"
+      ? { label: "New", color: "bg-emerald-100 text-emerald-700" }
+      : reconcile.status === "duplicate"
+        ? { label: "Duplicate", color: "bg-gray-200 text-gray-700" }
+        : { label: "Conflict", color: "bg-amber-100 text-amber-800" };
+
+  return (
+    <div
+      className={`rounded-md border bg-white ${
+        reconcile.status === "conflict"
+          ? "border-amber-300"
+          : reconcile.status === "duplicate"
+            ? "border-gray-200 opacity-80"
+            : "border-gray-200"
+      }`}
+    >
+      <div className="flex flex-wrap items-center gap-2 px-3 py-2 border-b border-gray-100 bg-gray-50/60">
+        <span className="text-[11px] font-semibold text-gray-500">
+          Entry {index + 1}
+        </span>
+        <span
+          className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${statusBadge.color}`}
+        >
+          {statusBadge.label}
+        </span>
+        {reconcile.suggestedDrawId && reconcile.suggestedDrawNumber != null && (
+          <span
+            className="inline-flex items-center gap-1 rounded-full bg-indigo-100 px-2 py-0.5 text-[10px] font-semibold uppercase tracking-wide text-indigo-700"
+            title={`Will be linked to Draw #${reconcile.suggestedDrawNumber}`}
+          >
+            <Link2 className="w-2.5 h-2.5" />
+            Draw #{reconcile.suggestedDrawNumber}
+          </span>
+        )}
+        {reconcile.conflictReason && (
+          <span className="text-[11px] text-amber-700">
+            {reconcile.conflictReason}
+          </span>
+        )}
+
+        {/* Per-row action selector */}
+        <div className="ml-auto flex items-center gap-1">
+          <label className="text-[11px] text-gray-600">Action:</label>
+          <select
+            value={action}
+            onChange={(e) =>
+              onUpdate({
+                action: e.target.value as ReviewEntry["action"],
+              })
+            }
+            className="text-xs border border-gray-300 rounded px-1.5 py-0.5 bg-white cursor-pointer"
+          >
+            <option value="include">Include (save new)</option>
+            {isMatched && (
+              <option value="replace">Replace existing</option>
+            )}
+            <option value="skip">Skip</option>
+          </select>
+          <button
+            onClick={onRemove}
+            className="p-1 text-gray-400 hover:text-rose-600 cursor-pointer"
+            aria-label="Remove from queue"
+          >
+            <Trash2 className="w-3 h-3" />
+          </button>
+        </div>
+      </div>
+
+      {action !== "skip" && (
+        <div className="p-2">
+          <EntryEditor
+            title={`Entry ${index + 1}`}
+            form={form}
+            setForm={(next: React.SetStateAction<AddForm>) => {
+              const updatedForm =
+                typeof next === "function"
+                  ? (next as (prev: AddForm) => AddForm)(form)
+                  : next;
+              onUpdate({ form: updatedForm });
+            }}
+            compact
+          />
         </div>
       )}
     </div>
