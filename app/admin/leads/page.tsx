@@ -19,7 +19,7 @@ import LeadsTable from "@/components/admin/LeadsTable";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 
-const ALL_STATUS = ["new", "contacted", "qualified", "won", "lost", "spam"] as const;
+const ALL_STATUS = ["all", "new", "contacted", "qualified", "won", "lost", "spam"] as const;
 const ALL_SOURCE = [
   "contact",
   "construction",
