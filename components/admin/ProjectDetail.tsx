@@ -115,7 +115,7 @@ import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import SmartUpload from "@/components/admin/SmartUpload";
 import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
-import { computeAccruedInterest } from "@/lib/finance/project-financials";
+import { computeProjectFinancials } from "@/lib/finance/project-financials";
 
 // ---------------------------------------------------------------------------
 // Feature flags
@@ -375,6 +375,14 @@ export default function ProjectDetail({
 
   // ---- cash job accurate spent -------------------------------------------
   // Mirrors the BudgetTab spentByLine logic so financial cards stay in sync.
+  // See BudgetTab below for the full source-priority rationale. Cascade:
+  //   0. payment.budget_line_number — explicit assignment
+  //   1. document.line_item_number — legacy doc link
+  //   2. invoice filename regex     — legacy naming convention
+  //   3. unmatched payments         — still included in the total (was the
+  //                                   silent-drop bug pre-2026-05-27)
+  // Plus: owner-purchased budget items count at their budgeted amount even
+  // when there's no invoice.
   const cashTotalSpent = (() => {
     if (!project.is_cash_job) return totalCosts;
     const spentByLine = new Map<string, number>();
@@ -394,11 +402,18 @@ export default function ProjectDetail({
       return fb ? fb.line_number : lower;
     };
 
+    // Source 0: explicit budget_line_number assignment
+    for (const payment of payments) {
+      if (!payment.budget_line_number) continue;
+      const key = resolveLine(payment.budget_line_number);
+      spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+      counted.add(payment.id);
+    }
     // Source 1: document-linked payments
     for (const doc of documents) {
       if (doc.line_item_number == null) continue;
       const payment = payments.find(p => p.invoice_file_url === doc.file_url);
-      if (payment) {
+      if (payment && !counted.has(payment.id)) {
         const key = resolveLine(doc.line_item_number);
         spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
         counted.add(payment.id);
@@ -411,36 +426,50 @@ export default function ProjectDetail({
       if (!parsed) continue;
       const key = resolveLine(parsed);
       spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+      counted.add(payment.id);
     }
-    // Source 3: owner-purchased items (no invoice needed)
+    // Source 3: anything still unmatched contributes to the total
+    const unmatchedTotal = payments
+      .filter((p) => !counted.has(p.id))
+      .reduce((s, p) => s + Number(p.amount || 0), 0);
+    // Owner-purchased items (no invoice needed)
     for (const item of budgetLineItems) {
       if (item.owner_purchased && !spentByLine.has(item.line_number)) {
         spentByLine.set(item.line_number, item.budgeted_amount || 0);
       }
     }
 
-    return Array.from(spentByLine.values()).reduce((s, v) => s + v, 0);
+    return (
+      Array.from(spentByLine.values()).reduce((s, v) => s + v, 0) + unmatchedTotal
+    );
   })();
 
   // ---- loan / profit calculations ----------------------------------------
+  // Everything below comes from the canonical helper. Do NOT reintroduce
+  // local math here — the financials page, the dashboard, and this page
+  // must all agree, and that only happens when they share one calculator.
+  // See lib/finance/project-financials.ts for the formula + rationale.
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
-  const salePrice = project.sale_price ?? 0;
-  const loanAmount = project.loan_amount ?? 0;
-  const downPayment = project.down_payment ?? 0;
-  const originationFeePercent = project.origination_fee_percent ?? 0;
-  const interestRate = project.interest_rate ?? 0;
-
-  const originationFee = loanAmount * originationFeePercent / 100;
-
-  // Accrued interest — shared helper, single source of truth.
-  // See lib/finance/project-financials.ts for the formula.
-  const accruedInterest = computeAccruedInterest(project, drawRequests);
-
-  const totalLenderCost = originationFee + accruedInterest;
-  // Down payment is collateral — Blake gets it back at closing, not a cost
-  const projectedProfit = salePrice - totalCosts - originationFee - accruedInterest;
-  const profitMargin = salePrice > 0 ? (projectedProfit / salePrice) * 100 : 0;
+  const pf = computeProjectFinancials(project, payments, drawRequests);
+  const {
+    salePrice,
+    loanAmount,
+    downPayment,
+    originationFeePercent,
+    originationFee,
+    interestRate,
+    accruedInterest,
+    saleClosingCosts,
+    projectedProfit,
+  } = pf;
+  // The "Total Lender Cost" tile in FinancialSummary used to display
+  // origination + interest. With the new profit formula, origination is
+  // bundled inside down_payment (Blake's cash at construction-loan closing
+  // includes title fees), so we surface the actual cash-out-of-pocket
+  // impact instead: down_payment + interest + sale_closing_costs.
+  const totalLenderCost = downPayment + accruedInterest + saleClosingCosts;
+  const profitMargin = pf.profitMargin * 100;
 
   // ---- generic mutation helper -------------------------------------------
   async function mutate(
@@ -520,6 +549,7 @@ export default function ProjectDetail({
             originationFeePercent={originationFeePercent}
             accruedInterest={accruedInterest}
             interestRate={interestRate}
+            saleClosingCosts={saleClosingCosts}
             totalLenderCost={totalLenderCost}
             projectedProfit={projectedProfit}
             profitMargin={profitMargin}
@@ -624,6 +654,7 @@ export default function ProjectDetail({
               payments={payments}
               contractors={contractors}
               drawRequests={drawRequests}
+              budgetLineItems={budgetLineItems}
               mutate={mutate}
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
@@ -638,6 +669,7 @@ export default function ProjectDetail({
               draws={drawRequests}
               documents={documents}
               contractors={contractors}
+              budgetLineItems={budgetLineItems}
               mutate={mutate}
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
@@ -737,6 +769,7 @@ function FinancialSummary({
   originationFeePercent,
   accruedInterest,
   interestRate,
+  saleClosingCosts,
   totalLenderCost,
   projectedProfit,
   profitMargin,
@@ -750,10 +783,16 @@ function FinancialSummary({
   originationFeePercent: number;
   accruedInterest: number;
   interestRate: number;
+  saleClosingCosts: number;
   totalLenderCost: number;
   projectedProfit: number;
   profitMargin: number;
 }) {
+  // When down_payment > 0, the origination fee is bundled inside it (per the
+  // user data-entry convention). Showing both as separate cost tiles would
+  // imply double-subtraction — hide the origination tile in that case and
+  // keep down_payment as the single "cash Blake brought to closing" line.
+  const showOriginationTile = downPayment <= 0 && originationFee > 0;
   const [expanded, setExpanded] = useState(true);
 
   const profitColor = projectedProfit >= 0 ? "text-green-600" : "text-red-600";
@@ -820,14 +859,34 @@ function FinancialSummary({
             />
           </div>
 
-          {/* Row 2: Lender Costs */}
+          {/* Row 2: Costs subtracted from projected profit.
+             *
+             * The formula (see lib/finance/project-financials.ts) is:
+             *   profit = sale_price − total_costs
+             *          − accrued_interest
+             *          − sale_closing_costs
+             *          − down_payment   (which already includes origination
+             *                            for the typical Blake-entered case)
+             *
+             * Show origination as its own tile only when down_payment is 0
+             * (rare — happens for projects entered with separate origination
+             * but no closing-day cash). Otherwise it's bundled. */}
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 sm:gap-3">
-            <MiniCard
-              icon={<Percent className="w-3.5 h-3.5 text-purple-500" />}
-              label={`Origination Fee (${originationFeePercent}%)`}
-              value={fmt(originationFee)}
-              className="text-gray-900"
-            />
+            {showOriginationTile ? (
+              <MiniCard
+                icon={<Percent className="w-3.5 h-3.5 text-purple-500" />}
+                label={`Origination Fee (${originationFeePercent}%)`}
+                value={fmt(originationFee)}
+                className="text-gray-900"
+              />
+            ) : (
+              <MiniCard
+                icon={<Building className="w-3.5 h-3.5 text-rose-500" />}
+                label="Sale Closing Costs"
+                value={fmt(saleClosingCosts)}
+                className={saleClosingCosts > 0 ? "text-gray-900" : "text-gray-400"}
+              />
+            )}
             <MiniCard
               icon={<TrendingUp className="w-3.5 h-3.5 text-amber-500" />}
               label={`Accrued Interest (${interestRate}%)`}
@@ -836,7 +895,7 @@ function FinancialSummary({
             />
             <MiniCard
               icon={<Building className="w-3.5 h-3.5 text-red-500" />}
-              label="Total Lender Cost"
+              label="Total Cost to Blake"
               value={fmt(totalLenderCost)}
               className="text-red-600 font-bold"
             />
@@ -1670,6 +1729,7 @@ function PaymentsTab({
   payments,
   contractors,
   drawRequests,
+  budgetLineItems,
   mutate,
   loading,
   onPreview,
@@ -1679,6 +1739,7 @@ function PaymentsTab({
   payments: ContractorPayment[];
   contractors: Contractor[];
   drawRequests: DrawRequest[];
+  budgetLineItems: BudgetLineItem[];
   mutate: (
     url: string,
     method: string,
@@ -1818,6 +1879,7 @@ function PaymentsTab({
     amount: "",
     status: "pending" as string,
     due_date: "",
+    budget_line_number: "",
   });
 
   function startEditPayment(p: ContractorPayment) {
@@ -1828,6 +1890,7 @@ function PaymentsTab({
       amount: formatCurrencyInput(String(p.amount)),
       status: p.status,
       due_date: p.due_date ?? "",
+      budget_line_number: p.budget_line_number ?? "",
     });
   }
 
@@ -1838,6 +1901,7 @@ function PaymentsTab({
       amount: parseFloat(unformatCurrency(editPaymentForm.amount)),
       status: editPaymentForm.status,
       due_date: editPaymentForm.due_date || null,
+      budget_line_number: editPaymentForm.budget_line_number || null,
     });
     setEditingPayment(null);
   }
@@ -2186,18 +2250,41 @@ function PaymentsTab({
                       />
                     </div>
                   </div>
-                  <div>
-                    <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
-                    <select
-                      value={editPaymentForm.status}
-                      onChange={(e) => setEditPaymentForm({ ...editPaymentForm, status: e.target.value })}
-                      className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-                    >
-                      <option value="pending">Needs Draw</option>
-                      <option value="paid_personal">Paid Personal</option>
-                      <option value="reimbursed">Reimbursed</option>
-                      <option value="paid_from_draw">Paid</option>
-                    </select>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
+                      <select
+                        value={editPaymentForm.status}
+                        onChange={(e) => setEditPaymentForm({ ...editPaymentForm, status: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                      >
+                        <option value="pending">Needs Draw</option>
+                        <option value="paid_personal">Paid Personal</option>
+                        <option value="reimbursed">Reimbursed</option>
+                        <option value="paid_from_draw">Paid</option>
+                      </select>
+                    </div>
+                    <div>
+                      {/* Budget line assignment — explicit override for
+                       *  BudgetTab spentByLine matching. Without this,
+                       *  paid_personal entries with no invoice filename
+                       *  drop into the "Unassigned" bucket. */}
+                      <label className="block text-xs text-gray-600 font-medium mb-1">
+                        Budget Line
+                      </label>
+                      <select
+                        value={editPaymentForm.budget_line_number}
+                        onChange={(e) => setEditPaymentForm({ ...editPaymentForm, budget_line_number: e.target.value })}
+                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+                      >
+                        <option value="">— Auto-detect / Unassigned —</option>
+                        {budgetLineItems.map((bli) => (
+                          <option key={bli.id} value={bli.line_number}>
+                            #{bli.line_number} · {bli.description}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                   <div className="flex gap-2">
                     <button
@@ -2452,6 +2539,7 @@ function DrawsTab({
   draws,
   documents,
   contractors,
+  budgetLineItems,
   mutate,
   loading,
   onPreview,
@@ -2463,6 +2551,7 @@ function DrawsTab({
   draws: DrawRequest[];
   documents: Document[];
   contractors: Contractor[];
+  budgetLineItems: BudgetLineItem[];
   mutate: (
     url: string,
     method: string,
@@ -2507,6 +2596,7 @@ function DrawsTab({
     amount: "",
     status: "pending" as string,
     due_date: "",
+    budget_line_number: "",
   });
 
   const fetchUploadLinks = useCallback(async () => {
@@ -2620,6 +2710,7 @@ function DrawsTab({
       amount: formatCurrencyInput(String(p.amount)),
       status: p.status,
       due_date: p.due_date ?? "",
+      budget_line_number: p.budget_line_number ?? "",
     });
   }
 
@@ -2630,6 +2721,7 @@ function DrawsTab({
       amount: parseFloat(unformatCurrency(editPaymentForm.amount)),
       status: editPaymentForm.status,
       due_date: editPaymentForm.due_date || null,
+      budget_line_number: editPaymentForm.budget_line_number || null,
     });
     setEditingPayment(null);
   }
@@ -2719,18 +2811,38 @@ function DrawsTab({
               />
             </div>
           </div>
-          <div>
-            <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
-            <select
-              value={editPaymentForm.status}
-              onChange={(e) => setEditPaymentForm({ ...editPaymentForm, status: e.target.value })}
-              className="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
-            >
-              <option value="pending">Needs Draw</option>
-              <option value="paid_personal">Paid Personal</option>
-              <option value="reimbursed">Reimbursed</option>
-              <option value="paid_from_draw">Paid</option>
-            </select>
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="block text-xs text-gray-600 font-medium mb-1">Status</label>
+              <select
+                value={editPaymentForm.status}
+                onChange={(e) => setEditPaymentForm({ ...editPaymentForm, status: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+              >
+                <option value="pending">Needs Draw</option>
+                <option value="paid_personal">Paid Personal</option>
+                <option value="reimbursed">Reimbursed</option>
+                <option value="paid_from_draw">Paid</option>
+              </select>
+            </div>
+            <div>
+              {/* Budget line assignment — see PaymentsTab equivalent. */}
+              <label className="block text-xs text-gray-600 font-medium mb-1">
+                Budget Line
+              </label>
+              <select
+                value={editPaymentForm.budget_line_number}
+                onChange={(e) => setEditPaymentForm({ ...editPaymentForm, budget_line_number: e.target.value })}
+                className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-black cursor-pointer"
+              >
+                <option value="">— Auto-detect / Unassigned —</option>
+                {budgetLineItems.map((bli) => (
+                  <option key={bli.id} value={bli.line_number}>
+                    #{bli.line_number} · {bli.description}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div className="flex gap-2">
             <button
@@ -6461,17 +6573,38 @@ function BudgetTab({
   }
 
   // Build actual spent per line item.
-  // Source 1: documents with line_item_number that have a matching payment by URL.
-  // Source 2: payments whose invoice_file_name encodes a line number (covers payments
-  //           uploaded without a document record, e.g. via contractor invoice link).
+  //
+  // History: payments used to be matched to budget lines using a regex on
+  // invoice_file_name (`^\d+[a-z]?[_ ]`) plus document.line_item_number
+  // links. Manually-entered paid_personal payments with `image.jpg` or null
+  // filenames silently disappeared from totalSpent — Peach Springs was off
+  // by ~$30k. Now there's an explicit `budget_line_number` column on
+  // contractor_payments that always wins, with the heuristics retained as
+  // legacy fallback, and everything still unmatched lands in an
+  // "Unassigned" pseudo-row so totalSpent === sum(contractor_payments).
+  //
+  // Source order (first match wins):
+  //   0. payment.budget_line_number   ← explicit user assignment
+  //   1. document.line_item_number    ← legacy document linking
+  //   2. invoice filename regex       ← legacy naming convention
+  //   3. unassigned                   ← visible bucket, captures the rest
   const spentByLine = new Map<string, number>();
   const countedPaymentIds = new Set<string>();
+  const unassignedPayments: ContractorPayment[] = [];
+
+  // Source 0 — explicit budget_line_number on the payment
+  for (const payment of payments) {
+    if (!payment.budget_line_number) continue;
+    const key = resolveLine(payment.budget_line_number);
+    spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+    countedPaymentIds.add(payment.id);
+  }
 
   // Source 1 — document-linked payments
   for (const doc of documents) {
     if (doc.line_item_number == null) continue;
     const payment = payments.find((p) => p.invoice_file_url === doc.file_url);
-    if (payment) {
+    if (payment && !countedPaymentIds.has(payment.id)) {
       const key = resolveLine(doc.line_item_number);
       spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
       countedPaymentIds.add(payment.id);
@@ -6485,7 +6618,18 @@ function BudgetTab({
     if (!parsed) continue;
     const key = resolveLine(parsed);
     spentByLine.set(key, (spentByLine.get(key) || 0) + Number(payment.amount));
+    countedPaymentIds.add(payment.id);
   }
+
+  // Source 3 — anything still unmatched goes to the Unassigned bucket
+  for (const payment of payments) {
+    if (countedPaymentIds.has(payment.id)) continue;
+    unassignedPayments.push(payment);
+  }
+  const unassignedTotal = unassignedPayments.reduce(
+    (s, p) => s + Number(p.amount || 0),
+    0,
+  );
 
   // Use budget line items if they exist, otherwise show defaults
   const lineItems = hasBudget
@@ -6525,7 +6669,10 @@ function BudgetTab({
   }
 
   const totalBudgeted = lineItems.reduce((s, i) => s + (i.budgeted_amount || 0), 0);
-  const totalSpent = Array.from(spentByLine.values()).reduce((s, v) => s + v, 0);
+  // Includes the unassigned bucket so this equals sum(contractor_payments) —
+  // critical for matching the FinancialSummary tile at the top of the page.
+  const totalSpent =
+    Array.from(spentByLine.values()).reduce((s, v) => s + v, 0) + unassignedTotal;
 
   async function initializeBudget() {
     setSaving(true);
@@ -6799,6 +6946,36 @@ function BudgetTab({
                       </tr>
                     );
                   })}
+                  {/* Unassigned bucket — anything not matched to a budget
+                   *  line by explicit assignment, document link, or filename
+                   *  regex. Shown so totalSpent reflects every payment and
+                   *  Blake can see what still needs categorizing. */}
+                  {unassignedPayments.length > 0 && (
+                    <tr className="bg-amber-50/60">
+                      <td className="py-2.5 pr-3 text-xs text-amber-600 tabular-nums">—</td>
+                      <td className="py-2.5 pr-3">
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-medium text-amber-800">
+                            Unassigned ({unassignedPayments.length} payment
+                            {unassignedPayments.length !== 1 ? "s" : ""})
+                          </span>
+                          <span
+                            className="inline-flex items-center gap-1 rounded-full bg-amber-100 px-2 py-0.5 text-[10px] font-semibold text-amber-700 uppercase tracking-wide"
+                            title="Assign these to a budget line on the Payments tab to remove them from this bucket"
+                          >
+                            Needs Line
+                          </span>
+                        </div>
+                      </td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums text-gray-400">--</td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums text-amber-800 font-semibold">
+                        {fmt(unassignedTotal)}
+                      </td>
+                      <td className="py-2.5 pr-3"></td>
+                      <td className="py-2.5 pr-3 text-right tabular-nums text-gray-400">--</td>
+                      <td className="py-2.5"></td>
+                    </tr>
+                  )}
                 </tbody>
                 <tfoot>
                   <tr className="border-t-2 border-gray-300 font-bold">
@@ -6899,6 +7076,24 @@ function BudgetTab({
                   </div>
                 );
               })}
+
+              {/* Mobile: Unassigned bucket */}
+              {unassignedPayments.length > 0 && (
+                <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
+                  <div className="flex items-start justify-between mb-1 gap-2">
+                    <span className="text-sm font-medium text-amber-800">
+                      Unassigned ({unassignedPayments.length} payment
+                      {unassignedPayments.length !== 1 ? "s" : ""})
+                    </span>
+                    <span className="text-sm font-semibold tabular-nums text-amber-800">
+                      {fmt(unassignedTotal)}
+                    </span>
+                  </div>
+                  <p className="text-[11px] text-amber-700">
+                    Assign on the Payments tab to remove from this bucket.
+                  </p>
+                </div>
+              )}
 
               {/* Mobile totals */}
               {!editing && (

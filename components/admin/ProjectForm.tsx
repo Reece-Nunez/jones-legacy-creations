@@ -36,6 +36,7 @@ const projectSchema = z.object({
   estimated_value: z.string().optional(),
   contract_value: z.string().optional(),
   sale_price: z.string().optional(),
+  sale_closing_costs: z.string().optional(),
   lender_name: z.string().optional(),
   loan_amount: z.string().optional(),
   down_payment: z.string().optional(),
@@ -98,6 +99,9 @@ export default function ProjectForm({ project }: ProjectFormProps) {
       estimated_value: project?.estimated_value ? formatCurrencyInput(String(project.estimated_value)) : "",
       contract_value: project?.contract_value ? formatCurrencyInput(String(project.contract_value)) : "",
       sale_price: project?.sale_price ? formatCurrencyInput(String(project.sale_price)) : "",
+      sale_closing_costs: project?.sale_closing_costs
+        ? formatCurrencyInput(String(project.sale_closing_costs))
+        : "",
       lender_name: project?.lender_name ?? "",
       loan_amount: project?.loan_amount ? formatCurrencyInput(String(project.loan_amount)) : "",
       down_payment: project?.down_payment ? formatCurrencyInput(String(project.down_payment)) : "",
@@ -192,6 +196,16 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   }, [financingType, setValue, watch]);
 
   const onSubmit = async (data: ProjectFormData) => {
+    // Required-when-sale-price-set check. Avoids inflated projected_profit
+    // for projects with sale_price but no recorded closing costs.
+    if (data.sale_price && !data.sale_closing_costs) {
+      toast.error(
+        "Sale Closing Costs is required when Sale Price is set. " +
+          "Use an estimate (~3-4% of sale price) if you don't have actuals yet.",
+      );
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -216,6 +230,9 @@ export default function ProjectForm({ project }: ProjectFormProps) {
           : null,
         sale_price: data.sale_price
           ? parseFloat(unformatCurrency(data.sale_price))
+          : null,
+        sale_closing_costs: data.sale_closing_costs
+          ? parseFloat(unformatCurrency(data.sale_closing_costs))
           : null,
         lender_name: data.lender_name || null,
         loan_amount: data.loan_amount
@@ -825,6 +842,38 @@ export default function ProjectForm({ project }: ProjectFormProps) {
               className={inputClassName}
               placeholder="$0.00"
             />
+          </div>
+
+          {/* Sale Closing Costs — required when sale_price is set so the
+             *  projected_profit subtraction has a real number. Typical Utah
+             *  seller-side total is ~3-4% of sale price (title, escrow,
+             *  recording, prorated taxes, concessions). Enter as estimate
+             *  up-front; update to actual once the property closes. */}
+          <div>
+            <label htmlFor="sale_closing_costs" className={labelClassName}>
+              Sale Closing Costs ($)
+              {salePrice && (
+                <span className="ml-1 text-red-500" aria-label="required">*</span>
+              )}
+            </label>
+            <input
+              id="sale_closing_costs"
+              type="text"
+              inputMode="decimal"
+              value={watch("sale_closing_costs") || ""}
+              onChange={(e) => setValue("sale_closing_costs", formatCurrencyInput(e.target.value))}
+              className={inputClassName}
+              placeholder={
+                salePrice
+                  ? formatCurrencyInput((parseFloat(unformatCurrency(salePrice)) * 0.035).toFixed(2)) +
+                    " (≈ 3.5% est.)"
+                  : "$0.00"
+              }
+            />
+            <p className="mt-1 text-xs text-gray-500">
+              Title, escrow, recording, prorated taxes, seller concessions.
+              Subtracted from Projected Profit.
+            </p>
           </div>
 
           {/* Lender Name */}

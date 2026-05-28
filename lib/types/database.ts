@@ -90,6 +90,9 @@ export interface Project {
   interest_rate: number | null;
   origination_fee_percent: number | null;
   loan_start_date: string | null;
+  /** Seller-side closing costs at sale. Required when sale_price is set.
+   *  Subtracted from projected_profit so the number matches the wire amount. */
+  sale_closing_costs: number | null;
   is_cash_job: boolean;
   financing_type: FinancingType;
   markup_percent: number | null;
@@ -141,6 +144,10 @@ export interface ContractorPayment {
   invoice_file_url: string | null;
   invoice_file_name: string | null;
   draw_request_id: string | null;
+  /** Explicit budget line assignment. Overrides document-link / filename
+   *  matching in BudgetTab.spentByLine. Null = falls back to legacy matching
+   *  cascade, then "Unassigned" bucket. */
+  budget_line_number: string | null;
   qbo_sync_error: string | null;
   created_at: string;
 }
