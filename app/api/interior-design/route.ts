@@ -2,6 +2,7 @@ import { Resend } from 'resend';
 import { NextResponse } from 'next/server';
 import { checkSpamProtection } from '@/lib/spam-protection';
 import { interiorDesignSubmissionSchema, InteriorDesignFormData } from '@/lib/schemas/interior-design';
+import { captureLead } from '@/lib/leads/capture';
 
 // Type alias for email templates
 type DesignFormData = InteriorDesignFormData;
