@@ -42,6 +42,10 @@ export function Footer() {
                 height={360}
                 className="object-contain"
                 style={{ height: "64px", width: "auto" }}
+                // Renders ~90 px wide; without `sizes` next/image fetches the
+                // 640/828w variant (~24–34 KB). Pin to the real width so the
+                // lazy load grabs the ~128w variant (~2.6 KB) instead.
+                sizes="102px"
               />
             </Link>
             <p

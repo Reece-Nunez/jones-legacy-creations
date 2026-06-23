@@ -376,6 +376,10 @@ function BrandTile({
             alt={company.iconAlt}
             width={56}
             height={56}
+            /* SVG brand marks: bypass the image optimizer, which returns HTTP
+             * 400 for SVG unless dangerouslyAllowSVG is enabled. Vector assets
+             * gain nothing from optimization anyway. */
+            unoptimized
             className="object-contain"
             style={{
               height: isLarge ? "40px" : "32px",

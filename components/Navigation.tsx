@@ -72,6 +72,13 @@ export function Navigation() {
               // wide screens. Fits inside the existing h-16 (mobile) /
               // h-20 (desktop) nav without changing the layout.
               style={{ height: "clamp(48px, 5.5vw, 64px)", width: "auto" }}
+              // The logo (903×566, ~1.6:1) renders at most ~102 px wide at the
+              // 64 px height cap. Without `sizes`, next/image preloads the
+              // 640/828w variant (~24–34 KB) as a `priority` resource — fine on
+              // desktop, but on throttled 4G it dominates the mobile LCP. Pin
+              // `sizes` to the real width so the preload picks the ~128–384w
+              // variant (~2.6–11 KB) instead.
+              sizes="102px"
               priority
             />
           </Link>
