@@ -798,7 +798,15 @@ export default function ProjectDetail({
             />
           </TabsContent>
           <TabsContent value="changeorders">
-            <ChangeOrdersTab projectId={project.id} changeOrders={changeOrders} />
+            <ChangeOrdersTab
+              projectId={project.id}
+              changeOrders={changeOrders}
+              defaultClient={{
+                name: project.client_name,
+                email: project.client_email,
+                phone: project.client_phone,
+              }}
+            />
           </TabsContent>
           <TabsContent value="selections">
             <SelectionsTab projectId={project.id} selections={selections} />

@@ -57,13 +57,22 @@ const EMPTY_FORM = {
 export function ChangeOrdersTab({
   projectId,
   changeOrders,
+  defaultClient,
 }: {
   projectId: string;
   changeOrders: ChangeOrder[];
+  /** Project client contact — pre-fills the form but stays editable. */
+  defaultClient?: { name?: string | null; email?: string | null; phone?: string | null };
 }) {
   const router = useRouter();
+  const initialForm = () => ({
+    ...EMPTY_FORM,
+    client_name: defaultClient?.name ?? "",
+    client_email: defaultClient?.email ?? "",
+    client_phone: defaultClient?.phone ?? "",
+  });
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState(initialForm);
   const [busy, setBusy] = useState(false);
 
   const base = `/api/admin/projects/${projectId}/change-orders`;
@@ -93,7 +102,7 @@ export function ChangeOrdersTab({
       });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Failed to create");
       toast.success("Change order created");
-      setForm({ ...EMPTY_FORM });
+      setForm(initialForm());
       setShowForm(false);
       router.refresh();
     } catch (err) {
@@ -252,7 +261,7 @@ export function ChangeOrdersTab({
               size="sm"
               variant="outline"
               onClick={() => {
-                setForm({ ...EMPTY_FORM });
+                setForm(initialForm());
                 setShowForm(false);
               }}
             >
