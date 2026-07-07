@@ -26,7 +26,7 @@ export type PaymentStatus =
   | "paid_from_draw";
 export type PermitStatus = "not_applied" | "applied" | "approved" | "denied" | "expired";
 export type DrawRequestStatus = "draft" | "submitted" | "approved" | "funded" | "denied";
-export type DocumentCategory = "contract" | "permit" | "invoice" | "photo" | "plan" | "draw_request" | "general";
+export type DocumentCategory = "contract" | "permit" | "invoice" | "photo" | "plan" | "draw_request" | "general" | "change_order" | "selection";
 export type EstimateStatus = "new" | "reviewed" | "converted" | "declined";
 
 export type ContractorType = "contractor" | "vendor";

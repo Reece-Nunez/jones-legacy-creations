@@ -21,6 +21,7 @@ import {
   Download,
   Eye,
   FileText,
+  Palette,
   Upload,
   Edit3,
   Check,
@@ -77,6 +78,8 @@ import type {
   ProjectSettlement,
 } from "@/lib/types/database";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
+import { ChangeOrdersTab, type ChangeOrder } from "@/components/admin/ChangeOrdersTab";
+import { SelectionsTab, type Selection } from "@/components/admin/SelectionsTab";
 
 type ProgressItem = DrawLineItem & { completed: boolean };
 type CashProgressItem = {
@@ -217,6 +220,8 @@ const ALL_TABS = [
   { key: "budget",     label: "Budget",    icon: Wallet,          cashJob: true,  onlyCashJob: false },
   { key: "tasks",      label: "Tasks",     icon: CheckSquare,     cashJob: true,  onlyCashJob: false },
   { key: "permits",    label: "Permits",   icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
+  { key: "changeorders", label: "Change Orders", icon: FileText,  cashJob: true,  onlyCashJob: false, staffOnly: true },
+  { key: "selections", label: "Selections", icon: Palette,        cashJob: true,  onlyCashJob: false, staffOnly: true },
   { key: "documents",  label: "Documents", icon: FolderOpen,      cashJob: true,  onlyCashJob: false },
   { key: "activity",   label: "Activity",  icon: Clock,           cashJob: true,  onlyCashJob: false },
 ] as const;
@@ -242,6 +247,8 @@ interface Props {
   miscCharges: ProjectMiscCharge[];
   loanLedger: LoanLedgerEntry[];
   settlements: ProjectSettlement[];
+  changeOrders?: ChangeOrder[];
+  selections?: Selection[];
 }
 
 // ---------------------------------------------------------------------------
@@ -361,13 +368,16 @@ export default function ProjectDetail({
   miscCharges,
   loanLedger,
   settlements,
+  changeOrders = [],
+  selections = [],
 }: Props) {
   const canEdit = !readOnly;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const TABS = project.is_cash_job
+  const TABS = (project.is_cash_job
     ? ALL_TABS.filter((t) => t.cashJob)
-    : ALL_TABS.filter((t) => !t.onlyCashJob);
+    : ALL_TABS.filter((t) => !t.onlyCashJob)
+  ).filter((t) => !("staffOnly" in t && t.staffOnly && readOnly));
   const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
     ? (searchParams.get("tab") as TabKey)
     : "overview";
@@ -774,6 +784,12 @@ export default function ProjectDetail({
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
             />
+          </TabsContent>
+          <TabsContent value="changeorders">
+            <ChangeOrdersTab projectId={project.id} changeOrders={changeOrders} />
+          </TabsContent>
+          <TabsContent value="selections">
+            <SelectionsTab projectId={project.id} selections={selections} />
           </TabsContent>
           <TabsContent value="documents">
             <DocumentsTab
@@ -6535,6 +6551,8 @@ function DocumentsTab({
                 <option value="photo">Photo</option>
                 <option value="plan">Plan</option>
                 <option value="draw_request">Draw Request</option>
+                <option value="change_order">Change Order</option>
+                <option value="selection">Selection</option>
               </select>
             </div>
             <SmartUpload

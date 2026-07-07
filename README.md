@@ -104,6 +104,17 @@ npm run build
 npm start
 ```
 
+### Tests
+
+Unit tests run on [Vitest](https://vitest.dev/):
+
+```bash
+npm test          # run once
+npm run test:watch # watch mode
+```
+
+Tests live next to the code they cover as `*.test.ts` under `lib/` (see `vitest.config.ts`).
+
 ## Security Features
 
 The website implements several industry-standard security headers:
