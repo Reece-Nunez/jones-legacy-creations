@@ -50,16 +50,18 @@ export async function updateSession(request: NextRequest) {
       return NextResponse.redirect(url);
     }
 
-    // Check email whitelist
-    const allowedEmails = (process.env.ADMIN_ALLOWED_EMAILS || "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
+    // Authorization gate: the user must have an ACTIVE profile row. Both staff
+    // and contractors are provisioned in user_profiles (and linked by email on
+    // first login), so this is self-serve — no env allowlist / redeploy needed
+    // to grant a new contractor access. An authenticated Google account with no
+    // profile (or a deactivated one) is rejected here.
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("is_active")
+      .eq("auth_id", user.id)
+      .maybeSingle();
 
-    if (
-      allowedEmails.length > 0 &&
-      !allowedEmails.includes(user.email?.toLowerCase() || "")
-    ) {
+    if (!profile || !profile.is_active) {
       if (isApiAdmin) {
         return NextResponse.json({ error: "Forbidden" }, { status: 403 });
       }

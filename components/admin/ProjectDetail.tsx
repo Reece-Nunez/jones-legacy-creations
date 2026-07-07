@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef, createContext, useContext } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -191,6 +191,22 @@ function paymentLeftBorder(status: string): string {
   return "border-l-yellow-500";
 }
 
+// ---------------------------------------------------------------------------
+// Edit-permission context
+// ---------------------------------------------------------------------------
+// Contractors get a read-only view of their project. Rather than thread a flag
+// through every tab and button, we expose `canEdit` via context: AddButton and
+// EditOnly self-hide when it's false, and the mutate() helper refuses staff
+// writes as a backstop. Defaults to true so staff (no provider override needed
+// in theory) and any stray usage stay fully editable.
+const ProjectEditContext = createContext<boolean>(true);
+
+/** Renders its children only when the viewer may edit (hidden for contractors). */
+function EditOnly({ children }: { children: React.ReactNode }) {
+  const canEdit = useContext(ProjectEditContext);
+  return canEdit ? <>{children}</> : null;
+}
+
 const ALL_TABS = [
   { key: "overview",   label: "Overview",  icon: LayoutDashboard, cashJob: true,  onlyCashJob: false },
   { key: "photos",     label: "Photos",    icon: Camera,          cashJob: true,  onlyCashJob: false },
@@ -212,6 +228,8 @@ type TabKey = (typeof ALL_TABS)[number]["key"];
 // ---------------------------------------------------------------------------
 
 interface Props {
+  /** Contractor view: hide staff mutation controls (RLS also enforces this). */
+  readOnly?: boolean;
   project: Project;
   payments: ContractorPayment[];
   permits: Permit[];
@@ -330,6 +348,7 @@ async function logActivity(projectId: string, action: string, description: strin
 // ---------------------------------------------------------------------------
 
 export default function ProjectDetail({
+  readOnly = false,
   project,
   payments,
   permits,
@@ -343,6 +362,7 @@ export default function ProjectDetail({
   loanLedger,
   settlements,
 }: Props) {
+  const canEdit = !readOnly;
   const router = useRouter();
   const searchParams = useSearchParams();
   const TABS = project.is_cash_job
@@ -489,6 +509,19 @@ export default function ProjectDetail({
     method: string,
     body?: Record<string, unknown> | FormData,
   ) {
+    // Read-only (contractor) backstop: refuse staff writes even if a control
+    // slips through the UI gating. The two contractor-allowed actions —
+    // uploading a document and updating a task's status — are let through; RLS
+    // scopes both to the granted project server-side.
+    if (readOnly) {
+      const m = method.toUpperCase();
+      const isDocUpload = m === "POST" && /\/documents$/.test(url);
+      const isTaskUpdate = m === "PATCH" && /\/tasks\//.test(url);
+      if (!isDocUpload && !isTaskUpdate) {
+        toast.error("You have view-only access to this project.");
+        return undefined;
+      }
+    }
     setLoading(true);
     try {
       const isFormData = body instanceof FormData;
@@ -532,6 +565,7 @@ export default function ProjectDetail({
 
   // ---- render ------------------------------------------------------------
   return (
+    <ProjectEditContext.Provider value={canEdit}>
     <div className="min-h-screen bg-gray-50">
       {previewFile && (
         <FilePreviewModal
@@ -641,21 +675,23 @@ export default function ProjectDetail({
           />
         )}
 
-        {/* Quick Actions */}
-        <div className="mt-4 flex flex-wrap gap-2">
-          <button
-            onClick={() => setActiveTab("tasks")}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-          >
-            <CheckSquare className="w-3.5 h-3.5" /> Add Task
-          </button>
-          <Link
-            href={`/admin/projects/${project.id}/edit`}
-            className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-          >
-            <Edit3 className="w-3.5 h-3.5" /> Edit Project
-          </Link>
-        </div>
+        {/* Quick Actions — staff only */}
+        <EditOnly>
+          <div className="mt-4 flex flex-wrap gap-2">
+            <button
+              onClick={() => setActiveTab("tasks")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
+            >
+              <CheckSquare className="w-3.5 h-3.5" /> Add Task
+            </button>
+            <Link
+              href={`/admin/projects/${project.id}/edit`}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
+            >
+              <Edit3 className="w-3.5 h-3.5" /> Edit Project
+            </Link>
+          </div>
+        </EditOnly>
 
         {/* Tabs */}
         <Tabs
@@ -770,6 +806,7 @@ export default function ProjectDetail({
         </Tabs>
       </div>
     </div>
+    </ProjectEditContext.Provider>
   );
 }
 
@@ -1091,6 +1128,7 @@ function MiscChargesSection({
                     <span className="text-sm font-semibold tabular-nums text-rose-700">
                       {fmt(Number(c.amount))}
                     </span>
+                    <EditOnly>
                     <button
                       onClick={() => startEdit(c)}
                       className="text-xs font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
@@ -1103,6 +1141,7 @@ function MiscChargesSection({
                     >
                       Delete
                     </button>
+                    </EditOnly>
                   </div>
                 </div>
               ),
@@ -1467,21 +1506,23 @@ function Header({
                 <Circle className="w-2 h-2 fill-current" />
                 {PROJECT_STATUS_LABELS[project.status]}
               </Badge>
-              <select
-                disabled={loading}
-                value={project.status}
-                aria-label="Change project status"
-                onChange={(e) =>
-                  onStatusChange(e.target.value as ProjectStatus)
-                }
-                className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
-              >
-                {Object.entries(PROJECT_STATUS_LABELS).map(([val, label]) => (
-                  <option key={val} value={val}>
-                    {label}
-                  </option>
-                ))}
-              </select>
+              <EditOnly>
+                <select
+                  disabled={loading}
+                  value={project.status}
+                  aria-label="Change project status"
+                  onChange={(e) =>
+                    onStatusChange(e.target.value as ProjectStatus)
+                  }
+                  className="text-xs border border-gray-300 rounded-lg px-2 py-1 min-h-[44px] focus:outline-none focus:ring-2 focus:ring-black cursor-pointer transition-colors"
+                >
+                  {Object.entries(PROJECT_STATUS_LABELS).map(([val, label]) => (
+                    <option key={val} value={val}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+              </EditOnly>
             </div>
           </div>
 
@@ -1948,13 +1989,15 @@ function OverviewTab({
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
                 {project.description || "No description yet."}
               </p>
-              <button
-                onClick={() => startEdit("description")}
-                aria-label="Edit description"
-                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
+              <EditOnly>
+                <button
+                  onClick={() => startEdit("description")}
+                  aria-label="Edit description"
+                  className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              </EditOnly>
             </div>
           )}
         </CardContent>
@@ -1998,13 +2041,15 @@ function OverviewTab({
               <p className="text-sm text-gray-700 whitespace-pre-wrap">
                 {project.notes || "No notes yet."}
               </p>
-              <button
-                onClick={() => startEdit("notes")}
-                aria-label="Edit notes"
-                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
-              >
-                <Edit3 className="w-4 h-4" />
-              </button>
+              <EditOnly>
+                <button
+                  onClick={() => startEdit("notes")}
+                  aria-label="Edit notes"
+                  className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
+                >
+                  <Edit3 className="w-4 h-4" />
+                </button>
+              </EditOnly>
             </div>
           )}
         </CardContent>
@@ -2174,13 +2219,15 @@ function PropertyDetailsCard({
                 </div>
               ))}
             </div>
-            <button
-              onClick={startEditing}
-              aria-label="Edit property details"
-              className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
-            >
-              <Edit3 className="w-4 h-4" />
-            </button>
+            <EditOnly>
+              <button
+                onClick={startEditing}
+                aria-label="Edit property details"
+                className="absolute top-0 right-0 opacity-0 group-hover:opacity-100 p-1 min-h-[44px] min-w-[44px] flex items-center justify-center text-gray-500 hover:text-black cursor-pointer transition-opacity"
+              >
+                <Edit3 className="w-4 h-4" />
+              </button>
+            </EditOnly>
           </div>
         )}
       </CardContent>
@@ -2430,7 +2477,8 @@ function PaymentsTab({
         )}
       </CardHeader>
       <CardContent>
-        {/* Contractor Upload Links (collapsible) */}
+        {/* Contractor Upload Links (collapsible) — staff only */}
+        <EditOnly>
         <ShadCard className="mb-4">
           <button
             type="button"
@@ -2550,6 +2598,7 @@ function PaymentsTab({
             </CardContent>
           )}
         </ShadCard>
+        </EditOnly>
 
         {showForm && (
           <ShadCard className="mb-4 bg-gray-50 border-dashed">
@@ -2872,6 +2921,7 @@ function PaymentsTab({
                         return (
                           <>
                             {QBO_CONTRACTOR_PAYMENTS_ENABLED && (
+                            <EditOnly>
                             <button
                               disabled={loading || !!missingW9}
                               onClick={() => setPayModalPayment({ id: p.id, contractor_name: p.contractor_name, amount: p.amount })}
@@ -2880,6 +2930,7 @@ function PaymentsTab({
                             >
                               {p.qbo_sync_error ? "Retry QB Sync" : "Pay Contractor"}
                             </button>
+                            </EditOnly>
                             )}
                             <button
                               disabled={loading}
@@ -2957,6 +3008,7 @@ function PaymentsTab({
 
                       return null;
                     })()}
+                    <EditOnly>
                     <button
                       disabled={loading}
                       aria-label={`Edit payment to ${p.contractor_name}`}
@@ -2973,6 +3025,7 @@ function PaymentsTab({
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                    </EditOnly>
                   </div>
                 </div>
               )}
@@ -3427,6 +3480,7 @@ function DrawsTab({
               return (
                 <>
                   {QBO_CONTRACTOR_PAYMENTS_ENABLED && (
+                    <EditOnly>
                     <button
                       disabled={loading || !!missingW9}
                       onClick={() => setPayModalPayment({ id: p.id, contractor_name: p.contractor_name, amount: p.amount })}
@@ -3435,6 +3489,7 @@ function DrawsTab({
                     >
                       {p.qbo_sync_error ? "Retry QB Sync" : "Pay Contractor"}
                     </button>
+                    </EditOnly>
                   )}
                   <button
                     disabled={loading}
@@ -3505,6 +3560,7 @@ function DrawsTab({
             }
             return null;
           })()}
+          <EditOnly>
           <button
             disabled={loading}
             aria-label={`Edit payment to ${p.contractor_name}`}
@@ -3521,6 +3577,7 @@ function DrawsTab({
           >
             <Trash2 className="w-4 h-4" />
           </button>
+          </EditOnly>
         </div>
       </div>
     );
@@ -4305,7 +4362,8 @@ function DrawsTab({
         </ShadCard>
       )}
 
-      {/* Contractor Upload Links (collapsible) */}
+      {/* Contractor Upload Links (collapsible) — staff only */}
+      <EditOnly>
       <ShadCard>
         <button
           type="button"
@@ -4425,6 +4483,7 @@ function DrawsTab({
           </CardContent>
         )}
       </ShadCard>
+      </EditOnly>
 
       {/* Unassigned Payments (not on any draw) */}
       {unassignedPayments.length > 0 && (
@@ -5245,6 +5304,7 @@ function DrawsTab({
                               <td className="py-2">
                                 <div className="flex items-center gap-0.5 flex-nowrap justify-end">
                                   {docPayment && docPayment.status === "pending" && (
+                                    <EditOnly>
                                     <button
                                       disabled={loading}
                                       onClick={() => markAsPaid(docPayment)}
@@ -5254,8 +5314,10 @@ function DrawsTab({
                                     >
                                       <Wallet className="w-3.5 h-3.5" />
                                     </button>
+                                    </EditOnly>
                                   )}
                                   {docPayment && (docPayment.status === "pending" || docPayment.status === "paid_personal") && (
+                                    <EditOnly>
                                     <button
                                       disabled={loading}
                                       onClick={() => markPaidFromDraw(docPayment)}
@@ -5265,6 +5327,7 @@ function DrawsTab({
                                     >
                                       <Banknote className="w-3.5 h-3.5" />
                                     </button>
+                                    </EditOnly>
                                   )}
                                   {docPayment && docPayment.receipt_file_url ? (
                                     <button
@@ -5296,6 +5359,7 @@ function DrawsTab({
                                   ) : null}
                                   {/* Divider between payment actions and doc actions */}
                                   {docPayment && <span className="mx-0.5 h-4 w-px bg-gray-200" aria-hidden />}
+                                  <EditOnly>
                                   <button
                                     aria-label={`Edit ${doc.name}`}
                                     title="Edit"
@@ -5304,6 +5368,7 @@ function DrawsTab({
                                   >
                                     <Edit3 className="w-3.5 h-3.5" />
                                   </button>
+                                  </EditOnly>
                                   <button
                                     aria-label={`Preview ${doc.name}`}
                                     title="Preview"
@@ -5322,6 +5387,7 @@ function DrawsTab({
                                   >
                                     <Download className="w-3.5 h-3.5" />
                                   </a>
+                                  <EditOnly>
                                   <button
                                     disabled={loading}
                                     aria-label={`Delete ${doc.name}`}
@@ -5331,6 +5397,7 @@ function DrawsTab({
                                   >
                                     <Trash2 className="w-3.5 h-3.5" />
                                   </button>
+                                  </EditOnly>
                                 </div>
                               </td>
                             </tr>
@@ -5452,6 +5519,7 @@ function DrawsTab({
                               {doc.name}
                             </a>
                             <div className="flex items-center gap-1 shrink-0">
+                              <EditOnly>
                               <button
                                 aria-label={`Edit ${doc.name}`}
                                 onClick={() => editingDocId === doc.id ? setEditingDocId(null) : startEditDoc(doc)}
@@ -5459,6 +5527,7 @@ function DrawsTab({
                               >
                                 <Edit3 className="w-3.5 h-3.5" />
                               </button>
+                              </EditOnly>
                               <button
                                 aria-label={`Preview ${doc.name}`}
                                 onClick={() => onPreview(fileDownloadUrl(doc.file_url), doc.name)}
@@ -5475,6 +5544,7 @@ function DrawsTab({
                               >
                                 <Download className="w-3.5 h-3.5" />
                               </a>
+                              <EditOnly>
                               <button
                                 disabled={loading}
                                 aria-label={`Delete ${doc.name}`}
@@ -5483,6 +5553,7 @@ function DrawsTab({
                               >
                                 <Trash2 className="w-3.5 h-3.5" />
                               </button>
+                              </EditOnly>
                             </div>
                           </div>
                           <div className="flex flex-wrap gap-x-3 gap-y-0.5 text-xs text-gray-500">
@@ -5673,6 +5744,7 @@ function DrawsTab({
                 {/* Draw Actions */}
                 <Separator className="my-3" />
                 <div className="flex flex-wrap items-center gap-2">
+                  <EditOnly>
                   <select
                     disabled={loading}
                     value={draw.status}
@@ -5689,6 +5761,7 @@ function DrawsTab({
                     <option value="funded">Funded</option>
                     <option value="denied">Denied</option>
                   </select>
+                  </EditOnly>
                   {drawDocs.length > 0 && (
                     <button
                       disabled={loading || scanningDrawId === draw.id}
@@ -5705,6 +5778,7 @@ function DrawsTab({
                         : "Re-scan All"}
                     </button>
                   )}
+                  <EditOnly>
                   <button
                     disabled={loading}
                     aria-label={`Edit Draw #${draw.draw_number}`}
@@ -5727,6 +5801,7 @@ function DrawsTab({
                   >
                     <Trash2 className="w-3.5 h-3.5" /> Delete
                   </button>
+                  </EditOnly>
                 </div>
               </CardContent>
             )}
@@ -6195,6 +6270,7 @@ function PermitsTab({
                     )}
                   </div>
                   <div className="flex items-center gap-2">
+                    <EditOnly>
                     <select
                       disabled={loading}
                       value={p.status}
@@ -6210,6 +6286,8 @@ function PermitsTab({
                       <option value="denied">Denied</option>
                       <option value="expired">Expired</option>
                     </select>
+                    </EditOnly>
+                    <EditOnly>
                     <button
                       disabled={loading}
                       aria-label={`Edit permit ${p.permit_type}`}
@@ -6226,6 +6304,7 @@ function PermitsTab({
                     >
                       <Trash2 className="w-4 h-4" />
                     </button>
+                    </EditOnly>
                   </div>
                 </div>
               )}
@@ -6431,7 +6510,7 @@ function DocumentsTab({
               >
                 {selectMode ? "Cancel Select" : "Select"}
               </button>
-              <AddButton label="Upload Files" onClick={() => setShowForm(true)} />
+              <AddButton label="Upload Files" onClick={() => setShowForm(true)} alwaysShow />
             </div>
           </CardAction>
         )}
@@ -6561,6 +6640,7 @@ function DocumentsTab({
                 >
                   <Download className="w-4 h-4" />
                 </a>
+                <EditOnly>
                 <button
                   disabled={loading}
                   aria-label={`Delete document ${doc.name}`}
@@ -6569,6 +6649,7 @@ function DocumentsTab({
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
+                </EditOnly>
               </div>
             </div>
           ))}
@@ -6717,6 +6798,7 @@ function PhotosTab({
                     <div className="absolute inset-0 bg-black/0 group-hover:bg-black/30 transition-all duration-200" />
                     {/* Actions */}
                     <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                      <EditOnly>
                       <button
                         onClick={() => deletePhoto(doc)}
                         className="w-7 h-7 flex items-center justify-center bg-white/90 rounded-full text-red-500 hover:bg-white cursor-pointer"
@@ -6724,6 +6806,7 @@ function PhotosTab({
                       >
                         <Trash2 className="w-3.5 h-3.5" />
                       </button>
+                      </EditOnly>
                     </div>
                   </div>
                   {/* Public toggle below image */}
@@ -6920,6 +7003,7 @@ function TasksTab({
                   {t.due_date && (
                     <span className="text-xs text-gray-500 shrink-0">{fmtDate(t.due_date)}</span>
                   )}
+                  <EditOnly>
                   <button
                     disabled={loading}
                     aria-label={`Edit task "${t.title}"`}
@@ -6936,6 +7020,7 @@ function TasksTab({
                   >
                     <X className="w-4 h-4" />
                   </button>
+                  </EditOnly>
                 </div>
               )}
             </div>
@@ -7015,6 +7100,7 @@ function TasksTab({
                           {fmtDate(t.due_date)}
                         </span>
                       )}
+                      <EditOnly>
                       <button
                         disabled={loading}
                         aria-label={`Edit task "${t.title}"`}
@@ -7031,6 +7117,7 @@ function TasksTab({
                       >
                         <X className="w-4 h-4" />
                       </button>
+                      </EditOnly>
                     </div>
                   )}
                 </div>
@@ -7312,7 +7399,7 @@ function BudgetTab({
               </button>
             )}
             {hasBudget && !editing && (
-              <>
+              <EditOnly>
                 <button
                   onClick={startEditing}
                   className="inline-flex items-center gap-1.5 rounded-lg border border-gray-300 bg-white px-3 py-2 text-xs font-medium text-gray-700 hover:bg-gray-50 transition-colors"
@@ -7343,7 +7430,7 @@ function BudgetTab({
                   <Trash2 className="w-3.5 h-3.5" />
                   Reset
                 </button>
-              </>
+              </EditOnly>
             )}
             {editing && (
               <>
@@ -7776,10 +7863,15 @@ function ActivityTab({ activityLog }: { activityLog: ActivityLogEntry[] }) {
 function AddButton({
   label,
   onClick,
+  alwaysShow = false,
 }: {
   label: string;
   onClick: () => void;
+  /** Keep visible even in read-only mode (e.g. the contractor doc upload). */
+  alwaysShow?: boolean;
 }) {
+  const canEdit = useContext(ProjectEditContext);
+  if (!canEdit && !alwaysShow) return null;
   return (
     <button
       onClick={onClick}

@@ -126,3 +126,47 @@ eb17550 Extract confirmAction to lib/ (drop 4 duplicates)
 a4c5417 Migrate stable-URL avatars + photo grid to next/image
 7d0b0f9 QBO webhook: enforce idempotency via DB unique index
 ```
+
+---
+
+# Contractor project-scoped access (2026-07)
+
+External subcontractors can now sign in (Google OAuth) with visibility limited
+to the specific project(s) they're assigned — nothing else.
+
+## Model
+- **Role**: `user_profiles.role` gained `'contractor'` (lib/roles.ts). Contractors
+  are ordinary profile rows; a placeholder `auth_id` is claimed by email on first
+  Google login (`lib/supabase/linkProfile.ts`, called from the auth callback and
+  the middleware code-exchange fallback).
+- **Grants**: `project_access (user_profile_id → project_id)` maps a contractor to
+  the projects they may see.
+- **RLS is the enforcement point** (migration `20260707_contractor_project_access.sql`):
+  - `is_admin()` was tightened to `active AND role <> 'contractor'`, which demotes
+    contractors out of every existing `admin_only` policy in one change.
+  - `has_project_access(project_id)` = staff OR a matching grant. Additive scoped
+    SELECT policies on the project-facing tables (and the `contractors` directory,
+    scoped via payments/assignments) plus INSERT-on-documents / UPDATE-on-tasks
+    give the "view + limited uploads" tier.
+  - Storage: `project-documents` objects are keyed by `<project_id>/…`; a scoped
+    policy via `can_access_project_file()` lets contractors read/upload only under
+    their project's folder.
+  - Verified by simulating both contractor sessions (each sees only their one
+    project; staff still see all).
+
+## Access gate change
+- The admin gate moved from the `ADMIN_ALLOWED_EMAILS` env allowlist to an
+  **active `user_profiles` row** (middleware + `requireAdmin`). This makes access
+  self-serve (no redeploy to add a contractor) and closed the auto-provision hole
+  where any Google sign-in became an `office_admin` (`useEnsureProfile` no longer
+  creates profiles).
+- `requireAdmin` now **default-denies contractors** on every `/api/admin` route;
+  only routes that opt in via `{ allowContractor: true }` (their project's
+  documents, task-status updates) let them through, with RLS still scoping data.
+- `ADMIN_ALLOWED_EMAILS` is retained ONLY as the estimate-notification recipient
+  list (`app/api/estimate/route.ts`) — it no longer controls access.
+
+## Management
+Staff with `access:manage` (owner, technical director, office manager) provision
+and assign contractors from **Settings → Users & Access**
+(`/admin/settings/team`, API `app/api/admin/contractor-access/`).

@@ -8,7 +8,10 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const gate = await requireAdmin();
+  // Contractors may list and upload documents for their own project; RLS on
+  // the documents table and the project-documents bucket confines them to the
+  // projects they've been granted.
+  const gate = await requireAdmin(undefined, { allowContractor: true });
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
@@ -30,7 +33,10 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const gate = await requireAdmin();
+  // Contractors may list and upload documents for their own project; RLS on
+  // the documents table and the project-documents bucket confines them to the
+  // projects they've been granted.
+  const gate = await requireAdmin(undefined, { allowContractor: true });
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
@@ -290,7 +296,10 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id } = await params;
-  const gate = await requireAdmin();
+  // Contractors may list and upload documents for their own project; RLS on
+  // the documents table and the project-documents bucket confines them to the
+  // projects they've been granted.
+  const gate = await requireAdmin(undefined, { allowContractor: true });
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const body = await request.json();

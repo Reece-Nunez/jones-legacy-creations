@@ -408,7 +408,7 @@ function SettingsPageInner() {
         </Button>
       </div>
 
-      {/* Team Management Link */}
+      {/* Users & Access Link */}
       <Link
         href="/admin/settings/team"
         className="flex items-center gap-4 bg-white rounded-lg border border-gray-200 shadow-sm p-5 hover:bg-gray-50 transition-colors group"
@@ -417,8 +417,8 @@ function SettingsPageInner() {
           <Users className="w-5 h-5 text-indigo-600" />
         </div>
         <div className="flex-1">
-          <h3 className="text-sm font-semibold text-gray-900">Team Members</h3>
-          <p className="text-xs text-gray-500">Manage users, roles, and permissions</p>
+          <h3 className="text-sm font-semibold text-gray-900">Users &amp; Access</h3>
+          <p className="text-xs text-gray-500">Manage staff, contractor logins, roles, and project access</p>
         </div>
         <ChevronRight className="w-5 h-5 text-gray-400 group-hover:text-gray-600 transition-colors" />
       </Link>

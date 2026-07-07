@@ -7,7 +7,11 @@ export type RoleSlug =
   | "owner"
   | "project_manager"
   | "office_manager"
-  | "office_admin";
+  | "office_admin"
+  | "contractor";
+
+/** The role slug for external, project-scoped subcontractor logins. */
+export const CONTRACTOR_ROLE: RoleSlug = "contractor";
 
 export interface RoleDefinition {
   slug: RoleSlug;
@@ -48,6 +52,8 @@ export type Permission =
   | "team:view"
   | "team:manage"
   | "team:delete"
+  // Contractor access (manage project-scoped contractor logins + grants)
+  | "access:manage"
   // Settings
   | "settings:view"
   | "settings:edit";
@@ -61,19 +67,38 @@ const ALL_PERMISSIONS: Permission[] = [
   "contractors:view", "contractors:create", "contractors:edit", "contractors:delete",
   "financials:view", "financials:manage",
   "team:view", "team:manage", "team:delete",
+  "access:manage",
   "settings:view", "settings:edit",
 ];
 
-/** Everything except team management */
+/** Everything except user administration (team management + contractor access) */
 const STANDARD_PERMISSIONS: Permission[] = ALL_PERMISSIONS.filter(
-  (p) => !p.startsWith("team:")
+  (p) => !p.startsWith("team:") && p !== "access:manage"
 );
 
+/**
+ * A project-scoped contractor: read-only visibility into their granted
+ * project(s). Limited writes (document upload, task status) are enforced by
+ * RLS + specific API routes, not by these coarse permission gates.
+ */
+const CONTRACTOR_PERMISSIONS: Permission[] = [
+  "dashboard:view",
+  "projects:view",
+  "financials:view",
+  "estimates:view",
+  "quotes:view",
+];
+
 // ── Role Definitions ──────────────────────────────────────────────────────────
-// Currently the ONLY difference between roles is team management access.
-// Owner and Technical Director can manage users; everyone else cannot.
-// The level + permissions system is here so you can tighten access later
-// without restructuring anything.
+// Staff roles differ mainly in user-administration reach. Owner, Technical
+// Director, and Office Manager can manage users (including contractor logins);
+// Project Manager and Office Admin cannot. `canManageRole` (level check) still
+// prevents anyone from editing/deleting a user at a higher level than their own,
+// so Office Manager (40) can never touch Owner/TD (100) or PMs (50).
+//
+// `contractor` is an external, project-scoped login — not staff. It carries
+// read-only view permissions; its data access is confined to granted projects
+// by RLS (see the contractor_project_access migration), NOT by these gates.
 
 export const ROLES: Record<RoleSlug, RoleDefinition> = {
   technical_director: {
@@ -100,9 +125,9 @@ export const ROLES: Record<RoleSlug, RoleDefinition> = {
   office_manager: {
     slug: "office_manager",
     label: "Office Manager",
-    description: "Full access to all features except user management.",
+    description: "Full access including user and contractor-access management.",
     level: 40,
-    permissions: new Set(STANDARD_PERMISSIONS),
+    permissions: new Set(ALL_PERMISSIONS),
   },
   office_admin: {
     slug: "office_admin",
@@ -111,14 +136,36 @@ export const ROLES: Record<RoleSlug, RoleDefinition> = {
     level: 20,
     permissions: new Set(STANDARD_PERMISSIONS),
   },
+  contractor: {
+    slug: "contractor",
+    label: "Contractor",
+    description: "External subcontractor — read-only access to assigned project(s) only.",
+    level: 10,
+    permissions: new Set(CONTRACTOR_PERMISSIONS),
+  },
 };
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-/** Ordered list of roles for dropdowns (highest level first) */
+/**
+ * Ordered STAFF roles for the team assignment dropdown (highest level first).
+ * Excludes `contractor`, which is provisioned through the contractor-access
+ * flow with a project picker, not the plain role dropdown.
+ */
 export const ROLE_OPTIONS = Object.values(ROLES)
+  .filter((r) => r.slug !== CONTRACTOR_ROLE)
   .sort((a, b) => b.level - a.level)
   .map((r) => ({ value: r.slug, label: r.label }));
+
+/** True if the role is the external project-scoped contractor login. */
+export function isContractor(role: string): boolean {
+  return role === CONTRACTOR_ROLE;
+}
+
+/** True if the role may manage contractor logins + project access grants. */
+export function canManageAccess(role: string): boolean {
+  return hasPermission(role, "access:manage");
+}
 
 /** Check if a role has a specific permission */
 export function hasPermission(role: string, permission: Permission): boolean {

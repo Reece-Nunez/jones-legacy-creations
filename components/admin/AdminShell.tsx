@@ -30,6 +30,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnsureProfile } from "@/lib/hooks/useEnsureProfile";
+import { CONTRACTOR_ROLE } from "@/lib/roles";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
@@ -109,10 +110,17 @@ const quickLinks = [
   { label: "Back to Site", href: "/", icon: Globe, external: true },
 ];
 
-export default function AdminShell({ children }: { children: React.ReactNode }) {
+export default function AdminShell({
+  children,
+  role,
+}: {
+  children: React.ReactNode;
+  role?: string | null;
+}) {
   const pathname = usePathname();
   const router = useRouter();
   useEnsureProfile();
+  const isContractorUser = role === CONTRACTOR_ROLE;
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(true); // default true, overridden by localStorage
   const [newEstimateCount, setNewEstimateCount] = useState(0);
@@ -143,6 +151,8 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
   // don't include `pathname` here — every navigation would otherwise refire
   // the four count queries on top of the running interval.
   useEffect(() => {
+    // Contractors get a scoped shell with no staff badges — skip the queries.
+    if (isContractorUser) return;
     const supabase = createClient();
 
     async function fetchBadgeCounts() {
@@ -161,7 +171,7 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
     fetchBadgeCounts();
     const interval = setInterval(fetchBadgeCounts, 30000);
     return () => clearInterval(interval);
-  }, []);
+  }, [isContractorUser]);
 
   async function handleSignOut() {
     const supabase = createClient();
@@ -347,6 +357,63 @@ export default function AdminShell({ children }: { children: React.ReactNode }) 
       </div>
     </>
   );
+
+  // ── Contractor shell ─────────────────────────────────────────────────────
+  // Project-scoped contractors get a deliberately minimal chrome: no sidebar,
+  // no search, no staff nav — just their project(s), profile, and sign out.
+  // Data scope is enforced by RLS; this simply removes staff affordances.
+  if (isContractorUser) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <header className="sticky top-0 z-30 border-b border-gray-200 bg-white dark:border-gray-800 dark:bg-gray-900">
+          <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-3 sm:px-6">
+            <Link href="/admin/projects" className="flex items-center transition-opacity hover:opacity-80">
+              <Image
+                src="/logo-transparent.png"
+                alt="Jones Legacy Creations"
+                width={160}
+                height={48}
+                className="h-9 w-auto"
+                priority
+              />
+            </Link>
+            <nav className="flex items-center gap-1" aria-label="Contractor navigation">
+              <Link
+                href="/admin/projects"
+                className={`flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname.startsWith("/admin/projects")
+                    ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+              >
+                <FolderOpen className="h-4 w-4" />
+                <span className="hidden sm:inline">My Project</span>
+              </Link>
+              <Link
+                href="/admin/profile"
+                className={`flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition-colors ${
+                  pathname.startsWith("/admin/profile")
+                    ? "bg-slate-100 text-slate-900 dark:bg-slate-800 dark:text-white"
+                    : "text-slate-600 hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+                }`}
+              >
+                <UserCircle className="h-4 w-4" />
+                <span className="hidden sm:inline">Profile</span>
+              </Link>
+              <button
+                onClick={handleSignOut}
+                className="flex min-h-[44px] items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium text-slate-600 transition-colors hover:bg-slate-100 dark:text-slate-300 dark:hover:bg-slate-800"
+              >
+                <LogOut className="h-4 w-4" />
+                <span className="hidden sm:inline">Sign Out</span>
+              </button>
+            </nav>
+          </div>
+        </header>
+        <main className="mx-auto max-w-5xl p-4 pb-24 sm:p-6">{children}</main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-950">

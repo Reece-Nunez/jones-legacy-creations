@@ -1,5 +1,6 @@
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isContractor } from "@/lib/roles";
 import ProjectDetail from "@/components/admin/ProjectDetail";
 
 export default async function ProjectDetailPage({
@@ -9,6 +10,22 @@ export default async function ProjectDetailPage({
 }) {
   const { id } = await params;
   const supabase = await createClient();
+
+  // Contractors get a read-only view of their project (upload + task status
+  // stay enabled); staff get full edit controls. RLS enforces this server-side
+  // regardless — readOnly just hides the staff-only affordances.
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  let readOnly = false;
+  if (user) {
+    const { data: me } = await supabase
+      .from("user_profiles")
+      .select("role")
+      .eq("auth_id", user.id)
+      .maybeSingle();
+    readOnly = !!me && isContractor(me.role);
+  }
 
   const [
     { data: project },
@@ -86,6 +103,7 @@ export default async function ProjectDetailPage({
 
   return (
     <ProjectDetail
+      readOnly={readOnly}
       project={project}
       payments={payments ?? []}
       permits={permits ?? []}

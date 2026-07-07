@@ -1,4 +1,5 @@
 import { updateSession } from "@/lib/supabase/middleware";
+import { claimProfileByEmail } from "@/lib/supabase/linkProfile";
 import { type NextRequest, NextResponse } from "next/server";
 import { createServerClient } from "@supabase/ssr";
 
@@ -35,6 +36,10 @@ export async function middleware(request: NextRequest) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(code);
     if (!error) {
+      // First-login linking (fallback path when Supabase drops the code at
+      // root instead of /auth/callback). Mirrors the callback route.
+      const { data: { user } } = await supabase.auth.getUser();
+      if (user) await claimProfileByEmail(user.id, user.email);
       // Return the response that has the session cookies attached
       return response;
     }

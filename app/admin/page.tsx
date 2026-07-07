@@ -1,5 +1,7 @@
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { isContractor } from "@/lib/roles";
 import {
   type ProjectStatus,
   type Project,
@@ -128,6 +130,27 @@ export default async function AdminDashboard({
 }) {
   const { status: statusFilter } = await searchParams;
   const supabase = await createClient();
+
+  // Contractors don't get the staff dashboard — send them to their project.
+  const { data: { user } } = await supabase.auth.getUser();
+  if (user) {
+    const { data: me } = await supabase
+      .from("user_profiles")
+      .select("id, role")
+      .eq("auth_id", user.id)
+      .maybeSingle();
+    if (me && isContractor(me.role)) {
+      const { data: grants } = await supabase
+        .from("project_access")
+        .select("project_id")
+        .eq("user_profile_id", me.id);
+      if (grants && grants.length === 1) {
+        redirect(`/admin/projects/${grants[0].project_id}`);
+      }
+      redirect("/admin/projects");
+    }
+  }
+
   const now = new Date();
   const today = now.toISOString().split("T")[0];
   const weekEnd = endOfWeek(now);

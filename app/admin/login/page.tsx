@@ -16,16 +16,16 @@ export default async function AdminLoginPage({
   } = await supabase.auth.getUser();
 
   if (user) {
-    // Check whitelist
-    const allowedEmails = (process.env.ADMIN_ALLOWED_EMAILS || "")
-      .split(",")
-      .map((e) => e.trim().toLowerCase())
-      .filter(Boolean);
+    // Already signed in with an active profile → straight to admin. (Matches
+    // the middleware profile gate; contractors land here too and are routed to
+    // their project by the /admin page.)
+    const { data: profile } = await supabase
+      .from("user_profiles")
+      .select("is_active")
+      .eq("auth_id", user.id)
+      .maybeSingle();
 
-    if (
-      allowedEmails.length === 0 ||
-      allowedEmails.includes(user.email?.toLowerCase() || "")
-    ) {
+    if (profile?.is_active) {
       redirect(next || "/admin");
     }
   }

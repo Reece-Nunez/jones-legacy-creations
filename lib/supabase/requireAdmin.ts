@@ -2,12 +2,23 @@ import { NextResponse } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import type { SupabaseClient, User } from "@supabase/supabase-js";
 import type { Permission } from "@/lib/roles";
-import { hasPermission } from "@/lib/roles";
+import { hasPermission, isContractor } from "@/lib/roles";
 
 export type AdminContext = {
   supabase: SupabaseClient;
   user: User;
   profile: { id: string; auth_id: string; email: string; role: string; is_active: boolean };
+};
+
+export type RequireAdminOptions = {
+  /**
+   * Allow project-scoped contractor logins through this route. Defaults to
+   * FALSE — contractors are denied on every /api/admin route by default, which
+   * closes the service-role (RLS-bypassing) routes to them in one place. Set
+   * true only on the handful of routes a contractor legitimately needs (e.g.
+   * their own project's documents), where RLS still scopes the data.
+   */
+  allowContractor?: boolean;
 };
 
 /**
@@ -19,7 +30,8 @@ export type AdminContext = {
  *   const { supabase, user, profile } = gate;
  */
 export async function requireAdmin(
-  permission?: Permission
+  permission?: Permission,
+  options?: RequireAdminOptions
 ): Promise<AdminContext | NextResponse> {
   const supabase = await createClient();
 
@@ -40,19 +52,15 @@ export async function requireAdmin(
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
-  // Defense-in-depth: also honor the ADMIN_ALLOWED_EMAILS env allowlist
-  // that the middleware uses for page protection.
-  const allowlist = (process.env.ADMIN_ALLOWED_EMAILS || "")
-    .split(",")
-    .map((e) => e.trim().toLowerCase())
-    .filter(Boolean);
-  if (
-    allowlist.length > 0 &&
-    !allowlist.includes((user.email || "").toLowerCase())
-  ) {
+  // Default-deny contractors on API routes. This is the single choke point that
+  // keeps project-scoped contractors out of every staff/service-role route;
+  // only routes that opt in via allowContractor (and rely on RLS for scope)
+  // let them through.
+  if (isContractor(profile.role) && !options?.allowContractor) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
+  // Per-route capability check. Contractor data scope is enforced by RLS.
   if (permission && !hasPermission(profile.role, permission)) {
     return NextResponse.json({ error: "Insufficient permissions" }, { status: 403 });
   }
