@@ -694,6 +694,18 @@ export default function ProjectDetail({
             >
               <CheckSquare className="w-3.5 h-3.5" /> Add Task
             </button>
+            <button
+              onClick={() => setActiveTab("changeorders")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
+            >
+              <FileText className="w-3.5 h-3.5" /> Change Order
+            </button>
+            <button
+              onClick={() => setActiveTab("selections")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
+            >
+              <Palette className="w-3.5 h-3.5" /> Selection
+            </button>
             <Link
               href={`/admin/projects/${project.id}/edit`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
