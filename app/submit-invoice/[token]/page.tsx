@@ -1,5 +1,5 @@
 import { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { ContractorInvoiceUpload } from "@/components/ContractorInvoiceUpload";
@@ -9,13 +9,20 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
+// Reads a token row per request; never statically cache this page.
+export const dynamic = "force-dynamic";
+
 export default async function SubmitInvoicePage({
   params,
 }: {
   params: Promise<{ token: string }>;
 }) {
   const { token } = await params;
-  const supabase = await createClient();
+  // invoice_upload_tokens is admin-only under RLS and the contractor opening
+  // this link is not logged in, so the anon client would read zero rows. Read
+  // with the service-role client; the random token is the trust boundary (same
+  // model as the POST /api/submit-invoice route).
+  const supabase = createAdminClient();
 
   const { data: tokenRecord, error } = await supabase
     .from("invoice_upload_tokens")

@@ -1,6 +1,9 @@
-import { createClient } from "@/lib/supabase/server";
+import { createAdminClient } from "@/lib/supabase/admin";
 import DDSetupForm from "./DDSetupForm";
 import Image from "next/image";
+
+// Reads a token row per request; never statically cache this page.
+export const dynamic = "force-dynamic";
 
 export default async function DirectDepositPage({
   params,
@@ -21,7 +24,11 @@ export default async function DirectDepositPage({
     );
   }
 
-  const supabase = await createClient();
+  // dd_invite_tokens is admin-only under RLS and the contractor opening this
+  // link is not logged in, so the anon client would read zero rows. Read with
+  // the service-role client; the random token is the trust boundary (same model
+  // as the POST /api/submit-invoice route).
+  const supabase = createAdminClient();
 
   const { data: invite } = await supabase
     .from("dd_invite_tokens")
