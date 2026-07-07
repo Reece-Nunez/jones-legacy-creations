@@ -809,7 +809,15 @@ export default function ProjectDetail({
             />
           </TabsContent>
           <TabsContent value="selections">
-            <SelectionsTab projectId={project.id} selections={selections} />
+            <SelectionsTab
+              projectId={project.id}
+              selections={selections}
+              defaultClient={{
+                name: project.client_name,
+                email: project.client_email,
+                phone: project.client_phone,
+              }}
+            />
           </TabsContent>
           <TabsContent value="documents">
             <DocumentsTab

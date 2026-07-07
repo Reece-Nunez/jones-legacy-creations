@@ -55,13 +55,22 @@ const EMPTY_FORM = {
 export function SelectionsTab({
   projectId,
   selections,
+  defaultClient,
 }: {
   projectId: string;
   selections: Selection[];
+  /** Project client contact — pre-fills the form but stays editable. */
+  defaultClient?: { name?: string | null; email?: string | null; phone?: string | null };
 }) {
   const router = useRouter();
+  const initialForm = () => ({
+    ...EMPTY_FORM,
+    client_name: defaultClient?.name ?? "",
+    client_email: defaultClient?.email ?? "",
+    client_phone: defaultClient?.phone ?? "",
+  });
   const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState(initialForm);
   const [image, setImage] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
 
@@ -90,7 +99,7 @@ export function SelectionsTab({
       const res = await fetch(base, { method: "POST", body: fd });
       if (!res.ok) throw new Error((await res.json().catch(() => ({}))).error || "Failed to create");
       toast.success("Selection created");
-      setForm({ ...EMPTY_FORM });
+      setForm(initialForm());
       setImage(null);
       setShowForm(false);
       router.refresh();
@@ -241,7 +250,7 @@ export function SelectionsTab({
               size="sm"
               variant="outline"
               onClick={() => {
-                setForm({ ...EMPTY_FORM });
+                setForm(initialForm());
                 setImage(null);
                 setShowForm(false);
               }}
