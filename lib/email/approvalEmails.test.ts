@@ -1,5 +1,11 @@
 import { describe, it, expect } from "vitest";
-import { buildChangeOrderEmail, buildSelectionEmail, BRAND_FROM } from "./approvalEmails";
+import {
+  buildChangeOrderEmail,
+  buildSelectionEmail,
+  buildBidRequestEmail,
+  buildBidAcceptedEmail,
+  BRAND_FROM,
+} from "./approvalEmails";
 
 const LINK = "https://example.com/sign-change-order/abc123";
 
@@ -38,6 +44,47 @@ describe("buildSelectionEmail", () => {
     });
     expect(html).toContain(LINK);
     expect(subject).toContain("Maple Street");
+  });
+});
+
+describe("buildBidRequestEmail", () => {
+  it("includes the link, project, title and custom message", () => {
+    const { subject, html } = buildBidRequestEmail({
+      link: "https://example.com/respond-bid/tok123",
+      projectName: "Maple St. New Build",
+      contractorName: "Dry Creek Framing",
+      title: "Framing — bid request",
+      customMessage: "Plans attached. Need a number by Friday.",
+    });
+    expect(subject).toContain("Maple St. New Build");
+    expect(html).toContain("https://example.com/respond-bid/tok123");
+    expect(html).toContain("Framing — bid request");
+    expect(html).toContain("Need a number by Friday.");
+    expect(html).toContain("Dry Creek Framing");
+  });
+
+  it("escapes HTML in caller-supplied fields", () => {
+    const { html } = buildBidRequestEmail({
+      link: "https://example.com/x",
+      projectName: "Job <script>",
+      title: "T",
+    });
+    expect(html).not.toContain("Job <script>");
+    expect(html).toContain("&lt;script&gt;");
+  });
+});
+
+describe("buildBidAcceptedEmail", () => {
+  it("uses Blake's confirmation wording and carries no CTA link", () => {
+    const { subject, html } = buildBidAcceptedEmail({
+      projectName: "Maple St. New Build",
+      contractorName: "Dry Creek Framing",
+      title: "Framing",
+    });
+    expect(subject).toContain("accepted");
+    expect(html).toContain("Your bid has been accepted");
+    expect(html).toContain("contact you for scheduling");
+    expect(html).not.toContain("<a ");
   });
 });
 

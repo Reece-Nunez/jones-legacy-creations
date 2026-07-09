@@ -55,6 +55,7 @@ import {
   Globe,
   Lock,
   AlertTriangle,
+  Gavel,
 } from "lucide-react";
 import type {
   Project,
@@ -80,6 +81,7 @@ import type {
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
 import { ChangeOrdersTab, type ChangeOrder } from "@/components/admin/ChangeOrdersTab";
 import { SelectionsTab, type Selection } from "@/components/admin/SelectionsTab";
+import { BidRequestsTab, type BidRequest } from "@/components/admin/BidRequestsTab";
 
 type ProgressItem = DrawLineItem & { completed: boolean };
 type CashProgressItem = {
@@ -222,6 +224,7 @@ const ALL_TABS = [
   { key: "permits",    label: "Permits",   icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
   { key: "changeorders", label: "Change Orders", icon: FileText,  cashJob: true,  onlyCashJob: false, staffOnly: true },
   { key: "selections", label: "Selections", icon: Palette,        cashJob: true,  onlyCashJob: false, staffOnly: true },
+  { key: "bidrequests", label: "Bid Requests", icon: Gavel,       cashJob: true,  onlyCashJob: false, staffOnly: true },
   { key: "documents",  label: "Documents", icon: FolderOpen,      cashJob: true,  onlyCashJob: false },
   { key: "activity",   label: "Activity",  icon: Clock,           cashJob: true,  onlyCashJob: false },
 ] as const;
@@ -249,6 +252,7 @@ interface Props {
   settlements: ProjectSettlement[];
   changeOrders?: ChangeOrder[];
   selections?: Selection[];
+  bidRequests?: BidRequest[];
 }
 
 // ---------------------------------------------------------------------------
@@ -370,6 +374,7 @@ export default function ProjectDetail({
   settlements,
   changeOrders = [],
   selections = [],
+  bidRequests = [],
 }: Props) {
   const canEdit = !readOnly;
   const router = useRouter();
@@ -706,6 +711,12 @@ export default function ProjectDetail({
             >
               <Palette className="w-3.5 h-3.5" /> Selection
             </button>
+            <button
+              onClick={() => setActiveTab("bidrequests")}
+              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
+            >
+              <Gavel className="w-3.5 h-3.5" /> Bid Request
+            </button>
             <Link
               href={`/admin/projects/${project.id}/edit`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
@@ -817,6 +828,13 @@ export default function ProjectDetail({
                 email: project.client_email,
                 phone: project.client_phone,
               }}
+            />
+          </TabsContent>
+          <TabsContent value="bidrequests">
+            <BidRequestsTab
+              projectId={project.id}
+              bidRequests={bidRequests}
+              contractors={contractors}
             />
           </TabsContent>
           <TabsContent value="documents">

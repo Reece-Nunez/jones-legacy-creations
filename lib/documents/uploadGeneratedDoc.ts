@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 
-export type GeneratedDocCategory = "change_order" | "selection";
+export type GeneratedDocCategory = "change_order" | "selection" | "bid_request";
 
 /**
  * Upload a server-generated file (a signed change-order / decided-selection PDF)

@@ -51,6 +51,53 @@ export function buildChangeOrderEmail(opts: {
   };
 }
 
+export function buildBidRequestEmail(opts: {
+  link: string;
+  projectName: string;
+  contractorName?: string | null;
+  title: string;
+  customMessage?: string | null;
+}): { subject: string; html: string } {
+  const greeting = opts.contractorName ? `Hi ${escapeHtml(opts.contractorName)},` : "Hi,";
+  const note = opts.customMessage?.trim()
+    ? `<p style="margin:0 0 10px;white-space:pre-line;">${escapeHtml(opts.customMessage.trim())}</p>`
+    : "";
+  const body = `
+    <p style="margin:0 0 10px;">${greeting}</p>
+    <p style="margin:0 0 10px;">Jones Legacy Creations is requesting a bid for the project
+      <strong>${escapeHtml(opts.projectName)}</strong>:</p>
+    <p style="margin:0 0 10px;"><strong>${escapeHtml(opts.title)}</strong></p>
+    ${note}
+    <p style="margin:0 0 10px;">Please review the scope and let us know if you can take it on.</p>
+  `;
+  return {
+    subject: `Bid request — ${opts.projectName}`,
+    html: shell("You've been invited to bid", body, opts.link, "Review & Respond"),
+  };
+}
+
+// Confirmation sent to the contractor the moment they accept. Body wording is
+// Blake's requested line: "Your bid has been accepted, we will contact you for
+// scheduling." No link/CTA — this is a plain acknowledgement.
+export function buildBidAcceptedEmail(opts: {
+  projectName: string;
+  contractorName?: string | null;
+  title: string;
+}): { subject: string; html: string } {
+  const greeting = opts.contractorName ? `Hi ${escapeHtml(opts.contractorName)},` : "Hi,";
+  const html = `
+    <div style="font-family: -apple-system, system-ui, sans-serif; max-width: 560px; color:#111; line-height:1.5;">
+      <h2 style="margin:0 0 14px;">Your bid has been accepted</h2>
+      <p style="margin:0 0 10px;">${greeting}</p>
+      <p style="margin:0 0 10px;">Your bid has been accepted for the project
+        <strong>${escapeHtml(opts.projectName)}</strong>
+        (<strong>${escapeHtml(opts.title)}</strong>). We will contact you for scheduling.</p>
+      <p style="margin:0 0 10px;">Thank you,<br>Jones Legacy Creations</p>
+    </div>
+  `;
+  return { subject: `Your bid has been accepted — ${opts.projectName}`, html };
+}
+
 export function buildSelectionEmail(opts: {
   link: string;
   projectName: string;

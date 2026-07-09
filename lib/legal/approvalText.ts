@@ -15,6 +15,15 @@ export const DEFAULT_CHANGE_ORDER_CONSENT =
   "electronic signature is legally binding under the U.S. E-SIGN Act, and that " +
   "work reflecting this change may proceed once signed.";
 
+export const DEFAULT_BID_ACCEPTANCE_TERMS =
+  "By typing my name below and clicking “Accept Bid,” I confirm that I am " +
+  "willing and able to perform the scope of work described above for this " +
+  "project. I understand this is my acknowledgement of interest and " +
+  "availability, that Jones Legacy Creations will follow up to confirm pricing " +
+  "and scheduling, and that a separate written agreement may govern the final " +
+  "terms of the work. My electronic acceptance is recorded with the date, time, " +
+  "and my identity as evidence of my response.";
+
 export const DEFAULT_SELECTION_DISCLAIMER =
   "By approving this selection, I confirm that this is the material, product, " +
   "color, and finish I have chosen for my project. I understand that natural " +

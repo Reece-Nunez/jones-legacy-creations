@@ -42,6 +42,7 @@ export default async function ProjectDetailPage({
     { data: settlements },
     { data: changeOrders },
     { data: selections },
+    { data: bidRequests },
   ] = await Promise.all([
     supabase.from("projects").select("*").eq("id", id).single(),
     supabase
@@ -107,6 +108,11 @@ export default async function ProjectDetailPage({
       .select("*, document:documents(file_url, name)")
       .eq("project_id", id)
       .order("created_at", { ascending: false }),
+    supabase
+      .from("bid_requests")
+      .select("*, document:documents(file_url, name)")
+      .eq("project_id", id)
+      .order("created_at", { ascending: false }),
   ]);
 
   if (!project) {
@@ -130,6 +136,7 @@ export default async function ProjectDetailPage({
       settlements={settlements ?? []}
       changeOrders={changeOrders ?? []}
       selections={selections ?? []}
+      bidRequests={bidRequests ?? []}
     />
   );
 }
