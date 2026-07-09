@@ -98,6 +98,29 @@ export function buildBidAcceptedEmail(opts: {
   return { subject: `Your bid has been accepted — ${opts.projectName}`, html };
 }
 
+// Sent when Blake marks an accepted bid completed — nudges the contractor to
+// submit their invoice through the existing invoice-upload flow. Payment itself
+// runs through the draw/lender process, not this email.
+export function buildInvoiceRequestEmail(opts: {
+  link: string;
+  projectName: string;
+  contractorName?: string | null;
+  title: string;
+}): { subject: string; html: string } {
+  const greeting = opts.contractorName ? `Hi ${escapeHtml(opts.contractorName)},` : "Hi,";
+  const body = `
+    <p style="margin:0 0 10px;">${greeting}</p>
+    <p style="margin:0 0 10px;">Your work on <strong>${escapeHtml(opts.projectName)}</strong>
+      (<strong>${escapeHtml(opts.title)}</strong>) is marked complete. Please send us your
+      invoice so we can process payment.</p>
+    <p style="margin:0 0 10px;">Use the secure link below to upload it.</p>
+  `;
+  return {
+    subject: `Please send your invoice — ${opts.projectName}`,
+    html: shell("Your invoice is requested", body, opts.link, "Upload Invoice"),
+  };
+}
+
 export function buildSelectionEmail(opts: {
   link: string;
   projectName: string;

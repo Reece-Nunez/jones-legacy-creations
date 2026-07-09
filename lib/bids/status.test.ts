@@ -1,8 +1,8 @@
 import { describe, it, expect } from "vitest";
 import {
   canRespond,
+  canDecide,
   canComplete,
-  canMarkPaid,
   canVoid,
   nextStatusFor,
   type BidStatus,
@@ -12,24 +12,25 @@ const ALL: BidStatus[] = [
   "draft",
   "sent",
   "viewed",
+  "submitted",
+  "passed",
   "accepted",
-  "declined",
+  "rejected",
   "completed",
-  "paid",
   "void",
 ];
 
 describe("bid status guards", () => {
-  it("only allows a response while sent or viewed", () => {
+  it("only allows the contractor to respond while sent or viewed", () => {
     expect(ALL.filter(canRespond)).toEqual(["sent", "viewed"]);
+  });
+
+  it("only lets Blake decide once a bid is submitted", () => {
+    expect(ALL.filter(canDecide)).toEqual(["submitted"]);
   });
 
   it("only allows completion after acceptance", () => {
     expect(ALL.filter(canComplete)).toEqual(["accepted"]);
-  });
-
-  it("only allows payment after completion", () => {
-    expect(ALL.filter(canMarkPaid)).toEqual(["completed"]);
   });
 
   it("allows voiding any non-terminal state", () => {
@@ -37,29 +38,32 @@ describe("bid status guards", () => {
       "draft",
       "sent",
       "viewed",
+      "submitted",
       "accepted",
-      "completed",
     ]);
-    // declined / paid / void are terminal
-    expect(canVoid("declined")).toBe(false);
-    expect(canVoid("paid")).toBe(false);
+    // passed / rejected / completed / void are terminal
+    expect(canVoid("passed")).toBe(false);
+    expect(canVoid("rejected")).toBe(false);
+    expect(canVoid("completed")).toBe(false);
     expect(canVoid("void")).toBe(false);
   });
 });
 
 describe("nextStatusFor", () => {
   it("resolves the happy-path lifecycle", () => {
+    expect(nextStatusFor("accept", "submitted")).toBe("accepted");
+    expect(nextStatusFor("reject", "submitted")).toBe("rejected");
     expect(nextStatusFor("complete", "accepted")).toBe("completed");
-    expect(nextStatusFor("paid", "completed")).toBe("paid");
     expect(nextStatusFor("void", "sent")).toBe("void");
   });
 
   it("rejects out-of-order transitions", () => {
-    // can't pay before completing, can't complete before accepting
-    expect(nextStatusFor("paid", "accepted")).toBeNull();
-    expect(nextStatusFor("complete", "sent")).toBeNull();
+    // can't accept a bid that hasn't been submitted
+    expect(nextStatusFor("accept", "viewed")).toBeNull();
+    // can't complete before accepting
+    expect(nextStatusFor("complete", "submitted")).toBeNull();
     // can't act on terminal states
-    expect(nextStatusFor("complete", "declined")).toBeNull();
-    expect(nextStatusFor("void", "paid")).toBeNull();
+    expect(nextStatusFor("accept", "passed")).toBeNull();
+    expect(nextStatusFor("void", "completed")).toBeNull();
   });
 });

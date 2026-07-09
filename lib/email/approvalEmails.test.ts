@@ -4,6 +4,7 @@ import {
   buildSelectionEmail,
   buildBidRequestEmail,
   buildBidAcceptedEmail,
+  buildInvoiceRequestEmail,
   BRAND_FROM,
 } from "./approvalEmails";
 
@@ -85,6 +86,21 @@ describe("buildBidAcceptedEmail", () => {
     expect(html).toContain("Your bid has been accepted");
     expect(html).toContain("contact you for scheduling");
     expect(html).not.toContain("<a ");
+  });
+});
+
+describe("buildInvoiceRequestEmail", () => {
+  it("links to the invoice upload and names the project", () => {
+    const { subject, html } = buildInvoiceRequestEmail({
+      link: "https://example.com/submit-invoice/tok9",
+      projectName: "Maple St. New Build",
+      contractorName: "Dry Creek Framing",
+      title: "Framing",
+    });
+    expect(subject).toContain("invoice");
+    expect(subject).toContain("Maple St. New Build");
+    expect(html).toContain("https://example.com/submit-invoice/tok9");
+    expect(html).toContain("Upload Invoice");
   });
 });
 

@@ -62,18 +62,34 @@ export default async function RespondBidPage({
       />
     );
   }
-  if (bid.status === "accepted" || bid.status === "completed" || bid.status === "paid") {
+  if (bid.status === "submitted") {
     return (
       <StatusCard
-        title="You've already accepted this bid"
+        title="Your bid is in"
+        message="Thank you — Jones Legacy Creations is reviewing it and will get back to you."
+      />
+    );
+  }
+  if (bid.status === "accepted" || bid.status === "completed") {
+    return (
+      <StatusCard
+        title="Your bid was accepted"
         message="Thank you — we'll contact you for scheduling. No further action is needed."
       />
     );
   }
-  if (bid.status === "declined") {
+  if (bid.status === "rejected") {
     return (
       <StatusCard
-        title="You've declined this bid request"
+        title="This bid wasn't selected"
+        message="Thank you for your bid. We'll keep you in mind for future work."
+      />
+    );
+  }
+  if (bid.status === "passed") {
+    return (
+      <StatusCard
+        title="You passed on this one"
         message="Thank you for letting us know. No further action is needed."
       />
     );

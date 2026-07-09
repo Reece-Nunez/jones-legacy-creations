@@ -16,13 +16,14 @@ export const DEFAULT_CHANGE_ORDER_CONSENT =
   "work reflecting this change may proceed once signed.";
 
 export const DEFAULT_BID_ACCEPTANCE_TERMS =
-  "By typing my name below and clicking “Accept Bid,” I confirm that I am " +
+  "By typing my name below and clicking “Submit Bid,” I confirm that I am " +
   "willing and able to perform the scope of work described above for this " +
-  "project. I understand this is my acknowledgement of interest and " +
-  "availability, that Jones Legacy Creations will follow up to confirm pricing " +
-  "and scheduling, and that a separate written agreement may govern the final " +
-  "terms of the work. My electronic acceptance is recorded with the date, time, " +
-  "and my identity as evidence of my response.";
+  "project, and that any amount I enter is my good-faith bid for that work. I " +
+  "understand this is my submission for Jones Legacy Creations to review, that " +
+  "they may accept or decline it, and that a separate written agreement may " +
+  "govern the final terms of the work if my bid is accepted. My electronic " +
+  "submission is recorded with the date, time, and my identity as evidence of " +
+  "my response.";
 
 export const DEFAULT_SELECTION_DISCLAIMER =
   "By approving this selection, I confirm that this is the material, product, " +

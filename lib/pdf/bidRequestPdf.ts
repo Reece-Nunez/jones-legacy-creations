@@ -1,15 +1,17 @@
 import { PDFDocument, StandardFonts, rgb, type PDFFont, type RGB } from "pdf-lib";
-import { CONTENT_WIDTH, MARGIN, PAGE_HEIGHT, PAGE_WIDTH, wrapText } from "./pdfKit";
+import { CONTENT_WIDTH, MARGIN, PAGE_HEIGHT, PAGE_WIDTH, usd, wrapText } from "./pdfKit";
 
-export interface BidAcceptancePdfInput {
+export interface BidSubmissionPdfInput {
   projectName: string;
   title: string;
   scopeDescription?: string | null;
   contractorName?: string | null;
+  bidAmount?: number | null;
+  bidNote?: string | null;
   termsText: string;
-  responderName: string;
-  acceptedAt: Date;
-  responderIp?: string | null;
+  submitterName: string;
+  submittedAt: Date;
+  submitterIp?: string | null;
 }
 
 const dateFmt = new Intl.DateTimeFormat("en-US", {
@@ -19,12 +21,14 @@ const dateFmt = new Intl.DateTimeFormat("en-US", {
 });
 
 /**
- * Render a bid acceptance to a PDF filed under the project's Documents. The
- * acceptance block records the typed name, timestamp, IP, and the exact terms
- * the contractor agreed to. Mirrors buildChangeOrderPdf.
+ * Render a contractor's bid submission to a PDF filed under the project's
+ * Documents. Captures the optional bid amount + note and the exact terms the
+ * contractor agreed to (typed name, timestamp, IP) as evidence of their
+ * commitment. Blake's later accept/decline is an internal decision. Mirrors
+ * buildChangeOrderPdf.
  */
-export async function buildBidAcceptancePdf(
-  input: BidAcceptancePdfInput
+export async function buildBidSubmissionPdf(
+  input: BidSubmissionPdfInput
 ): Promise<Uint8Array> {
   const doc = await PDFDocument.create();
   const font = await doc.embedFont(StandardFonts.Helvetica);
@@ -75,7 +79,7 @@ export async function buildBidAcceptancePdf(
   // Header
   page.drawText("Jones Legacy Creations", { x: MARGIN, y, size: 18, font: bold, color: ink });
   y -= 22;
-  page.drawText("Bid Acceptance", { x: MARGIN, y, size: 12, font, color: gray });
+  page.drawText("Bid Submission", { x: MARGIN, y, size: 12, font, color: gray });
   y -= 26;
 
   label("Project");
@@ -95,16 +99,30 @@ export async function buildBidAcceptancePdf(
 
   rule();
 
-  label("Acceptance terms");
+  label("Bid amount");
+  text(
+    typeof input.bidAmount === "number" && Number.isFinite(input.bidAmount)
+      ? usd.format(input.bidAmount)
+      : "Not specified",
+    { size: 13, font: bold, gap: 10 }
+  );
+  if (input.bidNote?.trim()) {
+    label("Note");
+    text(input.bidNote, { gap: 10 });
+  }
+
+  rule();
+
+  label("Terms agreed to");
   text(input.termsText, { size: 9, color: gray, gap: 12 });
 
-  label("Accepted by");
-  text(input.responderName, { font: bold, gap: 6 });
+  label("Submitted by");
+  text(input.submitterName, { font: bold, gap: 6 });
   label("Date");
-  text(dateFmt.format(input.acceptedAt), { gap: 6 });
-  if (input.responderIp) {
+  text(dateFmt.format(input.submittedAt), { gap: 6 });
+  if (input.submitterIp) {
     label("IP address");
-    text(input.responderIp, { size: 9, color: gray });
+    text(input.submitterIp, { size: 9, color: gray });
   }
 
   return doc.save();
