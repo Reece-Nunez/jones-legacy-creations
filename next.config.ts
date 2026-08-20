@@ -33,7 +33,11 @@ const contentSecurityPolicy = [
   `img-src 'self' data: blob: https://jones-legacy-creations.s3.us-east-1.amazonaws.com ${SUPABASE_ORIGIN} https://www.googletagmanager.com https://www.google-analytics.com https://www.facebook.com https://www.google.com`,
   "font-src 'self' data:",
   `connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://www.google.com ${SUPABASE_ORIGIN} wss://rvyummgsvggjqtjbtqfw.supabase.co`,
-  "frame-src 'self' https://www.google.com https://www.facebook.com",
+  // Supabase origin is required because /api/admin/files/download 302-redirects
+  // the iframe to a short-lived signed storage URL; frame-src is enforced
+  // against the *redirect target*, so without it Chrome blocks every PDF
+  // preview with "This content is blocked. Contact the site owner."
+  `frame-src 'self' https://www.google.com https://www.facebook.com ${SUPABASE_ORIGIN}`,
   "worker-src 'self' blob:",
   "manifest-src 'self'",
   "media-src 'self'",

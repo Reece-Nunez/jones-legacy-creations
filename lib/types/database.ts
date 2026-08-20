@@ -66,6 +66,24 @@ export interface ContractorInsuranceDocument {
   created_at: string;
 }
 
+/**
+ * JLC's own liability coverage (general liability, workers comp, auto,
+ * umbrella) — as opposed to ContractorInsuranceDocument, which holds the COIs
+ * collected from subs.
+ */
+export interface CompanyInsuranceDocument {
+  id: string;
+  file_url: string;
+  file_name: string;
+  insurance_company: string | null;
+  policy_number: string | null;
+  coverage_type: string | null;
+  expiration_date: string | null;
+  notes: string | null;
+  uploaded_at: string;
+  created_at: string;
+}
+
 export interface Project {
   id: string;
   name: string;

@@ -6,7 +6,11 @@ import { signObjectUrl } from "@/lib/supabase/signedUrl";
 // public so it isn't here. The bucket name comes from a caller-supplied
 // query param, so we MUST allowlist — otherwise an admin could sign a URL
 // for any bucket the service-role can see.
-const ADMIN_BUCKETS = new Set(["project-documents", "contractor-w9"]);
+const ADMIN_BUCKETS = new Set([
+  "project-documents",
+  "contractor-w9",
+  "company-documents",
+]);
 
 // GET /api/admin/files/download?bucket=<name>&path=<encoded path>
 // Auth + bucket allowlist, then 302-redirects to a 60s signed URL.

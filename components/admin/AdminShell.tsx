@@ -27,6 +27,7 @@ import {
   Settings,
   UserCircle,
   ChevronLeft,
+  ShieldCheck,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnsureProfile } from "@/lib/hooks/useEnsureProfile";
@@ -35,9 +36,12 @@ import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
 
-// Sidebar grouped into two product surfaces:
+// Sidebar grouped into three product surfaces:
 //
 //   Construction — daily project-management work (jobs, vendors, money).
+//   Company      — JLC's own records (its liability coverage), as opposed to
+//                  paperwork collected from subs, which lives under a
+//                  contractor.
 //   Website      — the public-facing JLC site (leads, content, listings).
 //
 // Grouping by section keeps the daily-construction work visually
@@ -79,6 +83,12 @@ const navSections: NavSection[] = [
       { label: "Financials", href: "/admin/financials", icon: DollarSign },
       { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
       { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
+    ],
+  },
+  {
+    header: "Company",
+    links: [
+      { label: "Liability Insurance", href: "/admin/insurance", icon: ShieldCheck },
     ],
   },
   {
