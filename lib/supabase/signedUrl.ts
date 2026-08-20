@@ -1,4 +1,5 @@
 import { createAdminClient } from "@/lib/supabase/admin";
+import { parseStorageUrl } from "@/lib/supabase/storagePath";
 
 /**
  * Given a stored Supabase public URL like
@@ -6,22 +7,14 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * (or the newer `/object/<bucket>/<path>` after the bucket goes private),
  * return the storage path relative to its bucket.
  *
+ * The path is decoded — see parseStorageUrl for why that matters.
+ *
  * Returns null if the URL doesn't match the bucket we expected.
  */
 export function parseStoragePath(url: string, bucket: string): string | null {
-  try {
-    const u = new URL(url);
-    const marker = `/storage/v1/object/`;
-    const i = u.pathname.indexOf(marker);
-    if (i === -1) return null;
-    // Strip the marker, then optional "public/", then expect "<bucket>/<path>"
-    let rest = u.pathname.slice(i + marker.length);
-    if (rest.startsWith("public/")) rest = rest.slice("public/".length);
-    if (!rest.startsWith(`${bucket}/`)) return null;
-    return rest.slice(bucket.length + 1);
-  } catch {
-    return null;
-  }
+  const parsed = parseStorageUrl(url);
+  if (!parsed || parsed.bucket !== bucket) return null;
+  return parsed.path;
 }
 
 /**
