@@ -109,7 +109,8 @@ import {
   formatDate as sharedFormatDate,
 } from "@/lib/formatters";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
-import { visibleTabs } from "@/lib/projects/tabs";
+import { visibleTabs, groupTabs } from "@/lib/projects/tabs";
+import { ProjectTabNav } from "@/components/admin/project/ProjectTabNav";
 import { confirmAction } from "@/lib/confirmAction";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
@@ -121,7 +122,7 @@ import {
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Tabs, TabsContent } from "@/components/ui/tabs";
 import SmartUpload from "@/components/admin/SmartUpload";
 import QBOPayContractorModal from "@/components/admin/QBOPayContractorModal";
 import { computeProjectFinancials } from "@/lib/finance/project-financials";
@@ -214,25 +215,30 @@ function EditOnly({ children }: { children: React.ReactNode }) {
 }
 
 const ALL_TABS = [
-  { key: "overview",   label: "Overview",  icon: LayoutDashboard, cashJob: true,  onlyCashJob: false },
-  { key: "photos",     label: "Photos",    icon: Camera,          cashJob: true,  onlyCashJob: false },
+  // Grouped for the two-level nav (lib/projects/tabs.ts). Panel keys are
+  // unchanged so existing ?tab= links keep working.
+  { key: "overview",   group: "overview", label: "Summary",     icon: LayoutDashboard, cashJob: true,  onlyCashJob: false },
+  { key: "activity",   group: "overview", label: "Activity",    icon: Clock,           cashJob: true,  onlyCashJob: false },
+
+  { key: "budget",     group: "money",    label: "Budget",      icon: Wallet,          cashJob: true,  onlyCashJob: false },
   // Payments is NOT cash-job-only. Financed jobs pay subs directly and then
   // roll those payments into a draw: 24 of Peach Springs' 31 payments are
   // draw-linked and 7 are standalone. Hiding the tab there left 86% of all
-  // contractor payments without a dedicated list — reachable only as "Not on
-  // a draw yet" inside Draws, or "Unassigned" inside Budget.
-  { key: "payments",   label: "Payments",  icon: CreditCard,      cashJob: true,  onlyCashJob: false },
-  { key: "draws",      label: "Draws",     icon: Banknote,        cashJob: false, onlyCashJob: false },
-  { key: "loan",       label: "Loan",      icon: Landmark,        cashJob: false, onlyCashJob: false },
-  { key: "cashflow",   label: "Cash Flow", icon: TrendingUp,      cashJob: true,  onlyCashJob: false },
-  { key: "budget",     label: "Budget",    icon: Wallet,          cashJob: true,  onlyCashJob: false },
-  { key: "tasks",      label: "Tasks",     icon: CheckSquare,     cashJob: true,  onlyCashJob: false },
-  { key: "permits",    label: "Permits",   icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
-  { key: "changeorders", label: "Change Orders", icon: FileText,  cashJob: true,  onlyCashJob: false, staffOnly: true },
-  { key: "selections", label: "Selections", icon: Palette,        cashJob: true,  onlyCashJob: false, staffOnly: true },
-  { key: "bidrequests", label: "Bid Requests", icon: Gavel,       cashJob: true,  onlyCashJob: false, staffOnly: true },
-  { key: "documents",  label: "Documents", icon: FolderOpen,      cashJob: true,  onlyCashJob: false },
-  { key: "activity",   label: "Activity",  icon: Clock,           cashJob: true,  onlyCashJob: false },
+  // contractor payments without a dedicated list.
+  { key: "payments",   group: "money",    label: "Payments",    icon: CreditCard,      cashJob: true,  onlyCashJob: false },
+  { key: "draws",      group: "money",    label: "Draws",       icon: Banknote,        cashJob: false, onlyCashJob: false },
+  { key: "loan",       group: "money",    label: "Loan",        icon: Landmark,        cashJob: false, onlyCashJob: false },
+  { key: "cashflow",   group: "money",    label: "Cash Flow",   icon: TrendingUp,      cashJob: true,  onlyCashJob: false },
+
+  { key: "tasks",      group: "work",     label: "Tasks",       icon: CheckSquare,     cashJob: true,  onlyCashJob: false },
+  { key: "permits",    group: "work",     label: "Permits",     icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
+  { key: "bidrequests", group: "work",    label: "Bid Requests", icon: Gavel,          cashJob: true,  onlyCashJob: false, staffOnly: true },
+
+  { key: "selections", group: "client",   label: "Selections",  icon: Palette,         cashJob: true,  onlyCashJob: false, staffOnly: true },
+  { key: "changeorders", group: "client", label: "Change Orders", icon: FileText,      cashJob: true,  onlyCashJob: false, staffOnly: true },
+
+  { key: "documents",  group: "files",    label: "Documents",   icon: FolderOpen,      cashJob: true,  onlyCashJob: false },
+  { key: "photos",     group: "files",    label: "Photos",      icon: Camera,          cashJob: true,  onlyCashJob: false },
 ] as const;
 
 type TabKey = (typeof ALL_TABS)[number]["key"];
@@ -264,89 +270,6 @@ interface Props {
 // ---------------------------------------------------------------------------
 // Tab scroll row with arrow buttons
 // ---------------------------------------------------------------------------
-
-function TabsScrollRow({ activeTab, tabs }: { activeTab: TabKey; tabs: readonly { key: string; label: string; icon: React.ElementType }[] }) {
-  const listRef = useRef<HTMLDivElement>(null);
-  const [canLeft, setCanLeft] = useState(false);
-  const [canRight, setCanRight] = useState(false);
-
-  function checkScroll() {
-    const el = listRef.current;
-    if (!el) return;
-    setCanLeft(el.scrollLeft > 4);
-    setCanRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
-  }
-
-  useEffect(() => {
-    checkScroll();
-    const el = listRef.current;
-    if (!el) return;
-    el.addEventListener("scroll", checkScroll, { passive: true });
-    const ro = new ResizeObserver(checkScroll);
-    ro.observe(el);
-    return () => { el.removeEventListener("scroll", checkScroll); ro.disconnect(); };
-  }, []);
-
-  // Scroll active tab into view whenever it changes
-  useEffect(() => {
-    const el = listRef.current;
-    if (!el) return;
-    const active = el.querySelector('[data-state="active"]') as HTMLElement | null;
-    if (active) active.scrollIntoView({ inline: "nearest", behavior: "smooth" });
-    setTimeout(checkScroll, 300);
-  }, [activeTab]);
-
-  function scroll(dir: "left" | "right") {
-    const el = listRef.current;
-    if (!el) return;
-    el.scrollBy({ left: dir === "left" ? -160 : 160, behavior: "smooth" });
-  }
-
-  return (
-    <div className="relative flex items-end border-b border-gray-200">
-      {/* Left arrow */}
-      <button
-        onClick={() => scroll("left")}
-        aria-label="Scroll tabs left"
-        className={`absolute left-0 z-10 flex items-center justify-center w-10 h-full bg-gradient-to-r from-gray-50 via-gray-50/90 to-transparent transition-opacity ${
-          canLeft ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-      >
-        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow-sm">
-          <ChevronRight className="w-3.5 h-3.5 text-gray-700 rotate-180" />
-        </span>
-      </button>
-
-      {/* Scrollable list */}
-      <div ref={listRef} className="w-full overflow-x-auto scrollbar-hide">
-        <TabsList variant="line" className="justify-start flex-nowrap !h-auto border-b-0 pb-0 w-max min-w-full">
-          {tabs.map((t) => {
-            const Icon = t.icon;
-            return (
-              <TabsTrigger key={t.key} value={t.key} className="flex-shrink-0 flex-grow-0 px-3 py-2">
-                <Icon className="w-4 h-4" />
-                <span>{t.label}</span>
-              </TabsTrigger>
-            );
-          })}
-        </TabsList>
-      </div>
-
-      {/* Right arrow */}
-      <button
-        onClick={() => scroll("right")}
-        aria-label="Scroll tabs right"
-        className={`absolute right-0 z-10 flex items-center justify-center w-10 h-full bg-gradient-to-l from-gray-50 via-gray-50/90 to-transparent transition-opacity ${
-          canRight ? "opacity-100 pointer-events-auto" : "opacity-0 pointer-events-none"
-        }`}
-      >
-        <span className="flex items-center justify-center w-6 h-6 rounded-full bg-white border border-gray-300 shadow-sm">
-          <ChevronRight className="w-3.5 h-3.5 text-gray-700" />
-        </span>
-      </button>
-    </div>
-  );
-}
 
 // ---------------------------------------------------------------------------
 // Activity logger helper
@@ -388,6 +311,7 @@ export default function ProjectDetail({
   const TABS = visibleTabs(ALL_TABS, project.is_cash_job).filter(
     (t) => !("staffOnly" in t && t.staffOnly && readOnly)
   );
+  const TAB_GROUPS = groupTabs(TABS);
   const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
     ? (searchParams.get("tab") as TabKey)
     : "overview";
@@ -695,33 +619,11 @@ export default function ProjectDetail({
           />
         )}
 
-        {/* Quick Actions — staff only */}
+        {/* Edit is a real action; the Task / Change Order / Selection / Bid
+            Request buttons that used to sit here only switched tabs while
+            reading as create actions. The grouped nav reaches them directly. */}
         <EditOnly>
           <div className="mt-4 flex flex-wrap gap-2">
-            <button
-              onClick={() => setActiveTab("tasks")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-            >
-              <CheckSquare className="w-3.5 h-3.5" /> Add Task
-            </button>
-            <button
-              onClick={() => setActiveTab("changeorders")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-            >
-              <FileText className="w-3.5 h-3.5" /> Change Order
-            </button>
-            <button
-              onClick={() => setActiveTab("selections")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-            >
-              <Palette className="w-3.5 h-3.5" /> Selection
-            </button>
-            <button
-              onClick={() => setActiveTab("bidrequests")}
-              className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
-            >
-              <Gavel className="w-3.5 h-3.5" /> Bid Request
-            </button>
             <Link
               href={`/admin/projects/${project.id}/edit`}
               className="inline-flex items-center gap-1.5 px-3 py-1.5 min-h-[44px] text-sm font-medium text-gray-700 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 shadow-sm cursor-pointer transition-colors"
@@ -737,7 +639,11 @@ export default function ProjectDetail({
           onValueChange={(value) => setActiveTab(value as TabKey)}
           className="mt-6"
         >
-          <TabsScrollRow activeTab={activeTab} tabs={TABS} />
+          <ProjectTabNav
+            groups={TAB_GROUPS}
+            activePanel={activeTab}
+            onSelectPanel={(key) => setActiveTab(key as TabKey)}
+          />
 
           <TabsContent value="overview">
             <OverviewTab
