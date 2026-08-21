@@ -91,7 +91,15 @@ const LOAN_ENTRY_META: Record<
     direction: "out",
   },
   fee: { source: "loan_fee", label: "Lender fee", direction: "out" },
-  payoff: { source: "loan_payoff", label: "Loan payoff", direction: "out" },
+  payoff: {
+    source: "loan_payoff",
+    label: "Loan payoff",
+    // Settled by the title company out of the sale proceeds, so it never
+    // moves through Blake's account. The sale event records net_to_seller,
+    // which is already after the payoff — marking this "out" charged him for
+    // it a second time.
+    direction: "neutral",
+  },
 };
 
 /**
@@ -198,9 +206,12 @@ export function buildProjectActivity(opts: {
       });
     }
 
-    // The constituent line items show as "out" relative to the sale
-    // proceeds (they reduce net_to_seller). We surface them so the
-    // audit view explains why net_to_seller is less than sale_price.
+    // The constituent line items explain why net_to_seller is less than
+    // sale_price (or why cash_to_close is what it is). They are NOT separate
+    // cash movements: the headline event already records the net figure, so
+    // these are neutral. Marking them "out" double-counted every one of them
+    // — on Peach Springs that inflated cash-out by $320,152.46, of which
+    // $301,449.36 was the loan payoff already counted from loan_ledger.
     const lines: Array<[string, number | null]> = isSale
       ? [
           ["Seller concessions / buyer credits", s.seller_concessions],
@@ -226,7 +237,7 @@ export function buildProjectActivity(opts: {
         sourceLabel: "Settlement line",
         description: label,
         amount: Number(value),
-        direction: "out",
+        direction: "neutral",
         detail: isSale ? "Sale ALTA" : "Purchase ALTA",
         sourceTable: "project_settlements",
         sourceRowId: s.id,
@@ -247,7 +258,7 @@ export function buildProjectActivity(opts: {
         sourceLabel: "Settlement line",
         description: fee.label || "Other fee",
         amount: Number(fee.amount),
-        direction: "out",
+        direction: "neutral",
         detail: isSale ? "Sale ALTA" : "Purchase ALTA",
         sourceTable: "project_settlements",
         sourceRowId: s.id,

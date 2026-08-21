@@ -276,8 +276,9 @@ export default function CashFlowTab({
         Showing {filtered.length} of {allEvents.length} events. Direction is
         from Blake&apos;s perspective: <span className="text-emerald-700">in</span> =
         money received, <span className="text-rose-700">out</span> = money paid,
-        neutral = lender / loan-funded events that don&apos;t affect his
-        personal cash position.
+        neutral = loan-funded events and settlement line items already
+        included in the sale wire, so they don&apos;t move his cash a second
+        time.
       </p>
 
       {/* Event list */}
