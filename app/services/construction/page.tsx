@@ -1574,7 +1574,7 @@ export default function ConstructionPage() {
         heading="What our clients say"
         subheading="Hand-picked words from the families and developers we've built for across Southern Utah."
       />
-      <Footer />
+      <Footer socials="construction" />
     </>
   );
 }

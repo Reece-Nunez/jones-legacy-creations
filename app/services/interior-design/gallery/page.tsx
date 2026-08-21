@@ -463,7 +463,7 @@ function GalleryContent() {
         )}
       </AnimatePresence>
 
-      <Footer />
+      <Footer socials="interior" />
     </>
   );
 }

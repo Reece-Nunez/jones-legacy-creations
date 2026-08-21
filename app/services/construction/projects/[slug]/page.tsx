@@ -79,7 +79,7 @@ export default async function ShowcaseProjectPage({ params }: ShowcasePageProps)
           <ShowcaseDetail showcase={showcase} photos={photos} />
         </div>
       </main>
-      <Footer />
+      <Footer socials="construction" />
     </>
   );
 }

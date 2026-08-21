@@ -1,6 +1,15 @@
 import Link from "next/link";
 import Image from "next/image";
+import { Instagram, Facebook } from "lucide-react";
 import { NewsletterSignup } from "@/components/NewsletterSignup";
+import {
+  socialsFor,
+  SOCIAL_BRANDS,
+  SOCIAL_BRAND_LABELS,
+  type SocialAccount,
+  type SocialBrand,
+  type SocialPlatform,
+} from "@/lib/socials";
 
 /* Hallmark · genre: editorial · component: footer · archetype: Ft4 Dense colophon
  * design-system: design.md · designed-as-app
@@ -8,14 +17,52 @@ import { NewsletterSignup } from "@/components/NewsletterSignup";
  * A magazine-style colophon: wordmark + tagline above a hairline rule, then
  * three short columns (Services · Company · Direct) below, then a fine-print
  * row at the bottom. Replaces the 4-column AI footer template — no Resources
- * / Legal / Products column rhythm, no social-icon row, no centered branding.
+ * / Legal / Products column rhythm, no centered branding.
  *
- * Server Component on purpose — no useState / pathname / handlers needed.
- * Hover color flips are CSS-only via Tailwind hover: arbitrary-value classes,
- * so the whole footer can be statically rendered.
+ * The social block is a compact icon row (this reverses an earlier "no
+ * social-icon row" rule) and is brand-aware: pass `socials` to show only that
+ * side of the business, e.g. <Footer socials="interior" /> on the interior
+ * pages. Omitting it shows everything, grouped by brand — which is what the
+ * home, about and contact pages want, and Real Estate, which has no accounts
+ * of its own.
+ *
+ * Still a Server Component on purpose — the brand arrives as a prop rather
+ * than from usePathname, so no useState / pathname / handlers are needed and
+ * the whole footer stays statically renderable.
  */
 
-export function Footer() {
+const PLATFORM_ICONS: Record<SocialPlatform, React.ElementType> = {
+  instagram: Instagram,
+  facebook: Facebook,
+};
+
+/** Icon-only links; the accessible name comes from the account's label. */
+function SocialIconRow({ accounts }: { accounts: SocialAccount[] }) {
+  return (
+    <ul className="flex items-center gap-2">
+      {accounts.map((account) => {
+        const Icon = PLATFORM_ICONS[account.platform];
+        return (
+          <li key={account.href}>
+            <a
+              href={account.href}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={account.label}
+              title={account.label}
+              className="inline-flex items-center justify-center w-10 h-10 rounded-full text-[var(--hm-ink-2)] hover:text-[var(--hm-accent)] hover:border-[var(--hm-accent)] transition-colors duration-200"
+              style={{ border: "1px solid var(--hm-rule)" }}
+            >
+              <Icon aria-hidden="true" className="w-4 h-4" />
+            </a>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+export function Footer({ socials }: { socials?: SocialBrand }) {
   const currentYear = new Date().getFullYear();
 
   return (
@@ -126,28 +173,28 @@ export function Footer() {
               >
                 Social
               </p>
-              <ul className="space-y-1">
-                <li>
-                  <ColophonExternal href="https://www.instagram.com/jonescustomhomes/">
-                    Instagram · Custom Homes
-                  </ColophonExternal>
-                </li>
-                <li>
-                  <ColophonExternal href="https://www.instagram.com/interiors.by.jch/">
-                    Instagram · Interior Design
-                  </ColophonExternal>
-                </li>
-                <li>
-                  <ColophonExternal href="https://www.facebook.com/profile.php?id=61593245056980">
-                    Facebook · Custom Homes
-                  </ColophonExternal>
-                </li>
-                <li>
-                  <ColophonExternal href="https://www.facebook.com/profile.php?id=61575767564467">
-                    Facebook · Interior Design
-                  </ColophonExternal>
-                </li>
-              </ul>
+              {socials ? (
+                <SocialIconRow accounts={socialsFor(socials)} />
+              ) : (
+                // Unbranded pages show both sets. The brand heading is what
+                // keeps two Instagram icons from being indistinguishable.
+                <div className="space-y-3">
+                  {SOCIAL_BRANDS.map((brand) => (
+                    <div key={brand}>
+                      <p
+                        className="font-sans mb-1.5"
+                        style={{
+                          fontSize: "12px",
+                          color: "var(--hm-ink-3)",
+                        }}
+                      >
+                        {SOCIAL_BRAND_LABELS[brand]}
+                      </p>
+                      <SocialIconRow accounts={socialsFor(brand)} />
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </ColophonColumn>
         </div>
@@ -255,25 +302,3 @@ function ColophonStatic({ children }: { children: React.ReactNode }) {
   );
 }
 
-function ColophonExternal({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
-  return (
-    <a
-      href={href}
-      target="_blank"
-      rel="noopener noreferrer"
-      className="inline-block font-sans text-[var(--hm-ink-2)] hover:text-[var(--hm-accent)] transition-colors duration-200"
-      style={{
-        fontSize: "var(--hm-text-body)",
-        lineHeight: 1.5,
-      }}
-    >
-      {children}
-    </a>
-  );
-}

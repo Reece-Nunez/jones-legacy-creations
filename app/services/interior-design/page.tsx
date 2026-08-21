@@ -927,7 +927,7 @@ export default function InteriorDesignPage() {
         heading="What our clients say"
         subheading="Spaces and stagings that have helped homeowners across Southern Utah."
       />
-      <Footer />
+      <Footer socials="interior" />
     </>
   );
 }

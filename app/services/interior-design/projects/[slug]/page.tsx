@@ -81,7 +81,7 @@ export default async function InteriorDesignShowcasePage({
           <ShowcaseDetail showcase={showcase} photos={photos} />
         </div>
       </main>
-      <Footer />
+      <Footer socials="interior" />
     </>
   );
 }
