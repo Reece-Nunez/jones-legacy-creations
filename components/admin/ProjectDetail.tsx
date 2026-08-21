@@ -109,6 +109,7 @@ import {
   formatDate as sharedFormatDate,
 } from "@/lib/formatters";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
+import { visibleTabs } from "@/lib/projects/tabs";
 import { confirmAction } from "@/lib/confirmAction";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
@@ -215,7 +216,12 @@ function EditOnly({ children }: { children: React.ReactNode }) {
 const ALL_TABS = [
   { key: "overview",   label: "Overview",  icon: LayoutDashboard, cashJob: true,  onlyCashJob: false },
   { key: "photos",     label: "Photos",    icon: Camera,          cashJob: true,  onlyCashJob: false },
-  { key: "payments",   label: "Payments",  icon: CreditCard,      cashJob: true,  onlyCashJob: true  },
+  // Payments is NOT cash-job-only. Financed jobs pay subs directly and then
+  // roll those payments into a draw: 24 of Peach Springs' 31 payments are
+  // draw-linked and 7 are standalone. Hiding the tab there left 86% of all
+  // contractor payments without a dedicated list — reachable only as "Not on
+  // a draw yet" inside Draws, or "Unassigned" inside Budget.
+  { key: "payments",   label: "Payments",  icon: CreditCard,      cashJob: true,  onlyCashJob: false },
   { key: "draws",      label: "Draws",     icon: Banknote,        cashJob: false, onlyCashJob: false },
   { key: "loan",       label: "Loan",      icon: Landmark,        cashJob: false, onlyCashJob: false },
   { key: "cashflow",   label: "Cash Flow", icon: TrendingUp,      cashJob: true,  onlyCashJob: false },
@@ -379,10 +385,9 @@ export default function ProjectDetail({
   const canEdit = !readOnly;
   const router = useRouter();
   const searchParams = useSearchParams();
-  const TABS = (project.is_cash_job
-    ? ALL_TABS.filter((t) => t.cashJob)
-    : ALL_TABS.filter((t) => !t.onlyCashJob)
-  ).filter((t) => !("staffOnly" in t && t.staffOnly && readOnly));
+  const TABS = visibleTabs(ALL_TABS, project.is_cash_job).filter(
+    (t) => !("staffOnly" in t && t.staffOnly && readOnly)
+  );
   const initialTab = TABS.some((t) => t.key === searchParams.get("tab"))
     ? (searchParams.get("tab") as TabKey)
     : "overview";
