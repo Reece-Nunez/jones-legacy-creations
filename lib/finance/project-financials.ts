@@ -113,6 +113,44 @@ export function resolveFinancingType(project: Project): FinancingType {
   return "external_loan";
 }
 
+export type SaleSettlementCosts = Pick<
+  ProjectSettlement,
+  | "seller_concessions"
+  | "title_insurance"
+  | "escrow_fee"
+  | "recording_fees"
+  | "prorated_taxes"
+  | "other_fees"
+>;
+
+/**
+ * Seller-side closing costs from a recorded settlement (the ALTA).
+ *
+ * Exported because more than one surface needs the number: the profit formula
+ * consumes it, and the project edit form has to show operators that their
+ * manual `sale_closing_costs` estimate has been superseded. Computing it twice
+ * is how the manual field and the settlement drifted $15,000 apart on Peach
+ * Springs — the estimate omitted the seller concession.
+ */
+export function saleClosingCostsFromSettlement(
+  settlement: SaleSettlementCosts,
+): number {
+  const otherFeesSum = Array.isArray(settlement.other_fees)
+    ? (settlement.other_fees as SettlementOtherFee[]).reduce(
+        (acc, f) => acc + Number(f?.amount || 0),
+        0,
+      )
+    : 0;
+  return (
+    Number(settlement.seller_concessions ?? 0) +
+    Number(settlement.title_insurance ?? 0) +
+    Number(settlement.escrow_fee ?? 0) +
+    Number(settlement.recording_fees ?? 0) +
+    Number(settlement.prorated_taxes ?? 0) +
+    otherFeesSum
+  );
+}
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 /**
@@ -233,20 +271,7 @@ export function computeProjectFinancials(
   const hasSaleSettlement = projSaleSettlements.length > 0;
   let saleClosingCosts: number;
   if (hasSaleSettlement) {
-    const s = projSaleSettlements[0];
-    const otherFeesSum = Array.isArray(s.other_fees)
-      ? (s.other_fees as SettlementOtherFee[]).reduce(
-          (acc, f) => acc + Number(f?.amount || 0),
-          0,
-        )
-      : 0;
-    saleClosingCosts =
-      Number(s.seller_concessions ?? 0) +
-      Number(s.title_insurance ?? 0) +
-      Number(s.escrow_fee ?? 0) +
-      Number(s.recording_fees ?? 0) +
-      Number(s.prorated_taxes ?? 0) +
-      otherFeesSum;
+    saleClosingCosts = saleClosingCostsFromSettlement(projSaleSettlements[0]);
   } else {
     saleClosingCosts = Number(project.sale_closing_costs ?? 0);
   }

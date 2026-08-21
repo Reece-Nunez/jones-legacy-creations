@@ -62,9 +62,19 @@ type ProjectFormData = z.infer<typeof projectSchema>;
 
 interface ProjectFormProps {
   project?: Project;
+  /**
+   * Seller-side closing costs derived from a recorded sale settlement, or
+   * null when none exists. When set, it supersedes the manual estimate in the
+   * profit formula, so the field below goes read-only rather than pretending
+   * to accept input.
+   */
+  settlementClosingCosts?: number | null;
 }
 
-export default function ProjectForm({ project }: ProjectFormProps) {
+export default function ProjectForm({
+  project,
+  settlementClosingCosts = null,
+}: ProjectFormProps) {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [financingType, setFinancingType] = useState<"external_loan" | "seller_financed" | "cash">(
@@ -198,7 +208,7 @@ export default function ProjectForm({ project }: ProjectFormProps) {
   const onSubmit = async (data: ProjectFormData) => {
     // Required-when-sale-price-set check. Avoids inflated projected_profit
     // for projects with sale_price but no recorded closing costs.
-    if (data.sale_price && !data.sale_closing_costs) {
+    if (data.sale_price && !data.sale_closing_costs && settlementClosingCosts === null) {
       toast.error(
         "Sale Closing Costs is required when Sale Price is set. " +
           "Use an estimate (~3-4% of sale price) if you don't have actuals yet.",
@@ -860,9 +870,19 @@ export default function ProjectForm({ project }: ProjectFormProps) {
               id="sale_closing_costs"
               type="text"
               inputMode="decimal"
-              value={watch("sale_closing_costs") || ""}
+              value={
+                settlementClosingCosts !== null
+                  ? formatCurrencyInput(settlementClosingCosts.toFixed(2))
+                  : watch("sale_closing_costs") || ""
+              }
               onChange={(e) => setValue("sale_closing_costs", formatCurrencyInput(e.target.value))}
-              className={inputClassName}
+              readOnly={settlementClosingCosts !== null}
+              disabled={settlementClosingCosts !== null}
+              className={
+                settlementClosingCosts !== null
+                  ? `${inputClassName} bg-gray-100 text-gray-600 cursor-not-allowed`
+                  : inputClassName
+              }
               placeholder={
                 salePrice
                   ? formatCurrencyInput((parseFloat(unformatCurrency(salePrice)) * 0.035).toFixed(2)) +
@@ -870,10 +890,18 @@ export default function ProjectForm({ project }: ProjectFormProps) {
                   : "$0.00"
               }
             />
-            <p className="mt-1 text-xs text-gray-500">
-              Title, escrow, recording, prorated taxes, seller concessions.
-              Subtracted from Projected Profit.
-            </p>
+            {settlementClosingCosts !== null ? (
+              <p className="mt-1 text-xs text-gray-500">
+                Taken from the recorded sale settlement, which supersedes any
+                estimate here. Update the settlement to change it.
+              </p>
+            ) : (
+              <p className="mt-1 text-xs text-gray-500">
+                Title, escrow, recording, prorated taxes, seller concessions.
+                Subtracted from Projected Profit. Replaced automatically once a
+                sale settlement is recorded.
+              </p>
+            )}
           </div>
 
           {/* Lender Name */}

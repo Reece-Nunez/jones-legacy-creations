@@ -294,8 +294,33 @@ export default function ProjectDetail({
   }, [project.id, documents.length, budgetLineItems.length]);
 
   // ---- financial calculations -------------------------------------------
+  // ---- loan / profit calculations ----------------------------------------
+  // Everything below comes from the canonical helper. Do NOT reintroduce
+  // local math here — the financials page, the dashboard, and this page
+  // must all agree, and that only happens when they share one calculator.
+  // See lib/finance/project-financials.ts for the formula + rationale.
+  const hasLoanFields = !!(project.sale_price && project.loan_amount);
+
+  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger, settlements);
+  const {
+    salePrice,
+    loanAmount,
+    downPayment,
+    drawsFunded,
+    originationFeePercent,
+    originationFee,
+    interestRate,
+    accruedInterest,
+    saleClosingCosts,
+    hasSaleSettlement,
+    miscCharges: miscChargesTotal,
+    hasLoanLedger,
+    projectedProfit,
+    totalCosts,
+  } = pf;
+  const profitMargin = pf.profitMargin * 100;
+
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
-  const totalCosts = payments.reduce((s, p) => s + p.amount, 0);
 
   // ---- cash job markup ---------------------------------------------------
   const markupPercent = project.markup_percent ?? 0;
@@ -373,31 +398,6 @@ export default function ProjectDetail({
       Array.from(spentByLine.values()).reduce((s, v) => s + v, 0) + unmatchedTotal
     );
   })();
-
-  // ---- loan / profit calculations ----------------------------------------
-  // Everything below comes from the canonical helper. Do NOT reintroduce
-  // local math here — the financials page, the dashboard, and this page
-  // must all agree, and that only happens when they share one calculator.
-  // See lib/finance/project-financials.ts for the formula + rationale.
-  const hasLoanFields = !!(project.sale_price && project.loan_amount);
-
-  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger, settlements);
-  const {
-    salePrice,
-    loanAmount,
-    downPayment,
-    drawsFunded,
-    originationFeePercent,
-    originationFee,
-    interestRate,
-    accruedInterest,
-    saleClosingCosts,
-    hasSaleSettlement,
-    miscCharges: miscChargesTotal,
-    hasLoanLedger,
-    projectedProfit,
-  } = pf;
-  const profitMargin = pf.profitMargin * 100;
 
   // ---- generic mutation helper -------------------------------------------
   async function mutate(
@@ -534,18 +534,40 @@ export default function ProjectDetail({
               label="Costs"
               value={totalCosts}
             />
-            <FinancialCard
-              icon={
-                contractValue - totalCosts >= 0 ? (
-                  <TrendingUp className="w-4 h-4 text-green-500" />
-                ) : (
-                  <TrendingDown className="w-4 h-4 text-red-500" />
-                )
-              }
-              label="Profit"
-              value={contractValue - totalCosts}
-              colored
-            />
+            {/* Once there's a sale price we can compute the real, financed
+               *  figure, so show exactly what the Financial Summary shows.
+               *  Before that, projectedProfit is just costs-so-far negated,
+               *  which is alarming and useless — fall back to the gross number
+               *  and label it honestly. Never two numbers called "Profit". */}
+            {salePrice > 0 ? (
+              <FinancialCard
+                icon={
+                  projectedProfit >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-500" />
+                  )
+                }
+                label="Projected Profit"
+                value={projectedProfit}
+                caption="After financing and closing costs"
+                colored
+              />
+            ) : (
+              <FinancialCard
+                icon={
+                  contractValue - totalCosts >= 0 ? (
+                    <TrendingUp className="w-4 h-4 text-green-500" />
+                  ) : (
+                    <TrendingDown className="w-4 h-4 text-red-500" />
+                  )
+                }
+                label="Gross Profit"
+                value={contractValue - totalCosts}
+                caption="Before financing costs"
+                colored
+              />
+            )}
           </div>
         )}
 
@@ -744,11 +766,14 @@ function FinancialCard({
   label,
   value,
   colored,
+  caption,
 }: {
   icon: React.ReactNode;
   label: string;
   value: number;
   colored?: boolean;
+  /** One line under the number saying what is and isn't included. */
+  caption?: string;
 }) {
   const colorClass = colored
     ? value >= 0
@@ -766,6 +791,7 @@ function FinancialCard({
         <p className={`text-lg sm:text-xl font-bold tabular-nums ${colorClass}`}>
           {fmt(value)}
         </p>
+        {caption && <p className="mt-0.5 text-[11px] text-gray-500">{caption}</p>}
       </CardContent>
     </ShadCard>
   );
