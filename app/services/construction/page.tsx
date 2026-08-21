@@ -16,7 +16,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Instagram, Phone, ChevronDown, Building2 } from "lucide-react";
+import { Instagram, Facebook, Phone, ChevronDown, Building2 } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 
@@ -1531,22 +1531,40 @@ export default function ConstructionPage() {
             >
               Follow along
             </p>
-            <a
-              href="https://www.instagram.com/jonescustomhomes/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 font-sans transition-colors"
-              style={{
-                fontSize: "var(--hm-text-lede)",
-                color: "var(--hm-ink)",
-                borderBottom: "1px solid var(--hm-rule-thick)",
-                paddingBottom: "2px",
-              }}
-              aria-label="Follow Jones Custom Homes on Instagram"
-            >
-              <Instagram aria-hidden="true" className="w-4 h-4" />
-              Instagram · @jonescustomhomes
-            </a>
+            <div className="flex flex-wrap items-center gap-x-8 gap-y-3">
+              <a
+                href="https://www.instagram.com/jonescustomhomes/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-sans transition-colors"
+                style={{
+                  fontSize: "var(--hm-text-lede)",
+                  color: "var(--hm-ink)",
+                  borderBottom: "1px solid var(--hm-rule-thick)",
+                  paddingBottom: "2px",
+                }}
+                aria-label="Follow Jones Custom Homes on Instagram"
+              >
+                <Instagram aria-hidden="true" className="w-4 h-4" />
+                Instagram · @jonescustomhomes
+              </a>
+              <a
+                href="https://www.facebook.com/profile.php?id=61593245056980"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 font-sans transition-colors"
+                style={{
+                  fontSize: "var(--hm-text-lede)",
+                  color: "var(--hm-ink)",
+                  borderBottom: "1px solid var(--hm-rule-thick)",
+                  paddingBottom: "2px",
+                }}
+                aria-label="Follow Jones Custom Homes on Facebook"
+              >
+                <Facebook aria-hidden="true" className="w-4 h-4" />
+                Facebook · Jones Custom Homes
+              </a>
+            </div>
           </div>
         </section>
       </main>

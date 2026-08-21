@@ -24,6 +24,7 @@ export function OrganizationJsonLd() {
     sameAs: [
       "https://www.instagram.com/jonescustomhomes/",
       "https://www.instagram.com/interiors.by.jch/",
+      "https://www.facebook.com/profile.php?id=61593245056980",
       "https://www.facebook.com/profile.php?id=61575767564467",
     ],
     hasOfferCatalog: {

@@ -138,6 +138,11 @@ export function Footer() {
                   </ColophonExternal>
                 </li>
                 <li>
+                  <ColophonExternal href="https://www.facebook.com/profile.php?id=61593245056980">
+                    Facebook · Custom Homes
+                  </ColophonExternal>
+                </li>
+                <li>
                   <ColophonExternal href="https://www.facebook.com/profile.php?id=61575767564467">
                     Facebook · Interior Design
                   </ColophonExternal>
