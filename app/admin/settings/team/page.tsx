@@ -2,7 +2,6 @@
 
 import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import Image from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
@@ -26,6 +25,7 @@ import toast from "react-hot-toast";
 import { ROLE_OPTIONS, getRoleLabel, getRole, isContractor } from "@/lib/roles";
 import { formatDate as fmtDate } from "@/lib/formatters";
 import { confirmAction } from "@/lib/confirmAction";
+import { UserAvatar } from "@/components/admin/UserAvatar";
 
 interface TeamMember {
   id: string;
@@ -46,17 +46,6 @@ interface ProjectOption {
 }
 
 type UserFilter = "all" | "staff" | "contractor";
-
-function getInitials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "?"
-  );
-}
 
 /** One labelled field in a member row. Renders an em dash when unset so a
  *  missing phone number is visibly missing rather than silently absent. */
@@ -638,23 +627,12 @@ export default function UsersAndAccessPage() {
                     /* View mode */
                     <div className="flex items-center gap-4">
                       {/* Avatar */}
-                      {member.avatar_url ? (
-                        <Image
-                          src={member.avatar_url}
-                          alt={member.display_name}
-                          width={40}
-                          height={40}
-                          className="w-10 h-10 rounded-full object-cover border border-gray-200 flex-shrink-0"
-                        />
-                      ) : (
-                        <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0 ${
-                            contractor ? "bg-orange-500" : "bg-slate-800"
-                          }`}
-                        >
-                          {getInitials(member.display_name)}
-                        </div>
-                      )}
+                      <UserAvatar
+                        name={member.display_name || member.email}
+                        avatarUrl={member.avatar_url}
+                        tone={contractor ? "contractor" : "staff"}
+                        className="shrink-0"
+                      />
 
                       {/* Info */}
                       <div className="flex-1 min-w-0">

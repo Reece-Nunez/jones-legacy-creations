@@ -21,6 +21,9 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
   const [offset, setOffset] = useState({ x: 0, y: 0 });
   const [dragging, setDragging] = useState(false);
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
+  // Avatars are Google OAuth URLs that can 404 later; without this the page
+  // shows a broken-image icon instead of the initials placeholder.
+  const [imageFailed, setImageFailed] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -260,12 +263,13 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative group">
-        {currentUrl ? (
+        {currentUrl && !imageFailed ? (
           <NextImage
             src={currentUrl}
             alt="Avatar"
             width={80}
             height={80}
+            onError={() => setImageFailed(true)}
             className="w-20 h-20 rounded-full object-cover border-2 border-gray-200"
           />
         ) : (

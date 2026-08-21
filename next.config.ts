@@ -16,11 +16,16 @@ import type { NextConfig } from "next";
  *     frame). Missing these would break every public lead form.
  *   - <project>.supabase.co (https + wss) → browser Supabase client + storage
  *   - jones-legacy-creations.s3…amazonaws.com → project/listing photos
+ *   - lh3.googleusercontent.com → Google OAuth profile photos (user avatars)
  * If a third party misbehaves after deploy, switch the header key below to
  * "Content-Security-Policy-Report-Only" to observe violations without
  * enforcing.
  */
 const SUPABASE_ORIGIN = "https://rvyummgsvggjqtjbtqfw.supabase.co";
+// Staff sign in with Google, and Supabase copies the Google profile photo into
+// user_profiles.avatar_url. Without this the badge is broken for everyone who
+// has one: next/image refuses an unconfigured hostname and CSP blocks the load.
+const GOOGLE_AVATAR_ORIGIN = "https://lh3.googleusercontent.com";
 const contentSecurityPolicy = [
   "default-src 'self'",
   "base-uri 'self'",
@@ -30,7 +35,7 @@ const contentSecurityPolicy = [
   "upgrade-insecure-requests",
   "script-src 'self' 'unsafe-inline' https://www.googletagmanager.com https://connect.facebook.net https://www.google.com https://www.gstatic.com",
   "style-src 'self' 'unsafe-inline'",
-  `img-src 'self' data: blob: https://jones-legacy-creations.s3.us-east-1.amazonaws.com ${SUPABASE_ORIGIN} https://www.googletagmanager.com https://www.google-analytics.com https://www.facebook.com https://www.google.com`,
+  `img-src 'self' data: blob: https://jones-legacy-creations.s3.us-east-1.amazonaws.com ${SUPABASE_ORIGIN} ${GOOGLE_AVATAR_ORIGIN} https://www.googletagmanager.com https://www.google-analytics.com https://www.facebook.com https://www.google.com`,
   "font-src 'self' data:",
   `connect-src 'self' https://www.google-analytics.com https://*.google-analytics.com https://*.analytics.google.com https://www.googletagmanager.com https://connect.facebook.net https://www.facebook.com https://www.google.com ${SUPABASE_ORIGIN} wss://rvyummgsvggjqtjbtqfw.supabase.co`,
   // Supabase origin is required because /api/admin/files/download 302-redirects
@@ -60,6 +65,13 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "jones-legacy-creations.s3.us-east-1.amazonaws.com",
         pathname: "/about-us/**",
+      },
+      {
+        // Google OAuth profile photos, stored on user_profiles.avatar_url when
+        // staff sign in with Google.
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com",
+        pathname: "/a/**",
       },
       {
         // Public avatars bucket
