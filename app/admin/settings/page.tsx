@@ -475,7 +475,12 @@ function SettingsPageInner() {
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">State</label>
-            <Input value="UT" disabled className="bg-gray-50" />
+            <Input
+              value={settings.company_state ?? ""}
+              onChange={(e) => update("company_state", e.target.value.toUpperCase().slice(0, 2))}
+              placeholder="UT"
+              maxLength={2}
+            />
           </div>
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-1">ZIP</label>

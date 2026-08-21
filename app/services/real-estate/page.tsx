@@ -35,6 +35,11 @@ const SOUTHERN_UTAH_CITIES = [
   { name: "Cedar City", state: "UT", zipCode: "84720" },
 ];
 
+// Escape hatch for the closed city list. JLC took on work outside Southern
+// Utah, and this dropdown was the only way to populate city/state/zip — a
+// lead from anywhere else could not submit the form at all.
+const OTHER_CITY = "__other__";
+
 // Extended type for form with honeypot field
 type RealEstateFormWithHoneypot = RealEstateFormData & { honeypot?: string };
 
@@ -66,11 +71,26 @@ export default function RealEstatePage() {
     resolver: zodResolver(realEstateFormSchema),
   });
 
+  // The <select> is driven locally rather than registered to the form, so
+  // "Other" can mean "let them type it" instead of being a literal city value.
+  const [cityChoice, setCityChoice] = useState("");
+  const isOtherCity = cityChoice === OTHER_CITY;
+
   const handleCityChange = (cityName: string) => {
+    setCityChoice(cityName);
+
+    if (cityName === OTHER_CITY) {
+      // Clear the Utah autofill so the client's own entries aren't shadowed.
+      setValue("preferredCity", "");
+      setValue("preferredState", "");
+      setValue("preferredZipCode", "");
+      return;
+    }
+
     const city = SOUTHERN_UTAH_CITIES.find(c => c.name === cityName);
     if (city) {
-      setValue("preferredCity", city.name);
-      setValue("preferredState", city.state);
+      setValue("preferredCity", city.name, { shouldValidate: true });
+      setValue("preferredState", city.state, { shouldValidate: true });
       setValue("preferredZipCode", city.zipCode);
     }
   };
@@ -596,15 +616,27 @@ export default function RealEstatePage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <Select
                   label="Preferred City"
-                  {...register("preferredCity")}
-                  error={errors.preferredCity?.message}
-                  options={SOUTHERN_UTAH_CITIES.map(city => ({
-                    value: city.name,
-                    label: city.name
-                  }))}
+                  value={cityChoice}
                   onChange={(e) => handleCityChange(e.target.value)}
+                  error={isOtherCity ? undefined : errors.preferredCity?.message}
+                  options={[
+                    ...SOUTHERN_UTAH_CITIES.map(city => ({
+                      value: city.name,
+                      label: city.name
+                    })),
+                    { value: OTHER_CITY, label: "Other / not listed" },
+                  ]}
                   required
                 />
+                {isOtherCity && (
+                  <Input
+                    label="City"
+                    {...register("preferredCity")}
+                    error={errors.preferredCity?.message}
+                    placeholder="City"
+                    required
+                  />
+                )}
                 <Input
                   label="Preferred Neighborhood"
                   {...register("preferredNeighborhood")}
@@ -614,18 +646,20 @@ export default function RealEstatePage() {
                   label="State"
                   {...register("preferredState")}
                   error={errors.preferredState?.message}
-                  readOnly
-                  disabled
-                  className="bg-gray-100"
+                  readOnly={!isOtherCity}
+                  disabled={!isOtherCity}
+                  placeholder={isOtherCity ? "e.g. WY" : undefined}
+                  maxLength={2}
+                  className={isOtherCity ? "" : "bg-gray-100"}
                   required
                 />
                 <Input
                   label="Zip Code"
                   {...register("preferredZipCode")}
                   error={errors.preferredZipCode?.message}
-                  readOnly
-                  disabled
-                  className="bg-gray-100"
+                  readOnly={!isOtherCity}
+                  disabled={!isOtherCity}
+                  className={isOtherCity ? "" : "bg-gray-100"}
                 />
               </div>
             </div>

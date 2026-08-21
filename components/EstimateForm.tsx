@@ -616,10 +616,11 @@ export default function EstimateForm() {
                         <input
                           id="state"
                           type="text"
-                          value="UT"
-                          readOnly
-                          disabled
-                          className="w-full rounded-lg border border-gray-200 bg-gray-100 px-4 py-3 text-gray-500 cursor-not-allowed"
+                          value={state}
+                          onChange={(e) => setState(e.target.value.toUpperCase().slice(0, 2))}
+                          placeholder="State"
+                          maxLength={2}
+                          className="w-full rounded-lg border border-gray-300 px-4 py-3 text-gray-900 placeholder-gray-400 focus:border-black focus:outline-none focus:ring-1 focus:ring-black"
                         />
                       </div>
                       <div>

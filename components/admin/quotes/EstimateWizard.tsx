@@ -296,16 +296,19 @@ export function EstimateWizard() {
                 formData={formData}
                 onChange={handleChange}
               />
-              {/* Locked state field */}
+              {/* Editable since JLC took on work outside Utah; defaults to UT. */}
               <div className="mt-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
+                <label htmlFor="estimate-state" className="block text-sm font-medium text-gray-700 mb-1">
                   State
                 </label>
                 <input
+                  id="estimate-state"
                   type="text"
-                  value="Utah (UT)"
-                  disabled
-                  className="w-full px-3 py-2 text-sm bg-gray-100 border border-gray-200 rounded text-gray-500 cursor-not-allowed"
+                  value={(formData.state as string | undefined) ?? ""}
+                  onChange={(e) => handleChange("state", e.target.value.toUpperCase().slice(0, 2))}
+                  placeholder="UT"
+                  maxLength={2}
+                  className="w-full px-3 py-2 text-sm bg-white border border-gray-300 rounded text-gray-900 focus:outline-none focus:ring-1 focus:ring-indigo-300"
                 />
               </div>
             </div>
