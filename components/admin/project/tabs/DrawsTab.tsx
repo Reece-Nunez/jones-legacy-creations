@@ -19,6 +19,7 @@ import {
   formatCurrency as fmt, formatCurrencyInput, unformatCurrency,
 } from "@/lib/formatters";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
+import { sumDrawAmounts } from "@/lib/finance/project-financials";
 import { confirmAction } from "@/lib/confirmAction";
 import { parseDrawFilename } from "@/lib/parse-draw-filename";
 import {
@@ -696,7 +697,7 @@ export function DrawsTab({
   }, {});
 
   // Financial summaries
-  const totalDraws = draws.reduce((s, d) => s + d.amount, 0);
+  const totalDraws = sumDrawAmounts(draws);
   const fundedAmount = draws
     .filter((d) => d.status === "funded")
     .reduce((s, d) => s + d.amount, 0);

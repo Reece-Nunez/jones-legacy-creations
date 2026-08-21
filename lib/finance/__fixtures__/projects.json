@@ -1,0 +1,478 @@
+{
+  "projects": [
+    {
+      "id": "730df9a0-a108-4d46-92f4-d7615b959384",
+      "name": "Chelsey Lot 42",
+      "status": "approved",
+      "financing_type": "external_loan",
+      "is_cash_job": false,
+      "sale_price": 650000,
+      "loan_amount": 400000,
+      "down_payment": 100000,
+      "origination_fee_percent": 2,
+      "interest_rate": 8.75,
+      "sale_closing_costs": null,
+      "loan_start_date": null,
+      "end_date": null
+    },
+    {
+      "id": "1890697f-5bdf-4a1a-a4d5-c68b7038a799",
+      "name": "Desert Color",
+      "status": "completed",
+      "financing_type": "cash",
+      "is_cash_job": true,
+      "sale_price": null,
+      "loan_amount": null,
+      "down_payment": null,
+      "origination_fee_percent": 2,
+      "interest_rate": 8.75,
+      "sale_closing_costs": null,
+      "loan_start_date": null,
+      "end_date": null
+    },
+    {
+      "id": "2e3dbdf2-4faf-4c2c-a002-8fcdceca2295",
+      "name": "Dixie Springs",
+      "status": "in_progress",
+      "financing_type": "external_loan",
+      "is_cash_job": false,
+      "sale_price": null,
+      "loan_amount": null,
+      "down_payment": null,
+      "origination_fee_percent": 2,
+      "interest_rate": 8.75,
+      "sale_closing_costs": null,
+      "loan_start_date": null,
+      "end_date": "2026-06-01"
+    },
+    {
+      "id": "4ce5607b-1772-42a8-9bff-a79f68b0e664",
+      "name": "Gunlock ",
+      "status": "in_progress",
+      "financing_type": "external_loan",
+      "is_cash_job": false,
+      "sale_price": null,
+      "loan_amount": null,
+      "down_payment": null,
+      "origination_fee_percent": 2,
+      "interest_rate": 8.75,
+      "sale_closing_costs": null,
+      "loan_start_date": null,
+      "end_date": null
+    },
+    {
+      "id": "43fd36c9-6100-4986-8335-25e1c9c1987d",
+      "name": "Niki Miles",
+      "status": "approved",
+      "financing_type": "external_loan",
+      "is_cash_job": false,
+      "sale_price": null,
+      "loan_amount": null,
+      "down_payment": null,
+      "origination_fee_percent": 2,
+      "interest_rate": 8.75,
+      "sale_closing_costs": null,
+      "loan_start_date": null,
+      "end_date": null
+    },
+    {
+      "id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "name": "Peach Springs",
+      "status": "completed",
+      "financing_type": "external_loan",
+      "is_cash_job": false,
+      "sale_price": 561000,
+      "loan_amount": 350000,
+      "down_payment": 81909.3,
+      "origination_fee_percent": 2,
+      "interest_rate": 8.75,
+      "sale_closing_costs": 3703.1,
+      "loan_start_date": "2025-12-17",
+      "end_date": "2026-05-15"
+    }
+  ],
+  "payments": [
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 2342.5,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 3212.59,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 10423.87,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 1099.79,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 13905,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 5925,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 12688.82,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 10490.17,
+      "status": "reimbursed",
+      "draw_request_id": "62435144-a258-4357-b164-d2fa1467b0a8"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 1240,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 19066,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 3480,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 14974,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 3657.17,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 10640,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 6317.12,
+      "status": "reimbursed",
+      "draw_request_id": "38746ee0-2edf-4cc9-8709-c3577aa0b7bf"
+    },
+    {
+      "project_id": "4ce5607b-1772-42a8-9bff-a79f68b0e664",
+      "amount": 2306,
+      "status": "pending",
+      "draw_request_id": "5b9f7556-2fad-4fdd-85b7-76b04823a6a6"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 8665.09,
+      "status": "reimbursed",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "1890697f-5bdf-4a1a-a4d5-c68b7038a799",
+      "amount": 4398.1,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 8730,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 7634.39,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 5873.93,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 13885.34,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 1345.76,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 33986,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 2251.24,
+      "status": "paid_from_draw",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 7757.34,
+      "status": "reimbursed",
+      "draw_request_id": "88ed43b6-67d2-41d4-83fc-43fdce0d0adf"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 4365,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "2e3dbdf2-4faf-4c2c-a002-8fcdceca2295",
+      "amount": 625,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 500,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 15000,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 3597,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "2e3dbdf2-4faf-4c2c-a002-8fcdceca2295",
+      "amount": 9905.45,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 14050,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 5610,
+      "status": "paid_personal",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "4ce5607b-1772-42a8-9bff-a79f68b0e664",
+      "amount": 2306,
+      "status": "pending",
+      "draw_request_id": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "amount": 2622,
+      "status": "paid_personal",
+      "draw_request_id": null
+    }
+  ],
+  "draws": [
+    {
+      "project_id": "4ce5607b-1772-42a8-9bff-a79f68b0e664",
+      "draw_number": 1,
+      "status": "draft",
+      "amount": 2306,
+      "funded_date": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "draw_number": 1,
+      "status": "funded",
+      "amount": 60087.74,
+      "funded_date": "2026-03-03"
+    },
+    {
+      "project_id": "2e3dbdf2-4faf-4c2c-a002-8fcdceca2295",
+      "draw_number": 1,
+      "status": "draft",
+      "amount": 0,
+      "funded_date": null
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "draw_number": 2,
+      "status": "funded",
+      "amount": 59374.29,
+      "funded_date": "2026-03-19"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "draw_number": 3,
+      "status": "funded",
+      "amount": 90129.09,
+      "funded_date": "2026-04-22"
+    }
+  ],
+  "miscCharges": [],
+  "loanLedger": [
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "disbursement",
+      "amount": 81909.3,
+      "entry_date": "2025-12-18"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_payment",
+      "amount": 1090.7,
+      "entry_date": "2025-12-19"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 1090.7,
+      "entry_date": "2025-12-31"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 608.84,
+      "entry_date": "2026-01-31"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_payment",
+      "amount": 608.84,
+      "entry_date": "2026-02-11"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 549.92,
+      "entry_date": "2026-02-28"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "disbursement",
+      "amount": 67813.05,
+      "entry_date": "2026-03-03"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 58.92,
+      "entry_date": "2026-03-03"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "disbursement",
+      "amount": 59374.29,
+      "entry_date": "2026-03-19"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_payment",
+      "amount": 549.92,
+      "entry_date": "2026-03-19"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 574.24,
+      "entry_date": "2026-03-19"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 601.56,
+      "entry_date": "2026-03-31"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_payment",
+      "amount": 1234.72,
+      "entry_date": "2026-04-17"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "disbursement",
+      "amount": 90129.09,
+      "entry_date": "2026-04-22"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 1102.86,
+      "entry_date": "2026-04-22"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 573.84,
+      "entry_date": "2026-04-30"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "payoff",
+      "amount": 301449.36,
+      "entry_date": "2026-05-15"
+    },
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "entry_type": "interest_accrual",
+      "amount": 546.93,
+      "entry_date": "2026-05-15"
+    }
+  ],
+  "settlements": [
+    {
+      "project_id": "a4e721c7-7a59-4350-8dbf-160c08e6bf66",
+      "settlement_type": "sale",
+      "settlement_date": "2026-05-15",
+      "seller_concessions": 15000,
+      "title_insurance": 2650,
+      "escrow_fee": 345,
+      "recording_fees": 255,
+      "prorated_taxes": 453.1,
+      "other_fees": [],
+      "net_to_seller": 240847.54,
+      "loan_payoff": 301449.36,
+      "sale_price": 561000,
+      "cash_to_close": null,
+      "earnest_money": null
+    }
+  ]
+}

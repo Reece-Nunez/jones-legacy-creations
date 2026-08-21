@@ -13,6 +13,10 @@ import { DRAW_STATUS_COLORS } from "@/lib/types/database";
 import {
   computeProjectFinancials,
   sumProjectedProfit,
+  sumPaymentAmounts,
+  sumDrawAmounts,
+  sumFundedDraws,
+  sumPendingDraws,
   type ProjectFinancials,
 } from "@/lib/finance/project-financials";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
@@ -111,13 +115,9 @@ export default async function FinancialsPage({
   });
 
   // ── Summary totals ──────────────────────────────────────────────
-  const totalBuildCosts = payments.reduce((s, pm) => s + pm.amount, 0);
-  const totalDrawsFunded = draws
-    .filter((d) => d.status === "funded")
-    .reduce((s, d) => s + d.amount, 0);
-  const totalPendingDraws = draws
-    .filter((d) => d.status === "submitted" || d.status === "approved")
-    .reduce((s, d) => s + d.amount, 0);
+  const totalBuildCosts = sumPaymentAmounts(payments);
+  const totalDrawsFunded = sumFundedDraws(draws);
+  const totalPendingDraws = sumPendingDraws(draws);
   const totalProjectedProfit = sumProjectedProfit(projectFinancials);
 
   // ── Draw Requests by Project ────────────────────────────────────
@@ -530,13 +530,8 @@ export default async function FinancialsPage({
               <div className="space-y-6">
                 {Array.from(drawsByProject.values()).map(
                   ({ project: proj, draws: projDraws }) => {
-                    const projTotal = projDraws.reduce(
-                      (s, d) => s + d.amount,
-                      0
-                    );
-                    const projFunded = projDraws
-                      .filter((d) => d.status === "funded")
-                      .reduce((s, d) => s + d.amount, 0);
+                    const projTotal = sumDrawAmounts(projDraws);
+                    const projFunded = sumFundedDraws(projDraws);
 
                     return (
                       <div key={proj.id}>

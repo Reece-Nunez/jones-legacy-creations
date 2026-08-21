@@ -2,6 +2,7 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { type DrawRequest, DRAW_STATUS_COLORS } from "@/lib/types/database";
 import { formatCurrency as fmt } from "@/lib/formatters";
+import { sumDrawAmounts } from "@/lib/finance/project-financials";
 
 export default async function PendingDrawsPage() {
   const supabase = await createClient();
@@ -19,7 +20,7 @@ export default async function PendingDrawsPage() {
   const projects = (projectsData ?? []) as { id: string; name: string; client_name: string | null }[];
   const projectMap = new Map(projects.map((p) => [p.id, p]));
 
-  const totalAmount = draws.reduce((s, d) => s + (d.amount || 0), 0);
+  const totalAmount = sumDrawAmounts(draws);
 
   const grouped = {
     draft: draws.filter((d) => d.status === "draft"),

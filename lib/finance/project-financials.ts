@@ -151,6 +151,42 @@ export function saleClosingCostsFromSettlement(
   );
 }
 
+/**
+ * Primitive sums over money collections.
+ *
+ * Small enough to feel like overkill, which is exactly why they kept getting
+ * re-typed inline across the dashboard, the financials page, the pending-draws
+ * page and the draws tab. Each copy is a place the definition of "funded" or
+ * "total" can quietly diverge. One definition, imported everywhere; the
+ * no-restricted-syntax rule in eslint.config.mjs enforces it.
+ */
+
+export function sumPaymentAmounts(
+  payments: Pick<ContractorPayment, "amount">[],
+): number {
+  return payments.reduce((sum, p) => sum + Number(p.amount || 0), 0);
+}
+
+export function sumDrawAmounts(draws: Pick<DrawRequest, "amount">[]): number {
+  return draws.reduce((sum, d) => sum + Number(d.amount || 0), 0);
+}
+
+/** Draws the lender has actually released. */
+export function sumFundedDraws(
+  draws: Pick<DrawRequest, "amount" | "status">[],
+): number {
+  return sumDrawAmounts(draws.filter((d) => d.status === "funded"));
+}
+
+/** Draws requested but not yet released — submitted or approved. */
+export function sumPendingDraws(
+  draws: Pick<DrawRequest, "amount" | "status">[],
+): number {
+  return sumDrawAmounts(
+    draws.filter((d) => d.status === "submitted" || d.status === "approved"),
+  );
+}
+
 const MS_PER_DAY = 1000 * 60 * 60 * 24;
 
 /**
@@ -276,16 +312,12 @@ export function computeProjectFinancials(
     saleClosingCosts = Number(project.sale_closing_costs ?? 0);
   }
 
-  const totalCosts = projPayments.reduce((s, p) => s + Number(p.amount || 0), 0);
+  const totalCosts = sumPaymentAmounts(projPayments);
   const miscCharges = projMisc.reduce((s, m) => s + Number(m.amount || 0), 0);
 
-  const drawsFunded = projDraws
-    .filter((d) => d.status === "funded")
-    .reduce((s, d) => s + Number(d.amount || 0), 0);
-  const drawsPending = projDraws
-    .filter((d) => d.status === "submitted" || d.status === "approved")
-    .reduce((s, d) => s + Number(d.amount || 0), 0);
-  const drawsTotal = projDraws.reduce((s, d) => s + Number(d.amount || 0), 0);
+  const drawsFunded = sumFundedDraws(projDraws);
+  const drawsPending = sumPendingDraws(projDraws);
+  const drawsTotal = sumDrawAmounts(projDraws);
 
   const originationFee = (loanAmount * originationFeePercent) / 100;
 
