@@ -22,9 +22,11 @@ import type { NextConfig } from "next";
  * enforcing.
  */
 const SUPABASE_ORIGIN = "https://rvyummgsvggjqtjbtqfw.supabase.co";
-// Staff sign in with Google, and Supabase copies the Google profile photo into
-// user_profiles.avatar_url. Without this the badge is broken for everyone who
-// has one: next/image refuses an unconfigured hostname and CSP blocks the load.
+// Staff sign in with Google and their profile photo URL is copied into
+// user_profiles.avatar_url. lib/avatar.ts now discards those (they are
+// generated monograms, not chosen photos) so we normally render initials
+// instead — but the host stays allowlisted so any Google URL that does reach
+// an <Image> renders rather than failing as a blocked, broken image.
 const GOOGLE_AVATAR_ORIGIN = "https://lh3.googleusercontent.com";
 const contentSecurityPolicy = [
   "default-src 'self'",

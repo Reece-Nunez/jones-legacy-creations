@@ -2,29 +2,18 @@
 
 import { useState } from "react";
 import Image from "next/image";
-
-/** "Brad Lister" -> "BL". Falls back to "?" for an empty or unusable name. */
-export function getInitials(name: string): string {
-  return (
-    name
-      .split(" ")
-      .filter(Boolean)
-      .map((n) => n[0])
-      .join("")
-      .toUpperCase()
-      .slice(0, 2) || "?"
-  );
-}
+import { getInitials, resolveAvatarUrl } from "@/lib/avatar";
 
 /**
- * A user's badge: their photo when we have a usable one, their initials
- * otherwise.
+ * A user's badge: a photo they actually uploaded, or their initials.
  *
- * The initials path is not just for users who never set a photo. Avatars here
- * are Google OAuth profile URLs, which can 404 later if the account changes or
- * the photo is removed — and a plain <Image> renders a broken-image icon in
- * that case. onError flips to initials so the badge always shows something
- * that identifies the person.
+ * Initials are the common case, not the fallback. resolveAvatarUrl discards
+ * Google's auto-populated monograms, so only an avatar uploaded to our own
+ * bucket renders as an image — see lib/avatar.ts.
+ *
+ * onError covers the rest: a stored URL can 404 later if the file is removed,
+ * and a plain <Image> would render a broken-image icon. Flipping to initials
+ * keeps the badge identifying the person either way.
  */
 export function UserAvatar({
   name,
@@ -42,12 +31,14 @@ export function UserAvatar({
   className?: string;
 }) {
   const [failed, setFailed] = useState(false);
-  const showImage = Boolean(avatarUrl) && !failed;
+  // Google's auto-populated monograms resolve to null here, so they fall
+  // through to our own badge — see resolveAvatarUrl.
+  const src = resolveAvatarUrl(avatarUrl);
 
-  if (showImage) {
+  if (src && !failed) {
     return (
       <Image
-        src={avatarUrl as string}
+        src={src}
         alt={name}
         width={size}
         height={size}

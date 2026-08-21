@@ -7,6 +7,7 @@ import NextImage from "next/image";
 import { Button } from "@/components/ui/Button";
 import { Camera, X, Check, ZoomIn, ZoomOut } from "lucide-react";
 import toast from "react-hot-toast";
+import { resolveAvatarUrl } from "@/lib/avatar";
 
 interface AvatarUploadProps {
   currentUrl: string | null;
@@ -24,6 +25,9 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
   // Avatars are Google OAuth URLs that can 404 later; without this the page
   // shows a broken-image icon instead of the initials placeholder.
   const [imageFailed, setImageFailed] = useState(false);
+  // Same rule as the user list: an auto-populated Google monogram is not an
+  // avatar the user chose, so show initials and invite them to upload one.
+  const resolvedUrl = resolveAvatarUrl(currentUrl);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const imgRef = useRef<HTMLImageElement | null>(null);
@@ -263,9 +267,9 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
   return (
     <div className="flex flex-col items-center gap-3">
       <div className="relative group">
-        {currentUrl && !imageFailed ? (
+        {resolvedUrl && !imageFailed ? (
           <NextImage
-            src={currentUrl}
+            src={resolvedUrl}
             alt="Avatar"
             width={80}
             height={80}
