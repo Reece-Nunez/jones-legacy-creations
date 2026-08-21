@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnsureProfile } from "@/lib/hooks/useEnsureProfile";
-import { CONTRACTOR_ROLE } from "@/lib/roles";
+import { CONTRACTOR_ROLE, hasPermission, type Permission } from "@/lib/roles";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
@@ -66,6 +66,9 @@ type NavSection = {
    *  for the leading Dashboard group so "Dashboard" sits flush at the
    *  top of the nav without a "(unsectioned)" header. */
   header?: string;
+  /** When set, the whole section is hidden from roles lacking it. Hiding is
+   *  cosmetic — the pages and API routes enforce the same permission. */
+  permission?: Permission;
   links: NavLink[];
 };
 
@@ -92,7 +95,9 @@ const navSections: NavSection[] = [
     ],
   },
   {
+    // Project Managers run construction, not the marketing site.
     header: "Website",
+    permission: "website:view",
     links: [
       { label: "Leads", href: "/admin/leads", icon: Mail },
       { label: "Subscribers", href: "/admin/subscribers", icon: Mail },
@@ -131,6 +136,13 @@ export default function AdminShell({
   const router = useRouter();
   useEnsureProfile();
   const isContractorUser = role === CONTRACTOR_ROLE;
+
+  // Nav visibility mirrors the permission gates on the pages and API routes.
+  // This only removes dead links; it is not the access control itself.
+  const visibleSections = navSections.filter(
+    (section) => !section.permission || (!!role && hasPermission(role, section.permission))
+  );
+  const canViewSettings = !!role && hasPermission(role, "settings:view");
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(true); // default true, overridden by localStorage
   const [newEstimateCount, setNewEstimateCount] = useState(0);
@@ -288,7 +300,7 @@ export default function AdminShell({
       </div>
 
       <nav className="flex-1 px-3 space-y-1" aria-label="Admin navigation">
-        {navSections.map((section, sectionIndex) => (
+        {visibleSections.map((section, sectionIndex) => (
           <Fragment key={section.header ?? `section-${sectionIndex}`}>
             {section.header && (
               <p
@@ -357,9 +369,11 @@ export default function AdminShell({
         <Link href="/admin/profile" onClick={() => setSidebarOpen(false)} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
           <UserCircle className="h-5 w-5 shrink-0" /> Profile
         </Link>
-        <Link href="/admin/settings" onClick={() => setSidebarOpen(false)} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
-          <Settings className="h-5 w-5 shrink-0" /> Settings
-        </Link>
+        {canViewSettings && (
+          <Link href="/admin/settings" onClick={() => setSidebarOpen(false)} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
+            <Settings className="h-5 w-5 shrink-0" /> Settings
+          </Link>
+        )}
         <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
           <LogOut className="h-5 w-5 shrink-0" /> Sign Out
         </button>
@@ -457,7 +471,7 @@ export default function AdminShell({
             {/* Nav icons — section headers can't show without labels,
               * so we use a thin separator between groups instead. */}
             <nav className="flex-1 px-2 space-y-1">
-              {navSections.map((section, sectionIndex) => (
+              {visibleSections.map((section, sectionIndex) => (
                 <Fragment key={section.header ?? `section-${sectionIndex}`}>
                   {sectionIndex > 0 && (
                     <div className="my-2 mx-2 border-t border-slate-700" />
@@ -516,9 +530,11 @@ export default function AdminShell({
               <Link href="/admin/profile" title="Profile" className="flex items-center justify-center h-10 w-full rounded-lg text-slate-500 hover:bg-slate-800 hover:text-white transition-colors">
                 <UserCircle className="h-5 w-5" />
               </Link>
-              <Link href="/admin/settings" title="Settings" className="flex items-center justify-center h-10 w-full rounded-lg text-slate-500 hover:bg-slate-800 hover:text-white transition-colors">
-                <Settings className="h-5 w-5" />
-              </Link>
+              {canViewSettings && (
+                <Link href="/admin/settings" title="Settings" className="flex items-center justify-center h-10 w-full rounded-lg text-slate-500 hover:bg-slate-800 hover:text-white transition-colors">
+                  <Settings className="h-5 w-5" />
+                </Link>
+              )}
               <button onClick={handleSignOut} title="Sign Out" className="flex items-center justify-center h-10 w-full rounded-lg text-slate-500 hover:bg-slate-800 hover:text-white transition-colors">
                 <LogOut className="h-5 w-5" />
               </button>
@@ -572,7 +588,7 @@ export default function AdminShell({
             </div>
 
             <nav className="flex-1 px-3 space-y-1" aria-label="Admin navigation">
-              {navSections.map((section, sectionIndex) => (
+              {visibleSections.map((section, sectionIndex) => (
                 <Fragment key={section.header ?? `section-${sectionIndex}`}>
                   {section.header && (
                     <p
@@ -638,9 +654,11 @@ export default function AdminShell({
               <Link href="/admin/profile" className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
                 <UserCircle className="h-5 w-5 shrink-0" /> Profile
               </Link>
-              <Link href="/admin/settings" className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
-                <Settings className="h-5 w-5 shrink-0" /> Settings
-              </Link>
+              {canViewSettings && (
+                <Link href="/admin/settings" className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
+                  <Settings className="h-5 w-5 shrink-0" /> Settings
+                </Link>
+              )}
               <button onClick={handleSignOut} className="flex w-full items-center gap-3 rounded-lg px-3 py-2.5 min-h-[44px] text-sm font-medium text-slate-400 transition-colors duration-150 hover:bg-slate-800 hover:text-white">
                 <LogOut className="h-5 w-5 shrink-0" /> Sign Out
               </button>

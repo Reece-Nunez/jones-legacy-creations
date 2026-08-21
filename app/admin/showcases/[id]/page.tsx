@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ChevronLeft, ExternalLink } from "lucide-react";
@@ -13,6 +14,7 @@ export default async function EditShowcasePage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requirePagePermission("website:view");
   const { id } = await params;
   const supabase = await createClient();
 

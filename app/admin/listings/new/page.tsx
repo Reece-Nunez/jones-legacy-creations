@@ -1,8 +1,10 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import ListingForm from "@/components/admin/listings/ListingForm";
 
-export default function NewListingPage() {
+export default async function NewListingPage() {
+  await requirePagePermission("website:view");
   return (
     <div className="space-y-6">
       <Link

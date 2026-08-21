@@ -8,7 +8,7 @@ export async function POST(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: listingId } = await params;
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:manage");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const body = await request.json();
@@ -62,7 +62,7 @@ export async function PATCH(
   { params }: { params: Promise<{ id: string }> }
 ) {
   const { id: listingId } = await params;
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:manage");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const body = await request.json();

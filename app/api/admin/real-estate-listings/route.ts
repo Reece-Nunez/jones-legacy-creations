@@ -33,7 +33,7 @@ function deriveSlug(parts: { address?: string; city?: string; state?: string }):
 }
 
 export async function GET() {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:view");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
@@ -50,7 +50,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:manage");
   if (gate instanceof NextResponse) return gate;
   const { supabase, profile } = gate;
   const body = await request.json();

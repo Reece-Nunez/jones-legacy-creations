@@ -6,7 +6,7 @@ import {
 } from "@/lib/blog/markdown";
 
 export async function GET() {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:view");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const { data, error } = await supabase
@@ -20,7 +20,7 @@ export async function GET() {
 }
 
 export async function POST(request: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:manage");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const body = await request.json();

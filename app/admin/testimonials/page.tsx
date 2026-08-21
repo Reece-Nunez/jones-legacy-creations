@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 /**
  * /admin/testimonials — list + bulk publish toggle.
  *
@@ -16,6 +17,7 @@ import { ArrowLeft, Plus, Star } from "lucide-react";
 import TestimonialsList from "@/components/admin/TestimonialsList";
 
 export default async function TestimonialsAdminPage() {
+  await requirePagePermission("website:view");
   const supabase = await createClient();
   const { data: testimonials } = await supabase
     .from("testimonials")

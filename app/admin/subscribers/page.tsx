@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 /**
  * /admin/subscribers — newsletter list.
  *
@@ -21,6 +22,7 @@ export default async function SubscribersAdminPage({
 }: {
   searchParams: Promise<{ status?: string; source?: string }>;
 }) {
+  await requirePagePermission("website:view");
   const sp = await searchParams;
   const statusFilter = ALL_STATUS.includes(
     sp.status as (typeof ALL_STATUS)[number],

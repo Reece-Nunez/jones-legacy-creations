@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { Plus, Home } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import type { RealEstateListing } from "@/lib/types/real-estate";
 export const dynamic = "force-dynamic";
 
 export default async function ListingsAdminPage() {
+  await requirePagePermission("website:view");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("real_estate_listings")

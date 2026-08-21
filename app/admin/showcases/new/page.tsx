@@ -1,8 +1,10 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { ChevronLeft } from "lucide-react";
 import ShowcaseForm from "@/components/admin/showcases/ShowcaseForm";
 
-export default function NewShowcasePage() {
+export default async function NewShowcasePage() {
+  await requirePagePermission("website:view");
   return (
     <div className="space-y-6">
       <Link

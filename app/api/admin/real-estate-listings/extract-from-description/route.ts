@@ -14,7 +14,7 @@ interface ExtractRequestBody {
 
 export async function POST(request: NextRequest) {
   try {
-    const gate = await requireAdmin();
+    const gate = await requireAdmin("website:manage");
     if (gate instanceof NextResponse) return gate;
 
     let body: ExtractRequestBody;

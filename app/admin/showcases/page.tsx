@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { Plus, Hammer } from "lucide-react";
 import { createClient } from "@/lib/supabase/server";
@@ -7,6 +8,7 @@ import type { ConstructionShowcase } from "@/lib/types/construction-showcase";
 export const dynamic = "force-dynamic";
 
 export default async function ShowcasesAdminPage() {
+  await requirePagePermission("website:view");
   const supabase = await createClient();
   const { data, error } = await supabase
     .from("construction_showcases")

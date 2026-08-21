@@ -52,6 +52,11 @@ export type Permission =
   | "team:view"
   | "team:manage"
   | "team:delete"
+  // Website / marketing surface: blog posts, testimonials, real-estate
+  // listings, construction showcases, email subscribers. Deliberately does
+  // NOT cover Leads — see CONSTRUCTION_PERMISSIONS.
+  | "website:view"
+  | "website:manage"
   // Contractor access (manage project-scoped contractor logins + grants)
   | "access:manage"
   // Settings
@@ -67,6 +72,7 @@ const ALL_PERMISSIONS: Permission[] = [
   "contractors:view", "contractors:create", "contractors:edit", "contractors:delete",
   "financials:view", "financials:manage",
   "team:view", "team:manage", "team:delete",
+  "website:view", "website:manage",
   "access:manage",
   "settings:view", "settings:edit",
 ];
@@ -74,6 +80,22 @@ const ALL_PERMISSIONS: Permission[] = [
 /** Everything except user administration (team management + contractor access) */
 const STANDARD_PERMISSIONS: Permission[] = ALL_PERMISSIONS.filter(
   (p) => !p.startsWith("team:") && p !== "access:manage"
+);
+
+/**
+ * Construction-side only. Project Managers run jobs; they don't run the
+ * marketing site and don't administer the company.
+ *
+ * Excluded: website:* (blog, testimonials, listings, showcases, subscribers),
+ * settings:* (company address, license, integrations), and the team:* /
+ * access:manage user administration already withheld by STANDARD_PERMISSIONS.
+ *
+ * Leads are deliberately NOT excluded. They arrive from the public site but a
+ * large share are construction intake and estimate requests a PM needs to act
+ * on, so they stay on the construction side of the line.
+ */
+const CONSTRUCTION_PERMISSIONS: Permission[] = STANDARD_PERMISSIONS.filter(
+  (p) => !p.startsWith("website:") && !p.startsWith("settings:")
 );
 
 /**
@@ -90,11 +112,14 @@ const CONTRACTOR_PERMISSIONS: Permission[] = [
 ];
 
 // ── Role Definitions ──────────────────────────────────────────────────────────
-// Staff roles differ mainly in user-administration reach. Owner, Technical
-// Director, and Office Manager can manage users (including contractor logins);
-// Project Manager and Office Admin cannot. `canManageRole` (level check) still
-// prevents anyone from editing/deleting a user at a higher level than their own,
-// so Office Manager (40) can never touch Owner/TD (100) or PMs (50).
+// Owner, Technical Director, and Office Manager can manage users (including
+// contractor logins); Project Manager and Office Admin cannot. `canManageRole`
+// (level check) additionally prevents anyone from editing/deleting a user at a
+// higher level than their own, so Office Manager (60) can administer PMs (50)
+// and Office Admins (20) but never Owner/TD (100).
+//
+// Project Manager is the one role scoped by feature area rather than by
+// administrative reach: construction only, no website surface, no settings.
 //
 // `contractor` is an external, project-scoped login — not staff. It carries
 // read-only view permissions; its data access is confined to granted projects
@@ -118,15 +143,21 @@ export const ROLES: Record<RoleSlug, RoleDefinition> = {
   project_manager: {
     slug: "project_manager",
     label: "Project Manager",
-    description: "Full access to all features except user management.",
+    description:
+      "Construction side only — projects, quotes, estimates, contractors, financials, and leads. No website content, company settings, or user management.",
     level: 50,
-    permissions: new Set(STANDARD_PERMISSIONS),
+    permissions: new Set(CONSTRUCTION_PERMISSIONS),
   },
   office_manager: {
     slug: "office_manager",
+    // Level 60 (was 40) so they outrank Project Managers. They are expected to
+    // add users and grant contractor access, and canManageRole is a level
+    // comparison — at 40 they held team:manage but still couldn't edit or
+    // delete a PM (50), which made "adding users" only half work. Still below
+    // Owner/TD (100), so they can't touch those two.
     label: "Office Manager",
     description: "Full access including user and contractor-access management.",
-    level: 40,
+    level: 60,
     permissions: new Set(ALL_PERMISSIONS),
   },
   office_admin: {

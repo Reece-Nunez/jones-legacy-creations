@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
 
 export async function GET() {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("settings:view");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 
@@ -40,7 +40,7 @@ const ALLOWED_FIELDS = new Set([
 ]);
 
 export async function PATCH(request: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("settings:edit");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
   const body = await request.json();

@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
@@ -9,6 +10,7 @@ export default async function EditPostPage({
 }: {
   params: Promise<{ id: string }>;
 }) {
+  await requirePagePermission("website:view");
   const { id } = await params;
   const supabase = await createClient();
   const { data: post } = await supabase

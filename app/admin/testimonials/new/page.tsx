@@ -1,8 +1,10 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import TestimonialForm from "@/components/admin/TestimonialForm";
 
-export default function NewTestimonialPage() {
+export default async function NewTestimonialPage() {
+  await requirePagePermission("website:view");
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-2xl px-4 py-8 sm:px-6 lg:px-8">

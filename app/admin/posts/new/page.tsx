@@ -1,8 +1,10 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import PostForm from "@/components/admin/PostForm";
 
-export default function NewPostPage() {
+export default async function NewPostPage() {
+  await requirePagePermission("website:view");
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">

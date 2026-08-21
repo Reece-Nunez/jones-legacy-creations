@@ -20,7 +20,7 @@ function esc(v: string | null | undefined): string {
 }
 
 export async function GET(request: NextRequest) {
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:view");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 

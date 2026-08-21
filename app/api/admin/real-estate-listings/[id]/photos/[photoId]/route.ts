@@ -8,7 +8,7 @@ export async function DELETE(
   { params }: { params: Promise<{ id: string; photoId: string }> }
 ) {
   const { id: listingId, photoId } = await params;
-  const gate = await requireAdmin();
+  const gate = await requireAdmin("website:manage");
   if (gate instanceof NextResponse) return gate;
   const { supabase } = gate;
 

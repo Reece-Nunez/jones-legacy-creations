@@ -1,3 +1,4 @@
+import { requirePagePermission } from "@/lib/auth/requirePagePermission";
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { ArrowLeft, Plus, FileText, Eye, Edit3 } from "lucide-react";
@@ -10,6 +11,7 @@ const STATUS_COLORS: Record<string, string> = {
 };
 
 export default async function PostsAdminPage() {
+  await requirePagePermission("website:view");
   const supabase = await createClient();
   const { data: posts } = await supabase
     .from("blog_posts")
