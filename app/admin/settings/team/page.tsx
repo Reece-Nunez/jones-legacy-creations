@@ -18,6 +18,9 @@ import {
   UserPlus,
   HardHat,
   FolderOpen,
+  Mail,
+  Phone,
+  Clock,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import { ROLE_OPTIONS, getRoleLabel, getRole, isContractor } from "@/lib/roles";
@@ -32,7 +35,6 @@ interface TeamMember {
   avatar_url: string | null;
   role: string;
   phone: string | null;
-  title: string | null;
   is_active: boolean;
   last_login_at: string | null;
   created_at: string;
@@ -53,6 +55,36 @@ function getInitials(name: string): string {
       .join("")
       .toUpperCase()
       .slice(0, 2) || "?"
+  );
+}
+
+/** One labelled field in a member row. Renders an em dash when unset so a
+ *  missing phone number is visibly missing rather than silently absent. */
+function Meta({
+  icon: Icon,
+  label,
+  value,
+  href,
+}: {
+  icon: React.ElementType;
+  label: string;
+  value: string | null;
+  href?: string;
+}) {
+  return (
+    <div className="flex items-center gap-1.5 min-w-0">
+      <Icon className="w-3.5 h-3.5 text-gray-400 shrink-0" />
+      <span className="sr-only">{label}: </span>
+      {value && href ? (
+        <a href={href} className="truncate text-gray-600 hover:text-gray-900 hover:underline">
+          {value}
+        </a>
+      ) : (
+        <span className={`truncate ${value ? "text-gray-600" : "text-gray-400"}`}>
+          {value || "—"}
+        </span>
+      )}
+    </div>
   );
 }
 
@@ -91,7 +123,6 @@ export default function UsersAndAccessPage() {
     display_name: "",
     email: "",
     role: "office_admin" as string,
-    title: "",
     phone: "",
   });
   const [addContractorForm, setAddContractorForm] = useState({
@@ -162,7 +193,7 @@ export default function UsersAndAccessPage() {
       }
       toast.success("Team member added");
       setShowAddStaff(false);
-      setAddStaffForm({ display_name: "", email: "", role: "office_admin", title: "", phone: "" });
+      setAddStaffForm({ display_name: "", email: "", role: "office_admin", phone: "" });
       await fetchAll();
     } catch (error) {
       toast.error(error instanceof Error ? error.message : "Failed to add member");
@@ -209,7 +240,6 @@ export default function UsersAndAccessPage() {
       display_name: member.display_name,
       email: member.email,
       role: member.role,
-      title: member.title || "",
       phone: member.phone || "",
     });
   };
@@ -418,14 +448,6 @@ export default function UsersAndAccessPage() {
               />
             </div>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">Title</label>
-              <Input
-                value={addStaffForm.title}
-                onChange={(e) => setAddStaffForm((p) => ({ ...p, title: e.target.value }))}
-                placeholder="e.g. Project Manager"
-              />
-            </div>
-            <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
               <Input
                 value={addStaffForm.phone}
@@ -595,18 +617,11 @@ export default function UsersAndAccessPage() {
                         )}
                       </div>
                       {!contractor && (
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                          <Input
-                            value={editForm.title}
-                            onChange={(e) => setEditForm((p) => ({ ...p, title: e.target.value }))}
-                            placeholder="Title"
-                          />
-                          <Input
-                            value={editForm.phone}
-                            onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
-                            placeholder="Phone"
-                          />
-                        </div>
+                        <Input
+                          value={editForm.phone}
+                          onChange={(e) => setEditForm((p) => ({ ...p, phone: e.target.value }))}
+                          placeholder="Phone"
+                        />
                       )}
                       <div className="flex gap-2">
                         <Button size="sm" onClick={() => handleUpdate(member)} isLoading={submitting}>
@@ -637,7 +652,7 @@ export default function UsersAndAccessPage() {
                             contractor ? "bg-orange-500" : "bg-slate-800"
                           }`}
                         >
-                          {contractor ? <HardHat className="w-5 h-5" /> : getInitials(member.display_name)}
+                          {getInitials(member.display_name)}
                         </div>
                       )}
 
@@ -660,16 +675,24 @@ export default function UsersAndAccessPage() {
                             </span>
                           )}
                         </div>
-                        <div className="flex items-center gap-3 mt-0.5 text-xs text-gray-500 flex-wrap">
-                          <span>{member.email}</span>
-                          {member.title && (
-                            <>
-                              <span className="text-gray-300">&middot;</span>
-                              <span>{member.title}</span>
-                            </>
-                          )}
-                          <span className="text-gray-300">&middot;</span>
-                          <span>Last login: {formatDate(member.last_login_at)}</span>
+                        <div className="mt-1 grid grid-cols-1 gap-x-4 gap-y-1 text-xs sm:grid-cols-3">
+                          <Meta
+                            icon={Mail}
+                            label="Email"
+                            value={member.email}
+                            href={`mailto:${member.email}`}
+                          />
+                          <Meta
+                            icon={Phone}
+                            label="Phone"
+                            value={member.phone}
+                            href={member.phone ? `tel:${member.phone.replace(/[^0-9+]/g, "")}` : undefined}
+                          />
+                          <Meta
+                            icon={Clock}
+                            label="Last login"
+                            value={formatDate(member.last_login_at)}
+                          />
                         </div>
                         {/* Contractor project assignments */}
                         {contractor && (

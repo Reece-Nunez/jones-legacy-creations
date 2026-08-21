@@ -42,7 +42,9 @@ export async function PATCH(
   }
 
   const body = await request.json();
-  const allowedFields = ["display_name", "email", "role", "title", "phone", "is_active"];
+  // `title` intentionally absent: a user's role IS their title, so the
+  // separate field only ever duplicated it (or sat empty).
+  const allowedFields = ["display_name", "email", "role", "phone", "is_active"];
   const updates: Record<string, unknown> = {};
 
   for (const key of allowedFields) {

@@ -47,7 +47,6 @@ export async function GET() {
 const ALLOWED_FIELDS = new Set([
   "display_name",
   "phone",
-  "title",
   "avatar_url",
   "theme",
   "timezone",

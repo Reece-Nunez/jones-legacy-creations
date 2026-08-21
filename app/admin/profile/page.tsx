@@ -6,6 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Select } from "@/components/ui/Select";
 import { AvatarUpload } from "@/components/admin/AvatarUpload";
+import { ChangePassword } from "@/components/admin/ChangePassword";
 import {
   User,
   Shield,
@@ -16,6 +17,7 @@ import {
   Moon,
   Sun,
   Monitor,
+  KeyRound,
 } from "lucide-react";
 import toast from "react-hot-toast";
 
@@ -27,7 +29,6 @@ interface UserProfile {
   avatar_url: string | null;
   role: string;
   phone: string | null;
-  title: string | null;
   theme: "light" | "dark" | "system";
   timezone: string;
   notify_email: boolean;
@@ -202,7 +203,6 @@ export default function ProfilePage() {
         body: JSON.stringify({
           display_name: profile.display_name,
           phone: profile.phone,
-          title: profile.title,
           theme: profile.theme,
           timezone: profile.timezone,
           notify_email: profile.notify_email,
@@ -278,9 +278,6 @@ export default function ProfilePage() {
               <span className="inline-flex items-center rounded-full bg-indigo-50 px-2.5 py-0.5 text-xs font-medium text-indigo-700">
                 {getRoleLabel(profile.role)}
               </span>
-              {profile.title && (
-                <span className="text-xs text-gray-400">{profile.title}</span>
-              )}
             </div>
           </div>
         </div>
@@ -311,13 +308,6 @@ export default function ProfilePage() {
             value={profile.phone ?? ""}
             onChange={(e) => update("phone", e.target.value)}
             placeholder="(801) 555-0100"
-          />
-        </FieldRow>
-        <FieldRow label="Job Title">
-          <Input
-            value={profile.title ?? ""}
-            onChange={(e) => update("title", e.target.value)}
-            placeholder="e.g. General Contractor, Project Manager"
           />
         </FieldRow>
         <FieldRow label="Timezone">
@@ -363,6 +353,15 @@ export default function ProfilePage() {
             </p>
           </FieldRow>
         )}
+      </SectionCard>
+
+      {/* Security */}
+      <SectionCard
+        icon={KeyRound}
+        title="Password"
+        description="Change the password you use to sign in"
+      >
+        <ChangePassword />
       </SectionCard>
 
       {/* Appearance */}

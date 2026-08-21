@@ -53,7 +53,7 @@ export async function POST(request: NextRequest) {
   }
 
   const body = await request.json();
-  const { display_name, email, role, title, phone } = body;
+  const { display_name, email, role, phone } = body;
 
   if (!display_name || !email || !role) {
     return NextResponse.json(
@@ -80,7 +80,6 @@ export async function POST(request: NextRequest) {
       display_name: display_name.trim(),
       email: email.trim().toLowerCase(),
       role,
-      title: title?.trim() || null,
       phone: phone?.trim() || null,
     })
     .select()
