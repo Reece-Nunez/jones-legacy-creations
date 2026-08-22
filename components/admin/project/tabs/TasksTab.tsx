@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { Check, Edit3, UserCircle, X } from "lucide-react";
+import { Check, Edit3, UserCircle, X, CheckSquare } from "lucide-react";
 import type { Task, TeamMember } from "@/lib/types/database";
 import { confirmAction } from "@/lib/confirmAction";
 import {
@@ -99,7 +99,11 @@ export function TasksTab({
       </CardHeader>
       <CardContent>
         {tasks.length === 0 && (
-          <EmptyState label="No tasks yet" />
+          <EmptyState
+            icon={CheckSquare}
+            label="No tasks yet"
+            hint="Track punch-list items and site work here, assign them to a team member, and check them off as the job progresses."
+          />
         )}
 
         <div className="divide-y divide-gray-100">

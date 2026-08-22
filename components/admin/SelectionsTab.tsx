@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Copy, Send, Trash2, FileCheck2, Plus } from "lucide-react";
+import { Copy, Send, Trash2, FileCheck2, Palette, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import { DEFAULT_SELECTION_DISCLAIMER } from "@/lib/legal/approvalText";
+import { EmptyState } from "@/components/admin/project/shared/Primitives";
 
 export interface Selection {
   id: string;
@@ -262,7 +263,11 @@ export function SelectionsTab({
       )}
 
       {selections.length === 0 && !showForm ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No selections yet.</p>
+        <EmptyState
+          icon={Palette}
+          label="No selections yet"
+          hint="Send finish choices to the client for approval — tile, cabinets, countertops. Each one they approve is signed and filed to Documents automatically."
+        />
       ) : (
         <div className="space-y-3">
           {selections.map((sel) => (

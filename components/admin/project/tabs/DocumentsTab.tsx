@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, Eye, Trash2 } from "lucide-react";
+import { Download, Eye, FolderOpen, Trash2 } from "lucide-react";
 // `Document` must be imported explicitly: without it TypeScript silently
 // resolves it to the DOM global and every property access is wrong.
 import type { Document, DocumentCategory } from "@/lib/types/database";
@@ -157,7 +157,11 @@ export function DocumentsTab({
         )}
 
         {documents.length === 0 && !showForm && (
-          <EmptyState label="No documents yet" />
+          <EmptyState
+            icon={FolderOpen}
+            label="No documents yet"
+            hint="Plans, permits, invoices and receipts live here. Uploads are scanned automatically so vendor and amount are filled in for you."
+          />
         )}
 
         {/* Select All header */}

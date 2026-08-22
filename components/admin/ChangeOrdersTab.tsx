@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Copy, Send, Trash2, Ban, FileCheck2, Plus } from "lucide-react";
+import { Copy, Send, Trash2, Ban, FileCheck2, FileText, Plus } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import { DEFAULT_CHANGE_ORDER_CONSENT } from "@/lib/legal/approvalText";
+import { EmptyState } from "@/components/admin/project/shared/Primitives";
 
 export interface ChangeOrder {
   id: string;
@@ -272,7 +273,11 @@ export function ChangeOrdersTab({
       )}
 
       {changeOrders.length === 0 && !showForm ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No change orders yet.</p>
+        <EmptyState
+          icon={FileText}
+          label="No change orders yet"
+          hint="Price a scope change and send it for signature. Approved orders are filed to Documents, so what was agreed stays on record."
+        />
       ) : (
         <div className="space-y-3">
           {changeOrders.map((co) => (

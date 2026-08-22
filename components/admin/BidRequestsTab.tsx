@@ -15,12 +15,14 @@ import {
   X,
   CheckCircle2,
   Receipt,
+  Gavel,
 } from "lucide-react";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import { DEFAULT_BID_ACCEPTANCE_TERMS } from "@/lib/legal/approvalText";
+import { EmptyState } from "@/components/admin/project/shared/Primitives";
 
 export type BidStatus =
   | "draft"
@@ -385,7 +387,11 @@ export function BidRequestsTab({
       )}
 
       {bidRequests.length === 0 && !showForm ? (
-        <p className="text-sm text-gray-400 py-8 text-center">No bid requests yet.</p>
+        <EmptyState
+          icon={Gavel}
+          label="No bid requests yet"
+          hint="Send a scope to several subs at once and track who accepted, declined, or hasn't answered — without chasing it through text messages."
+        />
       ) : (
         <div className="space-y-3">
           {bidRequests.map((bid) => {

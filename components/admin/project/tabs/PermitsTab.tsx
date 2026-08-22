@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Circle, Edit3, Paperclip, RefreshCw, Trash2, Upload } from "lucide-react";
+import { Circle, ClipboardList, Edit3, Paperclip, RefreshCw, Trash2, Upload } from "lucide-react";
 import toast from "react-hot-toast";
 import type { Permit, PermitStatus } from "@/lib/types/database";
 import { PERMIT_STATUS_COLORS } from "@/lib/types/database";
@@ -327,7 +327,11 @@ export function PermitsTab({
         )}
 
         {permits.length === 0 && !showForm && (
-          <EmptyState label="No permits yet" />
+          <EmptyState
+            icon={ClipboardList}
+            label="No permits yet"
+            hint="Record each permit with its number and status so inspection dates and approvals stay in one place instead of in email."
+          />
         )}
 
         <div className="divide-y divide-gray-100">
