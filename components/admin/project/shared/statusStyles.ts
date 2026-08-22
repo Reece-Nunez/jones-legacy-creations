@@ -1,4 +1,4 @@
-import type { DrawRequestStatus } from "@/lib/types/database";
+import type { DrawRequestStatus, PermitStatus } from "@/lib/types/database";
 
 /**
  * Status accent colours for draw and payment rows.
@@ -24,4 +24,14 @@ export function paymentLeftBorder(status: string): string {
   if (status === "reimbursed" || status === "paid_from_draw") return "border-l-green-500";
   if (status === "paid_personal") return "border-l-indigo-400";
   return "border-l-yellow-500";
+}
+
+export function permitLeftBorder(status: PermitStatus): string {
+  switch (status) {
+    case "approved": return "border-l-green-500";
+    case "denied": return "border-l-red-500";
+    case "expired": return "border-l-orange-500";
+    case "applied": return "border-l-blue-500";
+    default: return "border-l-gray-300";
+  }
 }
