@@ -1,20 +1,17 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
   AlertTriangle, ChevronDown, ChevronRight, Circle, Copy, Edit3, LinkIcon,
   MessageSquare, Paperclip, Send, Trash2, XCircle,
 } from "lucide-react";
-import toast from "react-hot-toast";
 import type {
-  BudgetLineItem, Contractor, ContractorPayment, DrawRequest, InvoiceUploadToken,
+  BudgetLineItem, Contractor, ContractorPayment, DrawRequest,
 } from "@/lib/types/database";
-import { confirmAction } from "@/lib/confirmAction";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
 import {
-  formatCurrency as fmt, formatCurrencyInput, unformatCurrency,
+  formatCurrency as fmt, formatCurrencyInput,
 } from "@/lib/formatters";
 import {
   Card as ShadCard, CardHeader, CardTitle, CardContent, CardAction,
@@ -26,6 +23,8 @@ import { EditOnly } from "@/components/admin/project/shared/EditContext";
 import { fmtDate } from "@/components/admin/project/shared/format";
 import { QBO_CONTRACTOR_PAYMENTS_ENABLED } from "@/components/admin/project/shared/constants";
 import { paymentLeftBorder } from "@/components/admin/project/shared/statusStyles";
+import { usePaymentActions } from "@/components/admin/project/shared/usePaymentActions";
+import { useInvoiceUploadLinks } from "@/components/admin/project/shared/useInvoiceUploadLinks";
 
 export function PaymentsTab({
   projectId,
@@ -53,205 +52,38 @@ export function PaymentsTab({
   onPreview: (url: string, name: string) => void;
 }) {
   const router = useRouter();
-  const [showForm, setShowForm] = useState(false);
-  const [form, setForm] = useState({
-    contractor_id: "",
-    contractor_name: "",
-    description: "",
-    amount: "",
-    due_date: "",
-  });
-  const [invoiceFile, setInvoiceFile] = useState<File | null>(null);
 
-  // --- QBO Pay Modal state ---
-  const [payModalPayment, setPayModalPayment] = useState<{ id: string; contractor_name: string; amount: number } | null>(null);
+  // Payment CRUD and the invoice-link subsystem are shared with DrawsTab.
+  // Destructured back into the original local names so the JSX below is
+  // untouched by the extraction.
+  const {
+    showForm, setShowForm,
+    form, setForm,
+    invoiceFile, setInvoiceFile,
+    editingPayment, setEditingPayment,
+    editPaymentForm, setEditPaymentForm,
+    payModalPayment, setPayModalPayment,
+    handleContractorChange,
+    addPayment,
+    startEditPayment,
+    saveEditPayment,
+    markAsPaid,
+    markPaidFromDraw,
+    uploadReceipt,
+    deletePayment,
+  } = usePaymentActions({ projectId, contractors, mutate });
 
-  // --- Upload Links state ---
-  const [uploadLinksOpen, setUploadLinksOpen] = useState(false);
-  const [uploadLinks, setUploadLinks] = useState<InvoiceUploadToken[]>([]);
-  const [uploadLinkContractorId, setUploadLinkContractorId] = useState("");
-  const [uploadLinkLoading, setUploadLinkLoading] = useState(false);
-  const [copiedTokenId, setCopiedTokenId] = useState<string | null>(null);
-
-  const fetchUploadLinks = useCallback(async () => {
-    try {
-      const res = await fetch(`/api/admin/projects/${projectId}/upload-links`);
-      if (res.ok) {
-        const data = await res.json();
-        setUploadLinks(data);
-      }
-    } catch {
-      // silently fail
-    }
-  }, [projectId]);
-
-  useEffect(() => {
-    fetchUploadLinks();
-  }, [fetchUploadLinks]);
-
-  async function generateUploadLink() {
-    if (!uploadLinkContractorId) return;
-    const contractor = contractors.find((c) => c.id === uploadLinkContractorId);
-    if (!contractor) return;
-    setUploadLinkLoading(true);
-    try {
-      const res = await fetch(`/api/admin/projects/${projectId}/upload-links`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          contractor_id: contractor.id,
-          contractor_name: contractor.name,
-          project_name: projectName,
-        }),
-      });
-      if (res.ok) {
-        await fetchUploadLinks();
-        setUploadLinkContractorId("");
-      }
-    } finally {
-      setUploadLinkLoading(false);
-    }
-  }
-
-  async function deactivateUploadLink(tokenId: string) {
-    setUploadLinkLoading(true);
-    try {
-      const res = await fetch(
-        `/api/admin/projects/${projectId}/upload-links/${tokenId}`,
-        { method: "DELETE" },
-      );
-      if (res.ok) {
-        await fetchUploadLinks();
-      }
-    } finally {
-      setUploadLinkLoading(false);
-    }
-  }
-
-  function copyUploadLink(token: string, tokenId: string) {
-    const url = `${window.location.origin}/submit-invoice/${token}`;
-    navigator.clipboard.writeText(url);
-    setCopiedTokenId(tokenId);
-    setTimeout(() => setCopiedTokenId(null), 2000);
-  }
-
-  function textUploadLink(token: string, contractorName: string, contractorId: string) {
-    const contractor = contractors.find((c) => c.id === contractorId);
-    if (!contractor?.phone) return;
-    const url = `${window.location.origin}/submit-invoice/${token}`;
-    const firstName = contractorName.split(" ")[0];
-    const message = `Hi ${firstName}, please upload your invoice for ${projectName} here: ${url}`;
-    window.open(`sms:${contractor.phone}?body=${encodeURIComponent(message)}`);
-  }
-
-  function handleContractorChange(value: string) {
-    if (value === "other") {
-      setForm({ ...form, contractor_id: "other", contractor_name: "" });
-    } else if (value === "") {
-      setForm({ ...form, contractor_id: "", contractor_name: "" });
-    } else {
-      const contractor = contractors.find((c) => c.id === value);
-      setForm({
-        ...form,
-        contractor_id: value,
-        contractor_name: contractor?.name ?? "",
-      });
-    }
-  }
-
-  async function addPayment() {
-    if (!form.contractor_name || !form.amount) return;
-
-    const fd = new FormData();
-    fd.append("contractor_id", form.contractor_id);
-    fd.append("contractor_name", form.contractor_name);
-    fd.append("description", form.description);
-    fd.append("amount", unformatCurrency(form.amount));
-    fd.append("due_date", form.due_date);
-    if (invoiceFile) fd.append("invoice_file", invoiceFile);
-
-    await mutate(`/api/admin/projects/${projectId}/payments`, "POST", fd);
-    setForm({ contractor_id: "", contractor_name: "", description: "", amount: "", due_date: "" });
-    setInvoiceFile(null);
-    setShowForm(false);
-  }
-
-  const [editingPayment, setEditingPayment] = useState<string | null>(null);
-  const [editPaymentForm, setEditPaymentForm] = useState({
-    contractor_name: "",
-    description: "",
-    amount: "",
-    status: "pending" as string,
-    due_date: "",
-    budget_line_number: "",
-  });
-
-  function startEditPayment(p: ContractorPayment) {
-    setEditingPayment(p.id);
-    setEditPaymentForm({
-      contractor_name: p.contractor_name,
-      description: p.description || "",
-      amount: formatCurrencyInput(String(p.amount)),
-      status: p.status,
-      due_date: p.due_date ?? "",
-      budget_line_number: p.budget_line_number ?? "",
-    });
-  }
-
-  async function saveEditPayment(id: string) {
-    await mutate(`/api/admin/projects/${projectId}/payments/${id}`, "PATCH", {
-      contractor_name: editPaymentForm.contractor_name,
-      description: editPaymentForm.description || null,
-      amount: parseFloat(unformatCurrency(editPaymentForm.amount)),
-      status: editPaymentForm.status,
-      due_date: editPaymentForm.due_date || null,
-      budget_line_number: editPaymentForm.budget_line_number || null,
-    });
-    setEditingPayment(null);
-  }
-
-  async function markAsPaid(p: ContractorPayment) {
-    await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
-      status: "paid_personal",
-      paid_date: new Date().toISOString().split("T")[0],
-    });
-  }
-
-  async function markPaidFromDraw(p: ContractorPayment) {
-    await mutate(`/api/admin/projects/${projectId}/payments/${p.id}`, "PATCH", {
-      status: "paid_from_draw",
-      paid_from_draw_date: new Date().toISOString().split("T")[0],
-    });
-  }
-
-  async function uploadReceipt(paymentId: string, file: File) {
-    const fd = new FormData();
-    fd.append("file", file);
-    const res = await fetch(
-      `/api/admin/projects/${projectId}/payments/${paymentId}/receipt`,
-      { method: "POST", body: fd },
-    );
-    if (!res.ok) {
-      toast.error("Failed to upload receipt");
-      return;
-    }
-    const result = await res.json();
-    if (result.amount_mismatch) {
-      const extracted = result.ai_extracted?.amount;
-      toast(
-        `Receipt amount (${fmt(extracted)}) doesn't match invoice — please verify.`,
-        { icon: "⚠️", duration: 8000 },
-      );
-    } else {
-      toast.success("Receipt uploaded");
-    }
-    router.refresh();
-  }
-
-  async function deletePayment(id: string) {
-    if (!(await confirmAction("Delete this payment?"))) return;
-    await mutate(`/api/admin/projects/${projectId}/payments/${id}`, "DELETE");
-  }
+  const {
+    open: uploadLinksOpen, setOpen: setUploadLinksOpen,
+    links: uploadLinks,
+    contractorId: uploadLinkContractorId, setContractorId: setUploadLinkContractorId,
+    loading: uploadLinkLoading,
+    copiedTokenId,
+    generate: generateUploadLink,
+    deactivate: deactivateUploadLink,
+    copy: copyUploadLink,
+    text: textUploadLink,
+  } = useInvoiceUploadLinks({ projectId, projectName, contractors });
 
   return (
     <>
