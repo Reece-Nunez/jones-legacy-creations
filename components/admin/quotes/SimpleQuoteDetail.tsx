@@ -135,7 +135,6 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
     }
   };
 
-  const inputs = quote.job_type_inputs as Record<string, unknown> | null;
   const startDate = fmtDate(quote.target_start_date);
   const completionDate = fmtDate(quote.desired_completion_date);
 

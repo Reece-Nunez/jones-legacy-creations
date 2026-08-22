@@ -17,7 +17,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Bed, Car, Check, Phone, ChevronDown } from "lucide-react";
+import { Bed, Car, Phone, ChevronDown } from "lucide-react";
 
 // Southern Utah cities with zip codes
 const SOUTHERN_UTAH_CITIES = [

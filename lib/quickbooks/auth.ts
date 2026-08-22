@@ -93,7 +93,7 @@ function basicAuth() {
 
 export async function exchangeCode(
   code: string,
-  realmId: string
+  _realmId: string
 ): Promise<QBOTokens> {
   const { token_endpoint } = await getDiscovery();
   const res = await fetch(token_endpoint, {

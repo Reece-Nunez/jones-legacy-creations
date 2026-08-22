@@ -5,7 +5,6 @@ import { useSearchParams } from "next/navigation";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
-import { Select } from "@/components/ui/Select";
 import Link from "next/link";
 import {
   Building2,
@@ -717,7 +716,7 @@ function SettingsPageInner() {
 
                     {/* Step indicators */}
                     <div className="flex gap-4">
-                      {steps.map((step, i) => {
+                      {steps.map((step) => {
                         const done = syncResults[step.key] !== undefined;
                         const active = syncPhase === step.key;
                         const result = syncResults[step.key];

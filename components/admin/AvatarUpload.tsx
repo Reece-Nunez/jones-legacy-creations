@@ -128,10 +128,6 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
 
       // Scale from preview coords to canvas coords
       const canvasScale = CROP_SIZE / previewSize;
-      const sx = ((drawW - previewSize) / 2 - offset.x) * canvasScale;
-      const sy = ((drawH - previewSize) / 2 - offset.y) * canvasScale;
-      const sSize = previewSize * canvasScale;
-
       // Draw circle clip
       ctx.beginPath();
       ctx.arc(CROP_SIZE / 2, CROP_SIZE / 2, CROP_SIZE / 2, 0, Math.PI * 2);
@@ -203,6 +199,9 @@ export function AvatarUpload({ currentUrl, initials, onUploaded }: AvatarUploadP
           onTouchMove={handleTouchMove}
           onTouchEnd={handleTouchEnd}
         >
+          {/* eslint-disable-next-line @next/next/no-img-element --
+              local object URL being dragged for cropping, not a remote asset
+              next/image could optimise. */}
           <img
             src={previewSrc}
             alt="Crop preview"

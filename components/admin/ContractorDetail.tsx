@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import toast from "react-hot-toast";
-import { Contractor, ContractorInsuranceDocument, ContractorPayment, TRADES } from "@/lib/types/database";
+import { Contractor, ContractorInsuranceDocument, ContractorPayment } from "@/lib/types/database";
 import ContractorForm from "./ContractorForm";
 import {
   ArrowLeft,
@@ -15,7 +15,6 @@ import {
   Pencil,
   Edit3,
   Trash2,
-  DollarSign,
   Clock,
   CheckCircle2,
   Save,
@@ -32,7 +31,6 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
 import { formatCurrency } from "@/lib/formatters";
 
 /** Sanitize filename for Supabase Storage (strip brackets and special chars) */

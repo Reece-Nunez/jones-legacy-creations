@@ -18,7 +18,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Textarea } from "@/components/ui/Textarea";
 import { Select } from "@/components/ui/Select";
-import { Palette, ArrowRight, Instagram, Facebook, Phone } from "lucide-react";
+import { Palette, Instagram, Facebook, Phone } from "lucide-react";
 
 /* Hallmark · genre: editorial · macrostructure: Photographic
  * design-system: design.md · designed-as-app

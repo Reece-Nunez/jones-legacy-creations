@@ -39,7 +39,6 @@ function parseCurrency(value: string): number {
 }
 
 export function SimpleQuoteEditor({
-  quoteId,
   jobType,
   initialItems,
   onSave,

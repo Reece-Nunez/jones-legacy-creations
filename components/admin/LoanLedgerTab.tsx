@@ -629,7 +629,7 @@ export default function LoanLedgerTab({ projectId, entries, draws }: Props) {
           </div>
         ) : (
           <div className="divide-y divide-gray-100">
-            {rowsWithBalance.map(({ entry, computedBalance, principalAfter, interestAfter, mismatch }) => {
+            {rowsWithBalance.map(({ entry, computedBalance, mismatch }) => {
               const meta = ENTRY_TYPE_META[entry.entry_type];
               return editingId === entry.id ? (
                 <div key={entry.id} className="p-3 bg-gray-50">

@@ -392,7 +392,6 @@ function SettlementCard({
           <SettlementEditor
             form={activeForm}
             setForm={pendingReview ? setPendingReview : setForm}
-            kind={kind}
             onSave={() => save(activeForm)}
             onCancel={() => {
               setEditing(false);
@@ -504,14 +503,12 @@ function Row({
 function SettlementEditor({
   form,
   setForm,
-  kind,
   onSave,
   onCancel,
   loading,
 }: {
   form: SettlementForm;
   setForm: React.Dispatch<React.SetStateAction<SettlementForm>> | React.Dispatch<React.SetStateAction<SettlementForm | null>>;
-  kind: ProjectSettlementType;
   onSave: () => void;
   onCancel: () => void;
   loading: boolean;

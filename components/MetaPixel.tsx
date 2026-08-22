@@ -43,6 +43,9 @@ export function MetaPixel() {
       </Script>
       {/* noscript fallback for the small slice of users without JS */}
       <noscript>
+        {/* eslint-disable-next-line @next/next/no-img-element --
+            a noscript tracking pixel has to be a plain <img>; next/image
+            renders nothing without JavaScript. */}
         <img
           height="1"
           width="1"

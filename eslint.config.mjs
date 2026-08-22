@@ -56,11 +56,30 @@ const eslintConfig = defineConfig([
     // `npm run lint` something nobody runs — and a rule nobody runs is not a
     // rule. They are scratch copies; the real files are linted in place.
     ".claude/**",
+    // Vendored design-sync tooling, untracked and not ours to lint.
+    ".ds-sync/**",
   ]),
   {
     files: ["app/**/*.{ts,tsx}", "components/**/*.{ts,tsx}"],
     rules: {
       "no-restricted-syntax": ["error", ...NO_INLINE_MONEY_MATH],
+    },
+  },
+  {
+    // An underscore prefix marks a binding that exists for its position, not
+    // its value: a route handler's unused `request`, a destructured field kept
+    // to document the shape. Without this they're indistinguishable from
+    // genuine dead code, so the real ones get lost in the noise.
+    rules: {
+      "@typescript-eslint/no-unused-vars": [
+        "warn",
+        {
+          argsIgnorePattern: "^_",
+          varsIgnorePattern: "^_",
+          caughtErrorsIgnorePattern: "^_",
+          destructuredArrayIgnorePattern: "^_",
+        },
+      ],
     },
   },
 ]);

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { buildAuthUrl } from "@/lib/quickbooks/auth";
 import { createClient } from "@/lib/supabase/server";
 
-export async function GET(request: NextRequest) {
+export async function GET(_request: NextRequest) {
   // Require admin session
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();

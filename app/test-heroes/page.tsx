@@ -3,7 +3,7 @@
 import Link from "next/link";
 import Image from "next/image";
 import { motion, AnimatePresence } from "framer-motion";
-import { ArrowRight, ChevronLeft, ChevronRight, Home, Building2, Palette, X } from "lucide-react";
+import { ArrowRight, ChevronLeft, X } from "lucide-react";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
 import { Button } from "@/components/ui/Button";

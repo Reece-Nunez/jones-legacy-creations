@@ -6,7 +6,6 @@ import { ClipboardCheck, Inbox, Phone } from "lucide-react";
 import {
   type Estimate,
   type EstimateStatus,
-  ESTIMATE_STATUS_COLORS,
 } from "@/lib/types/database";
 import EstimateCard from "@/components/admin/EstimateCard";
 

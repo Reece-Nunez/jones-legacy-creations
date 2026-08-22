@@ -18,7 +18,6 @@ import type { ExtractedDocumentData } from "@/lib/extract-document";
 
 interface SmartUploadProps {
   onUpload: (files: File[], aiResults?: Map<string, ExtractedDocumentData>) => Promise<void>;
-  accept?: string;
   multiple?: boolean;
   maxSizeMB?: number;
   showAiAnalyze?: boolean;
@@ -39,7 +38,6 @@ function isImageFile(file: File): boolean {
 
 export default function SmartUpload({
   onUpload,
-  accept = "image/*,.pdf",
   multiple = true,
   maxSizeMB = 25,
   showAiAnalyze = true,

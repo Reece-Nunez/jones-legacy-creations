@@ -81,7 +81,6 @@ export default function PostForm({ existing }: { existing?: ExistingPost }) {
       const next = slugify(form.title);
       setForm((prev) => (prev.slug === next ? prev : { ...prev, slug: next }));
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [form.title, slugTouched]);
 
   const previewHtml = useMemo(
