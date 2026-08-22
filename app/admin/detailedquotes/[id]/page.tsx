@@ -16,7 +16,9 @@ export default async function DetailedQuoteDetailPage({
     .eq("id", id)
     .single();
 
+  // Fetched to 404 on a bad id. QuoteDetail loads its own FullQuote (with
+  // sections and items) client-side, so there is nothing here to hand it.
   if (!quote) notFound();
 
-  return <QuoteDetail quoteId={id} initialQuote={quote} />;
+  return <QuoteDetail quoteId={id} />;
 }

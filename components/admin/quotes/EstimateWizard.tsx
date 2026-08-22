@@ -412,7 +412,6 @@ export function EstimateWizard() {
               Add your trade costs and pricing. Click Save to lock in your numbers before proceeding.
             </p>
             <SimpleQuoteEditor
-              quoteId="new"
               jobType={jobType}
               initialItems={simpleItems.length > 0 ? simpleItems : undefined}
               onChange={(items) => {

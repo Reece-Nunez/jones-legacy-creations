@@ -25,7 +25,6 @@ export interface SimpleQuoteItem {
 }
 
 interface SimpleQuoteEditorProps {
-  quoteId: string;
   jobType: JobTypeSlug;
   initialItems?: SimpleQuoteItem[];
   onSave: (items: SimpleQuoteItem[]) => Promise<void>;

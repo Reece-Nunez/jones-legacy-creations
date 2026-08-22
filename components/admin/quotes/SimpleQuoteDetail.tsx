@@ -311,7 +311,6 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
 
       {/* Cost Breakdown */}
       <SimpleQuoteEditor
-        quoteId={quoteId}
         jobType={quote.job_type_slug as JobTypeSlug}
         initialItems={simpleItems.length > 0 ? simpleItems : undefined}
         onSave={async (items) => {

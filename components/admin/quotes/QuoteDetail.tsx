@@ -14,14 +14,7 @@ import {
   ArrowLeft,
   Calculator,
   Save,
-  ChevronDown,
-  ChevronRight,
-  Trash2,
   Plus,
-  Eye,
-  EyeOff,
-  Lock,
-  Tag,
   FileText,
   Printer,
   FolderPlus,
@@ -38,8 +31,6 @@ import type {
   QuoteFile,
   QuoteRevision,
   QuoteStatus,
-  CostCategorySlug,
-  ItemUnit,
   AllowanceCategory,
   ExclusionCategory,
 } from "@/lib/types/quotes";
@@ -48,8 +39,6 @@ import {
   ESTIMATE_STAGE_LABELS,
   QUOTE_STATUS_LABELS,
   QUOTE_STATUS_COLORS,
-  COST_CATEGORY_LABELS,
-  ITEM_UNIT_LABELS,
   ALLOWANCE_CATEGORY_LABELS,
 } from "@/lib/types/quotes";
 import { formatCurrency as fmt } from "@/lib/formatters";
@@ -71,7 +60,6 @@ interface FullQuote extends Quote {
 
 interface QuoteDetailProps {
   quoteId: string;
-  initialQuote: Quote;
 }
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
@@ -93,14 +81,6 @@ const STATUS_OPTIONS = Object.entries(QUOTE_STATUS_LABELS).map(
   ([value, label]) => ({ value, label })
 );
 
-const COST_CATEGORY_OPTIONS = Object.entries(COST_CATEGORY_LABELS).map(
-  ([value, label]) => ({ value, label })
-);
-
-const UNIT_OPTIONS = Object.entries(ITEM_UNIT_LABELS).map(
-  ([value, label]) => ({ value, label })
-);
-
 const ALLOWANCE_CAT_OPTIONS = Object.entries(ALLOWANCE_CATEGORY_LABELS).map(
   ([value, label]) => ({ value, label })
 );
@@ -116,27 +96,12 @@ const EXCLUSION_CAT_OPTIONS = [
 
 // ── Main Component ───────────────────────────────────────────────────────────
 
-export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
+export function QuoteDetail({ quoteId }: QuoteDetailProps) {
   const [quote, setQuote] = useState<FullQuote | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<Tab>("Overview");
-  const [saving, setSaving] = useState(false);
   const [recalculating, setRecalculating] = useState(false);
 
-  // Expandable sections state
-  const [expandedSections, setExpandedSections] = useState<Set<string>>(
-    new Set()
-  );
-
-  // Inline editing
-  const [editingItem, setEditingItem] = useState<string | null>(null);
-  const [editingValues, setEditingValues] = useState<Record<string, unknown>>(
-    {}
-  );
-
-  // Add forms
-  const [showAddItem, setShowAddItem] = useState<string | null>(null);
-  const [showAddSection, setShowAddSection] = useState(false);
   const [showAddAllowance, setShowAddAllowance] = useState(false);
   const [showAddExclusion, setShowAddExclusion] = useState(false);
 
@@ -150,9 +115,6 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
   // Send quote modal
   const [showSendModal, setShowSendModal] = useState(false);
   const [simpleItems, setSimpleItems] = useState<SimpleQuoteItem[]>([]);
-
-  // Delete confirmation
-  const [deletingItem, setDeletingItem] = useState<string | null>(null);
 
   const fetchQuote = useCallback(async () => {
     try {
@@ -229,84 +191,6 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
   };
 
   // Items
-  const saveItem = async (itemId: string) => {
-    setSaving(true);
-    try {
-      const res = await fetch(
-        `/api/admin/quotes/${quoteId}/items/${itemId}`,
-        {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(editingValues),
-        }
-      );
-      if (!res.ok) throw new Error();
-      toast.success("Item updated");
-      setEditingItem(null);
-      setEditingValues({});
-      await fetchQuote();
-    } catch {
-      toast.error("Failed to update item");
-    } finally {
-      setSaving(false);
-    }
-  };
-
-  const deleteItem = async (itemId: string) => {
-    try {
-      const res = await fetch(
-        `/api/admin/quotes/${quoteId}/items/${itemId}`,
-        { method: "DELETE" }
-      );
-      if (!res.ok) throw new Error();
-      toast.success("Item deleted");
-      setDeletingItem(null);
-      await fetchQuote();
-    } catch {
-      toast.error("Failed to delete item");
-    }
-  };
-
-  const addItem = async (sectionId: string, form: Record<string, unknown>) => {
-    try {
-      const res = await fetch(`/api/admin/quotes/${quoteId}/items`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ section_id: sectionId, ...form }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success("Item added");
-      setShowAddItem(null);
-      await fetchQuote();
-    } catch {
-      toast.error("Failed to add item");
-    }
-  };
-
-  const addSection = async (form: {
-    category_slug: CostCategorySlug;
-    name: string;
-  }) => {
-    try {
-      const sortOrder = (quote?.sections?.length ?? 0) + 1;
-      const res = await fetch(`/api/admin/quotes/${quoteId}/sections`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          ...form,
-          sort_order: sortOrder,
-          is_visible_to_client: true,
-        }),
-      });
-      if (!res.ok) throw new Error();
-      toast.success("Section added");
-      setShowAddSection(false);
-      await fetchQuote();
-    } catch {
-      toast.error("Failed to add section");
-    }
-  };
-
   const addAllowance = async (form: {
     category: AllowanceCategory;
     description: string;
@@ -395,29 +279,6 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
   };
 
   // ── Helpers ──────────────────────────────────────────────────────────────
-
-  const toggleSection = (id: string) => {
-    setExpandedSections((prev) => {
-      const next = new Set(prev);
-      if (next.has(id)) next.delete(id);
-      else next.add(id);
-      return next;
-    });
-  };
-
-  const startEditItem = (item: QuoteItem) => {
-    setEditingItem(item.id);
-    setEditingValues({
-      description: item.description,
-      quantity: item.quantity,
-      unit: item.unit,
-      material_cost: item.material_cost,
-      labor_cost: item.labor_cost,
-      equipment_cost: item.equipment_cost,
-      subcontractor_cost: item.subcontractor_cost,
-      markup_pct: item.markup_pct,
-    });
-  };
 
   // ── Loading / Error ──────────────────────────────────────────────────────
 
@@ -553,7 +414,6 @@ export function QuoteDetail({ quoteId, initialQuote }: QuoteDetailProps) {
       {activeTab === "Overview" && <OverviewTab quote={quote} />}
       {activeTab === "Cost Breakdown" && (
         <SimpleQuoteEditor
-          quoteId={quoteId}
           jobType={quote.job_type_slug}
           initialItems={simpleItems.length > 0 ? simpleItems : undefined}
           onSave={async (items) => {
@@ -770,561 +630,6 @@ function OverviewTab({ quote }: { quote: FullQuote }) {
         )}
       </Card>
     </div>
-  );
-}
-
-// ── Cost Breakdown Tab ───────────────────────────────────────────────────────
-
-function CostBreakdownTab({
-  quote,
-  expandedSections,
-  toggleSection,
-  editingItem,
-  editingValues,
-  setEditingValues,
-  startEditItem,
-  saveItem,
-  cancelEditItem,
-  saving,
-  deletingItem,
-  setDeletingItem,
-  deleteItem,
-  showAddItem,
-  setShowAddItem,
-  addItem,
-  showAddSection,
-  setShowAddSection,
-  addSection,
-}: {
-  quote: FullQuote;
-  expandedSections: Set<string>;
-  toggleSection: (id: string) => void;
-  editingItem: string | null;
-  editingValues: Record<string, unknown>;
-  setEditingValues: (v: Record<string, unknown>) => void;
-  startEditItem: (item: QuoteItem) => void;
-  saveItem: (itemId: string) => void;
-  cancelEditItem: () => void;
-  saving: boolean;
-  deletingItem: string | null;
-  setDeletingItem: (id: string | null) => void;
-  deleteItem: (id: string) => void;
-  showAddItem: string | null;
-  setShowAddItem: (id: string | null) => void;
-  addItem: (sectionId: string, form: Record<string, unknown>) => void;
-  showAddSection: boolean;
-  setShowAddSection: (v: boolean) => void;
-  addSection: (form: { category_slug: CostCategorySlug; name: string }) => void;
-}) {
-  return (
-    <div className="space-y-4">
-      {quote.sections.map((section) => {
-        const isExpanded = expandedSections.has(section.id);
-        return (
-          <Card key={section.id} className="!p-0 overflow-hidden">
-            {/* Section header */}
-            <button
-              onClick={() => toggleSection(section.id)}
-              className="w-full flex items-center justify-between px-6 py-4 hover:bg-gray-50 transition-colors"
-            >
-              <div className="flex items-center gap-3">
-                {isExpanded ? (
-                  <ChevronDown className="w-4 h-4 text-gray-400" />
-                ) : (
-                  <ChevronRight className="w-4 h-4 text-gray-400" />
-                )}
-                <span className="font-medium text-gray-900">
-                  {section.name}
-                </span>
-                {!section.is_visible_to_client && (
-                  <span className="text-xs text-gray-400 flex items-center gap-1">
-                    <EyeOff className="w-3 h-3" /> Internal
-                  </span>
-                )}
-              </div>
-              <span className="text-sm font-medium text-gray-700">
-                {fmt(section.subtotal)}
-              </span>
-            </button>
-
-            {/* Items table */}
-            {isExpanded && (
-              <div className="border-t border-gray-200">
-                {section.items.length > 0 ? (
-                  <div className="overflow-x-auto">
-                    <table className="w-full text-sm min-w-[700px]">
-                      <thead>
-                        <tr className="bg-gray-50 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                          <th className="px-3 py-2">Description</th>
-                          <th className="px-3 py-2 text-right">Qty</th>
-                          <th className="px-3 py-2">Unit</th>
-                          <th className="px-3 py-2 text-right">Material</th>
-                          <th className="px-3 py-2 text-right">Labor</th>
-                          <th className="px-3 py-2 text-right">Equip</th>
-                          <th className="px-3 py-2 text-right">Sub</th>
-                          <th className="px-3 py-2 text-right">Markup%</th>
-                          <th className="px-3 py-2 text-right">Tax</th>
-                          <th className="px-3 py-2 text-right">Total</th>
-                          <th className="px-3 py-2 w-10"></th>
-                          <th className="px-3 py-2 w-20"></th>
-                        </tr>
-                      </thead>
-                      <tbody className="divide-y divide-gray-200">
-                        {section.items.map((item) => (
-                          <ItemRow
-                            key={item.id}
-                            item={item}
-                            isEditing={editingItem === item.id}
-                            editingValues={editingValues}
-                            setEditingValues={setEditingValues}
-                            onStartEdit={() => startEditItem(item)}
-                            onSave={() => saveItem(item.id)}
-                            onCancel={cancelEditItem}
-                            saving={saving}
-                            isDeleting={deletingItem === item.id}
-                            onRequestDelete={() => setDeletingItem(item.id)}
-                            onConfirmDelete={() => deleteItem(item.id)}
-                            onCancelDelete={() => setDeletingItem(null)}
-                          />
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                ) : (
-                  <p className="px-6 py-4 text-sm text-gray-400">
-                    No line items yet.
-                  </p>
-                )}
-
-                {/* Add item */}
-                {showAddItem === section.id ? (
-                  <AddItemForm
-                    onSubmit={(form) => addItem(section.id, form)}
-                    onCancel={() => setShowAddItem(null)}
-                  />
-                ) : (
-                  <div className="px-6 py-3 border-t border-gray-100">
-                    <button
-                      onClick={() => setShowAddItem(section.id)}
-                      className="text-sm text-gray-500 hover:text-gray-900 flex items-center gap-1"
-                    >
-                      <Plus className="w-3 h-3" /> Add Item
-                    </button>
-                  </div>
-                )}
-              </div>
-            )}
-          </Card>
-        );
-      })}
-
-      {/* Add section */}
-      {showAddSection ? (
-        <AddSectionForm
-          onSubmit={addSection}
-          onCancel={() => setShowAddSection(false)}
-        />
-      ) : (
-        <button
-          onClick={() => setShowAddSection(true)}
-          className="w-full py-3 border-2 border-dashed border-gray-300 rounded-lg text-sm text-gray-500 hover:border-gray-400 hover:text-gray-700 flex items-center justify-center gap-2"
-        >
-          <Plus className="w-4 h-4" /> Add Section
-        </button>
-      )}
-    </div>
-  );
-}
-
-// ── Item Row ─────────────────────────────────────────────────────────────────
-
-function ItemRow({
-  item,
-  isEditing,
-  editingValues,
-  setEditingValues,
-  onStartEdit,
-  onSave,
-  onCancel,
-  saving,
-  isDeleting,
-  onRequestDelete,
-  onConfirmDelete,
-  onCancelDelete,
-}: {
-  item: QuoteItem;
-  isEditing: boolean;
-  editingValues: Record<string, unknown>;
-  setEditingValues: (v: Record<string, unknown>) => void;
-  onStartEdit: () => void;
-  onSave: () => void;
-  onCancel: () => void;
-  saving: boolean;
-  isDeleting: boolean;
-  onRequestDelete: () => void;
-  onConfirmDelete: () => void;
-  onCancelDelete: () => void;
-}) {
-  const updateField = (field: string, value: unknown) => {
-    setEditingValues({ ...editingValues, [field]: value });
-  };
-
-  if (isEditing) {
-    return (
-      <tr className="bg-yellow-50">
-        <td className="px-3 py-2">
-          <input
-            className="w-full border border-gray-300 rounded px-2 py-1 text-sm"
-            value={(editingValues.description as string) ?? ""}
-            onChange={(e) => updateField("description", e.target.value)}
-          />
-        </td>
-        <td className="px-3 py-2">
-          <input
-            type="number"
-            className="w-20 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-            value={(editingValues.quantity as number) ?? 0}
-            onChange={(e) =>
-              updateField("quantity", parseFloat(e.target.value) || 0)
-            }
-          />
-        </td>
-        <td className="px-3 py-2">
-          <select
-            className="border border-gray-300 rounded px-2 py-1 text-sm"
-            value={(editingValues.unit as string) ?? "ea"}
-            onChange={(e) => updateField("unit", e.target.value)}
-          >
-            {UNIT_OPTIONS.map((o) => (
-              <option key={o.value} value={o.value}>
-                {o.label}
-              </option>
-            ))}
-          </select>
-        </td>
-        <td className="px-3 py-2">
-          <input
-            type="number"
-            className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-            value={(editingValues.material_cost as number) ?? 0}
-            onChange={(e) =>
-              updateField("material_cost", parseFloat(e.target.value) || 0)
-            }
-          />
-        </td>
-        <td className="px-3 py-2">
-          <input
-            type="number"
-            className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-            value={(editingValues.labor_cost as number) ?? 0}
-            onChange={(e) =>
-              updateField("labor_cost", parseFloat(e.target.value) || 0)
-            }
-          />
-        </td>
-        <td className="px-3 py-2">
-          <input
-            type="number"
-            className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-            value={(editingValues.equipment_cost as number) ?? 0}
-            onChange={(e) =>
-              updateField("equipment_cost", parseFloat(e.target.value) || 0)
-            }
-          />
-        </td>
-        <td className="px-3 py-2">
-          <input
-            type="number"
-            className="w-24 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-            value={(editingValues.subcontractor_cost as number) ?? 0}
-            onChange={(e) =>
-              updateField(
-                "subcontractor_cost",
-                parseFloat(e.target.value) || 0
-              )
-            }
-          />
-        </td>
-        <td className="px-3 py-2">
-          <input
-            type="number"
-            className="w-16 border border-gray-300 rounded px-2 py-1 text-sm text-right"
-            value={(editingValues.markup_pct as number) ?? 0}
-            onChange={(e) =>
-              updateField("markup_pct", parseFloat(e.target.value) || 0)
-            }
-          />
-        </td>
-        <td className="px-3 py-2 text-right text-gray-400">--</td>
-        <td className="px-3 py-2 text-right text-gray-400">--</td>
-        <td className="px-3 py-2" />
-        <td className="px-3 py-2">
-          <div className="flex items-center gap-1">
-            <button
-              onClick={onSave}
-              disabled={saving}
-              className="text-xs text-green-600 hover:text-green-800 font-medium"
-            >
-              Save
-            </button>
-            <button
-              onClick={onCancel}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              Cancel
-            </button>
-          </div>
-        </td>
-      </tr>
-    );
-  }
-
-  return (
-    <tr
-      className="hover:bg-gray-50 cursor-pointer"
-      onClick={onStartEdit}
-    >
-      <td className="px-3 py-2 text-gray-900">
-        <div className="flex items-center gap-2">
-          {item.description}
-          {item.is_internal_only && (
-            <span title="Internal only">
-              <Lock className="w-3 h-3 text-gray-400" />
-            </span>
-          )}
-          {item.is_allowance && (
-            <span title="Allowance">
-              <Tag className="w-3 h-3 text-blue-500" />
-            </span>
-          )}
-          {item.is_vendor_quote_required && (
-            <span title="Vendor quote required">
-              <FileText className="w-3 h-3 text-orange-500" />
-            </span>
-          )}
-        </div>
-      </td>
-      <td className="px-3 py-2 text-right">{item.quantity}</td>
-      <td className="px-3 py-2">{ITEM_UNIT_LABELS[item.unit]}</td>
-      <td className="px-3 py-2 text-right">{fmt(item.material_cost)}</td>
-      <td className="px-3 py-2 text-right">{fmt(item.labor_cost)}</td>
-      <td className="px-3 py-2 text-right">{fmt(item.equipment_cost)}</td>
-      <td className="px-3 py-2 text-right">{fmt(item.subcontractor_cost)}</td>
-      <td className="px-3 py-2 text-right">{item.markup_pct}%</td>
-      <td className="px-3 py-2 text-right">{fmt(item.tax)}</td>
-      <td className="px-3 py-2 text-right font-medium">{fmt(item.total)}</td>
-      <td className="px-3 py-2" />
-      <td className="px-3 py-2">
-        {isDeleting ? (
-          <div className="flex items-center gap-1" onClick={(e) => e.stopPropagation()}>
-            <button
-              onClick={onConfirmDelete}
-              className="text-xs text-red-600 hover:text-red-800 font-medium"
-            >
-              Yes
-            </button>
-            <button
-              onClick={onCancelDelete}
-              className="text-xs text-gray-400 hover:text-gray-600"
-            >
-              No
-            </button>
-          </div>
-        ) : (
-          <button
-            onClick={(e) => {
-              e.stopPropagation();
-              onRequestDelete();
-            }}
-            className="text-gray-400 hover:text-red-500"
-          >
-            <Trash2 className="w-3.5 h-3.5" />
-          </button>
-        )}
-      </td>
-    </tr>
-  );
-}
-
-// ── Add Item Form ────────────────────────────────────────────────────────────
-
-function AddItemForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (form: Record<string, unknown>) => void;
-  onCancel: () => void;
-}) {
-  const [form, setForm] = useState({
-    description: "",
-    quantity: 1,
-    unit: "ea" as ItemUnit,
-    material_cost: 0,
-    labor_cost: 0,
-    equipment_cost: 0,
-    subcontractor_cost: 0,
-    markup_pct: 0,
-  });
-
-  return (
-    <div className="px-6 py-4 border-t border-gray-100 bg-gray-50 space-y-3">
-      <h4 className="text-sm font-medium text-gray-700">Add Line Item</h4>
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-        <Input
-          label="Description"
-          value={form.description}
-          onChange={(e) => setForm({ ...form, description: e.target.value })}
-          className="!py-2 !text-sm"
-        />
-        <Input
-          label="Qty"
-          type="number"
-          value={form.quantity}
-          onChange={(e) =>
-            setForm({ ...form, quantity: parseFloat(e.target.value) || 0 })
-          }
-          className="!py-2 !text-sm"
-        />
-        <Select
-          label="Unit"
-          options={UNIT_OPTIONS}
-          value={form.unit}
-          onChange={(e) =>
-            setForm({ ...form, unit: e.target.value as ItemUnit })
-          }
-          className="!py-2 !text-sm"
-        />
-        <Input
-          label="Material"
-          type="number"
-          value={form.material_cost}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              material_cost: parseFloat(e.target.value) || 0,
-            })
-          }
-          className="!py-2 !text-sm"
-        />
-        <Input
-          label="Labor"
-          type="number"
-          value={form.labor_cost}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              labor_cost: parseFloat(e.target.value) || 0,
-            })
-          }
-          className="!py-2 !text-sm"
-        />
-        <Input
-          label="Equipment"
-          type="number"
-          value={form.equipment_cost}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              equipment_cost: parseFloat(e.target.value) || 0,
-            })
-          }
-          className="!py-2 !text-sm"
-        />
-        <Input
-          label="Subcontractor"
-          type="number"
-          value={form.subcontractor_cost}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              subcontractor_cost: parseFloat(e.target.value) || 0,
-            })
-          }
-          className="!py-2 !text-sm"
-        />
-        <Input
-          label="Markup %"
-          type="number"
-          value={form.markup_pct}
-          onChange={(e) =>
-            setForm({
-              ...form,
-              markup_pct: parseFloat(e.target.value) || 0,
-            })
-          }
-          className="!py-2 !text-sm"
-        />
-      </div>
-      <div className="flex items-center gap-2">
-        <Button
-          size="sm"
-          onClick={() => {
-            if (!form.description.trim()) {
-              toast.error("Description is required");
-              return;
-            }
-            onSubmit(form);
-          }}
-        >
-          Add
-        </Button>
-        <Button variant="outline" size="sm" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </div>
-  );
-}
-
-// ── Add Section Form ─────────────────────────────────────────────────────────
-
-function AddSectionForm({
-  onSubmit,
-  onCancel,
-}: {
-  onSubmit: (form: { category_slug: CostCategorySlug; name: string }) => void;
-  onCancel: () => void;
-}) {
-  const [slug, setSlug] = useState<CostCategorySlug>("sitework");
-  const [name, setName] = useState("");
-
-  return (
-    <Card title="Add Section">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-        <Select
-          label="Category"
-          options={COST_CATEGORY_OPTIONS}
-          value={slug}
-          onChange={(e) => {
-            const val = e.target.value as CostCategorySlug;
-            setSlug(val);
-            if (!name) setName(COST_CATEGORY_LABELS[val]);
-          }}
-        />
-        <Input
-          label="Section Name"
-          value={name}
-          onChange={(e) => setName(e.target.value)}
-        />
-      </div>
-      <div className="flex items-center gap-2 mt-4">
-        <Button
-          size="sm"
-          onClick={() => {
-            if (!name.trim()) {
-              toast.error("Section name is required");
-              return;
-            }
-            onSubmit({ category_slug: slug, name });
-          }}
-        >
-          Add Section
-        </Button>
-        <Button variant="outline" size="sm" onClick={onCancel}>
-          Cancel
-        </Button>
-      </div>
-    </Card>
   );
 }
 
