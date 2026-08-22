@@ -437,7 +437,6 @@ export function DrawsTab({
     editing: boolean;
   }
   const [reviewDocs, setReviewDocs] = useState<UploadedDocReview[]>([]);
-  const [reviewDrawId, setReviewDrawId] = useState<string | null>(null);
   const [savingReview, setSavingReview] = useState(false);
 
   // Inline row editing — edit doc + linked payment fields together
@@ -657,7 +656,6 @@ export function DrawsTab({
         // Show review step
         if (uploadedDocs.length > 0) {
           setReviewDocs(uploadedDocs);
-          setReviewDrawId(drawId);
         }
       }
     }
@@ -941,7 +939,6 @@ export function DrawsTab({
     // Show review step if we have docs to review
     if (uploadedDocs.length > 0) {
       setReviewDocs(uploadedDocs);
-      setReviewDrawId(drawId);
     }
   }
 
@@ -985,13 +982,11 @@ export function DrawsTab({
     } finally {
       setSavingReview(false);
       setReviewDocs([]);
-      setReviewDrawId(null);
     }
   }
 
   function dismissReview() {
     setReviewDocs([]);
-    setReviewDrawId(null);
   }
 
   const sortedDraws = [...draws].sort((a, b) => b.draw_number - a.draw_number);
