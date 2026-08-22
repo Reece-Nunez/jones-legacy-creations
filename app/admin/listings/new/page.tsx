@@ -16,7 +16,7 @@ export default async function NewListingPage() {
       <div>
         <h1 className="text-2xl font-bold text-gray-900">New Listing</h1>
         <p className="text-sm text-gray-500">
-          Set status to Active when you're ready to publish to the site.
+          Set status to Active when you&apos;re ready to publish to the site.
         </p>
       </div>
       <ListingForm />

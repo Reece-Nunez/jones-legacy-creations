@@ -1,7 +1,33 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useSyncExternalStore } from "react";
 import { X, Share, PlusSquare, Download } from "lucide-react";
+import { useStoredValue, writeStoredValue } from "@/lib/hooks/useBrowserStore";
+
+const DISMISSED_KEY = "pwa-banner-dismissed";
+
+/** Never changes after load, so nothing to subscribe to. */
+const noSubscription = () => () => {};
+
+/**
+ * Which install flow applies, or null when the banner has no business showing:
+ * already running standalone, or on a platform we can't install to.
+ *
+ * Returns a primitive so it is safe as a useSyncExternalStore snapshot — an
+ * object would be a fresh reference each call and loop forever.
+ */
+function detectPlatform(): "ios" | "android" | null {
+  if (window.matchMedia("(display-mode: standalone)").matches) return null;
+  if ((window.navigator as { standalone?: boolean }).standalone === true) return null;
+
+  const ua = navigator.userAgent.toLowerCase();
+  const isIos =
+    /iphone|ipad|ipod/.test(ua) ||
+    (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  if (isIos) return "ios";
+  if (/android/.test(ua)) return "android";
+  return null;
+}
 
 /**
  * Shows a one-time install banner for PWA.
@@ -10,47 +36,30 @@ import { X, Share, PlusSquare, Download } from "lucide-react";
  * - Hides if already installed (standalone mode) or previously dismissed
  */
 export function PwaInstallBanner() {
-  const [show, setShow] = useState(false);
-  const [platform, setPlatform] = useState<"ios" | "android" | null>(null);
+  // Environment detection is a read of the browser, not React state, so it is
+  // a store snapshot rather than something an effect assigns after mount.
+  const platform = useSyncExternalStore(noSubscription, detectPlatform, () => null);
+  const dismissed = useStoredValue(DISMISSED_KEY) !== null;
   const [deferredPrompt, setDeferredPrompt] = useState<Event | null>(null);
 
+  // The effect now only subscribes, which is what effects are for. Android
+  // waits for this event before showing anything; iOS has no equivalent and
+  // shows immediately.
   useEffect(() => {
-    // Don't show if already installed as PWA
-    if (window.matchMedia("(display-mode: standalone)").matches) return;
-    // @ts-expect-error - Safari-specific standalone check
-    if (window.navigator.standalone === true) return;
-
-    // Don't show if dismissed before
-    if (localStorage.getItem("pwa-banner-dismissed")) return;
-
-    // Detect platform
-    const ua = navigator.userAgent.toLowerCase();
-    const isIos = /iphone|ipad|ipod/.test(ua) || (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
-    const isAndroid = /android/.test(ua);
-
-    if (isIos) {
-      setPlatform("ios");
-      setShow(true);
-    } else if (isAndroid) {
-      setPlatform("android");
-      // Wait for the install prompt on Android
-    }
-
-    // Android/Chrome install prompt
     const handlePrompt = (e: Event) => {
       e.preventDefault();
       setDeferredPrompt(e);
-      setPlatform("android");
-      setShow(true);
     };
-
     window.addEventListener("beforeinstallprompt", handlePrompt);
     return () => window.removeEventListener("beforeinstallprompt", handlePrompt);
   }, []);
 
+  const show =
+    !dismissed &&
+    (platform === "ios" || (platform === "android" && deferredPrompt !== null));
+
   const dismiss = useCallback(() => {
-    setShow(false);
-    localStorage.setItem("pwa-banner-dismissed", "1");
+    writeStoredValue(DISMISSED_KEY, "1");
   }, []);
 
   const installAndroid = useCallback(async () => {

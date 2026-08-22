@@ -32,6 +32,7 @@ import {
 import { createClient } from "@/lib/supabase/client";
 import { useEnsureProfile } from "@/lib/hooks/useEnsureProfile";
 import { CONTRACTOR_ROLE, hasPermission, type Permission } from "@/lib/roles";
+import { useMediaQuery, useStoredValue, writeStoredValue } from "@/lib/hooks/useBrowserStore";
 import { Sheet, SheetTrigger, SheetContent } from "@/components/ui/sheet";
 import { Separator } from "@/components/ui/separator";
 import SearchBar from "./SearchBar";
@@ -71,6 +72,8 @@ type NavSection = {
   permission?: Permission;
   links: NavLink[];
 };
+
+const SIDEBAR_COLLAPSED_KEY = "admin-sidebar-collapsed";
 
 const navSections: NavSection[] = [
   {
@@ -144,29 +147,23 @@ export default function AdminShell({
   );
   const canViewSettings = !!role && hasPermission(role, "settings:view");
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [collapsed, setCollapsed] = useState(true); // default true, overridden by localStorage
+  // The sidebar preference is browser state, not React state: it lives in
+  // localStorage and, absent a stored choice, follows viewport width. Holding
+  // a copy in useState meant a mount effect had to sync it, which cost an
+  // extra render on every page and could disagree with storage.
+  const storedCollapsed = useStoredValue(SIDEBAR_COLLAPSED_KEY);
+  // Collapsed on tablet, expanded on desktop, when nothing has been chosen.
+  // The server can't measure the viewport, so it renders the collapsed rail
+  // and hydration corrects it — the narrower of the two is the safer guess.
+  const wideViewport = useMediaQuery("(min-width: 1280px)");
+  const collapsed = storedCollapsed !== null ? storedCollapsed === "true" : !wideViewport;
   const [newEstimateCount, setNewEstimateCount] = useState(0);
   const [missingW9Count, setMissingW9Count] = useState(0);
   const [missingDetailsCount, setMissingDetailsCount] = useState(0);
   const [draftQuoteCount, setDraftQuoteCount] = useState(0);
 
-  // Restore collapsed preference from localStorage
-  useEffect(() => {
-    const stored = localStorage.getItem("admin-sidebar-collapsed");
-    if (stored !== null) {
-      setCollapsed(stored === "true");
-    } else {
-      // Default: collapsed on tablet, expanded on desktop
-      setCollapsed(window.innerWidth < 1280);
-    }
-  }, []);
-
   function toggleCollapsed() {
-    setCollapsed((prev) => {
-      const next = !prev;
-      localStorage.setItem("admin-sidebar-collapsed", String(next));
-      return next;
-    });
+    writeStoredValue(SIDEBAR_COLLAPSED_KEY, String(!collapsed));
   }
 
   // Badge counts: fetch once on mount, then poll every 30s. We deliberately

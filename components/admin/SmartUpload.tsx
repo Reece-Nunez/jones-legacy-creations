@@ -530,6 +530,10 @@ export default function SmartUpload({
       {/* AI Review Modal */}
       {aiReviewQueue.length > 0 && aiReviewQueue[aiReviewIndex] && (
         <AiReviewModal
+          // Remount per queue item. The modal's edit buffer is seeded from
+          // `data`, so a new extraction needs fresh state; a key does that
+          // without the modal resetting itself from an effect.
+          key={`${aiReviewIndex}-${aiReviewQueue[aiReviewIndex].file.name}`}
           isOpen={true}
           onClose={handleAiReviewClose}
           onConfirm={handleAiConfirm}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import {
   Home,
   PlusSquare,
@@ -250,12 +251,12 @@ export default function EstimateForm() {
             )}
           </>
         )}
-        <a
+        <Link
           href="/"
           className="inline-block rounded-full bg-black px-8 py-3.5 text-sm font-medium text-white hover:bg-gray-800 transition-colors"
         >
           Back to Home
-        </a>
+        </Link>
       </div>
     );
   }

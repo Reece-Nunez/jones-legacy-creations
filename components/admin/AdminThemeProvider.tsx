@@ -1,9 +1,13 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useCallback } from "react";
 import { QBOConnectionProvider } from "./QBOConnectionContext";
+import { useMediaQuery, useStoredValue, writeStoredValue } from "@/lib/hooks/useBrowserStore";
 
 type Theme = "light" | "dark" | "system";
+
+const THEME_STORAGE_KEY = "admin-theme";
+const THEMES: Theme[] = ["light", "dark", "system"];
 
 const AdminThemeContext = createContext<{
   theme: Theme;
@@ -19,35 +23,24 @@ export function useAdminTheme() {
   return useContext(AdminThemeContext);
 }
 
-function getSystemTheme(): "light" | "dark" {
-  if (typeof window === "undefined") return "light";
-  return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light";
+/** Anything unrecognised in storage falls back rather than rendering undefined. */
+function parseTheme(stored: string | null): Theme {
+  return THEMES.includes(stored as Theme) ? (stored as Theme) : "light";
 }
 
 export function AdminThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<Theme>("light");
-  const [resolved, setResolved] = useState<"light" | "dark">("light");
+  // Both of these are browser state, not React state. Holding them in useState
+  // and syncing from a mount effect forced an extra render pass on every load
+  // and left `resolved` free to drift out of step with `theme`.
+  const theme = parseTheme(useStoredValue(THEME_STORAGE_KEY));
+  const prefersDark = useMediaQuery("(prefers-color-scheme: dark)");
 
-  useEffect(() => {
-    const stored = localStorage.getItem("admin-theme") as Theme | null;
-    if (stored) setThemeState(stored);
-  }, []);
-
-  useEffect(() => {
-    if (theme === "system") {
-      setResolved(getSystemTheme());
-      const mq = window.matchMedia("(prefers-color-scheme: dark)");
-      const handler = (e: MediaQueryListEvent) => setResolved(e.matches ? "dark" : "light");
-      mq.addEventListener("change", handler);
-      return () => mq.removeEventListener("change", handler);
-    } else {
-      setResolved(theme);
-    }
-  }, [theme]);
+  // Pure derivation — there is no state here to keep in sync.
+  const resolved: "light" | "dark" =
+    theme === "system" ? (prefersDark ? "dark" : "light") : theme;
 
   const setTheme = useCallback((t: Theme) => {
-    setThemeState(t);
-    localStorage.setItem("admin-theme", t);
+    writeStoredValue(THEME_STORAGE_KEY, t);
   }, []);
 
   return (

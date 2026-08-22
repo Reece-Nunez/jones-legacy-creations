@@ -32,7 +32,7 @@ export function parseDrawFilename(filename: string): ParsedDrawFilename {
     const lineItemNumber = parseInt(match[1], 10);
     const rawCategory = match[2]?.trim() || null;
     const rawDocType = match[3]?.trim() || null;
-    let rawVendor = match[4]?.trim() || null;
+    const rawVendor = match[4]?.trim() || null;
 
     // If category contains underscores, it might be "Category_Type_Vendor"
     // Try splitting the category further

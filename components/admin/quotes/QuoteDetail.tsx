@@ -1648,7 +1648,10 @@ function RevisionsTab({
   const [loadError, setLoadError] = useState<string | null>(null);
 
   useEffect(() => {
-    setLoadError(null);
+    // The stale error is cleared on the success path rather than synchronously
+    // here: setting state in the effect body forces a second render pass, and
+    // a reload that fails should keep showing an error rather than blanking it
+    // and re-adding it a moment later.
     fetch(`/api/admin/quotes/${quote.id}/revisions`)
       .then(async (r) => {
         if (!r.ok) {
@@ -1659,6 +1662,7 @@ function RevisionsTab({
       })
       .then((data) => {
         setRevisions(Array.isArray(data) ? data : []);
+        setLoadError(null);
         setLoaded(true);
       })
       .catch((err) => {

@@ -78,11 +78,10 @@ export function AiReviewModal({
     (data.line_items ?? []).map(() => crypto.randomUUID())
   );
 
-  // Re-initialize when data changes (new extraction)
-  useEffect(() => {
-    setEditedData(data);
-    setLineItemKeys((data.line_items ?? []).map(() => crypto.randomUUID()));
-  }, [data]);
+  // No re-initialisation effect: SmartUpload keys this component per queue
+  // item, so a new extraction remounts it and both initialisers re-run.
+  // Resetting from an effect instead meant rendering the previous document's
+  // values once before correcting them.
 
   // Close on Escape
   useEffect(() => {
