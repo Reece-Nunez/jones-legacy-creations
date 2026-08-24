@@ -35,6 +35,7 @@ import {
   Circle,
   ChevronDown,
   ChevronUp,
+  Fuel,
   Landmark,
   Building,
   Percent,
@@ -94,7 +95,7 @@ import { PaymentsTab } from "@/components/admin/project/tabs/PaymentsTab";
 import { BudgetTab } from "@/components/admin/project/tabs/BudgetTab";
 import { PROPERTY_FIELD_LABELS, PROPERTY_FIELDS } from "@/components/admin/project/shared/propertyFields";
 import { PermitsTab } from "@/components/admin/project/tabs/PermitsTab";
-import { MiscChargesSection } from "@/components/admin/project/tabs/MiscChargesSection";
+import { JobCostsTab } from "@/components/admin/project/tabs/JobCostsTab";
 import { TasksTab } from "@/components/admin/project/tabs/TasksTab";
 import { DocumentsTab } from "@/components/admin/project/tabs/DocumentsTab";
 import { confirmAction } from "@/lib/confirmAction";
@@ -149,6 +150,9 @@ const ALL_TABS = [
   // draw-linked and 7 are standalone. Hiding the tab there left 86% of all
   // contractor payments without a dedicated list.
   { key: "payments",   group: "money",    label: "Payments",    icon: CreditCard,      cashJob: true,  onlyCashJob: false },
+  // Job costs sit beside Payments because both are money out; Payments is
+  // what a sub invoiced, Job Costs is what the job burned with no invoice.
+  { key: "jobcosts",   group: "money",    label: "Job Costs",   icon: Fuel,            cashJob: true,  onlyCashJob: false },
   { key: "draws",      group: "money",    label: "Draws",       icon: Banknote,        cashJob: false, onlyCashJob: false },
   { key: "loan",       group: "money",    label: "Loan",        icon: Landmark,        cashJob: false, onlyCashJob: false },
   { key: "cashflow",   group: "money",    label: "Cash Flow",   icon: TrendingUp,      cashJob: true,  onlyCashJob: false },
@@ -552,24 +556,6 @@ export default function ProjectDetail({
           </div>
         )}
 
-        {/* Job costs — spend with no contractor and no budget line: fuel,
-         *  equipment rental, dump fees, and the one-off lender items this
-         *  started out holding. The sum is subtracted from projected_profit
-         *  in the helper.
-         *
-         *  Shown on every project. This used to require sale_price AND
-         *  loan_amount, which meant a client build with no construction loan
-         *  had nowhere to record a tank of fuel — and the table was still
-         *  empty months later because the only jobs that could reach it were
-         *  the ones the framing didn't fit. Financing decides how a job is
-         *  paid for, not whether it burns diesel. */}
-        <MiscChargesSection
-          projectId={project.id}
-          charges={miscCharges}
-          mutate={mutate}
-          loading={loading}
-        />
-
         {/* Settlements — ALTA closing statements. Upload the PDF, Claude
          *  extracts the line items. When a sale settlement exists the
          *  helper derives sale_closing_costs from it automatically. */}
@@ -634,6 +620,14 @@ export default function ProjectDetail({
               mutate={mutate}
               loading={loading}
               onPreview={(url, name) => setPreviewFile({ url, name })}
+            />
+          </TabsContent>
+          <TabsContent value="jobcosts">
+            <JobCostsTab
+              projectId={project.id}
+              charges={miscCharges}
+              mutate={mutate}
+              loading={loading}
             />
           </TabsContent>
           <TabsContent value="draws">
@@ -780,16 +774,6 @@ function FinancialCard({
     </ShadCard>
   );
 }
-
-// ===========================================================================
-// Job Costs
-// ===========================================================================
-// Spend with no contractor and no budget line: fuel, equipment rental, dump
-// fees, plus the one-off lender items this started out holding (buyer rate
-// buy-downs, late fees). Sum is subtracted from projected_profit and folded
-// into allInCosts (see lib/finance/project-financials.ts).
-// Kept inline in ProjectDetail.tsx so the section can share the mutate()
-// helper and refresh state on edits.
 
 // ===========================================================================
 // Financial Summary (Loan / Profit Calculator)

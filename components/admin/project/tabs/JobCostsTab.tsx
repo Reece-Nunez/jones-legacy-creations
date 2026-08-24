@@ -1,18 +1,38 @@
 "use client";
 
 import { useState } from "react";
-import { CreditCard } from "lucide-react";
+import { Fuel } from "lucide-react";
 import toast from "react-hot-toast";
 import type { ProjectMiscCharge } from "@/lib/types/database";
 import { confirmAction } from "@/lib/confirmAction";
 import {
   formatCurrency as fmt, formatCurrencyInput, unformatCurrency,
 } from "@/lib/formatters";
-import { Card as ShadCard, CardContent } from "@/components/ui/card";
+import {
+  Card as ShadCard, CardHeader, CardTitle, CardDescription, CardContent, CardAction,
+} from "@/components/ui/card";
+import { AddButton, EmptyState } from "@/components/admin/project/shared/Primitives";
 import { EditOnly } from "@/components/admin/project/shared/EditContext";
 import { fmtDate } from "@/components/admin/project/shared/format";
 
-export function MiscChargesSection({
+/**
+ * Project spend that arrives with no contractor and no budget line: fuel,
+ * equipment rental, dump fees. Backed by project_misc_charges, which also
+ * still holds the one-off lender items it was originally written for (buyer
+ * rate buy-downs, late fees).
+ *
+ * Was a collapsed one-line link on the project overview, gated on the project
+ * having both a sale price and a loan amount. Two problems: a client build
+ * with no construction loan could not reach it at all, and even where it did
+ * render, a grey "+ Add misc charge" under the summary cards is not where
+ * anyone looks to enter a cost. The table had zero rows in production.
+ *
+ * Now a panel under Money, beside Payments — the other money-out list.
+ *
+ * The total feeds allInCosts, so anything entered here moves the Costs and
+ * Gross Profit figures on the overview. See lib/finance/project-financials.ts.
+ */
+export function JobCostsTab({
   projectId,
   charges,
   mutate,
@@ -97,48 +117,23 @@ export function MiscChargesSection({
     await mutate(`/api/admin/projects/${projectId}/misc-charges/${id}`, "DELETE");
   }
 
-  // Empty state collapses to a single inline button so it doesn't
-  // pad the project overview when no job costs exist. Only when the
-  // user clicks "+ Add" or there are existing charges do we render the
-  // full section.
-  if (charges.length === 0 && !showAdd) {
-    return (
-      <div className="mt-3 flex items-center gap-2">
-        <CreditCard className="w-3.5 h-3.5 text-gray-400 shrink-0" />
-        <button
-          onClick={() => setShowAdd(true)}
-          className="text-xs text-gray-500 hover:text-indigo-600 cursor-pointer"
-        >
-          + Add job cost
-          <span className="ml-1 text-gray-400">
-            (fuel, rentals, dump fees, etc.)
-          </span>
-        </button>
-      </div>
-    );
-  }
-
   return (
-    <ShadCard className="mt-4 overflow-hidden">
-      <div className="flex flex-col gap-2 px-4 py-3 sm:flex-row sm:items-center sm:justify-between border-b border-gray-100">
-        <div className="flex items-center gap-2">
-          <CreditCard className="w-4 h-4 text-rose-500 shrink-0" />
-          <span className="text-sm font-semibold text-gray-900">
-            Job Costs
-          </span>
-          <span className="text-xs text-gray-500">
+    <ShadCard>
+      <CardHeader>
+        <CardTitle>Job Costs</CardTitle>
+        {charges.length > 0 && (
+          <CardDescription>
             {`${charges.length} item${charges.length !== 1 ? "s" : ""} · ${fmt(total)}`}
-          </span>
-        </div>
-        <button
-          onClick={() => setShowAdd((v) => !v)}
-          className="self-start text-xs font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
-        >
-          {showAdd ? "Cancel" : "+ Add Cost"}
-        </button>
-      </div>
+          </CardDescription>
+        )}
+        {!showAdd && (
+          <CardAction>
+            <AddButton label="Add Cost" onClick={() => setShowAdd(true)} />
+          </CardAction>
+        )}
+      </CardHeader>
 
-      <CardContent className="p-3 sm:p-4 space-y-2">
+      <CardContent className="space-y-2">
 
         {showAdd && (
           <div className="bg-rose-50/40 border border-rose-200 rounded-lg p-3 space-y-2">
@@ -203,9 +198,11 @@ export function MiscChargesSection({
         )}
 
         {charges.length === 0 && !showAdd ? (
-          <p className="text-xs text-gray-400 italic py-2">
-            No job costs recorded.
-          </p>
+          <EmptyState
+            label="No job costs yet"
+            icon={Fuel}
+            hint="Fuel, equipment rental, dump fees — spend that never comes through a subcontractor invoice or a budget line. Anything logged here counts toward this project's Costs."
+          />
         ) : (
           <div className="divide-y divide-gray-100">
             {charges.map((c) =>

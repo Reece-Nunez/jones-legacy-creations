@@ -149,3 +149,44 @@ describe("firstPanelOfGroup", () => {
     expect(firstPanelOfGroup([], "money")).toBeNull();
   });
 });
+
+describe("the money group as ProjectDetail actually configures it", () => {
+  // Mirrors ALL_TABS' money panels in order. ALL_TABS itself lives in
+  // ProjectDetail.tsx with its lucide icons attached, so it can't be imported
+  // into a node-environment test — this fixture stands in for it, and the
+  // browser check covers the wiring it can't.
+  const MONEY: ProjectTabRule[] = [
+    { key: "budget", group: "money", cashJob: true, onlyCashJob: false },
+    { key: "payments", group: "money", cashJob: true, onlyCashJob: false },
+    { key: "jobcosts", group: "money", cashJob: true, onlyCashJob: false },
+    { key: "draws", group: "money", cashJob: false, onlyCashJob: false },
+    { key: "loan", group: "money", cashJob: false, onlyCashJob: false },
+    { key: "cashflow", group: "money", cashJob: true, onlyCashJob: false },
+  ];
+
+  it("keeps job costs next to payments — both are money out", () => {
+    const panels = groupTabs(MONEY).find((g) => g.key === "money")!.panels;
+    expect(panels.map((p) => p.key)).toEqual([
+      "budget", "payments", "jobcosts", "draws", "loan", "cashflow",
+    ]);
+  });
+
+  it("shows job costs on a cash job, where the lender panels drop out", () => {
+    // The reason this panel exists at all: it used to be gated on having a
+    // sale price and a loan amount, so the jobs least likely to have lender
+    // fields were the ones that couldn't record a tank of fuel.
+    const panels = groupTabs(visibleTabs(MONEY, true))
+      .find((g) => g.key === "money")!.panels;
+    expect(panels.map((p) => p.key)).toEqual(["budget", "payments", "jobcosts", "cashflow"]);
+  });
+
+  it("shows job costs on a financed job too", () => {
+    const panels = groupTabs(visibleTabs(MONEY, false))
+      .find((g) => g.key === "money")!.panels;
+    expect(panels.map((p) => p.key)).toContain("jobcosts");
+  });
+
+  it("resolves ?tab=jobcosts to the money group", () => {
+    expect(groupOfPanel(MONEY, "jobcosts")).toBe("money");
+  });
+});
