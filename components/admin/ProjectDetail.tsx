@@ -94,6 +94,7 @@ import { EmptyState } from "@/components/admin/project/shared/Primitives";
 import { DrawsTab } from "@/components/admin/project/tabs/DrawsTab";
 import { ProjectTabNav } from "@/components/admin/project/ProjectTabNav";
 import { PaymentsTab } from "@/components/admin/project/tabs/PaymentsTab";
+import { ProjectSetupChecklist } from "@/components/admin/project/ProjectSetupChecklist";
 import { BudgetTab } from "@/components/admin/project/tabs/BudgetTab";
 import { PROPERTY_FIELD_LABELS, PROPERTY_FIELDS } from "@/components/admin/project/shared/propertyFields";
 import { PermitsTab } from "@/components/admin/project/tabs/PermitsTab";
@@ -627,6 +628,19 @@ export default function ProjectDetail({
           />
 
           <TabsContent value="overview">
+            {/* First panel of the default tab, so a new job opens on the list
+              * of what it still needs. Renders nothing once complete. */}
+            <ProjectSetupChecklist
+              project={project}
+              counts={{
+                budgetLineItems: budgetLineItems.length,
+                payments: payments.length,
+                jobCosts: miscCharges.length,
+                documents: documents.length,
+                permits: permits.length,
+              }}
+              onSelectTab={(tab) => selectTab(tab as TabKey)}
+            />
             <OverviewTab
               project={project}
               mutate={mutate}

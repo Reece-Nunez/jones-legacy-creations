@@ -115,6 +115,66 @@ npm run test:watch # watch mode
 
 Tests live next to the code they cover as `*.test.ts` under `lib/` (see `vitest.config.ts`).
 
+### Environment variables
+
+Copy the required values into `.env.local` (git-ignored). Beyond the Supabase
+and integration keys, one is worth calling out:
+
+| Variable | Used by |
+|---|---|
+| `ANTHROPIC_API_KEY` | The admin help assistant, plus every AI extractor — ALTA settlements, permits, invoices, receipts, W-9s. |
+
+Without it the extractors fall back to empty results and the help assistant
+returns a 503 with "Help assistant is not configured." Set it in Vercel too,
+not just locally.
+
+## Admin app
+
+The staff app lives under `/admin` and is gated by role (`lib/roles.ts`).
+Project-scoped contractor logins get a read-only view of their own jobs.
+
+### Onboarding
+
+Two features exist because the app's navigation moves faster than anyone's
+memory of it, and they deliberately cover each other's blind spot:
+
+- **Help assistant** (`components/admin/HelpPanel.tsx`, `?` bottom-right or
+  `Ctrl+/`) knows the app but cannot see your data. Ask "where do I record a
+  payment" and it answers with the steps and a button that goes there.
+- **Setup checklist** (`components/admin/project/ProjectSetupChecklist.tsx`)
+  knows your data but nothing about how to do anything. It reads a project's
+  real state and names what is still missing. Disappears once complete.
+
+The assistant's knowledge is **generated, not written**: `lib/help/app-map.ts`
+builds it from `PROJECT_PANELS` in `lib/projects/tabs.ts` — the same registry
+the tab bar renders from — so it cannot describe a panel that no longer
+exists. If you add a panel, add its `help` line in the same edit; a test
+enforces it.
+
+The app map is byte-stable so it can sit behind a prompt-cache breakpoint,
+which puts a warm question at roughly half a cent. A test pins that stability:
+a timestamp or an unordered collection in there would silently drop the cache
+hit rate to zero.
+
+### Money math
+
+Anything showing "Total Costs", "Projected Profit", "Draws Funded" or
+"Profit Margin" must use `lib/finance/project-financials.ts`. An ESLint rule
+fails the build on a `.reduce()` that totals a money collection outside
+`lib/finance`, and a golden-master test pins the figures against a fixture of
+real rows. The dashboard and the financials page disagreed by ~$90k once
+because each had grown its own reducer.
+
+### Service worker
+
+`public/sw.js` is registered **in production only** (`app/layout.tsx`). It
+serves `/_next/static/` cache-first, which is safe against content-hashed
+production filenames but pins the first build permanently in dev, where
+Turbopack reuses one chunk name. In development the app actively unregisters
+it. If you ever see CSS or JS changes that refuse to appear no matter what you
+restart, check for a stray service worker first — `fetch(..., {cache: 'no-store'})`
+does not bypass one.
+
 ## Security Features
 
 The website implements several industry-standard security headers:

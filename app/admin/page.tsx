@@ -34,6 +34,7 @@ import {
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { needsPropertyDetails } from "@/lib/projects/setup-checklist";
 import {
   computeProjectFinancials,
   sumProjectedProfit,
@@ -309,11 +310,10 @@ export default async function AdminDashboard({
     });
   }
 
-  // Projects missing property details (for accurate estimates)
-  const activeStatuses = ["lead", "estimate_sent", "approved", "waiting_on_permit", "in_progress", "waiting_on_payment"];
-  const projectsMissingDetails = projects.filter(
-    (p) => activeStatuses.includes(p.status) && p.square_footage == null
-  );
+  // Projects missing property details (for accurate estimates).
+  // Shares needsPropertyDetails with the project setup checklist so the two
+  // can't end up disagreeing about the same project.
+  const projectsMissingDetails = projects.filter(needsPropertyDetails);
   for (const p of projectsMissingDetails) {
     actionItems.push({
       id: `details-${p.id}`,
