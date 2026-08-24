@@ -93,12 +93,12 @@ export function MiscChargesSection({
   }
 
   async function deleteCharge(id: string) {
-    if (!(await confirmAction("Delete this misc charge?"))) return;
+    if (!(await confirmAction("Delete this job cost?"))) return;
     await mutate(`/api/admin/projects/${projectId}/misc-charges/${id}`, "DELETE");
   }
 
   // Empty state collapses to a single inline button so it doesn't
-  // pad the project overview when no misc charges exist. Only when the
+  // pad the project overview when no job costs exist. Only when the
   // user clicks "+ Add" or there are existing charges do we render the
   // full section.
   if (charges.length === 0 && !showAdd) {
@@ -109,9 +109,9 @@ export function MiscChargesSection({
           onClick={() => setShowAdd(true)}
           className="text-xs text-gray-500 hover:text-indigo-600 cursor-pointer"
         >
-          + Add misc charge
+          + Add job cost
           <span className="ml-1 text-gray-400">
-            (buyer credits, lender fees, etc.)
+            (fuel, rentals, dump fees, etc.)
           </span>
         </button>
       </div>
@@ -124,7 +124,7 @@ export function MiscChargesSection({
         <div className="flex items-center gap-2">
           <CreditCard className="w-4 h-4 text-rose-500 shrink-0" />
           <span className="text-sm font-semibold text-gray-900">
-            Misc Charges
+            Job Costs
           </span>
           <span className="text-xs text-gray-500">
             {`${charges.length} item${charges.length !== 1 ? "s" : ""} · ${fmt(total)}`}
@@ -134,7 +134,7 @@ export function MiscChargesSection({
           onClick={() => setShowAdd((v) => !v)}
           className="self-start text-xs font-medium text-indigo-600 hover:text-indigo-500 cursor-pointer"
         >
-          {showAdd ? "Cancel" : "+ Add Charge"}
+          {showAdd ? "Cancel" : "+ Add Cost"}
         </button>
       </div>
 
@@ -150,7 +150,7 @@ export function MiscChargesSection({
                 <input
                   value={addForm.description}
                   onChange={(e) => setAddForm({ ...addForm, description: e.target.value })}
-                  placeholder="e.g. Buyer rate buy-down credit"
+                  placeholder="e.g. Fuel, excavator rental, dump fees"
                   className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
@@ -179,7 +179,7 @@ export function MiscChargesSection({
                 <input
                   value={addForm.category}
                   onChange={(e) => setAddForm({ ...addForm, category: e.target.value })}
-                  placeholder="e.g. buyer_credit, lender_fee"
+                  placeholder="e.g. fuel, rental, dump_fee"
                   className="w-full border border-gray-300 rounded-lg px-2 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-black"
                 />
               </div>
@@ -190,7 +190,7 @@ export function MiscChargesSection({
                 onClick={addCharge}
                 className="bg-black text-white px-3 py-1.5 rounded-lg text-xs font-medium hover:bg-gray-800 disabled:opacity-50 cursor-pointer"
               >
-                {loading ? "Saving..." : "Save Charge"}
+                {loading ? "Saving..." : "Save Cost"}
               </button>
               <button
                 onClick={() => setShowAdd(false)}
@@ -204,7 +204,7 @@ export function MiscChargesSection({
 
         {charges.length === 0 && !showAdd ? (
           <p className="text-xs text-gray-400 italic py-2">
-            No misc charges recorded.
+            No job costs recorded.
           </p>
         ) : (
           <div className="divide-y divide-gray-100">

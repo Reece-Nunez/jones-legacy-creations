@@ -10,6 +10,8 @@
  *
  * Invariants enforced here:
  *   total_costs        = sum(contractor_payments.amount)              per project
+ *   misc_charges       = sum(project_misc_charges.amount)             per project
+ *   all_in_costs       = total_costs + misc_charges
  *   draws_funded       = sum(draw_requests.amount where status=funded) per project
  *   draws_pending      = sum(draw_requests.amount where status in (submitted, approved))
  *   draws_total        = sum(draw_requests.amount)                     per project
@@ -88,6 +90,16 @@ export interface ProjectFinancials {
   /** Sum of project_misc_charges.amount for this project. Always
    *  subtracted from projected_profit regardless of financing type. */
   miscCharges: number;
+  /** totalCosts + miscCharges — every dollar spent on the job.
+   *
+   *  `totalCosts` is contractor payments only, and that invariant is mirrored
+   *  in v_project_financials, so it can't absorb misc charges. But a summary
+   *  card labelled "Costs" has to mean all of them: a project with no lender
+   *  fields shows a plain Costs/Gross Profit pair with nowhere else for a
+   *  $400 equipment rental to appear, and leaving it out let a real cost land
+   *  in the database while every number on the page stayed put. Financed
+   *  projects itemize the two separately and keep using the split fields. */
+  allInCosts: number;
   /** True when this project has at least one loan_ledger entry — the
    *  helper has used the ledger's actuals for accruedInterest instead of
    *  the running-balance formula. UI can use this to show "lender actuals"
@@ -314,6 +326,7 @@ export function computeProjectFinancials(
 
   const totalCosts = sumPaymentAmounts(projPayments);
   const miscCharges = projMisc.reduce((s, m) => s + Number(m.amount || 0), 0);
+  const allInCosts = totalCosts + miscCharges;
 
   const drawsFunded = sumFundedDraws(projDraws);
   const drawsPending = sumPendingDraws(projDraws);
@@ -385,6 +398,7 @@ export function computeProjectFinancials(
     saleClosingCosts,
     hasSaleSettlement,
     miscCharges,
+    allInCosts,
     hasLoanLedger,
     financingImpact,
     projectedProfit,

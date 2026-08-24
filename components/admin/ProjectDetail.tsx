@@ -288,6 +288,7 @@ export default function ProjectDetail({
     hasLoanLedger,
     projectedProfit,
     totalCosts,
+    allInCosts,
   } = pf;
   const profitMargin = pf.profitMargin * 100;
 
@@ -310,7 +311,7 @@ export default function ProjectDetail({
   // Plus: owner-purchased budget items count at their budgeted amount even
   // when there's no invoice.
   const cashTotalSpent = (() => {
-    if (!project.is_cash_job) return totalCosts;
+    if (!project.is_cash_job) return allInCosts;
     const spentByLine = new Map<string, number>();
     const counted = new Set<string>();
 
@@ -365,8 +366,13 @@ export default function ProjectDetail({
       }
     }
 
+    // Job costs sit outside the budget lines entirely — no invoice, no line
+    // number — so none of the sources above can see them. Added here for the
+    // same reason allInCosts exists on the financed side.
     return (
-      Array.from(spentByLine.values()).reduce((s, v) => s + v, 0) + unmatchedTotal
+      Array.from(spentByLine.values()).reduce((s, v) => s + v, 0) +
+      unmatchedTotal +
+      miscChargesTotal
     );
   })();
 
@@ -500,10 +506,14 @@ export default function ProjectDetail({
               label="Contract Value"
               value={contractValue}
             />
+            {/* allInCosts, not totalCosts: this branch is the only view of
+               *  a project with no lender fields, so contractor payments and
+               *  job costs have to land in one number, or a logged expense
+               *  changes nothing on screen. */}
             <FinancialCard
               icon={<CreditCard className="w-4 h-4 text-orange-500" />}
               label="Costs"
-              value={totalCosts}
+              value={allInCosts}
             />
             {/* Once there's a sale price we can compute the real, financed
                *  figure, so show exactly what the Financial Summary shows.
@@ -527,14 +537,14 @@ export default function ProjectDetail({
             ) : (
               <FinancialCard
                 icon={
-                  contractValue - totalCosts >= 0 ? (
+                  contractValue - allInCosts >= 0 ? (
                     <TrendingUp className="w-4 h-4 text-green-500" />
                   ) : (
                     <TrendingDown className="w-4 h-4 text-red-500" />
                   )
                 }
                 label="Gross Profit"
-                value={contractValue - totalCosts}
+                value={contractValue - allInCosts}
                 caption="Before financing costs"
                 colored
               />
@@ -542,17 +552,23 @@ export default function ProjectDetail({
           </div>
         )}
 
-        {/* Misc Charges — one-off items not captured by other buckets
-         *  (buyer rate buy-downs, anomalous lender fees, etc.). The sum
-         *  is subtracted from projected_profit in the helper. */}
-        {!project.is_cash_job && hasLoanFields && (
-          <MiscChargesSection
-            projectId={project.id}
-            charges={miscCharges}
-            mutate={mutate}
-            loading={loading}
-          />
-        )}
+        {/* Job costs — spend with no contractor and no budget line: fuel,
+         *  equipment rental, dump fees, and the one-off lender items this
+         *  started out holding. The sum is subtracted from projected_profit
+         *  in the helper.
+         *
+         *  Shown on every project. This used to require sale_price AND
+         *  loan_amount, which meant a client build with no construction loan
+         *  had nowhere to record a tank of fuel — and the table was still
+         *  empty months later because the only jobs that could reach it were
+         *  the ones the framing didn't fit. Financing decides how a job is
+         *  paid for, not whether it burns diesel. */}
+        <MiscChargesSection
+          projectId={project.id}
+          charges={miscCharges}
+          mutate={mutate}
+          loading={loading}
+        />
 
         {/* Settlements — ALTA closing statements. Upload the PDF, Claude
          *  extracts the line items. When a sale settlement exists the
@@ -766,11 +782,12 @@ function FinancialCard({
 }
 
 // ===========================================================================
-// Misc Charges
+// Job Costs
 // ===========================================================================
-// One-off costs that don't fit any other bucket — buyer rate buy-downs,
-// lender fees rolled into first-month interest, late fees, etc. Sum is
-// subtracted from projected_profit (see lib/finance/project-financials.ts).
+// Spend with no contractor and no budget line: fuel, equipment rental, dump
+// fees, plus the one-off lender items this started out holding (buyer rate
+// buy-downs, late fees). Sum is subtracted from projected_profit and folded
+// into allInCosts (see lib/finance/project-financials.ts).
 // Kept inline in ProjectDetail.tsx so the section can share the mutate()
 // helper and refresh state on edits.
 
@@ -925,7 +942,7 @@ function FinancialSummary({
             />
             <MiniCard
               icon={<CreditCard className="w-3.5 h-3.5 text-rose-500" />}
-              label="Misc Charges"
+              label="Job Costs"
               value={fmt(miscCharges)}
               className={miscCharges > 0 ? "text-gray-900" : "text-gray-400"}
             />
@@ -989,7 +1006,7 @@ function FinancialSummary({
                 sign="−"
               />
               <MathRow label="Down Payment" value={downPayment} sign="−" />
-              <MathRow label="Misc Charges" value={miscCharges} sign="−" />
+              <MathRow label="Job Costs" value={miscCharges} sign="−" />
               {showOriginationTile && (
                 <MathRow
                   label={`Origination Fee (${originationFeePercent}%)`}

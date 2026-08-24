@@ -200,3 +200,69 @@ describe("computeAccruedInterest", () => {
     expect(computeAccruedInterest(withDown as never, [], AS_OF)).toBe(0);
   });
 });
+
+describe("all-in costs", () => {
+  // `totalCosts` is contractor payments only — an invariant mirrored in
+  // v_project_financials, so it can't absorb job costs. `allInCosts` is the
+  // number a summary card labelled "Costs" needs: a project with no lender
+  // fields shows only Costs and Gross Profit, and before this existed a
+  // logged tank of fuel moved neither one.
+
+  function withMiscCharges(
+    name: string,
+    charges: { amount: number }[],
+  ): ProjectFinancials {
+    const project = fixture.projects.find((p) => p.name.trim() === name);
+    if (!project) throw new Error(`fixture missing project ${name}`);
+    return computeProjectFinancials(
+      project as never,
+      fixture.payments as never,
+      fixture.draws as never,
+      charges.map((c, i) => ({
+        id: `synthetic-${i}`,
+        project_id: project.id,
+        description: "job cost",
+        amount: c.amount,
+        charge_date: null,
+        category: null,
+      })) as never,
+      AS_OF,
+      fixture.loanLedger as never,
+      fixture.settlements as never,
+    );
+  }
+
+  it("equals total costs when the project has no job costs", () => {
+    // Production has never had a row in project_misc_charges — the section
+    // was gated behind sale_price AND loan_amount — so the whole fixture
+    // exercises this branch.
+    for (const f of allFinancials()) {
+      expect(f.allInCosts, f.project.name).toBeCloseTo(f.totalCosts, 2);
+    }
+  });
+
+  it("adds job costs on top of contractor payments", () => {
+    const f = withMiscCharges("Peach Springs", [
+      { amount: 412.5 },
+      { amount: 1800 },
+    ]);
+    expect(f.miscCharges).toBeCloseTo(2212.5, 2);
+    expect(f.totalCosts).toBeCloseTo(255335.12, 2);
+    expect(f.allInCosts).toBeCloseTo(257547.62, 2);
+  });
+
+  it("counts job costs on a project with no loan and no sale price", () => {
+    // The case that prompted this: a client build financed by the client.
+    // Nothing about it has a lender, and the fuel still has to land somewhere.
+    const f = withMiscCharges("Dixie Springs", [{ amount: 500 }]);
+    expect(f.salePrice).toBe(0);
+    expect(f.allInCosts).toBeCloseTo(f.totalCosts + 500, 2);
+    expect(f.projectedProfit).toBeCloseTo(-f.allInCosts, 2);
+  });
+
+  it("keeps job costs out of totalCosts so the DB view still agrees", () => {
+    const base = byName("Peach Springs").totalCosts;
+    const withCharges = withMiscCharges("Peach Springs", [{ amount: 9999 }]);
+    expect(withCharges.totalCosts).toBeCloseTo(base, 2);
+  });
+});
