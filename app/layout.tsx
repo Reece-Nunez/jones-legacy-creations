@@ -96,17 +96,51 @@ export default function RootLayout({
         <GoogleAnalytics />
         <MetaPixel />
         {children}
-        <script
-          dangerouslySetInnerHTML={{
-            __html: `
+        {/* Service worker — production only.
+          *
+          * sw.js serves /_next/static/ cache-first under a cache name that
+          * never changes. In production that is safe: Next content-hashes those
+          * filenames, so a deploy produces new URLs and misses the cache. In
+          * development Turbopack reuses one chunk name and rewrites its
+          * contents, so the first version gets pinned permanently — surviving
+          * server restarts and `rm -rf .next`, because the request never
+          * reaches the server. That cost an afternoon: a new component's CSS
+          * silently never arrived, and every symptom pointed at the build.
+          *
+          * The dev branch actively unregisters, because developers who already
+          * have it installed keep serving the stale cache otherwise — not
+          * registering again would leave them stuck. */}
+        {process.env.NODE_ENV === "production" ? (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
         if ('serviceWorker' in navigator) {
           window.addEventListener('load', () => {
             navigator.serviceWorker.register('/sw.js').catch(() => {});
           });
         }
       `,
-          }}
-        />
+            }}
+          />
+        ) : (
+          <script
+            dangerouslySetInnerHTML={{
+              __html: `
+        if ('serviceWorker' in navigator) {
+          navigator.serviceWorker.getRegistrations()
+            .then((rs) => Promise.all(rs.map((r) => r.unregister())))
+            .then((undone) => {
+              if (!undone.some(Boolean)) return;
+              return caches.keys()
+                .then((ks) => Promise.all(ks.map((k) => caches.delete(k))))
+                .then(() => location.reload());
+            })
+            .catch(() => {});
+        }
+      `,
+            }}
+          />
+        )}
         <Toaster />
       </body>
     </html>

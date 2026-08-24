@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -245,6 +245,38 @@ export default function ProjectDetail({
     ? (searchParams.get("tab") as TabKey)
     : "overview";
   const [activeTab, setActiveTab] = useState<TabKey>(initialTab);
+
+  // Keep ?tab= and the visible panel pointing at the same thing.
+  //
+  // The panel used to be pure component state, read from the URL once on
+  // mount. Deep links worked on a cold load and nowhere else: the help
+  // assistant's "Take me there" pushes ?tab=jobcosts while you are already on
+  // the project, which changed the address bar and left the page on Summary.
+  // Back/forward had the same problem, and a reload silently dropped you.
+  const tabParam = searchParams.get("tab");
+  useEffect(() => {
+    if (tabParam && tabParam !== activeTab && TABS.some((t) => t.key === tabParam)) {
+      setActiveTab(tabParam as TabKey);
+    }
+    // TABS is derived fresh each render; depending on it would re-fire this
+    // every render. tabParam is the only input that should trigger a sync.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tabParam]);
+
+  /**
+   * Switch panel and record it in the URL.
+   *
+   * history.replaceState rather than router.replace: this page loads fifteen
+   * tables server-side, and routing through Next would re-run that render on
+   * every tab click just to change a query string. The native history API is
+   * the documented way to update searchParams without re-running server code.
+   */
+  const selectTab = useCallback((key: TabKey) => {
+    setActiveTab(key);
+    const params = new URLSearchParams(window.location.search);
+    params.set("tab", key);
+    window.history.replaceState(null, "", `${window.location.pathname}?${params}`);
+  }, []);
   const [loading, setLoading] = useState(false);
   const [previewFile, setPreviewFile] = useState<{ url: string; name: string } | null>(null);
   const [progressItems, setProgressItems] = useState<ProgressItem[]>([]);
@@ -585,13 +617,13 @@ export default function ProjectDetail({
         {/* Tabs */}
         <Tabs
           value={activeTab}
-          onValueChange={(value) => setActiveTab(value as TabKey)}
+          onValueChange={(value) => selectTab(value as TabKey)}
           className="mt-6"
         >
           <ProjectTabNav
             groups={TAB_GROUPS}
             activePanel={activeTab}
-            onSelectPanel={(key) => setActiveTab(key as TabKey)}
+            onSelectPanel={(key) => selectTab(key as TabKey)}
           />
 
           <TabsContent value="overview">
