@@ -85,7 +85,9 @@ import {
   formatCurrencyWhole,
 } from "@/lib/formatters";
 import { fileDownloadUrl } from "@/lib/fileDownloadUrl";
-import { visibleTabs, groupTabs } from "@/lib/projects/tabs";
+import {
+  visibleTabs, groupTabs, PROJECT_PANELS, type ProjectPanelKey,
+} from "@/lib/projects/tabs";
 import { fmtDate } from "@/components/admin/project/shared/format";
 import { ProjectEditContext, EditOnly } from "@/components/admin/project/shared/EditContext";
 import { EmptyState } from "@/components/admin/project/shared/Primitives";
@@ -137,38 +139,38 @@ function timeAgo(dateStr: string): string {
 }
 
 
-/** Left border color for status-based cards */
-const ALL_TABS = [
-  // Grouped for the two-level nav (lib/projects/tabs.ts). Panel keys are
-  // unchanged so existing ?tab= links keep working.
-  { key: "overview",   group: "overview", label: "Summary",     icon: LayoutDashboard, cashJob: true,  onlyCashJob: false },
-  { key: "activity",   group: "overview", label: "Activity",    icon: Clock,           cashJob: true,  onlyCashJob: false },
+/**
+ * Icons for the panels declared in lib/projects/tabs.ts.
+ *
+ * The registry itself lives there — keys, labels, visibility rules and the
+ * help copy — so it can be read on the server and in tests without pulling in
+ * React. Only the icons stay here, because they are React components and the
+ * registry has to stay import-free.
+ */
+const PANEL_ICONS: Record<ProjectPanelKey, React.ElementType> = {
+  overview: LayoutDashboard,
+  activity: Clock,
+  budget: Wallet,
+  payments: CreditCard,
+  jobcosts: Fuel,
+  draws: Banknote,
+  loan: Landmark,
+  cashflow: TrendingUp,
+  tasks: CheckSquare,
+  permits: ClipboardList,
+  bidrequests: Gavel,
+  selections: Palette,
+  changeorders: FileText,
+  documents: FolderOpen,
+  photos: Camera,
+};
 
-  { key: "budget",     group: "money",    label: "Budget",      icon: Wallet,          cashJob: true,  onlyCashJob: false },
-  // Payments is NOT cash-job-only. Financed jobs pay subs directly and then
-  // roll those payments into a draw: 24 of Peach Springs' 31 payments are
-  // draw-linked and 7 are standalone. Hiding the tab there left 86% of all
-  // contractor payments without a dedicated list.
-  { key: "payments",   group: "money",    label: "Payments",    icon: CreditCard,      cashJob: true,  onlyCashJob: false },
-  // Job costs sit beside Payments because both are money out; Payments is
-  // what a sub invoiced, Job Costs is what the job burned with no invoice.
-  { key: "jobcosts",   group: "money",    label: "Job Costs",   icon: Fuel,            cashJob: true,  onlyCashJob: false },
-  { key: "draws",      group: "money",    label: "Draws",       icon: Banknote,        cashJob: false, onlyCashJob: false },
-  { key: "loan",       group: "money",    label: "Loan",        icon: Landmark,        cashJob: false, onlyCashJob: false },
-  { key: "cashflow",   group: "money",    label: "Cash Flow",   icon: TrendingUp,      cashJob: true,  onlyCashJob: false },
+const ALL_TABS = PROJECT_PANELS.map((panel) => ({
+  ...panel,
+  icon: PANEL_ICONS[panel.key],
+}));
 
-  { key: "tasks",      group: "work",     label: "Tasks",       icon: CheckSquare,     cashJob: true,  onlyCashJob: false },
-  { key: "permits",    group: "work",     label: "Permits",     icon: ClipboardList,   cashJob: true,  onlyCashJob: false },
-  { key: "bidrequests", group: "work",    label: "Bid Requests", icon: Gavel,          cashJob: true,  onlyCashJob: false, staffOnly: true },
-
-  { key: "selections", group: "client",   label: "Selections",  icon: Palette,         cashJob: true,  onlyCashJob: false, staffOnly: true },
-  { key: "changeorders", group: "client", label: "Change Orders", icon: FileText,      cashJob: true,  onlyCashJob: false, staffOnly: true },
-
-  { key: "documents",  group: "files",    label: "Documents",   icon: FolderOpen,      cashJob: true,  onlyCashJob: false },
-  { key: "photos",     group: "files",    label: "Photos",      icon: Camera,          cashJob: true,  onlyCashJob: false },
-] as const;
-
-type TabKey = (typeof ALL_TABS)[number]["key"];
+type TabKey = ProjectPanelKey;
 
 // ---------------------------------------------------------------------------
 // Props

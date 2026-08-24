@@ -43,6 +43,8 @@ export interface ProjectTabRule {
   cashJob: boolean;
   /** Shown ONLY on cash jobs — hides the tab on financed jobs. */
   onlyCashJob: boolean;
+  /** Hidden from read-only contractor logins. */
+  staffOnly?: boolean;
 }
 
 /**
@@ -105,3 +107,78 @@ export function firstPanelOfGroup<T extends ProjectTabRule>(
 ): T | null {
   return tabs.find((tab) => tab.group === group) ?? null;
 }
+
+// ---------------------------------------------------------------------------
+// The panel registry
+// ---------------------------------------------------------------------------
+
+/**
+ * A panel, with the copy that describes it.
+ *
+ * `help` is a plain-English sentence saying what the panel is FOR — not what
+ * it's called. It feeds the in-app help assistant (lib/help/app-map.ts), which
+ * exists because this app's information architecture moves: the fourteen peer
+ * tabs became five groups on 2026-08-21, and Job Costs moved out of the
+ * overview a day later. Help text kept in a separate document would have been
+ * wrong twice in one week. Kept here, beside the visibility rules the nav
+ * itself reads, it cannot describe a panel that no longer exists.
+ *
+ * If you add a panel, you add its `help` in the same edit — a test enforces it.
+ */
+export interface ProjectPanel extends ProjectTabRule {
+  label: string;
+  help: string;
+}
+
+/**
+ * Every panel on the project detail page, in nav order.
+ *
+ * Lives here rather than in ProjectDetail.tsx so it can be read without
+ * pulling in React: the help assistant needs it on the server, and the tab
+ * tests could not reach it while it sat in a client component with lucide
+ * icons attached. ProjectDetail supplies the icons (see PANEL_ICONS there).
+ */
+export const PROJECT_PANELS = [
+  { key: "overview", group: "overview", label: "Summary", cashJob: true, onlyCashJob: false,
+    help: "The project at a glance: status, client, progress, and the money summary cards." },
+  { key: "activity", group: "overview", label: "Activity", cashJob: true, onlyCashJob: false,
+    help: "A dated log of what changed on this project and who changed it." },
+
+  { key: "budget", group: "money", label: "Budget", cashJob: true, onlyCashJob: false,
+    help: "The planned line items for the job, each with a budgeted amount and what has actually been spent against it." },
+  // Payments is NOT cash-job-only. Financed jobs pay subs directly and then
+  // roll those payments into a draw: 24 of Peach Springs' 31 payments are
+  // draw-linked and 7 are standalone. Hiding the tab there left 86% of all
+  // contractor payments without a dedicated list.
+  { key: "payments", group: "money", label: "Payments", cashJob: true, onlyCashJob: false,
+    help: "Money owed to and paid to subcontractors. Record an invoice here, attach the PDF, and mark it paid out of pocket or paid from a draw. Also where you generate an upload link so a sub can send their own invoice in." },
+  // Job costs sit beside Payments because both are money out; Payments is
+  // what a sub invoiced, Job Costs is what the job burned with no invoice.
+  { key: "jobcosts", group: "money", label: "Job Costs", cashJob: true, onlyCashJob: false,
+    help: "Spend with no subcontractor and no budget line: fuel, equipment rental, dump fees. Anything logged here counts toward the project's Costs." },
+  { key: "draws", group: "money", label: "Draws", cashJob: false, onlyCashJob: false,
+    help: "Construction-loan draw requests to the lender, and which payments each draw reimburses. Financed jobs only." },
+  { key: "loan", group: "money", label: "Loan", cashJob: false, onlyCashJob: false,
+    help: "The construction loan itself: amount, rate, accrued interest, and the lender ledger. Financed jobs only." },
+  { key: "cashflow", group: "money", label: "Cash Flow", cashJob: true, onlyCashJob: false,
+    help: "Money in against money out over time for this project." },
+
+  { key: "tasks", group: "work", label: "Tasks", cashJob: true, onlyCashJob: false,
+    help: "The job's to-do list, in build order." },
+  { key: "permits", group: "work", label: "Permits", cashJob: true, onlyCashJob: false,
+    help: "Building permits and their status. Uploading a permit PDF pulls the property details out of it automatically." },
+  { key: "bidrequests", group: "work", label: "Bid Requests", cashJob: true, onlyCashJob: false, staffOnly: true,
+    help: "Send a scope out to several subcontractors at once and track who accepted or declined." },
+
+  { key: "selections", group: "client", label: "Selections", cashJob: true, onlyCashJob: false, staffOnly: true,
+    help: "Finish choices sent to the client to approve by e-signature; the signed approval files itself into Documents." },
+  { key: "changeorders", group: "client", label: "Change Orders", cashJob: true, onlyCashJob: false, staffOnly: true,
+    help: "Scope or price changes sent to the client to sign; the signed order files itself into Documents." },
+
+  { key: "documents", group: "files", label: "Documents", cashJob: true, onlyCashJob: false,
+    help: "Every file attached to the project — contracts, invoices, signed approvals, closing statements." },
+  { key: "photos", group: "files", label: "Photos", cashJob: true, onlyCashJob: false,
+    help: "Site photos for the job." },
+] as const satisfies readonly ProjectPanel[];
+
+export type ProjectPanelKey = (typeof PROJECT_PANELS)[number]["key"];

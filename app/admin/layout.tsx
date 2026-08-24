@@ -2,6 +2,8 @@ import AdminShell from "@/components/admin/AdminShell";
 import { PwaInstallBanner } from "@/components/admin/PwaInstallBanner";
 import { AdminThemeProvider } from "@/components/admin/AdminThemeProvider";
 import { createClient } from "@/lib/supabase/server";
+import { HelpPanel } from "@/components/admin/HelpPanel";
+import { isContractor } from "@/lib/roles";
 
 export default async function AdminLayout({
   children,
@@ -31,6 +33,10 @@ export default async function AdminLayout({
       <AdminShell role={role}>
         {children}
         <PwaInstallBanner />
+        {/* Staff only. The help assistant's app map describes panels a
+            contractor login cannot reach, so offering it there would mostly
+            produce directions to screens they don't have. */}
+        {role && !isContractor(role) && <HelpPanel />}
       </AdminShell>
     </AdminThemeProvider>
   );
