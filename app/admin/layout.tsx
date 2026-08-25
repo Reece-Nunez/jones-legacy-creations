@@ -30,6 +30,20 @@ export default async function AdminLayout({
 
   return (
     <AdminThemeProvider>
+      {/* Hide the reCAPTCHA badge inside the admin app.
+        *
+        * Google injects .grecaptcha-badge into <body> when a public form loads
+        * the script, and nothing takes it back out on a client-side navigation
+        * — the public site links straight to /admin, so the badge rides along.
+        * It is fixed at bottom-right and lands directly under the help button.
+        *
+        * Hiding rather than moving: no admin form uses reCAPTCHA, so there is
+        * nothing being protected here and nothing to attribute. On the public
+        * site, where it is actually doing a job, the badge is untouched.
+        *
+        * This <style> unmounts with the layout, so navigating back out to the
+        * public site restores it. */}
+      <style>{`.grecaptcha-badge { visibility: hidden; }`}</style>
       <AdminShell role={role}>
         {children}
         <PwaInstallBanner />
