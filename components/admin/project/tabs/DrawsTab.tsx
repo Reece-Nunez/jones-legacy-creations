@@ -7,7 +7,7 @@ import {
   AlertTriangle, ArrowRightCircle, Banknote, ChevronDown, ChevronRight, Circle,
   Copy, Download, Edit3, Eye, FileSpreadsheet, LinkIcon, MessageSquare, Paperclip,
   Trash2,
-  Receipt, RefreshCw, Send, Sparkles, Upload, Wallet, X, XCircle,
+  Receipt, RefreshCw, Send, Sparkles, Unlink, Upload, Wallet, X, XCircle,
 } from "lucide-react";
 import toast from "react-hot-toast";
 import type {
@@ -409,7 +409,18 @@ export function DrawsTab({
     paidFromDraw: payments.filter((p) => p.status === "paid_from_draw").reduce((s, p) => s + p.amount, 0),
   };
 
-  const unassignedPayments = payments.filter((p) => p.draw_request_id === null);
+  // Payments with no draw, split three ways. Only the unpaid ones are worth
+  // flagging: a paid_personal invoice is already covered out of Blake's pocket
+  // and just needs reimbursing, and a reimbursed/paid one needs nothing at all.
+  // Lumping all three under one amber "not on a draw" header cried wolf on
+  // invoices that had already been handled.
+  const offDrawPayments = payments.filter((p) => p.draw_request_id === null);
+  const unassignedPayments = offDrawPayments.filter((p) => p.status === "pending");
+  const awaitingReimbursement = offDrawPayments.filter((p) => p.status === "paid_personal");
+  const settledOffDraw = offDrawPayments.filter(
+    (p) => p.status === "reimbursed" || p.status === "paid_from_draw",
+  );
+  const awaitingReimbursementTotal = awaitingReimbursement.reduce((sum, p) => sum + p.amount, 0);
 
 
   const [expandedDraws, setExpandedDraws] = useState<Set<string>>(new Set());
@@ -735,6 +746,17 @@ export function DrawsTab({
     await mutate(`/api/admin/projects/${projectId}/documents`, "PATCH", {
       id: docId,
       draw_request_id: drawId,
+    });
+  }
+
+  // Taking a document off a draw is not the same as deleting it: the file stays
+  // in the project and drops back into "Unassigned Documents", ready to go onto
+  // a different draw. The route also unlinks the invoice's payment and re-totals
+  // the draw, so the draw amount stops counting this invoice.
+  async function removeDocFromDraw(doc: Document) {
+    await mutate(`/api/admin/projects/${projectId}/documents`, "PATCH", {
+      id: doc.id,
+      draw_request_id: null,
     });
   }
 
@@ -1298,7 +1320,7 @@ export function DrawsTab({
       </ShadCard>
       </EditOnly>
 
-      {/* Unassigned Payments (not on any draw) */}
+      {/* Unpaid and not on any draw — the only off-draw bucket that needs action */}
       {unassignedPayments.length > 0 && (
         <ShadCard className="border-amber-200 bg-amber-50/30">
           <CardHeader className="pb-2">
@@ -1309,6 +1331,49 @@ export function DrawsTab({
           <CardContent>
             <div className="divide-y divide-gray-100">
               {unassignedPayments.map((p) => (
+                <div key={p.id}>{renderPaymentRow(p)}</div>
+              ))}
+            </div>
+          </CardContent>
+        </ShadCard>
+      )}
+
+      {/* Paid out of Blake's pocket. Not a draw problem, but the money is still
+          owed back, so it stays on screen with a running total. */}
+      {awaitingReimbursement.length > 0 && (
+        <ShadCard className="border-indigo-200 bg-indigo-50/30">
+          <CardHeader className="pb-2">
+            <div className="flex items-center justify-between gap-2">
+              <CardTitle className="text-sm font-medium text-indigo-800">
+                Paid personally — awaiting reimbursement ({awaitingReimbursement.length})
+              </CardTitle>
+              <span className="text-sm font-semibold text-indigo-800 tabular-nums">
+                {fmt(awaitingReimbursementTotal)}
+              </span>
+            </div>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-gray-100">
+              {awaitingReimbursement.map((p) => (
+                <div key={p.id}>{renderPaymentRow(p)}</div>
+              ))}
+            </div>
+          </CardContent>
+        </ShadCard>
+      )}
+
+      {/* Already settled and never filed under a draw — listed so they don't
+          vanish from this tab, but with nothing outstanding. */}
+      {settledOffDraw.length > 0 && (
+        <ShadCard>
+          <CardHeader className="pb-2">
+            <CardTitle className="text-sm font-medium text-gray-600">
+              Settled, not on a draw ({settledOffDraw.length})
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="divide-y divide-gray-100">
+              {settledOffDraw.map((p) => (
                 <div key={p.id}>{renderPaymentRow(p)}</div>
               ))}
             </div>
@@ -2203,6 +2268,17 @@ export function DrawsTab({
                                   <EditOnly>
                                   <button
                                     disabled={loading}
+                                    aria-label={`Remove ${doc.name} from this draw`}
+                                    title="Remove from draw (keeps the document)"
+                                    onClick={() => removeDocFromDraw(doc)}
+                                    className="text-gray-400 hover:text-amber-600 disabled:opacity-50 p-1 cursor-pointer transition-colors"
+                                  >
+                                    <Unlink className="w-3.5 h-3.5" />
+                                  </button>
+                                  </EditOnly>
+                                  <EditOnly>
+                                  <button
+                                    disabled={loading}
                                     aria-label={`Delete ${doc.name}`}
                                     title="Delete"
                                     onClick={() => deleteDoc(doc.id)}
@@ -2357,6 +2433,17 @@ export function DrawsTab({
                               >
                                 <Download className="w-3.5 h-3.5" />
                               </a>
+                              <EditOnly>
+                              <button
+                                disabled={loading}
+                                aria-label={`Remove ${doc.name} from this draw`}
+                                title="Remove from draw (keeps the document)"
+                                onClick={() => removeDocFromDraw(doc)}
+                                className="text-gray-400 hover:text-amber-600 disabled:opacity-50 p-1 cursor-pointer transition-colors"
+                              >
+                                <Unlink className="w-3.5 h-3.5" />
+                              </button>
+                              </EditOnly>
                               <EditOnly>
                               <button
                                 disabled={loading}

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { safeIlikeValue } from "@/lib/supabase/filterSafe";
 import { extractInvoiceData } from "@/lib/extract-invoice";
+import { recalcDrawTotal } from "@/lib/finance/draw-total";
 
 export async function GET(
   request: NextRequest,
@@ -258,26 +259,7 @@ export async function POST(
 
   // Update draw total — sum all contractor payments linked to this draw's documents
   if (drawRequestId && aiData?.amount) {
-    const { data: drawPayments } = await supabase
-      .from("contractor_payments")
-      .select("amount")
-      .eq("project_id", id)
-      .in(
-        "invoice_file_url",
-        (await supabase
-          .from("documents")
-          .select("file_url")
-          .eq("draw_request_id", drawRequestId)
-        ).data?.map((d) => d.file_url) || []
-      );
-
-    if (drawPayments) {
-      const drawTotal = drawPayments.reduce((sum, p) => sum + (p.amount || 0), 0);
-      await supabase
-        .from("draw_requests")
-        .update({ amount: drawTotal })
-        .eq("id", drawRequestId);
-    }
+    await recalcDrawTotal(supabase, id, drawRequestId);
   }
 
   return NextResponse.json(
@@ -310,6 +292,23 @@ export async function PATCH(
     return NextResponse.json({ error: "Document id is required" }, { status: 400 });
   }
 
+  // Moving a document between draws (including off a draw entirely, with
+  // draw_request_id: null) has to be read before the update so the draw it is
+  // leaving can be re-totalled too.
+  const movingDraw = Object.prototype.hasOwnProperty.call(updates, "draw_request_id");
+  let previousDrawId: string | null = null;
+  let fileUrl: string | null = null;
+  if (movingDraw) {
+    const { data: before } = await supabase
+      .from("documents")
+      .select("draw_request_id, file_url")
+      .eq("id", docId)
+      .eq("project_id", id)
+      .single();
+    previousDrawId = before?.draw_request_id ?? null;
+    fileUrl = before?.file_url ?? null;
+  }
+
   const { data, error } = await supabase
     .from("documents")
     .update(updates)
@@ -320,6 +319,27 @@ export async function PATCH(
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 400 });
+  }
+
+  if (movingDraw && fileUrl) {
+    const nextDrawId = (updates.draw_request_id as string | null) ?? null;
+
+    // The invoice and the payment it created travel together. Without this the
+    // payment keeps pointing at the old draw: it stops showing under that
+    // draw's documents but never reappears in "Not on a draw yet", so it is
+    // invisible everywhere.
+    await supabase
+      .from("contractor_payments")
+      .update({ draw_request_id: nextDrawId })
+      .eq("project_id", id)
+      .eq("invoice_file_url", fileUrl);
+
+    const affected = [previousDrawId, nextDrawId].filter(
+      (drawId, idx, all): drawId is string => Boolean(drawId) && all.indexOf(drawId) === idx,
+    );
+    for (const drawId of affected) {
+      await recalcDrawTotal(supabase, id, drawId);
+    }
   }
 
   return NextResponse.json(data);
