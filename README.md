@@ -57,6 +57,14 @@ Jones Legacy Creations is an umbrella company that offers:
 - Design process walkthrough
 - Portfolio section
 
+#### Client Reviews (`/reviews`)
+- Video reviews lead the page; written reviews follow as a grid
+- Rating average and counts, omitted when nothing is rated yet
+- Content comes from the `testimonials` table, managed at `/admin/testimonials`
+- Video and poster files upload to the public `testimonial-videos` Supabase
+  bucket (50 MB ceiling, admin-write only). Never commit footage to the repo —
+  `public/customer-reviews/` is gitignored for that reason
+
 #### Partners Page (`/partners`)
 - Trusted partner network showcase
 - Partner profiles and specializations
