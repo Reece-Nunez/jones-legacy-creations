@@ -158,6 +158,25 @@ export function Navigation() {
                 Gallery
               </Link>
               <Link
+                href="/reviews"
+                style={linkStyle(isActive("/reviews"))}
+                onMouseEnter={(e) => {
+                  if (!isActive("/reviews")) {
+                    e.currentTarget.style.color = "var(--hm-ink)";
+                    e.currentTarget.style.borderColor = "var(--hm-accent)";
+                  }
+                }}
+                onMouseLeave={(e) => {
+                  if (!isActive("/reviews")) {
+                    e.currentTarget.style.color = "var(--hm-ink-2)";
+                    e.currentTarget.style.borderColor = "transparent";
+                  }
+                }}
+                {...(isActive("/reviews") ? { "aria-current": "page" as const } : {})}
+              >
+                Reviews
+              </Link>
+              <Link
                 href="/estimate"
                 style={linkStyle(isActive("/estimate"))}
                 onMouseEnter={(e) => {
@@ -288,6 +307,14 @@ export function Navigation() {
             indent
           >
             Gallery
+          </MobileLink>
+          <MobileLink
+            href="/reviews"
+            active={isActive("/reviews")}
+            onNavigate={() => setIsOpen(false)}
+            indent
+          >
+            Reviews
           </MobileLink>
           <MobileLink
             href="/estimate"
