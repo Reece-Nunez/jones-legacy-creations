@@ -150,6 +150,7 @@ export function Footer({ socials }: { socials?: SocialBrand }) {
             <ColophonLink href="/about">About</ColophonLink>
             <ColophonLink href="/blog">The Journal</ColophonLink>
             <ColophonLink href="/gallery">Gallery</ColophonLink>
+            <ColophonLink href="/reviews">Reviews</ColophonLink>
             <ColophonLink href="/estimate">Free estimate</ColophonLink>
             <ColophonLink href="/contact">Contact</ColophonLink>
           </ColophonColumn>

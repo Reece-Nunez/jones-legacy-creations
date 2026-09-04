@@ -46,3 +46,17 @@ graphify-out/
 # claude code local state
 .claude/settings.local.json
 .claude/worktrees/
+
+# design-sync (claude.ai/design) — staged scripts, generated bundle, machine state
+.ds-sync/
+ds-bundle/
+.design-sync/.cache/
+.design-sync/learnings/
+.design-sync/node_modules
+.design-sync/tailwind/_compiled.css
+.design-sync/tailwind/ds-styles.css
+
+# Raw testimonial footage. Source video lives in the Supabase
+# testimonial-videos bucket (uploaded via /admin/testimonials), never in
+# git — a single 40 MB mp4 is permanent repo weight.
+public/customer-reviews/

@@ -3,7 +3,18 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import toast from "react-hot-toast";
-import { Loader2, Save, Star } from "lucide-react";
+import { Loader2, Save, Star, Upload, X } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import {
+  validateVideoFile,
+  validatePosterFile,
+  buildAssetPath,
+  formatDuration,
+  ACCEPTED_VIDEO_TYPES,
+  ACCEPTED_POSTER_TYPES,
+} from "@/lib/testimonials/video";
+
+const VIDEO_BUCKET = "testimonial-videos";
 
 interface ExistingTestimonial {
   id: string;
@@ -17,6 +28,31 @@ interface ExistingTestimonial {
   source: string | null;
   source_url: string | null;
   author_photo_url: string | null;
+  video_url: string | null;
+  video_poster_url: string | null;
+  video_duration_seconds: number | null;
+}
+
+/**
+ * Read a video's runtime in the browser so Blake doesn't have to type
+ * it. Resolves null on failure — an unknown duration just means the
+ * player omits the runtime badge, which is not worth blocking an
+ * upload over.
+ */
+function readVideoDuration(file: File): Promise<number | null> {
+  return new Promise((resolve) => {
+    const url = URL.createObjectURL(file);
+    const el = document.createElement("video");
+    const done = (value: number | null) => {
+      URL.revokeObjectURL(url);
+      resolve(value);
+    };
+    el.preload = "metadata";
+    el.onloadedmetadata = () =>
+      done(Number.isFinite(el.duration) && el.duration > 0 ? Math.round(el.duration) : null);
+    el.onerror = () => done(null);
+    el.src = url;
+  });
 }
 
 interface Form {
@@ -30,6 +66,10 @@ interface Form {
   source: string;
   source_url: string;
   author_photo_url: string;
+  video_url: string;
+  video_poster_url: string;
+  /** Kept as a string like every other field; parsed on save. */
+  video_duration_seconds: string;
 }
 
 export default function TestimonialForm({
@@ -39,6 +79,8 @@ export default function TestimonialForm({
 }) {
   const router = useRouter();
   const [saving, setSaving] = useState(false);
+  const [videoUploading, setVideoUploading] = useState(false);
+  const [posterUploading, setPosterUploading] = useState(false);
   const [form, setForm] = useState<Form>({
     author_name: existing?.author_name ?? "",
     author_role: existing?.author_role ?? "",
@@ -50,15 +92,89 @@ export default function TestimonialForm({
     source: existing?.source ?? "manual",
     source_url: existing?.source_url ?? "",
     author_photo_url: existing?.author_photo_url ?? "",
+    video_url: existing?.video_url ?? "",
+    video_poster_url: existing?.video_poster_url ?? "",
+    video_duration_seconds:
+      existing?.video_duration_seconds != null
+        ? String(existing.video_duration_seconds)
+        : "",
   });
 
   function update<K extends keyof Form>(key: K, value: Form[K]) {
     setForm((prev) => ({ ...prev, [key]: value }));
   }
 
+  /** Upload into the testimonial-videos bucket and return the public URL. */
+  async function uploadAsset(file: File): Promise<string> {
+    const supabase = createClient();
+    const path = buildAssetPath(form.author_name || "testimonial", file.name);
+    const { error } = await supabase.storage
+      .from(VIDEO_BUCKET)
+      .upload(path, file, { contentType: file.type, upsert: false });
+    if (error) throw new Error(error.message);
+    const { data } = supabase.storage.from(VIDEO_BUCKET).getPublicUrl(path);
+    return data.publicUrl;
+  }
+
+  async function handleVideoUpload(file: File) {
+    const check = validateVideoFile(file);
+    if (!check.ok) {
+      toast.error(check.error);
+      return;
+    }
+    setVideoUploading(true);
+    const toastId = toast.loading(`Uploading ${file.name}…`);
+    try {
+      // Measure before upload: on a slow connection the upload is the
+      // long pole, and reading metadata locally costs nothing.
+      const duration = await readVideoDuration(file);
+      const url = await uploadAsset(file);
+      setForm((prev) => ({
+        ...prev,
+        video_url: url,
+        video_duration_seconds:
+          duration != null ? String(duration) : prev.video_duration_seconds,
+      }));
+      toast.success("Video uploaded", { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Video upload failed", {
+        id: toastId,
+      });
+    } finally {
+      setVideoUploading(false);
+    }
+  }
+
+  async function handlePosterUpload(file: File) {
+    const check = validatePosterFile(file);
+    if (!check.ok) {
+      toast.error(check.error);
+      return;
+    }
+    setPosterUploading(true);
+    const toastId = toast.loading("Uploading poster…");
+    try {
+      const url = await uploadAsset(file);
+      update("video_poster_url", url);
+      toast.success("Poster set", { id: toastId });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Poster upload failed", {
+        id: toastId,
+      });
+    } finally {
+      setPosterUploading(false);
+    }
+  }
+
   async function save() {
     if (!form.author_name.trim() || !form.quote.trim()) {
       toast.error("Author name and quote are required");
+      return;
+    }
+    // Saving mid-upload would persist a row pointing at an object that
+    // doesn't exist yet, and the upload's setForm would be discarded.
+    if (videoUploading || posterUploading) {
+      toast.error("Wait for the upload to finish before saving");
       return;
     }
     setSaving(true);
@@ -74,6 +190,14 @@ export default function TestimonialForm({
         source: form.source.trim() || "manual",
         source_url: form.source_url.trim() || null,
         author_photo_url: form.author_photo_url.trim() || null,
+        video_url: form.video_url.trim() || null,
+        video_poster_url: form.video_poster_url.trim() || null,
+        // Column has a CHECK (> 0), so send null rather than 0 when the
+        // duration is blank or unparseable.
+        video_duration_seconds:
+          parseInt(form.video_duration_seconds, 10) > 0
+            ? parseInt(form.video_duration_seconds, 10)
+            : null,
       };
       const url = existing
         ? `/api/admin/testimonials/${existing.id}`
@@ -225,10 +349,113 @@ export default function TestimonialForm({
         </Field>
       </div>
 
+      {/* ── Video ──────────────────────────────────────────────────
+          Optional. A row with a video still needs its quote filled in —
+          that's what renders before the poster loads and what Google
+          indexes, so the schema keeps `quote` required. */}
+      <div className="pt-4 border-t border-gray-100 space-y-3">
+        <div>
+          <p className="text-xs font-semibold text-gray-700">Video review (optional)</p>
+          <p className="text-[11px] text-gray-500 mt-0.5">
+            MP4, MOV, or WebM up to 50 MB. Compress raw phone footage to 1080p
+            first — visitors download whatever you upload.
+          </p>
+        </div>
+
+        {form.video_url ? (
+          <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-3">
+            <video
+              src={form.video_url}
+              poster={form.video_poster_url || undefined}
+              controls
+              preload="metadata"
+              className="w-full max-w-md aspect-video rounded bg-black"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-[11px] text-gray-600">
+                Runtime:{" "}
+                {formatDuration(parseInt(form.video_duration_seconds, 10)) ??
+                  "unknown"}
+              </span>
+              <button
+                type="button"
+                onClick={() => {
+                  update("video_url", "");
+                  update("video_duration_seconds", "");
+                  toast.success("Video removed from this testimonial");
+                }}
+                className="inline-flex items-center gap-1 text-[11px] font-medium text-red-600 hover:text-red-700"
+              >
+                <X className="w-3 h-3" />
+                Remove video
+              </button>
+            </div>
+          </div>
+        ) : (
+          <label
+            className={`inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm ${
+              videoUploading ? "opacity-60" : "cursor-pointer hover:bg-gray-50"
+            }`}
+          >
+            {videoUploading ? (
+              <Loader2 className="w-4 h-4 animate-spin" />
+            ) : (
+              <Upload className="w-4 h-4" />
+            )}
+            {videoUploading ? "Uploading…" : "Upload video"}
+            <input
+              type="file"
+              accept={ACCEPTED_VIDEO_TYPES.join(",")}
+              className="hidden"
+              disabled={videoUploading}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                // Reset so re-picking the same file after an error still fires.
+                e.target.value = "";
+                if (file) handleVideoUpload(file);
+              }}
+            />
+          </label>
+        )}
+
+        {form.video_url && (
+          <div className="flex flex-wrap items-center gap-3">
+            <label
+              className={`inline-flex items-center gap-1.5 rounded-md border border-gray-300 px-3 py-2 text-sm ${
+                posterUploading ? "opacity-60" : "cursor-pointer hover:bg-gray-50"
+              }`}
+            >
+              {posterUploading ? (
+                <Loader2 className="w-4 h-4 animate-spin" />
+              ) : (
+                <Upload className="w-4 h-4" />
+              )}
+              {form.video_poster_url ? "Replace poster" : "Upload poster frame"}
+              <input
+                type="file"
+                accept={ACCEPTED_POSTER_TYPES.join(",")}
+                className="hidden"
+                disabled={posterUploading}
+                onChange={(e) => {
+                  const file = e.target.files?.[0];
+                  e.target.value = "";
+                  if (file) handlePosterUpload(file);
+                }}
+              />
+            </label>
+            {!form.video_poster_url && (
+              <span className="text-[11px] text-gray-500">
+                Without one the card shows the quote on a dark panel instead.
+              </span>
+            )}
+          </div>
+        )}
+      </div>
+
       <div className="pt-3 border-t border-gray-100 flex items-center gap-2">
         <button
           onClick={save}
-          disabled={saving}
+          disabled={saving || videoUploading || posterUploading}
           className="inline-flex items-center gap-1.5 rounded-md bg-black px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50"
         >
           {saving ? <Loader2 className="w-4 h-4 animate-spin" /> : <Save className="w-4 h-4" />}

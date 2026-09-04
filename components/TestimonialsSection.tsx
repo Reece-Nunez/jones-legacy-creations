@@ -19,6 +19,7 @@
  */
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { Star } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -148,6 +149,17 @@ export function TestimonialsSection({
               </footer>
             </article>
           ))}
+        </div>
+
+        {/* The section caps at 6; /reviews carries the full set plus the
+            video reviews, which don't render in this grid. */}
+        <div className="mt-10 border-t border-black pt-6">
+          <Link
+            href="/reviews"
+            className="text-[11px] font-semibold uppercase tracking-[0.18em] underline underline-offset-4 hover:text-black/60"
+          >
+            Read all client reviews →
+          </Link>
         </div>
       </div>
     </section>
