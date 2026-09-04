@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { DEFAULT_BUDGET_LINE_ITEMS } from "@/lib/types/database";
-import { planBudgetSync, BudgetSyncError } from "@/lib/finance/budget-sync";
+import { applyBudgetSync } from "@/lib/finance/apply-budget-sync";
 
 export async function GET(
   request: NextRequest,
@@ -45,80 +45,9 @@ export async function POST(
   // shapes below by the `items` wrapper precisely because it deletes — an old
   // caller sending a partial list must never wipe the rest of the budget.
   if (body && !Array.isArray(body) && Array.isArray(body.items)) {
-    const { data: existing, error: readError } = await supabase
-      .from("budget_line_items")
-      .select("id, line_number")
-      .eq("project_id", id);
-
-    if (readError) {
-      return NextResponse.json({ error: readError.message }, { status: 500 });
-    }
-
-    let plan;
-    try {
-      plan = planBudgetSync(existing ?? [], body.items);
-    } catch (e) {
-      if (e instanceof BudgetSyncError) {
-        return NextResponse.json({ error: e.message }, { status: 400 });
-      }
-      throw e;
-    }
-
-    // Deletes run first: a renumbered row can legitimately take the line number
-    // of a row being removed in the same save, and (project_id, line_number) is
-    // unique, so the upsert would collide the other way round.
-    if (plan.deleteIds.length > 0) {
-      const { error } = await supabase
-        .from("budget_line_items")
-        .delete()
-        .eq("project_id", id)
-        .in("id", plan.deleteIds);
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-    }
-
-    // Spend is matched to a budget line by line_number, not by foreign key, so
-    // renumbering a line silently orphans everything charged to it unless the
-    // pointers move too.
-    for (const rename of plan.renames) {
-      await supabase
-        .from("contractor_payments")
-        .update({ budget_line_number: rename.to })
-        .eq("project_id", id)
-        .eq("budget_line_number", rename.from);
-      await supabase
-        .from("documents")
-        .update({ line_item_number: rename.to })
-        .eq("project_id", id)
-        .eq("line_item_number", rename.from);
-    }
-
-    // Existing rows are updated by primary key, not upserted. An upsert keyed
-    // on (project_id, line_number) would find no conflict for a row whose line
-    // number just changed and try to INSERT it, colliding on the id it already
-    // has.
-    for (const row of plan.upserts) {
-      if (!row.id) continue;
-      const { id: rowId, ...values } = row;
-      const { error } = await supabase
-        .from("budget_line_items")
-        .update(values)
-        .eq("id", rowId)
-        .eq("project_id", id);
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
-    }
-
-    const newRows = plan.upserts.filter((row) => !row.id);
-    if (newRows.length > 0) {
-      const { error } = await supabase
-        .from("budget_line_items")
-        .insert(newRows.map((row) => ({ ...row, project_id: id })));
-      if (error) {
-        return NextResponse.json({ error: error.message }, { status: 400 });
-      }
+    const result = await applyBudgetSync(supabase, id, body.items);
+    if (!result.ok) {
+      return NextResponse.json({ error: result.error }, { status: result.status });
     }
 
     const { data, error } = await supabase

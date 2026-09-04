@@ -5,6 +5,8 @@ import { extractInvoiceData } from "@/lib/extract-invoice";
 import { recalcDrawTotal } from "@/lib/finance/draw-total";
 import { detectDocumentFlags } from "@/lib/documents/detect-flags";
 import { scanContextFor, storeFlags } from "@/lib/documents/scan-document";
+import { analyzeUpload, type ParsedBudgetLine } from "@/lib/documents/analyze-upload";
+import type { DocumentKind } from "@/lib/documents/document-kind";
 
 export async function GET(
   request: NextRequest,
@@ -105,9 +107,58 @@ export async function POST(
     aiData = await extractInvoiceData(buffer, file.type, file.name);
   }
 
+  // Classify every upload that isn't obviously a photo, whatever category the
+  // uploader picked. The old behaviour only read a file when someone chose
+  // "Invoice" in the form, so invoices dropped into the Documents tab as plain
+  // files were stored and forgotten — no vendor, no amount, no payment.
+  //
+  // Skipped when the invoice extractor already ran (explicit AI upload) or the
+  // user reviewed the data by hand: those paths already know what the file is,
+  // and this would be a second paid call saying the same thing.
+  let documentKind: DocumentKind = "other";
+  let parsedBudget: ParsedBudgetLine[] = [];
+  const alreadyExtracted = Boolean(aiReviewedDataRaw) || useAi === "true";
+  const looksLikePhoto = category === "photo";
+
+  if (!alreadyExtracted && !looksLikePhoto) {
+    try {
+      const analysis = await analyzeUpload(await file.arrayBuffer(), file.type, file.name);
+      documentKind = analysis.kind;
+
+      if (analysis.kind === "budget") {
+        parsedBudget = analysis.budget_lines;
+      }
+
+      // An invoice or receipt feeds the existing payment-creation path below by
+      // filling in the same shape the explicit AI upload produces.
+      if ((analysis.kind === "invoice" || analysis.kind === "receipt") && analysis.vendor_name) {
+        aiData = {
+          vendor_name: analysis.vendor_name,
+          vendor_company: analysis.vendor_name,
+          vendor_email: null,
+          vendor_phone: null,
+          invoice_number: null,
+          invoice_date: analysis.invoice_date,
+          due_date: analysis.due_date,
+          amount: analysis.amount,
+          description: analysis.description,
+          category: null,
+          line_items: [],
+          is_paid: analysis.is_paid,
+          card_fee_warning: analysis.card_fee_warning,
+        };
+      }
+    } catch (e) {
+      console.error("Upload classification failed:", e);
+    }
+  }
+
   // Determine final values — AI data overrides filename parsing, but explicit form values override everything
   const finalVendor = vendor || aiData?.vendor_company || aiData?.vendor_name || null;
-  const finalDocType = docType || (aiData?.category ? "Invoice" : null);
+  const finalDocType =
+    docType ||
+    (documentKind === "invoice" ? "Invoice" : documentKind === "receipt" ? "Receipt" : null) ||
+    (aiData?.category ? "Invoice" : null);
 
   // Map AI construction category → document category type
   function inferCategory(aiCat: string | null, fileMime: string): string {
@@ -127,7 +178,19 @@ export async function POST(
     return "general";
   }
 
-  const finalCategory = category || inferCategory(aiData?.category ?? null, file.type);
+  // A detected kind beats the mime/amount guesswork in inferCategory, but an
+  // explicit choice in the upload form still wins over both.
+  const KIND_TO_CATEGORY: Partial<Record<DocumentKind, string>> = {
+    invoice: "invoice",
+    receipt: "invoice",
+    contract: "contract",
+    permit: "permit",
+    plan: "plan",
+  };
+  const finalCategory =
+    category ||
+    KIND_TO_CATEGORY[documentKind] ||
+    inferCategory(aiData?.category ?? null, file.type);
 
   // Resolve contractor_id: use explicit ID, or try to match by vendor name.
   // Priority: 1) explicit ID, 2) exact match on project contractors, 3) exact match globally.
@@ -181,6 +244,10 @@ export async function POST(
       vendor: finalVendor,
       doc_type: finalDocType,
       contractor_id: resolvedContractorId,
+      document_kind: documentKind,
+      // Held for review rather than written into budget_line_items: applying a
+      // budget replaces the project's lines, so it needs a confirmation step.
+      parsed_budget: parsedBudget.length > 0 ? parsedBudget : null,
     })
     .select()
     .single();
@@ -192,8 +259,12 @@ export async function POST(
   // Auto-create contractor payment when we have invoice data
   let paymentRecord = null;
   let duplicatePayment: { id: string; amount: number; contractor_name: string } | null = null;
+  // A detected invoice creates its payment too. Without this the auto path
+  // classified the file correctly and then did nothing with it, which is the
+  // bug that left GEM Engineering sitting in Documents with no payment.
+  const detectedInvoice = documentKind === "invoice" || documentKind === "receipt";
   if (
-    (autoCreatePayment === "true" || useAi === "true") &&
+    (autoCreatePayment === "true" || useAi === "true" || detectedInvoice) &&
     finalVendor &&
     (finalDocType?.toLowerCase() === "invoice" || finalDocType?.toLowerCase() === "receipt" || aiData?.amount)
   ) {
@@ -281,8 +352,9 @@ export async function POST(
           fileType: file.type,
           fileName: file.name,
           context,
+          kind: documentKind,
         });
-        flagsRaised = await storeFlags(supabase, id, data.id, raw, subjects);
+        flagsRaised = await storeFlags(supabase, id, data.id, raw, subjects, documentKind);
       }
     } catch (e) {
       console.error("Document flag scan failed:", e);
@@ -293,6 +365,8 @@ export async function POST(
     {
       ...data,
       ai_extracted: aiData,
+      document_kind: documentKind,
+      parsed_budget: parsedBudget.length > 0 ? parsedBudget : null,
       payment_created: paymentRecord,
       duplicate_payment: duplicatePayment,
       flags_raised: flagsRaised,

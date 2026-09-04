@@ -4,6 +4,8 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { detectDocumentFlags } from "@/lib/documents/detect-flags";
 import { scanContextFor, storeFlags } from "@/lib/documents/scan-document";
+import { analyzeUpload } from "@/lib/documents/analyze-upload";
+import { isDocumentKind, type DocumentKind } from "@/lib/documents/document-kind";
 
 /** Open flags for the project's review panel, newest document first. */
 export async function GET(
@@ -53,7 +55,7 @@ export async function POST(
 
   let query = supabase
     .from("documents")
-    .select("id, name, file_url, file_type, category")
+    .select("id, name, file_url, file_type, category, document_kind")
     .eq("project_id", id)
     .neq("category", "photo");
 
@@ -94,6 +96,30 @@ export async function POST(
         continue;
       }
 
+      const buffer = await blob.arrayBuffer();
+
+      // Documents uploaded before classification existed have no kind, and the
+      // kind decides which fields are even in scope — so an unclassified
+      // document is classified now and the answer stored, rather than being
+      // re-derived on every future scan.
+      let kind: DocumentKind = isDocumentKind(doc.document_kind) ? doc.document_kind : "other";
+      if (!isDocumentKind(doc.document_kind)) {
+        const analysis = await analyzeUpload(
+          buffer,
+          doc.file_type || "application/pdf",
+          doc.name || "document",
+        );
+        kind = analysis.kind;
+        await supabase
+          .from("documents")
+          .update({
+            document_kind: kind,
+            parsed_budget: analysis.budget_lines.length > 0 ? analysis.budget_lines : null,
+          })
+          .eq("id", doc.id)
+          .eq("project_id", id);
+      }
+
       const { context, subjects } = await scanContextFor(supabase, id, doc.file_url);
       if (context.length === 0) {
         results.push({ document_id: doc.id, flagged: 0, error: "Project has no comparable fields" });
@@ -101,13 +127,14 @@ export async function POST(
       }
 
       const raw = await detectDocumentFlags({
-        fileBuffer: await blob.arrayBuffer(),
+        fileBuffer: buffer,
         fileType: doc.file_type || "application/pdf",
         fileName: doc.name || "document",
         context,
+        kind,
       });
 
-      const count = await storeFlags(supabase, id, doc.id, raw, subjects);
+      const count = await storeFlags(supabase, id, doc.id, raw, subjects, kind);
       flagged += count;
       results.push({ document_id: doc.id, flagged: count });
     } catch (e) {

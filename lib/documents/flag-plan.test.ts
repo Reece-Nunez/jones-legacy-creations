@@ -22,11 +22,18 @@ const subjects: FlagSubject[] = [
   },
 ];
 
+/**
+ * These cases cover validation and canonicalisation. Eligibility by document
+ * kind is covered in document-kind.test.ts, so each call here passes the kind
+ * that legitimately owns the fields under test — "contract" for project
+ * fields, "invoice" for payment fields.
+ */
 describe("planFlags", () => {
   it("keeps a genuine disagreement", () => {
     const flags = planFlags(
       [{ field: "projects.contract_value", value: "$645,000", explanation: "Contract page 1", confidence: "high" }],
       subjects,
+      "contract",
     );
 
     expect(flags).toEqual([
@@ -44,21 +51,29 @@ describe("planFlags", () => {
   });
 
   it("drops differences that are only formatting", () => {
-    const flags = planFlags(
+    const fromInvoice = planFlags(
       [
         { field: "contractor_payments.amount", value: "$5,873.93" },
-        { field: "projects.address", value: "1234 South Main Street" },
         { field: "contractor_payments.contractor_name", value: "Acme Concrete, LLC" },
+      ],
+      subjects,
+      "invoice",
+    );
+    const fromContract = planFlags(
+      [
+        { field: "projects.address", value: "1234 South Main Street" },
         { field: "projects.start_date", value: "3/5/2026" },
       ],
       subjects,
+      "contract",
     );
 
-    expect(flags).toEqual([]);
+    expect(fromInvoice).toEqual([]);
+    expect(fromContract).toEqual([]);
   });
 
   it("flags a field our records leave blank", () => {
-    const flags = planFlags([{ field: "projects.zip", value: "84737" }], subjects);
+    const flags = planFlags([{ field: "projects.zip", value: "84737" }], subjects, "contract");
 
     expect(flags).toHaveLength(1);
     expect(flags[0]).toMatchObject({ target_field: "zip", current_value: null, suggested_value: "84737" });
@@ -75,6 +90,7 @@ describe("planFlags", () => {
         { field: "contractors.name", value: "Whoever" },
       ],
       subjects,
+      "contract",
     );
 
     expect(flags).toEqual([]);
@@ -87,6 +103,7 @@ describe("planFlags", () => {
         { field: "projects.start_date", value: "TBD" },
       ],
       subjects,
+      "contract",
     );
 
     expect(flags).toEqual([]);
@@ -99,6 +116,7 @@ describe("planFlags", () => {
         { field: "projects.client_name", value: "B. Johnson" },
       ],
       subjects,
+      "contract",
     );
 
     expect(flags).toHaveLength(1);
@@ -109,15 +127,16 @@ describe("planFlags", () => {
     const flags = planFlags(
       [{ field: "projects.client_name", value: "Blake Johnson", confidence: "certain" }],
       subjects,
+      "contract",
     );
 
     expect(flags[0].confidence).toBe("medium");
   });
 
   it("ignores junk instead of throwing", () => {
-    expect(planFlags(null, subjects)).toEqual([]);
-    expect(planFlags("nope", subjects)).toEqual([]);
-    expect(planFlags([null, 42, {}, { field: 7 }], subjects)).toEqual([]);
+    expect(planFlags(null, subjects, "contract")).toEqual([]);
+    expect(planFlags("nope", subjects, "contract")).toEqual([]);
+    expect(planFlags([null, 42, {}, { field: 7 }], subjects, "contract")).toEqual([]);
   });
 
   it("skips a table that wasn't part of this scan", () => {
@@ -129,6 +148,7 @@ describe("planFlags", () => {
         { field: "projects.client_name", value: "Blake Johnson" },
       ],
       projectOnly,
+      "contract",
     );
 
     expect(flags).toHaveLength(1);

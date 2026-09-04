@@ -3,6 +3,8 @@ import { FLAG_FIELDS } from "./flag-fields";
 import { planFlags, type FlagSubject } from "./flag-plan";
 import type { FlagSubjectContext } from "./detect-flags";
 import type { RawFlag } from "./flag-plan";
+import type { DocumentKind } from "./document-kind";
+import { loadOwnIdentity } from "./own-identity";
 
 /**
  * The database half of a discrepancy scan: what to compare a document against,
@@ -84,8 +86,10 @@ export async function storeFlags(
   documentId: string,
   raw: RawFlag[] | unknown,
   subjects: FlagSubject[],
+  kind: DocumentKind,
 ): Promise<number> {
-  const planned = planFlags(raw, subjects);
+  const identity = await loadOwnIdentity(supabase);
+  const planned = planFlags(raw, subjects, kind, identity);
 
   // Stamped even when nothing was found, so a clean document isn't re-scanned
   // (and re-billed) every time the catch-up button is pressed.

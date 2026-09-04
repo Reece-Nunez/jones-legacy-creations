@@ -1,5 +1,6 @@
 import Anthropic from "@anthropic-ai/sdk";
-import { FLAG_FIELDS, type FlagField } from "./flag-fields";
+import { type FlagField } from "./flag-fields";
+import { DOCUMENT_KIND_LABELS, eligibleFieldKeys, type DocumentKind } from "./document-kind";
 import type { RawFlag } from "./flag-plan";
 
 /**
@@ -28,6 +29,8 @@ export type DetectFlagsInput = {
   fileName: string;
   /** Field catalogue with current values, built by the caller. */
   context: FlagSubjectContext[];
+  /** What the document was classified as; decides which fields are in scope. */
+  kind: DocumentKind;
 };
 
 function mediaTypeFor(fileType: string) {
@@ -42,6 +45,13 @@ export async function detectDocumentFlags(input: DetectFlagsInput): Promise<RawF
   const apiKey = process.env.ANTHROPIC_API_KEY;
   if (!apiKey) return [];
   if (input.context.length === 0) return [];
+
+  // Only ask about fields this kind of document could plausibly know. Asking
+  // an invoice about the project address invites it to answer with the
+  // bill-to block, and a question not asked is a wrong answer not given.
+  const allowed = new Set(eligibleFieldKeys(input.kind));
+  const scoped = input.context.filter((c) => allowed.has(c.field.key));
+  if (scoped.length === 0) return [];
 
   const client = new Anthropic({ apiKey });
   const mediaType = mediaTypeFor(input.fileType);
@@ -60,21 +70,29 @@ export async function detectDocumentFlags(input: DetectFlagsInput): Promise<RawF
     });
   }
 
-  const catalogue = input.context
+  const catalogue = scoped
     .map((c) => `- ${c.field.key} (${c.field.label}, ${c.field.type}): ${c.current ?? "(blank)"}`)
     .join("\n");
 
-  const fieldKeys = FLAG_FIELDS.map((f) => f.key).join(", ");
+  const fieldKeys = scoped.map((c) => c.field.key).join(", ");
 
   content.push({
     type: "text",
-    text: `This document was filed against a construction project. The filename is "${input.fileName}".
+    text: `This document was filed against a construction project. The filename is "${input.fileName}". It has been identified as: ${DOCUMENT_KIND_LABELS[input.kind]}.
 
 Here is what our records currently say. Each line is "field_key (label, type): current value":
 
 ${catalogue}
 
 Read the document and report ONLY fields where the document clearly states something DIFFERENT from our records, or states something for a field our records leave blank.
+
+A construction document names several different parties. Before reporting anything, work out whose detail you are looking at:
+- The VENDOR / issuer - whose letterhead is at the top, who wants to be paid.
+- The BILL-TO / remit party - usually "Jones Custom Homes", the builder. This is OUR company, not the client, and its address is our office, not the job site.
+- The PROJECT SITE - where the house is actually being built. Often labelled "job", "site", "property" or "project address".
+- The CLIENT / homeowner - the individual or couple the house is being built for.
+
+Report a project address only when it is the PROJECT SITE, and a client name only when it is the HOMEOWNER. Never report the vendor's address or the bill-to address as the project address, and never report the vendor's or the builder's company name as the client. If a document shows only a vendor address and a bill-to address with no job site, report no address at all.
 
 Rules:
 - Use only these field keys, exactly as written: ${fieldKeys}
