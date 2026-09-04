@@ -94,16 +94,18 @@ export function TestimonialVideo({
         </span>
       </span>
 
-      <span className="absolute bottom-0 left-0 right-0 flex items-end justify-between gap-3 p-4 sm:p-5">
-        <span className="text-xs font-semibold uppercase tracking-[0.18em] text-white">
-          {authorName}
-        </span>
-        {runtime && (
+      {/* Runtime only, bottom-LEFT. The author's name and role already sit
+          in the caption directly below this player, so repeating them over
+          the poster is noise; and posters that are branded title cards
+          (as JLC's are) carry a logo bottom-right, which a badge there
+          would land on top of. */}
+      {runtime && (
+        <span className="absolute bottom-0 left-0 p-4 sm:p-5">
           <span className="rounded-sm bg-black/70 px-1.5 py-0.5 text-[11px] font-medium tabular-nums text-white">
             {runtime}
           </span>
-        )}
-      </span>
+        </span>
+      )}
     </button>
   );
 }
