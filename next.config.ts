@@ -47,7 +47,12 @@ const contentSecurityPolicy = [
   `frame-src 'self' https://www.google.com https://www.facebook.com ${SUPABASE_ORIGIN}`,
   "worker-src 'self' blob:",
   "manifest-src 'self'",
-  "media-src 'self'",
+  // Testimonial video is served from the public testimonial-videos bucket,
+  // so <video src> points at Supabase rather than our own origin. img-src
+  // already allowlists it, which is why the poster frame rendered fine while
+  // the mp4 itself was blocked — the two are separate directives and only
+  // media-src governs <video>/<audio>.
+  `media-src 'self' ${SUPABASE_ORIGIN}`,
 ].join("; ");
 
 const nextConfig: NextConfig = {
