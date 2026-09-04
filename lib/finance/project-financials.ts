@@ -21,14 +21,30 @@
  *                        draw on the loan, which is how the lender accrues
  *                        it). Each component runs from its own start_date
  *                        to `endDate` at `interest_rate`.
- *   projected_profit:
- *     external_loan   → sale_price - total_costs - accrued_interest
- *                       - sale_closing_costs - down_payment
- *     seller_financed → sale_price - total_costs + accrued_interest
- *                       + down_payment - sale_closing_costs
- *                       (Blake IS the bank — he receives both)
- *     cash            → sale_price - total_costs - sale_closing_costs
+ *   budgeted_costs     = sum(budget_line_items.budgeted_amount)       per project
+ *   forecast_costs     = max(budgeted_costs, all_in_costs) when a budget
+ *                        exists, else all_in_costs
+ *   actual_profit      = sale_price - all_in_costs + financing_impact
+ *   projected_profit   = sale_price - forecast_costs + financing_impact
  *   profit_margin      = projected_profit / sale_price     (0 if sale_price <= 0)
+ *
+ * About projected vs actual profit:
+ *   These answer two different questions and were previously conflated.
+ *   "Projected" is what the job should make when it is finished, so it has to
+ *   cost the work still to come — that is what the budget is for. "Actual" is
+ *   where the money stands today: sale price less what has genuinely been
+ *   spent. Before this split, a project 8% built showed its projected profit
+ *   as sale_price minus the 8% spent so far — Chelsey Lot 27 read $477,296 at
+ *   a 90.9% margin, which is not a forecast of anything.
+ *
+ *   forecast_costs takes the LARGER of budget and actual on purpose. Peach
+ *   Springs is budgeted at $125,913 and has spent $255,335; trusting the
+ *   budget there would invent ~$129k of profit that has already been spent.
+ *   A budget is a forecast only until it is overrun, after which the money
+ *   out of the door is the better number.
+ *
+ *   With no budget on file, forecast_costs falls back to all_in_costs, so
+ *   projected_profit keeps its old value and old projects do not shift.
  *
  * About the profit formula (Formula 1 / "walk-away cash"):
  *   We want the displayed Projected Profit to equal the net wire Blake
@@ -58,6 +74,7 @@
  */
 
 import type {
+  BudgetLineItem,
   ContractorPayment,
   DrawRequest,
   FinancingType,
@@ -110,6 +127,20 @@ export interface ProjectFinancials {
    *  (projectedProfit − (salePrice − totalCosts)) — kept as its own field
    *  so callers don't have to re-derive it. */
   financingImpact: number;
+  /** Sum of budget_line_items.budgeted_amount for this project. */
+  budgetedCosts: number;
+  /** True when the project has a budget with a non-zero total. When false,
+   *  projectedProfit falls back to actualProfit rather than pretending a job
+   *  with no budget will cost nothing. */
+  hasBudget: boolean;
+  /** What the finished job is expected to cost: the budget, or actual spend
+   *  once that has overrun the budget. */
+  forecastCosts: number;
+  /** Sale price less every dollar actually spent, with financing applied.
+   *  Where the job stands today, not a forecast. */
+  actualProfit: number;
+  actualProfitMargin: number;
+  /** Sale price less the FORECAST cost of the finished job. */
   projectedProfit: number;
   profitMargin: number;
 }
@@ -294,6 +325,7 @@ export function computeProjectFinancials(
     | "other_fees"
     | "settlement_date"
   >[] = [],
+  allBudgetLineItems: Pick<BudgetLineItem, "project_id" | "budgeted_amount">[] = [],
 ): ProjectFinancials {
   const projPayments = allPayments.filter((p) => p.project_id === project.id);
   const projDraws = allDraws.filter((d) => d.project_id === project.id);
@@ -378,7 +410,21 @@ export function computeProjectFinancials(
     financingImpact = -saleClosingCosts;
   }
 
-  const projectedProfit = salePrice - totalCosts + financingImpact - miscCharges;
+  // Where the job stands today. Equivalent to the old projectedProfit —
+  // salePrice - totalCosts - miscCharges is exactly salePrice - allInCosts.
+  const actualProfit = salePrice - allInCosts + financingImpact;
+  const actualProfitMargin = salePrice > 0 ? actualProfit / salePrice : 0;
+
+  const budgetedCosts = allBudgetLineItems
+    .filter((b) => b.project_id === project.id)
+    .reduce((sum, b) => sum + Number(b.budgeted_amount || 0), 0);
+  const hasBudget = budgetedCosts > 0;
+
+  // The larger of the two: a budget is a forecast only until it is overrun,
+  // and money already out of the door cannot be un-spent by a stale budget.
+  const forecastCosts = hasBudget ? Math.max(budgetedCosts, allInCosts) : allInCosts;
+
+  const projectedProfit = salePrice - forecastCosts + financingImpact;
   const profitMargin = salePrice > 0 ? projectedProfit / salePrice : 0;
 
   return {
@@ -401,6 +447,11 @@ export function computeProjectFinancials(
     allInCosts,
     hasLoanLedger,
     financingImpact,
+    budgetedCosts,
+    hasBudget,
+    forecastCosts,
+    actualProfit,
+    actualProfitMargin,
     projectedProfit,
     profitMargin,
   };

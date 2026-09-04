@@ -311,7 +311,7 @@ export default function ProjectDetail({
   // See lib/finance/project-financials.ts for the formula + rationale.
   const hasLoanFields = !!(project.sale_price && project.loan_amount);
 
-  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger, settlements);
+  const pf = computeProjectFinancials(project, payments, drawRequests, miscCharges, new Date(), loanLedger, settlements, budgetLineItems);
   const {
     salePrice,
     loanAmount,
@@ -326,10 +326,15 @@ export default function ProjectDetail({
     miscCharges: miscChargesTotal,
     hasLoanLedger,
     projectedProfit,
+    actualProfit,
+    budgetedCosts,
+    forecastCosts,
+    hasBudget,
     totalCosts,
     allInCosts,
   } = pf;
   const profitMargin = pf.profitMargin * 100;
+  const actualProfitMargin = pf.actualProfitMargin * 100;
 
   const contractValue = project.contract_value ?? project.estimated_value ?? 0;
 
@@ -514,6 +519,11 @@ export default function ProjectDetail({
             hasSaleSettlement={hasSaleSettlement}
             projectedProfit={projectedProfit}
             profitMargin={profitMargin}
+            actualProfit={actualProfit}
+            actualProfitMargin={actualProfitMargin}
+            budgetedCosts={budgetedCosts}
+            forecastCosts={forecastCosts}
+            hasBudget={hasBudget}
           />
         ) : project.is_cash_job ? (
           <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-3">
@@ -844,6 +854,11 @@ function FinancialSummary({
   hasSaleSettlement,
   projectedProfit,
   profitMargin,
+  actualProfit,
+  actualProfitMargin,
+  budgetedCosts,
+  forecastCosts,
+  hasBudget,
 }: {
   salePrice: number;
   totalCosts: number;
@@ -861,10 +876,17 @@ function FinancialSummary({
   hasSaleSettlement: boolean;
   projectedProfit: number;
   profitMargin: number;
+  actualProfit: number;
+  actualProfitMargin: number;
+  budgetedCosts: number;
+  forecastCosts: number;
+  hasBudget: boolean;
 }) {
   // When down_payment > 0, origination is bundled in (per the user
   // data-entry convention). Showing both would imply double-subtraction.
   const showOriginationTile = downPayment <= 0 && originationFee > 0;
+  // Every dollar actually spent, mirroring pf.allInCosts.
+  const allInCostsForMath = totalCosts + miscCharges;
   const [expanded, setExpanded] = useState(true);
   const [mathOpen, setMathOpen] = useState(false);
 
@@ -980,8 +1002,13 @@ function FinancialSummary({
             />
           </div>
 
-          {/* Row 3: Bottom Line */}
-          <div className={`grid grid-cols-1 sm:grid-cols-2 gap-3 p-3 rounded-lg border ${profitBg}`}>
+          {/* Row 3: Bottom Line.
+             *
+             * Two figures, because they answer different questions. Projected
+             * costs the FINISHED job against the budget; Actual is where the
+             * money stands today. Showing only the second made a job 8% built
+             * read a 90.9% margin, which forecast nothing. */}
+          <div className={`grid grid-cols-1 sm:grid-cols-3 gap-3 p-3 rounded-lg border ${profitBg}`}>
             <div className="flex items-center gap-3">
               {projectedProfit >= 0 ? (
                 <TrendingUp className="w-5 h-5 text-green-500" />
@@ -993,6 +1020,13 @@ function FinancialSummary({
                 <p className={`text-2xl font-bold tabular-nums ${profitColor}`}>
                   {fmt(projectedProfit)}
                 </p>
+                <p className="text-[11px] text-gray-500">
+                  {hasBudget
+                    ? forecastCosts > budgetedCosts
+                      ? `vs ${fmt(forecastCosts)} spent — over the ${fmt(budgetedCosts)} budget`
+                      : `sale price less the ${fmt(budgetedCosts)} budget`
+                    : "no budget set — using costs to date"}
+                </p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -1001,6 +1035,20 @@ function FinancialSummary({
                 <p className="text-xs text-gray-500 font-medium">Profit Margin</p>
                 <p className={`text-2xl font-bold tabular-nums ${marginColor}`}>
                   {profitMargin.toFixed(1)}%
+                </p>
+                <p className="text-[11px] text-gray-500">on the projected figure</p>
+              </div>
+            </div>
+            <div className="flex items-center gap-3">
+              <Wallet className="w-5 h-5 text-gray-400" />
+              <div>
+                <p className="text-xs text-gray-500 font-medium">Actual Profit</p>
+                <p className="text-2xl font-bold tabular-nums text-gray-700">
+                  {fmt(actualProfit)}
+                </p>
+                <p className="text-[11px] text-gray-500">
+                  sale price less {fmt(allInCostsForMath)} spent so far
+                  {salePrice > 0 ? ` · ${actualProfitMargin.toFixed(1)}%` : ""}
                 </p>
               </div>
             </div>
@@ -1026,7 +1074,18 @@ function FinancialSummary({
           {mathOpen && (
             <div className="rounded-md border border-gray-200 bg-gray-50 p-3 space-y-1 text-xs tabular-nums">
               <MathRow label="Sale Price" value={salePrice} sign="+" />
-              <MathRow label="Total Costs (contractors)" value={totalCosts} sign="−" />
+              {hasBudget && forecastCosts > totalCosts + miscCharges ? (
+                <MathRow
+                  label={`Budgeted Costs (job not finished)`}
+                  value={forecastCosts}
+                  sign="−"
+                />
+              ) : (
+                <>
+                  <MathRow label="Total Costs (contractors)" value={totalCosts} sign="−" />
+                  <MathRow label="Job Costs" value={miscCharges} sign="−" />
+                </>
+              )}
               <MathRow
                 label={`Accrued Interest${hasLoanLedger ? " (lender ledger)" : ""}`}
                 value={accruedInterest}
@@ -1038,7 +1097,6 @@ function FinancialSummary({
                 sign="−"
               />
               <MathRow label="Down Payment" value={downPayment} sign="−" />
-              <MathRow label="Job Costs" value={miscCharges} sign="−" />
               {showOriginationTile && (
                 <MathRow
                   label={`Origination Fee (${originationFeePercent}%)`}

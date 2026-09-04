@@ -76,7 +76,7 @@ export default async function FinancialsPage({
 
   const supabase = await createClient();
 
-  const [projectsRes, paymentsRes, drawsRes, miscRes, ledgerRes, settlementsRes] = await Promise.all([
+  const [projectsRes, paymentsRes, drawsRes, miscRes, ledgerRes, settlementsRes, budgetRes] = await Promise.all([
     supabase
       .from("projects")
       .select("*")
@@ -86,6 +86,7 @@ export default async function FinancialsPage({
     supabase.from("project_misc_charges").select("*"),
     supabase.from("loan_ledger").select("*"),
     supabase.from("project_settlements").select("*"),
+    supabase.from("budget_line_items").select("project_id, budgeted_amount"),
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
@@ -94,6 +95,9 @@ export default async function FinancialsPage({
   const miscCharges: ProjectMiscCharge[] = miscRes.data ?? [];
   const loanLedger: LoanLedgerEntry[] = ledgerRes.data ?? [];
   const settlements: ProjectSettlement[] = settlementsRes.data ?? [];
+  // Budgets cost the work still to come, so company-wide projected profit
+  // forecasts the finished jobs rather than only what has been spent so far.
+  const budgetLineItems: { project_id: string; budgeted_amount: number }[] = budgetRes.data ?? [];
 
   // ── Maps ─────────────────────────────────────────────────────────
   const projectMap = new Map(projects.map((p) => [p.id, p]));
@@ -103,7 +107,7 @@ export default async function FinancialsPage({
 
   // ── Per-project financials (uses shared helper — do not inline) ─
   const projectFinancials: ProjectFinancials[] = activeProjects.map((p) =>
-    computeProjectFinancials(p, payments, draws, miscCharges, new Date(), loanLedger, settlements),
+    computeProjectFinancials(p, payments, draws, miscCharges, new Date(), loanLedger, settlements, budgetLineItems),
   );
 
   // Sort: projects with activity first, then by profit descending

@@ -169,6 +169,7 @@ export default async function AdminDashboard({
     settlementsRes,
     estimatesRes,
     contractorsRes,
+    budgetRes,
   ] = await Promise.all([
     supabase
       .from("projects")
@@ -193,6 +194,7 @@ export default async function AdminDashboard({
       .eq("type", "contractor")
       .eq("w9_required", true)
       .is("w9_file_url", null),
+    supabase.from("budget_line_items").select("project_id, budgeted_amount"),
   ]);
 
   const projects: Project[] = projectsRes.data ?? [];
@@ -203,6 +205,9 @@ export default async function AdminDashboard({
   const miscCharges: { project_id: string; amount: number }[] = miscChargesRes.data ?? [];
   const loanLedger: { project_id: string; entry_type: string; amount: number; entry_date: string }[] = loanLedgerRes.data ?? [];
   const settlements: { project_id: string; settlement_type: string; seller_concessions: number | null; title_insurance: number | null; escrow_fee: number | null; recording_fees: number | null; prorated_taxes: number | null; other_fees: { label: string; amount: number }[]; settlement_date: string }[] = settlementsRes.data ?? [];
+  // Budgets cost the work still to come, so company-wide projected profit
+  // forecasts the finished jobs rather than only what has been spent so far.
+  const budgetLineItems: { project_id: string; budgeted_amount: number }[] = budgetRes.data ?? [];
   const estimates: Estimate[] = estimatesRes.data ?? [];
   const contractorsMissingW9: Pick<Contractor, "id" | "name" | "company">[] = contractorsRes.data ?? [];
 
@@ -239,6 +244,7 @@ export default async function AdminDashboard({
       now,
       loanLedger as Parameters<typeof computeProjectFinancials>[5],
       settlements as Parameters<typeof computeProjectFinancials>[6],
+      budgetLineItems,
     ),
   );
   const totalProjectedProfit = sumProjectedProfit(activeFinancials);

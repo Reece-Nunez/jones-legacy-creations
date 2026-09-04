@@ -266,3 +266,81 @@ describe("all-in costs", () => {
     expect(withCharges.totalCosts).toBeCloseTo(base, 2);
   });
 });
+
+describe("projected vs actual profit", () => {
+  // Two different questions, previously answered with one number. Projected is
+  // what the finished job should make and therefore has to cost the work still
+  // to come; actual is where the money stands today. Conflating them made
+  // Chelsey Lot 27 — 8% built — read a 90.9% margin.
+
+  function withBudget(name: string, budgetTotal: number): ProjectFinancials {
+    const project = fixture.projects.find((p) => p.name.trim() === name);
+    if (!project) throw new Error(`fixture missing project ${name}`);
+    return computeProjectFinancials(
+      project as never,
+      fixture.payments as never,
+      fixture.draws as never,
+      fixture.miscCharges as never,
+      AS_OF,
+      fixture.loanLedger as never,
+      fixture.settlements as never,
+      budgetTotal > 0
+        ? ([{ project_id: project.id, budgeted_amount: budgetTotal }] as never)
+        : ([] as never),
+    );
+  }
+
+  it("falls back to actual costs when there is no budget", () => {
+    // Old behaviour preserved exactly: a project with no budget must not look
+    // as though the remaining work is free.
+    const noBudget = withBudget("Peach Springs", 0);
+    expect(noBudget.hasBudget).toBe(false);
+    expect(noBudget.forecastCosts).toBe(noBudget.allInCosts);
+    expect(noBudget.projectedProfit).toBeCloseTo(noBudget.actualProfit, 2);
+  });
+
+  it("costs the whole budget, not just what has been spent", () => {
+    const pf = withBudget("Chelsey Lot 42", 496600);
+
+    expect(pf.hasBudget).toBe(true);
+    expect(pf.forecastCosts).toBe(496600);
+    // Projected prices the finished job; actual still reflects spend to date,
+    // so on a barely-started job actual is the far rosier of the two.
+    expect(pf.projectedProfit).toBeCloseTo(
+      pf.salePrice - 496600 + pf.financingImpact,
+      2,
+    );
+    expect(pf.actualProfit).toBeGreaterThan(pf.projectedProfit);
+  });
+
+  it("uses actual spend once it has overrun the budget", () => {
+    // Peach Springs is budgeted $125,913 and has spent $255,335. Trusting the
+    // budget would invent ~$129k of profit that is already out of the door.
+    const pf = withBudget("Peach Springs", 125913.16);
+
+    expect(pf.allInCosts).toBeGreaterThan(125913.16);
+    expect(pf.forecastCosts).toBe(pf.allInCosts);
+    expect(pf.projectedProfit).toBeCloseTo(pf.actualProfit, 2);
+  });
+
+  it("keeps the margin tied to the projected figure", () => {
+    const pf = withBudget("Chelsey Lot 42", 496600);
+    expect(pf.profitMargin).toBeCloseTo(pf.projectedProfit / pf.salePrice, 6);
+    expect(pf.actualProfitMargin).toBeCloseTo(pf.actualProfit / pf.salePrice, 6);
+  });
+
+  it("reports a zero margin on a project with no sale price", () => {
+    const pf = withBudget("Dixie Springs", 135708.95);
+    expect(pf.salePrice).toBe(0);
+    expect(pf.profitMargin).toBe(0);
+    expect(pf.actualProfitMargin).toBe(0);
+  });
+
+  it("applies financing to both figures the same way", () => {
+    const pf = withBudget("Chelsey Lot 42", 496600);
+    expect(pf.projectedProfit - pf.actualProfit).toBeCloseTo(
+      pf.allInCosts - pf.forecastCosts,
+      2,
+    );
+  });
+});
