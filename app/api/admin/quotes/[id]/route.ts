@@ -134,6 +134,8 @@ const allowedFields = [
   "created_by",
   "subtotal",
   "grand_total",
+  // The gap between the two above. Stored so the margin is reportable.
+  "profit_amount",
 ];
 
 const pricingFields = [

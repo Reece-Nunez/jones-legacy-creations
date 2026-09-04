@@ -28,6 +28,7 @@ import {
   UserCircle,
   ChevronLeft,
   ShieldCheck,
+  Ruler,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { useEnsureProfile } from "@/lib/hooks/useEnsureProfile";
@@ -89,6 +90,7 @@ const navSections: NavSection[] = [
       { label: "Financials", href: "/admin/financials", icon: DollarSign },
       { label: "Estimates", href: "/admin/estimates", icon: Calculator, badgeKey: "estimates" },
       { label: "Quotes", href: "/admin/quotes", icon: ClipboardList, badgeKey: "quotes" },
+      { label: "Standard Prices", href: "/admin/standard-rates", icon: Ruler },
     ],
   },
   {

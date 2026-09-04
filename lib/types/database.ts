@@ -685,3 +685,20 @@ export const TIMELINE_OPTIONS = [
   "12+ months",
   "Flexible",
 ] as const;
+
+/** Blake's standard per-square-foot rate for a trade, used to seed a new
+ *  quote's cost breakdown. One row per trade; the contractor is recorded so he
+ *  knows whose number it is, but does not key the rate. */
+export interface StandardTradeRate {
+  id: string;
+  trade_name: string;
+  rate_per_sqft: number;
+  contractor_id: string | null;
+  contractor_note: string | null;
+  notes: string | null;
+  active: boolean;
+  created_at: string;
+  updated_at: string;
+  /** Joined on read. */
+  contractor?: { id: string; name: string; company: string | null } | null;
+}

@@ -5,6 +5,7 @@ import toast from "react-hot-toast";
 import type { Quote } from "@/lib/types/quotes";
 import { JOB_TYPE_LABELS } from "@/lib/types/quotes";
 import type { SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
+import { priceWithProfit } from "@/lib/quotes/profit";
 import { formatCurrency as fmt } from "@/lib/formatters";
 
 interface ClientProposalProps {
@@ -69,10 +70,15 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
     year: "numeric",
   });
 
-  const lineItems = items.filter((i) => !i.isOwnerPurchase && i.cost > 0);
-  const ownerItems = items.filter((i) => i.isOwnerPurchase && i.cost > 0);
-  const subtotal = lineItems.reduce((sum, i) => sum + i.cost, 0);
-  const ownerTotal = ownerItems.reduce((sum, i) => sum + i.cost, 0);
+  // This is the client's copy, so every figure on it is the marked-up price.
+  // The raw cost never reaches this component's output — the profit is spread
+  // across the lines so the column adds up to the total underneath it, with no
+  // separate fee line to ask about.
+  const priced = priceWithProfit(items, Number(quote.profit_pct) || 0);
+  const lineItems = priced.items.filter((i) => !i.isOwnerPurchase && i.clientPrice > 0);
+  const ownerItems = priced.items.filter((i) => i.isOwnerPurchase && i.clientPrice > 0);
+  const subtotal = lineItems.reduce((sum, i) => sum + i.clientPrice, 0);
+  const ownerTotal = ownerItems.reduce((sum, i) => sum + i.clientPrice, 0);
   const grandTotal = subtotal + ownerTotal;
 
   const addressParts = [quote.address, quote.city, quote.state, quote.zip].filter(Boolean);
@@ -212,7 +218,7 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
                   >
                     <td className="py-2.5 text-gray-700">{item.trade}</td>
                     <td className="py-2.5 text-right text-gray-900 font-medium tabular-nums">
-                      {fmt(item.cost)}
+                      {fmt(item.clientPrice)}
                     </td>
                   </tr>
                 ))}
@@ -247,7 +253,7 @@ export function ClientProposal({ quoteId, initialQuote }: ClientProposalProps) {
                   <tr key={idx} className="border-b border-gray-100">
                     <td className="py-2.5 text-gray-700">{item.trade}</td>
                     <td className="py-2.5 text-right text-gray-900 font-medium tabular-nums">
-                      {fmt(item.cost)}
+                      {fmt(item.clientPrice)}
                     </td>
                   </tr>
                 ))}

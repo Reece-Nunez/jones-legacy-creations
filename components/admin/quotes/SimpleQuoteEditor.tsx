@@ -2,11 +2,14 @@
 
 import { useState, useCallback, useMemo, useEffect, useRef } from "react";
 import { Button } from "@/components/ui/Button";
-import { Plus, X, BookOpen } from "lucide-react";
+import { Plus, X, BookOpen, EyeOff, Ruler, Wand2 } from "lucide-react";
+import toast from "react-hot-toast";
 import { cn } from "@/lib/utils";
 import { JOB_TYPE_TRADE_DEFAULTS } from "@/lib/quote-builder/trade-defaults";
 import { formatCurrency } from "@/lib/formatters";
 import type { JobTypeSlug } from "@/lib/types/quotes";
+import { priceWithProfit } from "@/lib/quotes/profit";
+import { fillFromStandardRates, type StandardRate } from "@/lib/quotes/standard-rates";
 
 interface CustomTrade {
   id: string;
@@ -24,11 +27,19 @@ export interface SimpleQuoteItem {
   note: string;
 }
 
+/** Everything the breakdown needs to persist alongside its line items. */
+export interface SimpleQuoteMeta {
+  profitPct: number;
+  squareFootage: number;
+}
+
 interface SimpleQuoteEditorProps {
   jobType: JobTypeSlug;
   initialItems?: SimpleQuoteItem[];
-  onSave: (items: SimpleQuoteItem[]) => Promise<void>;
-  onChange?: (items: SimpleQuoteItem[]) => void;
+  initialProfitPct?: number;
+  initialSquareFootage?: number;
+  onSave: (items: SimpleQuoteItem[], meta: SimpleQuoteMeta) => Promise<void>;
+  onChange?: (items: SimpleQuoteItem[], meta: SimpleQuoteMeta) => void;
 }
 
 function parseCurrency(value: string): number {
@@ -40,6 +51,8 @@ function parseCurrency(value: string): number {
 export function SimpleQuoteEditor({
   jobType,
   initialItems,
+  initialProfitPct,
+  initialSquareFootage,
   onSave,
   onChange,
 }: SimpleQuoteEditorProps) {
@@ -63,6 +76,20 @@ export function SimpleQuoteEditor({
   );
   const [saving, setSaving] = useState(false);
 
+  // Costs entered here are what Blake pays. The client is quoted these plus a
+  // margin spread across the lines, so the two figures are kept apart all the
+  // way through: `cost` never changes, and the marked-up number is derived.
+  const [profitPctInput, setProfitPctInput] = useState(
+    initialProfitPct != null ? String(initialProfitPct) : "",
+  );
+  const [sqftInput, setSqftInput] = useState(
+    initialSquareFootage ? String(initialSquareFootage) : "",
+  );
+  const [standardRates, setStandardRates] = useState<StandardRate[]>([]);
+
+  const profitPct = parseCurrency(profitPctInput || "0");
+  const squareFootage = parseCurrency(sqftInput || "0");
+
   // Track raw string values for cost inputs so decimals aren't eaten mid-typing
   const [costInputs, setCostInputs] = useState<Record<number, string>>({});
 
@@ -78,6 +105,16 @@ export function SimpleQuoteEditor({
       .then(setCustomTrades)
       .catch((err) => {
         console.warn("Failed to load custom trades", err);
+      });
+  }, []);
+
+  useEffect(() => {
+    fetch("/api/admin/standard-rates")
+      .then((r) => (r.ok ? r.json() : []))
+      .then(setStandardRates)
+      .catch((err) => {
+        // The fill button just stays unavailable; the breakdown still works.
+        console.warn("Failed to load standard rates", err);
       });
   }, []);
 
@@ -103,7 +140,7 @@ export function SimpleQuoteEditor({
   const addCustomTrade = (trade: CustomTrade) => {
     setItems((prev) => {
       const next = [...prev, { id: crypto.randomUUID(), trade: trade.trade_name, cost: 0, isOwnerPurchase: false, note: "" }];
-      onChange?.(next);
+      onChange?.(next, { profitPct, squareFootage });
       return next;
     });
     setShowCustomPicker(false);
@@ -151,7 +188,7 @@ export function SimpleQuoteEditor({
   const updateItem = (index: number, updates: Partial<SimpleQuoteItem>) => {
     setItems((prev) => {
       const next = prev.map((item, i) => (i === index ? { ...item, ...updates } : item));
-      onChange?.(next);
+      onChange?.(next, { profitPct, squareFootage });
       return next;
     });
   };
@@ -159,7 +196,7 @@ export function SimpleQuoteEditor({
   const addItem = () => {
     setItems((prev) => {
       const next = [...prev, { id: crypto.randomUUID(), trade: "", cost: 0, isOwnerPurchase: false, note: "" }];
-      onChange?.(next);
+      onChange?.(next, { profitPct, squareFootage });
       return next;
     });
   };
@@ -167,7 +204,7 @@ export function SimpleQuoteEditor({
   const removeItem = (index: number) => {
     setItems((prev) => {
       const next = prev.filter((_, i) => i !== index);
-      onChange?.(next);
+      onChange?.(next, { profitPct, squareFootage });
       return next;
     });
   };
@@ -176,11 +213,45 @@ export function SimpleQuoteEditor({
     setSaving(true);
     try {
       await saveCustomTradesToLibrary(items);
-      await onSave(items);
+      await onSave(items, { profitPct, squareFootage });
     } finally {
       setSaving(false);
     }
   };
+
+  function applyStandardRates() {
+    if (squareFootage <= 0) {
+      toast.error("Enter the home's square footage first");
+      return;
+    }
+    const result = fillFromStandardRates(
+      items,
+      standardRates,
+      squareFootage,
+      (trade, cost) => ({ id: crypto.randomUUID(), trade, cost, isOwnerPurchase: false, note: "" }),
+    );
+    if (result.filled.length === 0) {
+      toast.error(
+        result.skipped.length > 0
+          ? "Those trades already have costs — standard rates only fill blank lines"
+          : "No standard rates match these trades yet",
+      );
+      return;
+    }
+    setItems(result.items);
+    setCostInputs({});
+    onChange?.(result.items, { profitPct, squareFootage });
+    toast.success(
+      `Filled ${result.filled.length} line${result.filled.length === 1 ? "" : "s"}` +
+        (result.skipped.length > 0 ? ` — left ${result.skipped.length} with costs alone` : ""),
+    );
+  }
+
+  // What the client will be quoted, derived from cost so the two can't drift.
+  const pricing = useMemo(
+    () => priceWithProfit(items.map((i) => ({ ...i })), profitPct),
+    [items, profitPct],
+  );
 
   const tradeCosts = useMemo(
     () => items.filter((i) => !i.isOwnerPurchase).reduce((s, i) => s + i.cost, 0),
@@ -201,6 +272,68 @@ export function SimpleQuoteEditor({
             Toggle &ldquo;OP&rdquo; for owner-purchased items
           </span>
         )}
+      </div>
+
+      {/* Square footage + standard rates + profit. These three drive every
+          number below: the first two seed costs, the third decides what the
+          client is quoted on top of them. */}
+      <div className="mb-4 rounded-lg border border-gray-200 bg-gray-50 p-3">
+        <div className="flex flex-wrap items-end gap-3">
+          <div>
+            <label htmlFor="sq-sqft" className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
+              Square Footage
+            </label>
+            <div className="flex items-center gap-1.5">
+              <Ruler className="w-3.5 h-3.5 text-gray-400" />
+              <input
+                id="sq-sqft"
+                value={sqftInput}
+                onChange={(e) => setSqftInput(e.target.value)}
+                inputMode="numeric"
+                placeholder="2400"
+                className="w-24 rounded border border-gray-300 px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              />
+            </div>
+          </div>
+
+          <button
+            type="button"
+            onClick={applyStandardRates}
+            disabled={standardRates.length === 0}
+            title={
+              standardRates.length === 0
+                ? "No standard rates set up yet — add them under Standard Prices"
+                : "Fill blank trades from your standard per-square-foot rates"
+            }
+            className="inline-flex items-center gap-1.5 rounded-lg border border-indigo-200 bg-white px-3 py-2 text-xs font-medium text-indigo-700 hover:bg-indigo-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+            style={{ minHeight: 36 }}
+          >
+            <Wand2 className="w-3.5 h-3.5" />
+            Fill from standard rates
+          </button>
+
+          <div className="ml-auto">
+            <label htmlFor="sq-profit" className="block text-[10px] font-medium text-gray-500 uppercase tracking-wider mb-1">
+              Profit %
+            </label>
+            <div className="flex items-center gap-1.5">
+              <input
+                id="sq-profit"
+                value={profitPctInput}
+                onChange={(e) => setProfitPctInput(e.target.value)}
+                inputMode="decimal"
+                placeholder="10"
+                className="w-20 rounded border border-gray-300 px-2 py-1.5 text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-300"
+              />
+              <span className="text-sm text-gray-500">%</span>
+            </div>
+          </div>
+        </div>
+        <p className="mt-2 text-[11px] text-gray-500 inline-flex items-center gap-1">
+          <EyeOff className="w-3 h-3" />
+          Costs below are what you pay. The profit is spread across the line items the
+          client sees — it never appears as its own line.
+        </p>
       </div>
 
       {/* Header row */}
@@ -355,16 +488,40 @@ export function SimpleQuoteEditor({
             <span className="font-semibold">{formatCurrency(ownerPurchases)}</span>
           </div>
         )}
-        <div className="flex justify-between text-base pt-1 border-t border-gray-100">
-          <span className="font-bold text-gray-900">
+        <div className="flex justify-between text-sm pt-1 border-t border-gray-100">
+          <span className="font-medium text-gray-700">
             {defaults.includeOwnerPurchases && ownerPurchases > 0
-              ? "Total Combined"
-              : "Total"}
+              ? "Your Cost (combined)"
+              : "Your Cost"}
           </span>
-          <span className="font-bold text-gray-900">
+          <span className="font-semibold text-gray-900">
             {formatCurrency(totalCombined)}
           </span>
         </div>
+
+        {pricing.totalProfit > 0 && (
+          <>
+            <div className="flex justify-between text-sm">
+              <span className="font-medium text-indigo-700 inline-flex items-center gap-1">
+                <EyeOff className="w-3.5 h-3.5" />
+                Profit ({profitPct}%)
+              </span>
+              <span className="font-semibold text-indigo-700">
+                {formatCurrency(pricing.totalProfit)}
+              </span>
+            </div>
+            <div className="flex justify-between text-base pt-1 border-t border-gray-200">
+              <span className="font-bold text-gray-900">Client Total</span>
+              <span className="font-bold text-gray-900">
+                {formatCurrency(pricing.clientTotal)}
+              </span>
+            </div>
+            <p className="text-[11px] text-gray-500 pt-1">
+              The client sees {formatCurrency(pricing.clientTotal)} split across the line
+              items above. The profit row is internal.
+            </p>
+          </>
+        )}
       </div>
 
       {/* Save button */}

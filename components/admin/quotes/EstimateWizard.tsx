@@ -12,6 +12,7 @@ import { JOB_TYPE_CONFIGS } from "@/lib/quote-builder/templates";
 import { JobTypeSelector } from "@/components/admin/quotes/JobTypeSelector";
 import { DynamicSectionRenderer } from "@/components/admin/quotes/DynamicSectionRenderer";
 import { SimpleQuoteEditor, type SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
+import { priceWithProfit } from "@/lib/quotes/profit";
 import { formatCurrency } from "@/lib/formatters";
 
 // Sections to exclude from Job Details per job type
@@ -151,17 +152,24 @@ export function EstimateWizard() {
     setIsSubmitting(true);
     try {
       const items = simpleItemsRef.current.length > 0 ? simpleItemsRef.current : simpleItems;
-      const grandTotal = items.reduce((sum, i) => sum + i.cost, 0);
-      const subtotal = items.filter((i) => !i.isOwnerPurchase).reduce((sum, i) => sum + i.cost, 0);
+
+      // subtotal is Blake's cost, grand_total is what the client is quoted.
+      // They differ by the profit spread across the line items, which is stored
+      // so the margin is reportable rather than only being rendered.
+      const profitPct = Number(formData.profit_pct) || 0;
+      const priced = priceWithProfit(items, profitPct);
 
       const payload = {
         ...formData,
         job_type_inputs: {
           ...(formData.job_type_inputs as Record<string, unknown> ?? {}),
           simple_items: items,
+          square_footage: Number(formData.square_footage) || 0,
         },
-        grand_total: grandTotal,
-        subtotal,
+        profit_pct: profitPct,
+        profit_amount: priced.totalProfit,
+        grand_total: priced.clientTotal,
+        subtotal: priced.totalCost,
       };
 
       const response = await fetch("/api/admin/quotes", {
@@ -414,13 +422,21 @@ export function EstimateWizard() {
             <SimpleQuoteEditor
               jobType={jobType}
               initialItems={simpleItems.length > 0 ? simpleItems : undefined}
-              onChange={(items) => {
+              initialProfitPct={Number(formData.profit_pct) || 0}
+              initialSquareFootage={Number(formData.square_footage) || 0}
+              onChange={(items, meta) => {
                 setSimpleItems(items);
                 simpleItemsRef.current = items;
+                // Held on formData so the wizard's final save writes them with
+                // everything else; the breakdown itself has nowhere to persist.
+                handleChange("profit_pct", meta.profitPct);
+                handleChange("square_footage", meta.squareFootage);
               }}
-              onSave={async (items) => {
+              onSave={async (items, meta) => {
                 setSimpleItems(items);
                 simpleItemsRef.current = items;
+                handleChange("profit_pct", meta.profitPct);
+                handleChange("square_footage", meta.squareFootage);
                 toast.success("Pricing saved");
               }}
             />

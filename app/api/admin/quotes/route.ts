@@ -40,7 +40,10 @@ const QUOTE_COLUMNS = new Set([
   "valid_through_date", "payment_schedule", "change_order_language",
   "job_type_inputs", "created_by",
   "revision_number", "parent_quote_id",
-  "subtotal", "grand_total",
+  // profit_amount is the gap between subtotal (Blake's cost) and
+  // grand_total (what the client is quoted). Persisted so margin is
+  // reportable; never rendered on the client proposal.
+  "subtotal", "grand_total", "profit_amount",
 ]);
 
 export async function POST(request: NextRequest) {

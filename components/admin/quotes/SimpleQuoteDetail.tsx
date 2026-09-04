@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Button } from "@/components/ui/Button";
 import { Select } from "@/components/ui/Select";
 import { SimpleQuoteEditor, type SimpleQuoteItem } from "@/components/admin/quotes/SimpleQuoteEditor";
+import { priceWithProfit } from "@/lib/quotes/profit";
 import { SendQuoteModal } from "@/components/admin/quotes/SendQuoteModal";
 import { cn } from "@/lib/utils";
 import toast from "react-hot-toast";
@@ -313,9 +314,17 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
       <SimpleQuoteEditor
         jobType={quote.job_type_slug as JobTypeSlug}
         initialItems={simpleItems.length > 0 ? simpleItems : undefined}
-        onSave={async (items) => {
+        initialProfitPct={Number(quote.profit_pct) || 0}
+        initialSquareFootage={
+          Number((quote.job_type_inputs as Record<string, unknown>)?.square_footage) || 0
+        }
+        onSave={async (items, meta) => {
           setSimpleItems(items);
           try {
+            // subtotal is Blake's cost, grand_total is what the client is
+            // quoted, and profit_amount is the gap. Storing all three keeps the
+            // margin reportable instead of only existing on screen.
+            const priced = priceWithProfit(items, meta.profitPct);
             const res = await fetch(`/api/admin/quotes/${quoteId}`, {
               method: "PATCH",
               headers: { "Content-Type": "application/json" },
@@ -323,9 +332,12 @@ export function SimpleQuoteDetail({ quoteId, initialQuote }: SimpleQuoteDetailPr
                 job_type_inputs: {
                   ...(quote.job_type_inputs as Record<string, unknown>),
                   simple_items: items,
+                  square_footage: meta.squareFootage,
                 },
-                grand_total: items.reduce((sum, i) => sum + i.cost, 0),
-                subtotal: items.filter((i) => !i.isOwnerPurchase).reduce((sum, i) => sum + i.cost, 0),
+                profit_pct: meta.profitPct,
+                profit_amount: priced.totalProfit,
+                subtotal: priced.totalCost,
+                grand_total: priced.clientTotal,
               }),
             });
             if (!res.ok) throw new Error();
