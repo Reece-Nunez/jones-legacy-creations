@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { Check, Edit3, Plus, Trash2 } from "lucide-react";
+import { Check, Edit3, Plus, Trash2, X } from "lucide-react";
 import toast from "react-hot-toast";
 // `Document` must be imported explicitly: without it TypeScript silently
 // resolves it to the DOM global and every property access is wrong.
@@ -15,6 +15,21 @@ import {
 } from "@/components/ui/card";
 import { EmptyState } from "@/components/admin/project/shared/Primitives";
 import { EditOnly } from "@/components/admin/project/shared/EditContext";
+
+type DraftRow = {
+  key: string;
+  /** null for a line that doesn't exist in the database yet. */
+  id: string | null;
+  line_number: string;
+  description: string;
+  amount: string;
+};
+
+let draftKeySeq = 0;
+function nextDraftKey() {
+  draftKeySeq += 1;
+  return `new-${draftKeySeq}`;
+}
 
 export function BudgetTab({
   projectId,
@@ -29,7 +44,11 @@ export function BudgetTab({
 }) {
   const router = useRouter();
   const [editing, setEditing] = useState(false);
-  const [editAmounts, setEditAmounts] = useState<Record<string, string>>({});
+  // The budget is edited as a whole list, not cell by cell: rows can be added,
+  // renumbered, retitled and removed in one pass, and Save posts the result as
+  // the complete list. `key` exists only to keep React rows stable while
+  // line_number is being typed in.
+  const [draft, setDraft] = useState<DraftRow[]>([]);
   const [saving, setSaving] = useState(false);
 
   const hasBudget = budgetLineItems.length > 0;
@@ -152,7 +171,11 @@ export function BudgetTab({
     }
   }
 
-  const totalBudgeted = lineItems.reduce((s, i) => s + (i.budgeted_amount || 0), 0);
+  // While editing, the summary tiles track what's typed rather than what's
+  // saved, so adding or deleting a line shows its effect before you commit.
+  const totalBudgeted = editing
+    ? draft.reduce((s, r) => s + (parseFloat(r.amount || "0") || 0), 0)
+    : lineItems.reduce((s, i) => s + (i.budgeted_amount || 0), 0);
   // Includes the unassigned bucket so this equals sum(contractor_payments) —
   // critical for matching the FinancialSummary tile at the top of the page.
   const totalSpent =
@@ -172,28 +195,89 @@ export function BudgetTab({
   }
 
   function startEditing() {
-    const amounts: Record<string, string> = {};
-    for (const item of lineItems) {
-      amounts[item.line_number] = item.budgeted_amount ? String(item.budgeted_amount) : "";
-    }
-    setEditAmounts(amounts);
+    setDraft(
+      lineItems.map((item) => ({
+        key: item.id || `existing-${item.line_number}`,
+        id: item.id || null,
+        line_number: item.line_number,
+        description: item.description,
+        amount: item.budgeted_amount ? String(item.budgeted_amount) : "",
+      })),
+    );
     setEditing(true);
   }
 
+  function updateDraftRow(key: string, patch: Partial<DraftRow>) {
+    setDraft((rows) => rows.map((r) => (r.key === key ? { ...r, ...patch } : r)));
+  }
+
+  /** Lowest whole number not already used, so "Add Line" lands somewhere sane. */
+  function suggestLineNumber(rows: DraftRow[]) {
+    const used = new Set(rows.map((r) => r.line_number.trim().toLowerCase()));
+    let n = 1;
+    while (used.has(String(n))) n += 1;
+    return String(n);
+  }
+
+  function addDraftRow() {
+    setDraft((rows) => [
+      ...rows,
+      { key: nextDraftKey(), id: null, line_number: suggestLineNumber(rows), description: "", amount: "" },
+    ]);
+  }
+
+  async function removeDraftRow(row: DraftRow) {
+    // Deleting a line that money is already charged against doesn't delete the
+    // payments — they fall back into the Unassigned bucket — but the user
+    // should know before the totals move around.
+    const spent = spentByLine.get(row.line_number) || 0;
+    if (spent > 0) {
+      const confirmed = await confirmAction(
+        `Line ${row.line_number} has ${fmt(spent)} charged to it. Remove the line anyway? Those payments will show as Unassigned.`,
+      );
+      if (!confirmed) return;
+    }
+    setDraft((rows) => rows.filter((r) => r.key !== row.key));
+  }
+
   async function saveBudget() {
+    // Caught here rather than server-side so the user isn't told which row is
+    // wrong only after a round trip.
+    const blank = draft.find((r) => !r.line_number.trim() || !r.description.trim());
+    if (blank) {
+      toast.error("Every line needs a number and a description.");
+      return;
+    }
+    const seen = new Set<string>();
+    for (const row of draft) {
+      const key = row.line_number.trim().toLowerCase();
+      if (seen.has(key)) {
+        toast.error(`Line number "${row.line_number.trim()}" is used twice.`);
+        return;
+      }
+      seen.add(key);
+    }
+
     setSaving(true);
     try {
-      const items = lineItems.map((item) => ({
-        line_number: item.line_number,
-        description: item.description,
-        budgeted_amount: parseFloat(editAmounts[item.line_number] || "0") || 0,
-      }));
-
-      await fetch(`/api/admin/projects/${projectId}/budget`, {
+      const res = await fetch(`/api/admin/projects/${projectId}/budget`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(items),
+        body: JSON.stringify({
+          items: draft.map((row) => ({
+            id: row.id,
+            line_number: row.line_number.trim(),
+            description: row.description.trim(),
+            budgeted_amount: parseFloat(row.amount || "0") || 0,
+          })),
+        }),
       });
+
+      if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        toast.error(body.error || "Failed to save budget");
+        return;
+      }
 
       router.refresh();
       setEditing(false);
@@ -340,7 +424,72 @@ export function BudgetTab({
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
-                  {lineItems.map((item) => {
+                  {editing &&
+                    draft.map((row) => {
+                      const spent = spentByLine.get(row.line_number) || 0;
+                      return (
+                        <tr key={row.key}>
+                          <td className="py-2 pr-3">
+                            <input
+                              value={row.line_number}
+                              onChange={(e) => updateDraftRow(row.key, { line_number: e.target.value })}
+                              aria-label="Line number"
+                              placeholder="#"
+                              className="w-14 rounded border border-gray-300 px-2 py-1 text-xs tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            />
+                          </td>
+                          <td className="py-2 pr-3">
+                            <input
+                              value={row.description}
+                              onChange={(e) => updateDraftRow(row.key, { description: e.target.value })}
+                              aria-label="Description"
+                              placeholder="Description"
+                              className="w-full rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            />
+                          </td>
+                          <td className="py-2 pr-3 text-right">
+                            <input
+                              type="number"
+                              step="0.01"
+                              value={row.amount}
+                              onChange={(e) => updateDraftRow(row.key, { amount: e.target.value })}
+                              aria-label={`Budget amount for line ${row.line_number}`}
+                              placeholder="0.00"
+                              className="w-full text-right rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                            />
+                          </td>
+                          <td className="py-2 pr-3 text-right tabular-nums text-gray-500 text-xs">
+                            {spent > 0 ? fmt(spent) : "--"}
+                          </td>
+                          <td className="py-2 pr-3" colSpan={2}></td>
+                          <td className="py-2 text-right">
+                            <button
+                              onClick={() => removeDraftRow(row)}
+                              aria-label={`Remove line ${row.line_number}`}
+                              title="Remove this line"
+                              className="text-gray-400 hover:text-red-500 p-1 cursor-pointer transition-colors"
+                            >
+                              <X className="w-4 h-4" />
+                            </button>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  {editing && (
+                    <tr>
+                      <td colSpan={7} className="py-2">
+                        <button
+                          onClick={addDraftRow}
+                          className="inline-flex items-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-2 text-xs font-medium text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                          style={{ minHeight: 36 }}
+                        >
+                          <Plus className="w-3.5 h-3.5" />
+                          Add Line Item
+                        </button>
+                      </td>
+                    </tr>
+                  )}
+                  {!editing && lineItems.map((item) => {
                     const budgeted = item.budgeted_amount || 0;
                     const spent = spentByLine.get(item.line_number) || 0;
                     const remaining = budgeted - spent;
@@ -363,18 +512,7 @@ export function BudgetTab({
                           </div>
                         </td>
                         <td className="py-2.5 pr-3 text-right tabular-nums">
-                          {editing ? (
-                            <input
-                              type="number"
-                              step="0.01"
-                              value={editAmounts[item.line_number] || ""}
-                              onChange={(e) => setEditAmounts((prev) => ({ ...prev, [item.line_number]: e.target.value }))}
-                              placeholder="0.00"
-                              className="w-full text-right rounded border border-gray-300 px-2 py-1 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300"
-                            />
-                          ) : (
-                            <span className="text-gray-700">{budgeted > 0 ? fmt(budgeted) : "--"}</span>
-                          )}
+                          <span className="text-gray-700">{budgeted > 0 ? fmt(budgeted) : "--"}</span>
                         </td>
                         <td className="py-2.5 pr-3 text-right tabular-nums text-gray-700">
                           {isPurchased ? (
@@ -434,7 +572,7 @@ export function BudgetTab({
                    *  line by explicit assignment, document link, or filename
                    *  regex. Shown so totalSpent reflects every payment and
                    *  Blake can see what still needs categorizing. */}
-                  {unassignedPayments.length > 0 && (
+                  {!editing && unassignedPayments.length > 0 && (
                     <tr className="bg-amber-50/60">
                       <td className="py-2.5 pr-3 text-xs text-amber-600 tabular-nums">—</td>
                       <td className="py-2.5 pr-3">
@@ -479,7 +617,64 @@ export function BudgetTab({
 
             {/* Mobile card layout */}
             <div className="sm:hidden space-y-2">
-              {lineItems.map((item) => {
+              {editing &&
+                draft.map((row) => {
+                  const spent = spentByLine.get(row.line_number) || 0;
+                  return (
+                    <div key={row.key} className="rounded-lg border border-gray-200 p-3 space-y-2">
+                      <div className="flex items-start gap-2">
+                        <input
+                          value={row.line_number}
+                          onChange={(e) => updateDraftRow(row.key, { line_number: e.target.value })}
+                          aria-label="Line number"
+                          placeholder="#"
+                          className="w-14 shrink-0 rounded border border-gray-300 px-2 py-2 text-sm tabular-nums focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                        />
+                        <input
+                          value={row.description}
+                          onChange={(e) => updateDraftRow(row.key, { description: e.target.value })}
+                          aria-label="Description"
+                          placeholder="Description"
+                          className="flex-1 min-w-0 rounded border border-gray-300 px-2 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300"
+                        />
+                        <button
+                          onClick={() => removeDraftRow(row)}
+                          aria-label={`Remove line ${row.line_number}`}
+                          className="shrink-0 text-gray-400 hover:text-red-500 p-2 cursor-pointer transition-colors"
+                        >
+                          <X className="w-4 h-4" />
+                        </button>
+                      </div>
+                      <div>
+                        <label className="text-[10px] font-medium text-gray-500 uppercase">Budget Amount</label>
+                        <input
+                          type="number"
+                          step="0.01"
+                          inputMode="decimal"
+                          value={row.amount}
+                          onChange={(e) => updateDraftRow(row.key, { amount: e.target.value })}
+                          aria-label={`Budget amount for line ${row.line_number}`}
+                          placeholder="0.00"
+                          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 mt-1"
+                        />
+                      </div>
+                      {spent > 0 && (
+                        <p className="text-[11px] text-gray-500">{fmt(spent)} already charged to this line</p>
+                      )}
+                    </div>
+                  );
+                })}
+              {editing && (
+                <button
+                  onClick={addDraftRow}
+                  className="w-full inline-flex items-center justify-center gap-1.5 rounded-lg border border-dashed border-gray-300 px-3 py-2.5 text-sm font-medium text-gray-600 hover:border-indigo-300 hover:text-indigo-600 transition-colors"
+                  style={{ minHeight: 44 }}
+                >
+                  <Plus className="w-4 h-4" />
+                  Add Line Item
+                </button>
+              )}
+              {!editing && lineItems.map((item) => {
                 const budgeted = item.budgeted_amount || 0;
                 const spent = spentByLine.get(item.line_number) || 0;
                 const remaining = budgeted - spent;
@@ -519,20 +714,7 @@ export function BudgetTab({
                         </button>
                       )}
                     </div>
-                    {editing ? (
-                      <div className="mt-2">
-                        <label className="text-[10px] font-medium text-gray-500 uppercase">Budget Amount</label>
-                        <input
-                          type="number"
-                          step="0.01"
-                          inputMode="decimal"
-                          value={editAmounts[item.line_number] || ""}
-                          onChange={(e) => setEditAmounts((prev) => ({ ...prev, [item.line_number]: e.target.value }))}
-                          placeholder="0.00"
-                          className="w-full rounded border border-gray-300 px-3 py-2 text-sm focus:outline-none focus:ring-1 focus:ring-indigo-300 mt-1"
-                        />
-                      </div>
-                    ) : !isPurchased ? (
+                    {!isPurchased ? (
                       <>
                         <div className="flex items-center justify-between text-xs mt-1">
                           <span className="text-gray-500">Budget: {budgeted > 0 ? fmt(budgeted) : "--"}</span>
@@ -562,7 +744,7 @@ export function BudgetTab({
               })}
 
               {/* Mobile: Unassigned bucket */}
-              {unassignedPayments.length > 0 && (
+              {!editing && unassignedPayments.length > 0 && (
                 <div className="rounded-lg border border-amber-200 bg-amber-50/40 p-3">
                   <div className="flex items-start justify-between mb-1 gap-2">
                     <span className="text-sm font-medium text-amber-800">
