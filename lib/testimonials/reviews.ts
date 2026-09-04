@@ -75,6 +75,21 @@ export function partitionReviews(rows: ReviewRow[]): {
   return { videos, written };
 }
 
+/**
+ * The single review to feature (homepage quip, or any one-slot surface).
+ *
+ * A video review wins over a written one even when the written one is
+ * pinned higher: the point of the slot is to advertise that filmed
+ * reviews exist, and a still quote does not do that. Within each group
+ * Blake's pin order still decides. Returns null for an empty list so
+ * callers render nothing rather than an empty band.
+ */
+export function pickFeaturedReview(rows: ReviewRow[]): ReviewRow | null {
+  if (rows.length === 0) return null;
+  const sorted = rows.slice().sort(compareReviews);
+  return sorted.find(hasVideo) ?? sorted[0];
+}
+
 /** Distinct service filters present in the data, in a stable display
  *  order, so the page never renders a chip that matches nothing. */
 export function availableServices(rows: ReviewRow[]): TestimonialService[] {

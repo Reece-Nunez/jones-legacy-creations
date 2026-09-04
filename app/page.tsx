@@ -2,6 +2,7 @@ import Link from "next/link";
 import Image from "next/image";
 import { Navigation } from "@/components/Navigation";
 import { Footer } from "@/components/Footer";
+import { HomeReviewQuip } from "@/components/HomeReviewQuip";
 
 /* Hallmark · genre: editorial · macrostructure: Bento Grid
  * design-system: design.md · designed-as-app
@@ -267,6 +268,10 @@ export default function HomePage() {
             </div>
           </div>
         </section>
+
+        {/* Social proof sits between the what-we-do grid and the ask.
+            Renders nothing until a testimonial is published. */}
+        <HomeReviewQuip />
 
         {/* Closing — single short paragraph + chip. No dark gradient bg,
             no centered button grid. */}

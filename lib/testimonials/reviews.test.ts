@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   partitionReviews,
+  pickFeaturedReview,
   compareReviews,
   hasVideo,
   serviceLabel,
@@ -75,6 +76,42 @@ describe("partitionReviews", () => {
   it("does not mutate the caller's array order", () => {
     const rows = [row({ id: "b", display_order: 99 }), row({ id: "a", display_order: 1 })];
     partitionReviews(rows);
+    expect(rows.map((r) => r.id)).toEqual(["b", "a"]);
+  });
+});
+
+describe("pickFeaturedReview", () => {
+  it("prefers a video review over a higher-pinned written one", () => {
+    const rows = [
+      row({ id: "pinned-text", display_order: 1 }),
+      row({ id: "video", display_order: 90, video_url: "https://x/v.mp4" }),
+    ];
+    expect(pickFeaturedReview(rows)?.id).toBe("video");
+  });
+
+  it("uses pin order to choose among several videos", () => {
+    const rows = [
+      row({ id: "v-late", display_order: 80, video_url: "https://x/2.mp4" }),
+      row({ id: "v-early", display_order: 2, video_url: "https://x/1.mp4" }),
+    ];
+    expect(pickFeaturedReview(rows)?.id).toBe("v-early");
+  });
+
+  it("falls back to the top written review when no video exists", () => {
+    const rows = [
+      row({ id: "b", display_order: 50 }),
+      row({ id: "a", display_order: 3 }),
+    ];
+    expect(pickFeaturedReview(rows)?.id).toBe("a");
+  });
+
+  it("returns null for an empty list so the caller renders nothing", () => {
+    expect(pickFeaturedReview([])).toBeNull();
+  });
+
+  it("does not mutate the caller's array", () => {
+    const rows = [row({ id: "b", display_order: 99 }), row({ id: "a", display_order: 1 })];
+    pickFeaturedReview(rows);
     expect(rows.map((r) => r.id)).toEqual(["b", "a"]);
   });
 });
