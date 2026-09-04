@@ -16,8 +16,19 @@ import toast from "react-hot-toast";
 import { AiReviewModal } from "@/components/admin/AiReviewModal";
 import type { ExtractedDocumentData } from "@/lib/extract-document";
 
+/**
+ * What an upload handler can report back. Without it a batch is all-or-nothing:
+ * one rejected file made the whole call throw, the rest were never attempted,
+ * and the toast still claimed every file had gone up. Returning counts lets the
+ * picker say what actually landed and hold the failures for a retry.
+ */
+export type UploadReport = { uploaded: number; failedFiles?: File[] };
+
 interface SmartUploadProps {
-  onUpload: (files: File[], aiResults?: Map<string, ExtractedDocumentData>) => Promise<void>;
+  onUpload: (
+    files: File[],
+    aiResults?: Map<string, ExtractedDocumentData>,
+  ) => Promise<void | UploadReport>;
   multiple?: boolean;
   maxSizeMB?: number;
   showAiAnalyze?: boolean;
@@ -184,6 +195,33 @@ export default function SmartUpload({
     [addFiles]
   );
 
+  /**
+   * Clear the files that went up and keep the ones that didn't, so a partly
+   * failed batch can be retried without re-picking everything.
+   */
+  const settleUpload = useCallback(
+    (report: void | UploadReport, attempted: File[]) => {
+      const failed = report?.failedFiles ?? [];
+      const failedKeys = new Set(failed.map((f) => `${f.name}-${f.lastModified}`));
+      setPreviews((prev) => {
+        const next = new Map(prev);
+        prev.forEach((url, key) => {
+          if (!failedKeys.has(key)) {
+            URL.revokeObjectURL(url);
+            next.delete(key);
+          }
+        });
+        return next;
+      });
+      setFiles(failed);
+      const uploaded = report?.uploaded ?? attempted.length;
+      if (uploaded > 0) {
+        toast.success(`${uploaded} file${uploaded > 1 ? "s" : ""} uploaded`);
+      }
+    },
+    [],
+  );
+
   const handleUpload = useCallback(async () => {
     if (files.length === 0) return;
 
@@ -230,11 +268,7 @@ export default function SmartUpload({
       setIsUploading(true);
       setUploadProgress(0);
       try {
-        await onUpload(files);
-        previews.forEach((url) => URL.revokeObjectURL(url));
-        setFiles([]);
-        setPreviews(new Map());
-        toast.success(`${files.length} file${files.length > 1 ? "s" : ""} uploaded`);
+        settleUpload(await onUpload(files), files);
       } catch {
         toast.error("Upload failed. Please try again.");
       } finally {
@@ -242,7 +276,7 @@ export default function SmartUpload({
         setUploadProgress(0);
       }
     }
-  }, [files, onUpload, aiAnalyze, previews]);
+  }, [files, onUpload, aiAnalyze, previews, settleUpload]);
 
   // Handle AI review confirmation for one file
   const handleAiConfirm = useCallback(async (reviewedData: ExtractedDocumentData) => {
@@ -261,20 +295,16 @@ export default function SmartUpload({
       setAiReviewIndex(0);
       setIsUploading(true);
       try {
-        await onUpload(pendingFiles, newResults);
-        previews.forEach((url) => URL.revokeObjectURL(url));
-        setFiles([]);
-        setPreviews(new Map());
+        settleUpload(await onUpload(pendingFiles, newResults), pendingFiles);
         setPendingFiles([]);
         setConfirmedAiResults(new Map());
-        toast.success(`${pendingFiles.length} file${pendingFiles.length > 1 ? "s" : ""} uploaded`);
       } catch {
         toast.error("Upload failed. Please try again.");
       } finally {
         setIsUploading(false);
       }
     }
-  }, [aiReviewQueue, aiReviewIndex, confirmedAiResults, onUpload, pendingFiles, previews]);
+  }, [aiReviewQueue, aiReviewIndex, confirmedAiResults, onUpload, pendingFiles, settleUpload]);
 
   const handleAiReviewClose = useCallback(() => {
     // Skip this file's AI data but still include it in upload
@@ -286,18 +316,15 @@ export default function SmartUpload({
       setAiReviewIndex(0);
       setIsUploading(true);
       onUpload(pendingFiles, confirmedAiResults)
-        .then(() => {
-          previews.forEach((url) => URL.revokeObjectURL(url));
-          setFiles([]);
-          setPreviews(new Map());
+        .then((report) => {
+          settleUpload(report, pendingFiles);
           setPendingFiles([]);
           setConfirmedAiResults(new Map());
-          toast.success(`${pendingFiles.length} file${pendingFiles.length > 1 ? "s" : ""} uploaded`);
         })
         .catch(() => toast.error("Upload failed."))
         .finally(() => setIsUploading(false));
     }
-  }, [aiReviewIndex, aiReviewQueue.length, onUpload, pendingFiles, confirmedAiResults, previews]);
+  }, [aiReviewIndex, aiReviewQueue.length, onUpload, pendingFiles, confirmedAiResults, settleUpload]);
 
   return (
     <div

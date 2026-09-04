@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { parseStorageUrl } from "./storagePath";
+import { isProjectStoragePath, parseStorageUrl } from "./storagePath";
 import { fileDownloadUrl } from "../fileDownloadUrl";
 
 const ORIGIN = "https://rvyummgsvggjqtjbtqfw.supabase.co";
@@ -120,5 +120,44 @@ describe("fileDownloadUrl", () => {
       const params = new URL(href, "https://app.test").searchParams;
       expect(params.get("path")).toBe(key);
     }
+  });
+});
+
+describe("isProjectStoragePath", () => {
+  const project = "f7cdba0a-f51e-4baf-9312-babf39e00ccc";
+
+  it("accepts a key minted under the project prefix", () => {
+    expect(
+      isProjectStoragePath(`${project}/1757030000000-invoice.pdf`, project),
+    ).toBe(true);
+  });
+
+  it("accepts keys with spaces and dots in the filename", () => {
+    expect(
+      isProjectStoragePath(`${project}/1757030000000-Draw 3 (final).v2.pdf`, project),
+    ).toBe(true);
+  });
+
+  it("rejects another project's file", () => {
+    expect(
+      isProjectStoragePath("11111111-2222-3333-4444-555555555555/1-a.pdf", project),
+    ).toBe(false);
+  });
+
+  it("rejects a prefix that only looks like the project id", () => {
+    expect(isProjectStoragePath(`${project}-other/1-a.pdf`, project)).toBe(false);
+  });
+
+  it("rejects traversal out of the project folder", () => {
+    expect(isProjectStoragePath(`${project}/../other/1-a.pdf`, project)).toBe(false);
+  });
+
+  it("rejects a bare project id with no file", () => {
+    expect(isProjectStoragePath(project, project)).toBe(false);
+  });
+
+  it("rejects empty input", () => {
+    expect(isProjectStoragePath("", project)).toBe(false);
+    expect(isProjectStoragePath(`${project}/a.pdf`, "")).toBe(false);
   });
 });

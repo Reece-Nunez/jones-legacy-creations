@@ -1,6 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { useRouter } from "next/navigation";
+import toast from "react-hot-toast";
 import { Download, Eye, FolderOpen, Trash2 } from "lucide-react";
 // `Document` must be imported explicitly: without it TypeScript silently
 // resolves it to the DOM global and every property access is wrong.
@@ -15,6 +17,16 @@ import DocumentFlagsPanel from "@/components/admin/project/DocumentFlagsPanel";
 import { AddButton, EmptyState } from "@/components/admin/project/shared/Primitives";
 import { EditOnly } from "@/components/admin/project/shared/EditContext";
 import { fmtDate, fmtFileSize } from "@/components/admin/project/shared/format";
+import {
+  uploadProjectDocument,
+  scanProjectDocument,
+} from "@/lib/documents/upload-documents";
+import type { ExtractedDocumentData } from "@/lib/extract-document";
+
+// Stable toast ids so the per-file progress updates one toast instead of
+// stacking sixteen of them.
+const UPLOAD_TOAST = "documents-upload";
+const SCAN_TOAST = "documents-scan";
 
 export function DocumentsTab({
   projectId,
@@ -33,10 +45,50 @@ export function DocumentsTab({
   loading: boolean;
   onPreview: (url: string, name: string) => void;
 }) {
+  const router = useRouter();
   const [showForm, setShowForm] = useState(false);
   const [category, setCategory] = useState<DocumentCategory>("general");
   const [selectMode, setSelectMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+
+  /**
+   * Read the documents that just landed, one request each.
+   *
+   * Sequential on purpose: each scan is two model calls, and firing sixteen at
+   * once would rate-limit the batch rather than finish it sooner. A failure is
+   * reported and skipped — the file is already stored, and the "Scan
+   * documents" button catches up anything that missed its pass.
+   */
+  const scanStored = useCallback(
+    async (stored: Array<{ id: string; file: File; aiData?: ExtractedDocumentData }>) => {
+      let failures = 0;
+      for (let i = 0; i < stored.length; i++) {
+        toast.loading(
+          `Reading ${i + 1} of ${stored.length} — ${stored[i].file.name}`,
+          { id: SCAN_TOAST },
+        );
+        const { ok } = await scanProjectDocument(projectId, stored[i].id, {
+          aiReviewedData: stored[i].aiData,
+          autoCreatePayment: Boolean(stored[i].aiData),
+        });
+        if (!ok) failures++;
+      }
+
+      if (failures === 0) {
+        toast.success(
+          `Read ${stored.length} document${stored.length > 1 ? "s" : ""}`,
+          { id: SCAN_TOAST },
+        );
+      } else {
+        toast.error(
+          `${failures} of ${stored.length} could not be read — use Scan documents to retry`,
+          { id: SCAN_TOAST, duration: 8000 },
+        );
+      }
+      router.refresh();
+    },
+    [projectId, router],
+  );
 
   function toggleSelect(id: string) {
     setSelectedIds((prev) => {
@@ -125,29 +177,43 @@ export function DocumentsTab({
             </div>
             <SmartUpload
               onUpload={async (uploadFiles, aiResults) => {
+                // Phase one: get every file safely into storage. Nothing here
+                // reads a document, so a 16-file batch finishes in seconds and
+                // one bad file no longer takes the rest of the batch with it.
+                const stored: Array<{ id: string; file: File; aiData?: ExtractedDocumentData }> = [];
+                const failedFiles: File[] = [];
+
                 for (let i = 0; i < uploadFiles.length; i++) {
-                  const fd = new FormData();
-                  fd.append("file", uploadFiles[i]);
-                  fd.append("category", category);
-                  const key = `${uploadFiles[i].name}-${uploadFiles[i].lastModified}`;
-                  const aiData = aiResults?.get(key);
-                  if (aiData) {
-                    fd.append("use_ai", "false");
-                    fd.append("vendor", aiData.vendor_company || aiData.vendor_name || "");
-                    fd.append("doc_type", aiData.document_type || "");
-                    fd.append("auto_create_payment", "true");
-                    fd.append("ai_reviewed_data", JSON.stringify(aiData));
-                  } else if (category === "invoice" || category === "draw_request") {
-                    fd.append("use_ai", "true");
-                  }
-                  await mutate(
-                    `/api/admin/projects/${projectId}/documents`,
-                    "POST",
-                    fd,
+                  const file = uploadFiles[i];
+                  toast.loading(
+                    `Uploading ${i + 1} of ${uploadFiles.length} — ${file.name}`,
+                    { id: UPLOAD_TOAST },
                   );
+                  const aiData = aiResults?.get(`${file.name}-${file.lastModified}`);
+                  const outcome = await uploadProjectDocument(projectId, file, {
+                    category,
+                    vendor: aiData?.vendor_company || aiData?.vendor_name || null,
+                    doc_type: aiData?.document_type || null,
+                  });
+                  if (outcome.documentId) {
+                    stored.push({ id: outcome.documentId, file, aiData });
+                  } else {
+                    failedFiles.push(file);
+                    toast.error(`${file.name}: ${outcome.error}`, { duration: 8000 });
+                  }
                 }
+
+                toast.dismiss(UPLOAD_TOAST);
                 setCategory("general");
                 setShowForm(false);
+                router.refresh();
+
+                // Phase two: read them. Deliberately not awaited — the files
+                // are already saved, so the uploader gets the tab back while
+                // the slow part (two model calls per document) runs behind it.
+                if (stored.length > 0) void scanStored(stored);
+
+                return { uploaded: stored.length, failedFiles };
               }}
               showAiAnalyze={category === "invoice" || category === "draw_request"}
             />

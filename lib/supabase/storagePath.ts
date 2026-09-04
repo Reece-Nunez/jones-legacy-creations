@@ -66,3 +66,19 @@ export function parseStorageUrl(
     return null;
   }
 }
+
+/**
+ * Is this storage key inside the given project's folder?
+ *
+ * Project document keys are minted server-side as `<projectId>/<timestamp>-<name>`,
+ * but the browser hands the key back when it registers the uploaded file — so
+ * it has to be re-checked. The record, not the object, is what the UI reads,
+ * so an unchecked key would let a caller hang a document off another project's
+ * file. Traversal segments are rejected outright rather than normalised: no
+ * legitimate key contains one.
+ */
+export function isProjectStoragePath(path: string, projectId: string): boolean {
+  if (!path || !projectId) return false;
+  if (!path.startsWith(`${projectId}/`)) return false;
+  return !path.split("/").includes("..");
+}

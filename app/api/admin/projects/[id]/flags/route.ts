@@ -4,7 +4,7 @@ import { createAdminClient } from "@/lib/supabase/admin";
 import { parseStoragePath } from "@/lib/supabase/signedUrl";
 import { detectDocumentFlags } from "@/lib/documents/detect-flags";
 import { scanContextFor, storeFlags } from "@/lib/documents/scan-document";
-import { analyzeUpload } from "@/lib/documents/analyze-upload";
+import { processUploadedDocument } from "@/lib/documents/process-upload";
 import { isDocumentKind, type DocumentKind } from "@/lib/documents/document-kind";
 
 /** Open flags for the project's review panel, newest document first. */
@@ -55,7 +55,7 @@ export async function POST(
 
   let query = supabase
     .from("documents")
-    .select("id, name, file_url, file_type, category, document_kind")
+    .select("id, name, file_url, file_type, category, document_kind, vendor, doc_type, contractor_id, draw_request_id")
     .eq("project_id", id)
     .neq("category", "photo");
 
@@ -98,28 +98,32 @@ export async function POST(
 
       const buffer = await blob.arrayBuffer();
 
-      // Documents uploaded before classification existed have no kind, and the
-      // kind decides which fields are even in scope — so an unclassified
-      // document is classified now and the answer stored, rather than being
-      // re-derived on every future scan.
-      let kind: DocumentKind = isDocumentKind(doc.document_kind) ? doc.document_kind : "other";
+      // No kind means the document was never read: either it predates
+      // classification, or its upload put the file in storage and the browser
+      // went away before the scan request. Both want the full pass — classify
+      // it, file it, and create the payment an invoice implies — not just a
+      // flag scan, or an invoice sits here forever with no money behind it.
       if (!isDocumentKind(doc.document_kind)) {
-        const analysis = await analyzeUpload(
-          buffer,
-          doc.file_type || "application/pdf",
-          doc.name || "document",
-        );
-        kind = analysis.kind;
-        await supabase
-          .from("documents")
-          .update({
-            document_kind: kind,
-            parsed_budget: analysis.budget_lines.length > 0 ? analysis.budget_lines : null,
-          })
-          .eq("id", doc.id)
-          .eq("project_id", id);
+        const processed = await processUploadedDocument({
+          supabase,
+          projectId: id,
+          documentId: doc.id,
+          fileBuffer: buffer,
+          fileType: doc.file_type || "application/pdf",
+          fileName: doc.name || "document",
+          fileUrl: doc.file_url,
+          explicitCategory: doc.category ?? null,
+          explicitVendor: doc.vendor ?? null,
+          explicitDocType: doc.doc_type ?? null,
+          contractorId: doc.contractor_id ?? null,
+          drawRequestId: doc.draw_request_id ?? null,
+        });
+        flagged += processed.flags_raised;
+        results.push({ document_id: doc.id, flagged: processed.flags_raised });
+        continue;
       }
 
+      const kind: DocumentKind = doc.document_kind;
       const { context, subjects } = await scanContextFor(supabase, id, doc.file_url);
       if (context.length === 0) {
         results.push({ document_id: doc.id, flagged: 0, error: "Project has no comparable fields" });
