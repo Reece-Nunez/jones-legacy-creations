@@ -3,6 +3,8 @@ import { requireAdmin } from "@/lib/supabase/requireAdmin";
 import { safeIlikeValue } from "@/lib/supabase/filterSafe";
 import { extractInvoiceData } from "@/lib/extract-invoice";
 import { recalcDrawTotal } from "@/lib/finance/draw-total";
+import { detectDocumentFlags } from "@/lib/documents/detect-flags";
+import { scanContextFor, storeFlags } from "@/lib/documents/scan-document";
 
 export async function GET(
   request: NextRequest,
@@ -262,12 +264,38 @@ export async function POST(
     await recalcDrawTotal(supabase, id, drawRequestId);
   }
 
+  // Discrepancy scan. Runs last so any payment created above is part of what
+  // the document is checked against. Photos are skipped — there's nothing on a
+  // site photo to disagree with, and each scan is a paid model call.
+  //
+  // Deliberately non-fatal: a failed scan must not fail an upload. The document
+  // is already stored, and the "Scan documents" button picks up anything that
+  // didn't get a flags_scanned_at stamp.
+  let flagsRaised = 0;
+  if (finalCategory !== "photo") {
+    try {
+      const { context, subjects } = await scanContextFor(supabase, id, fileUrl);
+      if (context.length > 0) {
+        const raw = await detectDocumentFlags({
+          fileBuffer: await file.arrayBuffer(),
+          fileType: file.type,
+          fileName: file.name,
+          context,
+        });
+        flagsRaised = await storeFlags(supabase, id, data.id, raw, subjects);
+      }
+    } catch (e) {
+      console.error("Document flag scan failed:", e);
+    }
+  }
+
   return NextResponse.json(
     {
       ...data,
       ai_extracted: aiData,
       payment_created: paymentRecord,
       duplicate_payment: duplicatePayment,
+      flags_raised: flagsRaised,
     },
     { status: 201 }
   );

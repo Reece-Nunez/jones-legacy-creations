@@ -348,6 +348,28 @@ export interface BudgetLineItem {
   updated_at: string;
 }
 
+/** One field on one record that one uploaded document disagrees with.
+ *  Raised by the AI scan, resolved by Blake accepting or rejecting it. */
+export interface DocumentFlag {
+  id: string;
+  project_id: string;
+  document_id: string;
+  category: "money" | "identity" | "address" | "reference";
+  target_table: "projects" | "contractor_payments";
+  target_id: string;
+  target_field: string;
+  current_value: string | null;
+  suggested_value: string;
+  confidence: "high" | "medium" | "low";
+  explanation: string | null;
+  status: "open" | "accepted" | "rejected";
+  resolved_at: string | null;
+  resolved_by: string | null;
+  created_at: string;
+  /** Joined in by the flags API so the panel can name the source document. */
+  document?: { id: string; name: string; file_url: string } | null;
+}
+
 export interface DrawLineItem {
   number: string;
   description: string;

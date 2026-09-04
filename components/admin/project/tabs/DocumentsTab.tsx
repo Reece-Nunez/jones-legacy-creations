@@ -11,6 +11,7 @@ import {
   Card as ShadCard, CardHeader, CardTitle, CardContent, CardAction,
 } from "@/components/ui/card";
 import SmartUpload from "@/components/admin/SmartUpload";
+import DocumentFlagsPanel from "@/components/admin/project/DocumentFlagsPanel";
 import { AddButton, EmptyState } from "@/components/admin/project/shared/Primitives";
 import { EditOnly } from "@/components/admin/project/shared/EditContext";
 import { fmtDate, fmtFileSize } from "@/components/admin/project/shared/format";
@@ -69,6 +70,11 @@ export function DocumentsTab({
   }
 
   return (
+    <div className="space-y-4">
+    {/* What the AI found wrong, above the file list — the point is that it's
+        seen before the documents are filed away and forgotten. */}
+    <DocumentFlagsPanel key={documents.length} projectId={projectId} />
+
     <ShadCard>
       <CardHeader>
         <CardTitle>Documents</CardTitle>
@@ -267,5 +273,6 @@ export function DocumentsTab({
         )}
       </CardContent>
     </ShadCard>
+    </div>
   );
 }
